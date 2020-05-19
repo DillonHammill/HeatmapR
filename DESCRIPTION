@@ -1,0 +1,25 @@
+Package: heatmapr
+Type: Package
+Title: Create Heatmaps using Base Graphics
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Dillon",
+           family = "Hammill",
+           role = c("aut", "cre"),
+           email = "Dillon.Hammill@anu.edu.au",
+           comment = c(ORCID = "0000-0002-1407-7223"))
+Description: Create heatmaps using base graphics.
+URL: 
+BugReports:
+Depends:
+  R (>= 3.5)
+Imports:
+  methods,
+  graphics,
+  grDevices
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.0
+Language: en-GB
