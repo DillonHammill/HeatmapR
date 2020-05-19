@@ -10,19 +10,29 @@ heat_map_complete()
 Indicate when a heatmap is complete and ready for saving
 }
 \examples{
-# Save Heatmap
+# Save heatmap
 heat_map_save("Heatmap.png",
 height = 7, 
 width = 5)
 
-# Construct Heatmap
+# Custom layout
+heat_map(layout = c(1,2))
+
+# Construct raw heatmap
 heat_map(iris[1:10,],
-scale = "range",
-title = "Iris Heatmap",
+scale = NULL,
+title = "Iris Raw Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
 
-# Signal Completion
+# Construct scaled heatmap
+heat_map(iris[1:10,],
+scale = "range",
+title = "Iris Scaled Heatmap",
+axis_label_x = "Plant Parameter",
+axis_label_y = "Row ID")
+
+# Signal completion
 heat_map_complete()
 
 }

@@ -46,7 +46,17 @@ created using \code{heat_map_layout}, set to NULL by default.}
 Save high resolution images
 }
 \examples{
+# Save Heatmap
+heat_map_save("Heatmap.png",
+height = 7, 
+width = 5)
 
+# Construct Heatmap
+heat_map(iris[1:10,],
+scale = "range",
+title = "Iris Heatmap",
+axis_label_x = "Plant Parameter",
+axis_label_y = "Row ID")
 
 }
 \author{

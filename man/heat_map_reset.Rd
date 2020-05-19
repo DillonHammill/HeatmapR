@@ -10,6 +10,7 @@ heat_map_reset()
 Reset all heatmap related settings
 }
 \examples{
+# Reset heatmapr settings
 heat_map_reset()
 
 }

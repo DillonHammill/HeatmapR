@@ -6,7 +6,8 @@
 \usage{
 heat_map(
   x,
-  scale = NULL,
+  scale = FALSE,
+  scale_method = "range",
   axis_text_x = NULL,
   axis_text_x_side = "bottom",
   axis_text_x_font = 1,
@@ -24,7 +25,7 @@ heat_map(
   axis_text_y_size = 1,
   axis_text_y_col = "black",
   axis_text_y_adjust = 1,
-  axis_text_y_angle = 0,
+  axis_text_y_angle = 1,
   axis_label_y = NULL,
   axis_label_y_font = 2,
   axis_label_y_size = 1.2,
@@ -35,6 +36,7 @@ heat_map(
   title_text_col = "black",
   box_col_scale = c("red", "black", "green"),
   box_col_alpha = 1,
+  box_col_empty = "white",
   box_border_line_type = 1,
   box_border_line_width = 1,
   box_border_line_col = "black",
@@ -43,9 +45,10 @@ heat_map(
 )
 }
 \arguments{
-\item{x}{matrix or data.frame containing numeric columns to be included in
-heatmap. All non-numeric columns will be removed prior to constructing the
-heatmap.}
+\item{x}{matrix or matrix-like object containing numeric columns to be
+included in heatmap. Non-matrix objects will be coerced to matrices using
+\code{as.matrix} and all non-numeric columns will be removed prior to
+constructing the heatmap.}
 }
 \description{
 Create heatmap using base graphics
@@ -66,7 +69,6 @@ heat_map(iris[1:10, ],
   axis_label_y = "Row ID",
   box_col_scale = c("yellow", "orange", "red")
 )
-
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)

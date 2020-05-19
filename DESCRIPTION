@@ -15,6 +15,7 @@ Depends:
   R (>= 3.5)
 Imports:
   methods,
+  stats,
   graphics,
   grDevices
 License: GPL-2

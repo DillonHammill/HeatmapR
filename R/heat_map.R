@@ -2,9 +2,10 @@
 
 #' Create heatmap using base graphics
 #'
-#' @param x matrix or data.frame containing numeric columns to be included in
-#'   heatmap. All non-numeric columns will be removed prior to constructing the
-#'   heatmap.
+#' @param x matrix or matrix-like object containing numeric columns to be
+#'   included in heatmap. Non-matrix objects will be coerced to matrices using
+#'   \code{as.matrix} and all non-numeric columns will be removed prior to
+#'   constructing the heatmap.
 #'
 #' @importFrom methods is
 #' @importFrom graphics plot axis rect title legend
@@ -28,10 +29,10 @@
 #'   axis_label_y = "Row ID",
 #'   box_col_scale = c("yellow", "orange", "red")
 #' )
-#' 
 #' @export
 heat_map <- function(x,
-                     scale = NULL,
+                     scale = FALSE,
+                     scale_method = "range",
                      axis_text_x = NULL,
                      axis_text_x_side = "bottom",
                      axis_text_x_font = 1,
@@ -49,7 +50,7 @@ heat_map <- function(x,
                      axis_text_y_size = 1,
                      axis_text_y_col = "black",
                      axis_text_y_adjust = 1,
-                     axis_text_y_angle = 0,
+                     axis_text_y_angle = 1,
                      axis_label_y = NULL,
                      axis_label_y_font = 2,
                      axis_label_y_size = 1.2,
@@ -64,6 +65,7 @@ heat_map <- function(x,
                        "green"
                      ),
                      box_col_alpha = 1,
+                     box_col_empty = "white",
                      box_border_line_type = 1,
                      box_border_line_width = 1,
                      box_border_line_col = "black",
@@ -79,7 +81,7 @@ heat_map <- function(x,
   # PREPARE DATA ---------------------------------------------------------------
 
   # DATA.FRAME
-  if (is(x, "data.frame")) {
+  if (!is(x, "matrix")) {
     x <- as.matrix(x)
   }
 
@@ -96,13 +98,38 @@ heat_map <- function(x,
   }
 
   # SCALING
-  if (!is.null(scale)) {
-    if (scale == "range") {
-
-    } else if (scale == "mean") {
-
-    } else if (scale == "z") {
-
+  if (scale != FALSE) {
+    if (scale == TRUE) {
+      scale <- "column"
+    }
+    message(paste0("Applying ", scale_method, " to each ", scale, "..."))
+    # ROW SCALING
+    if (grepl("row", scale, ignore.case = TRUE)) {
+      # TRANSPOSE FOR SCALING
+      x <- t(x)
+    }
+    # RANGE SCALING
+    if (grepl("range", scale_method, ignore.case = TRUE)) {
+      lapply(seq_len(ncol(x)), function(z) {
+        x[, z] <<- .scale_range(x[, z])
+      })
+      # MEAN SCALING
+    } else if (grepl("mean", scale_method, ignore.case = TRUE)) {
+      lapply(seq_len(ncol(x)), function(z) {
+        x[, z] <<- .scale_mean(x[, z])
+      })
+      # Z-SCORE SCALING
+    } else if (grepl("z", scale_method, ignore.case = TRUE)) {
+      lapply(seq_len(ncol(x)), function(z) {
+        x[, z] <<- .scale_zscore(x[, z])
+      })
+      # UNSUPPORTED SCALE METHOD
+    } else {
+      stop(paste0(scale_method, " is not a supported scaling method."))
+    }
+    # ROW SCALING
+    if (grepl("row", scale, ignore.case = TRUE)) {
+      x <- t(x)
     }
   }
 
@@ -125,12 +152,24 @@ heat_map <- function(x,
     x[, z]
   })
 
-  # BOX COLOURS
+  # BOX COLOURS - MISSING VALUES
   box_colours <- lapply(seq_len(ncol(x)), function(z) {
     # RESCALE 0 -> 1
-    x_rescale <- (x[, z] - box_min) / (box_max - box_min)
+    x_rescale <- unlist(lapply(x[, z], function(y) {
+      if (!is.na(y)) {
+        y <- (y - box_min) / (box_max - box_min)
+      }
+      return(y)
+    }))
     # RGB COLOURS
-    cols <- box_col_scale(x_rescale)
+    cols <- lapply(x_rescale, function(w) {
+      if (!is.na(w)) {
+        return(box_col_scale(y))
+      } else {
+        return(col2rgb(box_col_empty))
+      }
+    })
+    cols <- do.call("rbind", cols)
     # HEX COLOURS
     cols <- rgb(cols[, 1],
       cols[, 2],
@@ -173,14 +212,18 @@ heat_map <- function(x,
   }
 
   # X AXIS TEXT POSITION
-  axis_text_x_position <- unlist(lapply(seq(xlim[1], xlim[2] - 1, 1), function(z) {
-    return((z + (z + 1)) / 2)
-  }))
+  axis_text_x_position <- unlist(
+    lapply(seq(xlim[1], xlim[2] - 1, 1), function(z) {
+      return((z + (z + 1)) / 2)
+    })
+  )
 
   # Y AXIS TEXT POSITION
-  axis_text_y_position <- unlist(lapply(seq(ylim[1], ylim[2] - 1, 1), function(z) {
-    return((z + (z + 1)) / 2)
-  }))
+  axis_text_y_position <- unlist(
+    lapply(seq(ylim[1], ylim[2] - 1, 1), function(z) {
+      return((z + (z + 1)) / 2)
+    })
+  )
 
   # CONSTRUCT HEATMAP ----------------------------------------------------------
 
@@ -237,6 +280,7 @@ heat_map <- function(x,
     font.axis = axis_text_x_font,
     cex.axis = axis_text_x_size,
     col.axis = axis_text_x_col,
+    las = axis_text_x_angle,
     tck = -0.02
   )
 
@@ -247,8 +291,8 @@ heat_map <- function(x,
     font.axis = axis_text_y_font,
     cex.axis = axis_text_y_size,
     col.axis = axis_text_y_col,
-    tck = -0.02,
-    las = 1
+    las = axis_text_y_angle,
+    tck = -0.02
   )
 
   # BORDER
@@ -328,7 +372,7 @@ heat_map <- function(x,
   # RECORD HEATMAP -------------------------------------------------------------
 
   # RECORD HEATMAP
-  heat_map <- recordPlot()
+  heat_map <- heat_map_record()
 
   # SAVE HEATMAP
   if (getOption("heat_map_save")) {

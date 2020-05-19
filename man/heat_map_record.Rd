@@ -7,27 +7,28 @@
 heat_map_record()
 }
 \description{
-Record a custom heatmap
+Record custom heatmap layout on current graphics device and save to an R
+object for future use.
 }
 \examples{
 # Heatmap layout
-heat_map_layout(1,2)
+heat_map_layout(c(1,2))
 
-# Construct Raw Heatmap
+# Construct raw heatmap
 heat_map(iris[1:10,],
 scale = NULL,
 title = "Iris Raw Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
 
-# Construct Scaled Heatmap
+# Construct scaled heatmap
 heat_map(iris[1:10,],
 scale = "range",
 title = "Iris Scaled Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
 
-# Record Heatmap layout
+# Record heatmap layout
 heat_map <- heat_map_record()
 
 }

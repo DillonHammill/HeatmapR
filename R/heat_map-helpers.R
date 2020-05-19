@@ -29,7 +29,17 @@
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' 
 #' @examples 
+#' # Save Heatmap
+#' heat_map_save("Heatmap.png",
+#' height = 7, 
+#' width = 5)
 #' 
+#' # Construct Heatmap
+#' heat_map(iris[1:10,],
+#' scale = "range",
+#' title = "Iris Heatmap",
+#' axis_label_x = "Plant Parameter",
+#' axis_label_y = "Row ID")
 #' 
 #' @export
 heat_map_save <- function(save_as,
@@ -123,6 +133,7 @@ heat_map_save <- function(save_as,
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' 
 #' @examples 
+#' # Reset heatmapr settings
 #' heat_map_reset()
 #' 
 #' @export
@@ -148,19 +159,29 @@ heat_map_reset <- function(){
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' 
 #' @examples 
-#' # Save Heatmap
+#' # Save heatmap
 #' heat_map_save("Heatmap.png",
 #' height = 7, 
 #' width = 5)
 #' 
-#' # Construct Heatmap
+#' # Custom layout
+#' heat_map(layout = c(1,2))
+#' 
+#' # Construct raw heatmap
 #' heat_map(iris[1:10,],
-#' scale = "range",
-#' title = "Iris Heatmap",
+#' scale = NULL,
+#' title = "Iris Raw Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
 #' 
-#' # Signal Completion
+#' # Construct scaled heatmap
+#' heat_map(iris[1:10,],
+#' scale = "range",
+#' title = "Iris Scaled Heatmap",
+#' axis_label_x = "Plant Parameter",
+#' axis_label_y = "Row ID")
+#' 
+#' # Signal completion
 #' heat_map_complete()
 #' 
 #' @export
@@ -171,63 +192,135 @@ heat_map_complete <- function(){
 ## HEAT_MAP_LAYOUT -------------------------------------------------------------
 
 #' Arrange multiple heatmaps
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
-#' @export
-heat_map_layout <- function(){
-  
-  # SIGNAL CUSTOM LAYOUT
-  options("heat_map_custom" = TRUE)
-  
-}
-
-## HEAT_MAP_RECORD -------------------------------------------------------------
-
-#' Record a custom heatmap 
 #' 
-#' @importFrom grDevices recordPlot
+#' @param layout either a vector of the form c(nrow, ncol) defining the
+#'   dimensions of the plot or a matrix defining a more sophisticated layout
+#'   (see \code{\link[graphics]{layout}}). Vectors can optionally contain a
+#'   third element to indicate whether plots should be placed in row (1) or
+#'   column (2) order, set to row order by default.
+#' 
+#' @importFrom graphics par layout
 #' 
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' 
-#' @examples 
-#' # Heatmap layout
-#' heat_map_layout(1,2)
+#' @examples
+#' # Save heatmap
+#' heat_map_save("Heatmap.png",
+#' height = 7, 
+#' width = 5)
 #' 
-#' # Construct Raw Heatmap
+#' # Custom layout
+#' heat_map_layout(layout = c(1,2))
+#' 
+#' # Construct raw heatmap
 #' heat_map(iris[1:10,],
 #' scale = NULL,
 #' title = "Iris Raw Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
 #' 
-#' # Construct Scaled Heatmap
+#' # Construct scaled heatmap
 #' heat_map(iris[1:10,],
 #' scale = "range",
 #' title = "Iris Scaled Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
 #' 
-#' # Record Heatmap layout
-#' heat_map <- heat_map_record()
+#' # Signal completion
+#' heat_map_complete()
 #' 
+#' @export
+heat_map_layout <- function(layout = NULL){
+  
+  # SIGNAL CUSTOM LAYOUT
+  options("heat_map_custom" = TRUE)
+  
+  # MESSAGE
+  if(is.null(layout)){
+    stop("Supply either a vector or matrix to construct a custom layout.")
+  }
+  
+  # MATRIX
+  if(is.matrix(layout)){
+    layout(layout)
+    # VECTOR  
+  }else{
+    # ROW ORDER
+    if(length(layout) == 2){
+      layout <- c(layout, 1)
+    }
+    # ROWS
+    if (layout[3] == 1) {
+      par(mfrow = c(layout[1], layout[2]))
+      # COLUMNS
+    } else if (layout[3] == 2) {
+      par(mfcol = c(layout[1], layout[2]))
+    }
+  }
+  
+}
+
+## HEAT_MAP_RECORD -------------------------------------------------------------
+
+#' Record a custom heatmap
+#'
+#' Record custom heatmap layout on current graphics device and save to an R
+#' object for future use.
+#'
+#' @importFrom grDevices recordPlot
+#'
+#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#'
+#' @examples
+#' # Heatmap layout
+#' heat_map_layout(c(1,2))
+#'
+#' # Construct raw heatmap
+#' heat_map(iris[1:10,],
+#' scale = NULL,
+#' title = "Iris Raw Heatmap",
+#' axis_label_x = "Plant Parameter",
+#' axis_label_y = "Row ID")
+#'
+#' # Construct scaled heatmap
+#' heat_map(iris[1:10,],
+#' scale = "range",
+#' title = "Iris Scaled Heatmap",
+#' axis_label_x = "Plant Parameter",
+#' axis_label_y = "Row ID")
+#'
+#' # Record heatmap layout
+#' heat_map <- heat_map_record()
+#'
 #' @export
 heat_map_record <- function(){
   recordPlot()
 }
 
+## HEATMAP_HIGHLIGHT -----------------------------------------------------------
+
+#' Highlight cells in heatmap
+#' 
+#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' 
+#' @export
+heat_map_highlight <- function(){
+  
+}
 ## HEAT_MAP_MARGINS ------------------------------------------------------------
 
 #' Heatmap margins
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
-#' @export
+#' @noRd
 heat_map_margins <- function(){
   
 }
 
-## HEATMAP_HIGHLIGHT -----------------------------------------------------------
+## HEAP_MAP_LEGEND -------------------------------------------------------------
 
-#' Highlight cells in heatmap
+#' Heatmap legend
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
-#' @export
-heat_map_highlight <- function(){
+#' @noRd
+heat_map_legend <- function(){
   
 }
