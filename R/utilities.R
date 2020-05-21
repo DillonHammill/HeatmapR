@@ -12,3 +12,84 @@
   }
   return(pars)
 }
+
+## ARGUMENT LIST ---------------------------------------------------------------
+
+#' Pull down arguments from environment into list
+#' 
+#' Replace empty elements with empty characters "".
+#' 
+#' @return alist object containing arguments of parent function environment.
+#' 
+#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' 
+#' @noRd
+.args_list <- function(...){
+  
+  # Pull down ... arguments
+  dot_args <- list(...)
+  
+  # Get arguments from parental environment
+  args <- as.list(parent.frame())
+  
+  # Combine ... args with args
+  if(length(dot_args) != 0){
+    args <- c(args, dot_args)
+  }
+  
+  # Remove duplicate args
+  args <- args[which(!duplicated(names(args)))]
+  
+  # Replace any elements with class "name" with ""
+  lapply(names(args), function(x){
+    if(all(class(args[[x]]) == "name")){
+      args[[x]] <<- ""
+    }
+  })
+  
+  # Convert to alist
+  class(args) <- "alist"
+  
+  # Return argument list
+  return(args)
+  
+}
+
+## ARGUMENT UPDATE -------------------------------------------------------------
+
+#' Update arguments of function using a named list of arguments
+#' 
+#' @param x named list of arguments to assign to function environment.
+#' 
+#' @return update arguments in function environment.
+#' 
+#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' 
+#' @noRd
+.args_update <- function(x){
+  
+  lapply(seq(1,length(x)), function(z){
+    assign(names(x)[z], 
+           x[[z]], envir = parent.frame(n = 3))
+  })
+  
+}
+
+## ALL_NA ----------------------------------------------------------------------
+
+#' Check all elements of vector are NA
+#' 
+#' @param x vector.
+#' 
+#' @return TRUE/FALSE
+#' 
+#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' 
+#' @noRd
+.all_na <- function(x){
+  if(is.null(x)){
+    return(FALSE)
+  }else{
+    return(all(suppressWarnings(is.na(unlist(x)))))
+  }
+}

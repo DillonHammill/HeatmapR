@@ -307,12 +307,13 @@ heat_map_record <- function(){
 heat_map_highlight <- function(){
   
 }
+
 ## HEAT_MAP_MARGINS ------------------------------------------------------------
 
 #' Heatmap margins
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' @noRd
-heat_map_margins <- function(){
+.heat_map_margins <- function(){
   
 }
 
@@ -321,6 +322,6 @@ heat_map_margins <- function(){
 #' Heatmap legend
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' @noRd
-heat_map_legend <- function(){
+.heat_map_legend <- function(){
   
 }

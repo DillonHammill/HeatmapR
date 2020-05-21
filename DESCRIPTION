@@ -9,8 +9,8 @@ Authors@R:
            email = "Dillon.Hammill@anu.edu.au",
            comment = c(ORCID = "0000-0002-1407-7223"))
 Description: Create heatmaps using base graphics.
-URL: 
-BugReports:
+URL: https://github.com/DillonHammill/heatmapr
+BugReports: https://github.com/DillonHammill/heatmapr/issues
 Depends:
   R (>= 3.5)
 Imports:
@@ -24,3 +24,6 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.0
 Language: en-GB
+Suggests: 
+    covr,
+    testthat
