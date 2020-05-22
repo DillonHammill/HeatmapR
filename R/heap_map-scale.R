@@ -48,7 +48,7 @@ heat_map_scale <- function(x,
         grepl("r", method, ignore.case = TRUE)) {
         x[, z] <<- .scale_range(x[, z])
         # MEAN
-      } else if (grepl("mean", ignore.case = TRUE) |
+      } else if (grepl("mean", method, ignore.case = TRUE) |
         grepl("m", method, ignore.case = TRUE)) {
         x[, z] <<- .scale_mean(x[, z])
         # Z-SCORE
@@ -63,6 +63,8 @@ heat_map_scale <- function(x,
     }
   })
 
+  print(x)
+  
   # RETURN SCALED DATA
   return(x)
 }
@@ -87,10 +89,13 @@ heat_map_scale <- function(x,
   return(x)
 }
 
-#' Subtract mean from each value in a vector
+#' Subtract mean from each value in a vector and divide by range
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' @noRd
 .scale_mean <- function(x) {
+  # LIMITS
+  x_min <- min(x, na.rm = TRUE)
+  x_max <- max(x, na.rm = TRUE)
   # MEAN
   x_mean <- mean(x, na.rm = TRUE)
   # MEAN SCALING
@@ -98,7 +103,7 @@ heat_map_scale <- function(x,
     if (is.na(x[z])) {
       return(NA)
     } else {
-      x[z] <<- x[z] - x_mean
+      x[z] <<- (x[z] - x_mean)/ (x_max - x_min)
     }
   })
   return(x)

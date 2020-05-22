@@ -93,3 +93,38 @@
     return(all(suppressWarnings(is.na(unlist(x)))))
   }
 }
+
+## EMPTY CHARACTER STRINGS -----------------------------------------------------
+
+#' Check if vector contains only empty chracter strings
+#'
+#' @param x vector.
+#' 
+#' @return TRUE/FALSE
+#' 
+#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#'
+#' @noRd
+.empty <- function(x){
+  
+  if(.all_na(x)){
+    return(FALSE)
+  }else if(is.character(x)){
+    if(all(nchar(trimws(x)) == 0)){
+      return(TRUE)
+    }else{
+      return(FALSE)
+    }
+  }else{
+    return(FALSE)
+  }
+  
+}
+
+## LAPPLY ----------------------------------------------------------------------
+
+#' Automatically flatten lapply results
+#' @noRd
+LAPPLY <- function(...){
+  unlist(lapply(...))
+}
