@@ -10,6 +10,10 @@ heat_map(
   scale_method = "range",
   transpose = FALSE,
   round = 2,
+  cluster = FALSE,
+  dendrogram = FALSE,
+  dendrogram_size = 0.2,
+  dendrogram_side = NULL,
   axis_text_x = NULL,
   axis_text_x_side = "bottom",
   axis_text_x_font = 1,
@@ -37,6 +41,7 @@ heat_map(
   axis_label_y_col = "black",
   axis_ticks_y_length = -0.02,
   title = NULL,
+  title_side = 3,
   title_text_font = 2,
   title_text_size = 1.5,
   title_text_col = "black",
@@ -55,10 +60,16 @@ heat_map(
   box_text_col_alpha = 1,
   margins = NULL,
   legend = TRUE,
+  legend_side = 4,
+  legend_col_breaks = 25,
+  legend_text_breaks = NULL,
   legend_text_font = 1,
-  legend_text_size = 0.5,
+  legend_text_size = 1,
   legend_text_col = "black",
-  legend_text_col_alpha = 1
+  legend_text_col_alpha = 1,
+  legend_box_width = 0.5,
+  legend_box_height = 10,
+  ...
 )
 }
 \arguments{
@@ -86,7 +97,6 @@ heat_map(iris[1:10, ],
   axis_label_y = "Row ID",
   box_col_scale = c("yellow", "orange", "red")
 )
-
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)

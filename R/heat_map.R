@@ -8,7 +8,7 @@
 #'   constructing the heatmap.
 #'
 #' @importFrom methods is
-#' @importFrom graphics plot axis rect title legend strheight strwidth text
+#' @importFrom graphics plot axis rect title legend text mtext
 #' @importFrom grDevices colorRamp rgb adjustcolor col2rgb colorRampPalette
 #'
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
@@ -38,7 +38,7 @@ heat_map <- function(x,
                      cluster = FALSE,
                      dendrogram = FALSE,
                      dendrogram_size = 0.2,
-                     dendrogram_side = 4,
+                     dendrogram_side = NULL,
                      axis_text_x = NULL,
                      axis_text_x_side = "bottom",
                      axis_text_x_font = 1,
@@ -354,6 +354,48 @@ heat_map <- function(x,
     round
   )
   
+  # SIDE ARGUMENTS (NUMERIC)
+  lapply(c("legend_side",
+           "title_side",
+           "axis_text_x_side",
+           "axis_text_y_side"), function(z){
+             assign(z,
+                    side_to_num(eval(parse(text = z))),
+                    envir = parent.frame())
+           })  
+  
+  # DENDROGRAM SIDE
+  if(dendrogram != FALSE){
+    # DENDROGRAM SIDE
+    if(is.null(dendrogram_side)){
+          # BOTH
+    if(dendrogram %in% c("b", "both")){
+      dendrogram <- seq_len(4)[-c(axis_text_x_side,
+                                  axis_text_y_side)]
+    # ROW
+    }else if(dendrogram %in% c("r", "row")){
+      dendrogram <- c(2,4)[-match(axis_text_x_side, c(2,4))]
+    # COLUMN
+    }else if(dendrogram %in% c("c", "column")){
+      dendrogram <- c(1,3)[-match(axis_text_y_side, c(1,3))]
+    }
+    # DENDROGRAM SIDE SUPPLIED
+    }else if(!is.null(dendrogram_side)){
+      # NUMERIC
+      dendrogram_side <- side_to_num(dendrogram_side)
+      # DENDROGRAM SIDE CANNOT BE SAME AS AXES
+      if(axis_text_x_side %in% dendrogram_side){
+        message("Cannot place dendrogram on the same side as the x axis.")
+        dendrogram_side[dendrogram_side == axis_text_x_side] <- 
+          c(1,3)[-match(axis_text_x_side, c(1,3))]
+      }else if(axis_text_y_side %in% dendrogram_side){
+        message("Cannot place dendrogram on the same side as the y axis.")
+        dendrogram_side[dendrogram_side == axis_text_y_side] <- 
+          c(2,4)[-match(axis_text_y_side, c(2,4))]
+      }
+    }
+  }
+  
   # CONSTRUCT HEATMAP ----------------------------------------------------------
 
   # MARGINS
@@ -382,16 +424,17 @@ heat_map <- function(x,
           if (!all(unlist(lapply(axis_text_x, ".empty")))) {
             # HORIZONTAL
             if (axis_text_x_angle %in% c(0, 1)) {
-              margins[z] <<- margins[z] + 1.7
+              margins[z] <<- margins[z] + (0.2 * max(axis_text_x_size) + 1.4)
             # VERTICAL
             } else if (axis_text_x_angle %in% c(2, 3)) {
-              margins[z] <<- margins[z] + 1.2 * max(nchar(axis_text_x))
+              margins[z] <<- margins[z] + (0.55 * max(axis_text_x_size) * 
+                                             max(nchar(axis_text_x)) + 0.1)
             }
           }
           
           # AXIS LABEL
           if (!is.null(axis_label_x)) {
-            margins[z] <- margins[z] + 1.7
+            margins[z] <<- margins[z] + (0.2 * max(axis_label_x_size) + 2)
           }
           
         }
@@ -413,16 +456,17 @@ heat_map <- function(x,
           if (!all(unlist(lapply(axis_text_y, ".empty")))) {
             # HORIZONTAL
             if (axis_text_y_angle %in% c(1,2)) {
-              margins[z] <<- margins[z] + 0.4 * max(nchar(axis_text_y))
+              margins[z] <<- margins[z] + (0.4 * max(axis_text_y_size) * 
+                                             max(nchar(axis_text_y)) + 0.1)
             # VERTICAL
             } else if (axis_text_y_angle %in% c(0, 3)) {
-              margins[z] <<- margins[z] + 1.7
+              margins[z] <<- margins[z] + (0.4 * max(axis_text_y_size) + 1.4)
             }
           }
           
           # AXIS LABEL
           if (!is.null(axis_label_y)) {
-            margins[z] <- margins[z] + 1.7
+            margins[z] <<- margins[z] + (0.2 * max(axis_label_y_size) + 3)
           }
           
         }
@@ -430,19 +474,25 @@ heat_map <- function(x,
       }
       
       # TITLE
-      if(!is.null(title) &
-         z == 3){
-        margins[z] <<- margins[z] + 2
+      if(!is.null(title) & z == title_side){
+        margins[z] <<- margins[z] + (0.2 * max(title_text_size) + 3)
       }
       
       # LEGEND
       if(legend == TRUE){
-        if(z == legend_side){
-          legend_box_space <- 2
-          legend_box_size <- legend_box_width * 3
-          legend_text_width <- max(nchar(legend_text[legend_text_breaks])) * 0.4
-          margins[z] <<- margins[z] + legend_box_space + 
+        # VERTICAL LEGEND
+        if(z == legend_side & z %in% c(2,4)){
+          legend_box_size <- 1.5 + legend_box_width * 1
+          legend_text_width <- (0.4 * max(legend_text_size) * 
+                                  max(nchar(legend_text)) + 0.7)
+          margins[z] <<- margins[z] + 1.5 + 
             legend_box_size + legend_text_width
+        # HORIZONTAL LEGEND  
+        }else if(z == legend_side & z %in% c(1,3)){
+          legend_box_size <- 1.5 + legend_box_height * 1
+          legend_text_height <- (0.4 * max(legend_text_size) + 0.7)
+          margins[z] <<- margins[z] + 1.5 + 
+            legend_box_size + legend_text_height
         }
       }
       
@@ -452,6 +502,11 @@ heat_map <- function(x,
     
   }
 
+  # EMPTY MARGINS
+  if(any(margins == 0)){
+    margins[margins == 0] <- 2
+  }
+  
   # SAVE MARGINS GLOBALLY
   options("heat_map_margins" = margins)
 
@@ -474,7 +529,7 @@ heat_map <- function(x,
   # PERPENDICULAR X AXIS
   if (axis_text_x_angle %in% c(2, 3)) {
     lapply(seq_len(length(axis_text_x)), function(z) {
-      axis(1,
+      axis(axis_text_x_side,
         at = axis_text_x_position[z],
         labels = axis_text_x[z],
         las = axis_text_x_angle,
@@ -491,7 +546,7 @@ heat_map <- function(x,
     # PARALLEL X AXIS
   } else {
     lapply(seq_len(length(axis_text_x)), function(z) {
-      axis(1,
+      axis(axis_text_x_side,
         at = axis_text_x_position[z],
         labels = axis_text_x[z],
         las = axis_text_x_angle,
@@ -510,7 +565,7 @@ heat_map <- function(x,
   # PERPENDICULAR Y AXIS
   if (axis_text_y_angle %in% c(1, 2)) {
     lapply(seq_len(length(axis_text_y)), function(z) {
-      axis(2,
+      axis(axis_text_y_side,
         at = axis_text_y_position[z],
         labels = axis_text_y[z],
         las = axis_text_y_angle,
@@ -527,7 +582,7 @@ heat_map <- function(x,
     # PARALLEL Y AXIS
   } else {
     lapply(seq_len(length(axis_text_y)), function(z) {
-      axis(2,
+      axis(axis_text_y_side,
         at = axis_text_y_position[z],
         labels = axis_text_y[z],
         las = axis_text_y_angle,
@@ -553,39 +608,58 @@ heat_map <- function(x,
 
   # TITLE
   if (!is.null(title)) {
-    title(
-      main = title,
-      cex.main = title_text_size,
-      col.main = title_text_col,
-      font.main = title_text_font
-    )
+    title_position <- margins[title_side] - 
+      0.6 * (0.2 * max(title_text_size) + 3)
+    mtext(title,
+          side = title_side,
+          line = title_position,
+          font = title_text_font,
+          cex = title_text_size,
+          col = title_text_col,
+          las = 0)
   }
 
   # X AXIS LABEL
   if (!is.null(axis_label_x)) {
-    if (axis_text_x_side == 1) {
-      axis_label_x_position <- margins[1] - 1
-    } else if (axis_text_side == 3) {
-      axis_label_x_position <- margins[3] - 1
+    # TITLE & AXIS LABEL SAME SIDE
+    if (axis_text_x_side == title_side) {
+      axis_label_x_position <- margins[axis_text_x_side] - 
+        (0.2 * max(title_text_size) + 3) -
+        0.6 * (0.2 * max(axis_label_x_size) + 2)
+    # TITLE & AXIS LABEL DIFFERENT SIDES
+    } else {
+      axis_label_x_position <- margins[axis_text_x_side] - 
+        0.6 * (0.2 * max(axis_label_x_size) + 2)
     }
-    # LINE?
-    title(
-      xlab = axis_label_x,
-      font.lab = axis_label_x_font,
-      col.lab = axis_label_x_col,
-      cex.lab = axis_label_x_size,
-      line = axis_label_x_position
-    )
+    # AXIS LABEL
+    mtext(axis_label_x,
+          side = axis_text_x_side,
+          line = axis_label_x_position,
+          font = axis_label_x_font,
+          cex = axis_label_x_size,
+          col = axis_label_x_col,
+          las = 0)
   }
 
   # Y AXIS LABEL
   if (!is.null(axis_label_y)) {
-    title(
-      ylab = axis_label_y,
-      font.lab = axis_label_y_font,
-      col.lab = axis_label_y_col,
-      cex.lab = axis_label_y_size
-    )
+    # TITLE & AXIS LABEL SAME SIDE
+    if (axis_text_y_side == title_side) {
+      axis_label_y_position <- margins[axis_text_y_side] - 
+        (0.2 * max(title_text_size) + 3) -
+        0.6 * (0.2 * max(axis_label_y_size) + 2)
+      # TITLE & AXIS LABEL DIFFERENT SIDES
+    } else {
+      axis_label_y_position <- margins[axis_text_y_side] - 
+        0.6 * (0.2 * max(axis_label_y_size) + 2)
+    }
+    mtext(axis_label_y,
+          side = axis_text_y_side,
+          line = axis_label_y_position,
+          font = axis_label_y_font,
+          cex = axis_label_y_size,
+          col = axis_label_y_col,
+          las = 0)
   }
 
   # BOXES
@@ -649,6 +723,16 @@ heat_map <- function(x,
   # LEGEND
   if (legend == TRUE) {
 
+    # VERTICAL
+    if(legend_side %in% c(2,4)){
+      
+      
+    # HORIZONTAL
+    }else if(legend_side %in% c(1,3)){
+      
+      
+    }
+    
     # LEGEND_TEXT_BREAKS
     if (is.null(legend_text_breaks)) {
       legend_text_breaks <- c(1, legend_col_breaks + 1)
