@@ -11,6 +11,7 @@ heat_map(
   transpose = FALSE,
   round = 2,
   cluster = FALSE,
+  reorder = TRUE,
   dendrogram = FALSE,
   dendrogram_size = 0.2,
   dendrogram_side = NULL,
@@ -67,8 +68,8 @@ heat_map(
   legend_text_size = 1,
   legend_text_col = "black",
   legend_text_col_alpha = 1,
-  legend_box_width = 0.5,
-  legend_box_height = 10,
+  legend_box_width = NULL,
+  legend_box_height = NULL,
   ...
 )
 }

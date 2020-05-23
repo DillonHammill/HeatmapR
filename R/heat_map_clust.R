@@ -4,6 +4,12 @@
 #'
 #' @param x matrix-like object to cluster. The distance matrix will be computed
 #'   using \code{dist} and passed to \code{hclust} for hierarchical clustering.
+#' @param cluster indicates whether hierachical clustering should be performed
+#'   by \code{"row"}, \code{"column"} or \code{"both},
+#' @param dist_method method passed to \code{\link{dist}} to compute distance
+#'   matrix, set to \code{"euclidean"} by default.
+#' @param clust_method agglomeration method passed to \code{\link{hclust}} to
+#'   perform hierarchical clustering, set to \code{"complete"} by default.
 #' @param ... additional arguments passed to \code{\link{dist}} or
 #'   \code{\link{hclust}}.
 #'
@@ -15,13 +21,14 @@
 #'
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #'
-#' @examples 
-#' 
+#' @examples
+#'
 #' # Hierarchical clustering
 #' heat_map_hclust <- heat_map_clust(mtcars)
 #'
 #' @export
 heat_map_clust <- function(x,
+                           cluster = "row",
                            dist_method = "euclidean",
                            clust_method = "complete",
                            ...){
@@ -62,3 +69,5 @@ heat_map_clust <- function(x,
   return(x)
   
 }
+
+# return a list of object for "both"

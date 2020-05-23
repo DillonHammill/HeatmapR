@@ -4,11 +4,26 @@
 \alias{heat_map_clust}
 \title{Perform hierarchical clustering for heatmap}
 \usage{
-heat_map_clust(x, dist_method = "euclidean", clust_method = "complete", ...)
+heat_map_clust(
+  x,
+  cluster = "row",
+  dist_method = "euclidean",
+  clust_method = "complete",
+  ...
+)
 }
 \arguments{
 \item{x}{matrix-like object to cluster. The distance matrix will be computed
 using \code{dist} and passed to \code{hclust} for hierarchical clustering.}
+
+\item{cluster}{indicates whether hierachical clustering should be performed
+by \code{"row"}, \code{"column"} or \code{"both},}
+
+\item{dist_method}{method passed to \code{\link{dist}} to compute distance
+matrix, set to \code{"euclidean"} by default.}
+
+\item{clust_method}{agglomeration method passed to \code{\link{hclust}} to
+perform hierarchical clustering, set to \code{"complete"} by default.}
 
 \item{...}{additional arguments passed to \code{\link{dist}} or
 \code{\link{hclust}}.}
