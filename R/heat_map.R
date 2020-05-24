@@ -34,6 +34,8 @@
 heat_map <- function(x,
                      scale = FALSE,
                      scale_method = "range",
+                     dist_method = "euclidean",
+                     clust_method = "complete",
                      transpose = FALSE,
                      round = 2,
                      cluster = FALSE,
@@ -157,6 +159,60 @@ heat_map <- function(x,
     x[, num_cols] <- round(x[, num_cols, drop = FALSE], round)
   }
 
+ # DENDROGRAM
+  if (dendrogram != FALSE) {
+    cluster <- dendrogram
+  }
+
+  # CLUSTERING
+  if (cluster != FALSE) {
+    # CLUSTER REQUIRES NUMERIC COLUMN(S)
+    if (length(char_cols) == ncol(x)) {
+      stop("Clustering can only be performed on numeric columns.")
+    }
+    # CLUSTER ROWS BY DEFAULT
+    if (cluster == TRUE) {
+      cluster <- "row"
+    }
+    # CLUSTERING
+    heat_map_clust <- heat_map_clust(x,
+      cluster = cluster,
+      dist_method = dist_method,
+      clust_method = clust_method,
+      ...
+    )
+    # SORT
+    if(reorder != FALSE){
+      # CLUSTER
+      if(cluster == FALSE){
+        message("Clustering is required to reorder columns or rows.")
+      }
+      # DEFAULT
+      if(reorder == TRUE){
+        reorder <- cluster
+      }
+      # ROW ORDER
+      if(reorder == "row" & cluster == "row"){
+        x <- x[heat_map_clust$order, ]
+      }else if(reorder == "row" & cluster == "both"){
+        x < x[heat_map_clust[[1]]$order, ]
+      }
+      # COLUMN ORDER
+      if(reorder == "column" & cluster == "column"){
+        x <- x[, heat_map_clust$order]
+      }else if(reorder == "column" & cluster == "both"){
+        x <- x[,heat_map_clust[[2]]$order]
+      }
+      # BOTH
+      if(reorder == "both" & cluster == "both"){
+        # ROW
+        x < x[heat_map_clust[[1]]$order, ]
+        # COLUMN
+        x <- x[, heat_map_clust[[2]]$order]
+      }
+    }
+  }  
+  
   # BOX CLASSES
   box_classes <- lapply(seq_len(ncol(x)), function(z) {
     if (is.numeric(x[, z])) {
@@ -228,60 +284,6 @@ heat_map <- function(x,
     return(cols)
   })
   box_colours <- do.call("cbind", box_colours)
-
-  # DENDROGRAM
-  if (dendrogram != FALSE) {
-    cluster <- dendrogram
-  }
-
-  # CLUSTERING
-  if (cluster != FALSE) {
-    # CLUSTER REQUIRES NUMERIC COLUMN(S)
-    if (length(char_cols) == ncol(x)) {
-      stop("Clustering can only be performed on numeric columns.")
-    }
-    # CLUSTER ROWS BY DEFAULT
-    if (cluster == TRUE) {
-      cluster <- "row"
-    }
-    # CLUSTERING
-    heat_map_clust <- heat_map_clust(x,
-      cluster = cluster,
-      dist_method = dist_method,
-      clust_method = clust_method,
-      ...
-    )
-    # SORT
-    if(reorder != FALSE){
-      # CLUSTER
-      if(cluster == FALSE){
-        message("Clustering is required to reorder columns or rows.")
-      }
-      # DEFAULT
-      if(reorder == TRUE){
-        reorder <- cluster
-      }
-      # ROW ORDER
-      if(reorder == "row" & cluster == "row"){
-        x <- x[heat_map_clust$order, ]
-      }else if(reorder == "row" & cluster == "both"){
-        x < x[heat_map_clust[[1]]$order, ]
-      }
-      # COLUMN ORDER
-      if(reorder == "column" & cluster == "column"){
-        x <- x[, heat_map_clust$order]
-      }else if(reorder == "column" & cluster == "both"){
-        x <- x[,heat_map_clust[[2]]$order]
-      }
-      # BOTH
-      if(reorder == "both" & cluster == "both"){
-        # ROW
-        x < x[heat_map_clust[[1]]$order, ]
-        # COLUMN
-        x <- x[,heat_map_clust[[2]]$order]
-      }
-    }
-  }
 
   # TRANSPOSE
   if (transpose == TRUE) {

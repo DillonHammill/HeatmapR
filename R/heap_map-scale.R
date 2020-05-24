@@ -62,8 +62,6 @@ heat_map_scale <- function(x,
       x[, z] <<- x[, z]
     }
   })
-
-  print(x)
   
   # RETURN SCALED DATA
   return(x)

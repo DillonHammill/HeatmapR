@@ -48,14 +48,12 @@ heat_map_clust <- function(x,
   # RESTRICT TO NUMERIC COLUMNS ONLY
   x <- x[, num_cols]
 
-  # UPDATE ARGUMENTS
-  args[["method"]] <- dist_method
-
   # ROW CLUSTERING
   if (cluster %in% c("r", "row", "both")) {
 
     # UPDATE ARGUMENTS
     args[["x"]] <- x
+    args[["method"]] <- dist_method
 
     # DISTANCE MATRIX
     dist_args <- formalArgs(stats::dist)
@@ -68,12 +66,15 @@ heat_map_clust <- function(x,
     # CLUSTERING
     clust_args <- formalArgs(stats::hclust)
     row_clust <- do.call("hclust", args[names(args) %in% clust_args])
-
-    # COLUMN CLUSTERING
-  } else if (cluster %in% c("c", "column", "both")) {
+    
+  }
+  
+  # COLUMN CLUSTERING  
+  if (cluster %in% c("c", "column", "both")) {
 
     # UPDATE ARGUMENTS
     args[["x"]] <- t(x)
+    args[["method"]] <- dist_method
 
     # DISTANCE MATRIX
     dist_args <- formalArgs(stats::dist)
@@ -85,16 +86,17 @@ heat_map_clust <- function(x,
 
     # CLUSTERING
     clust_args <- formalArgs(stats::hclust)
-    column_clust <- do.call("hclust", args[names(args) %in% clust_args])
+    col_clust <- do.call("hclust", args[names(args) %in% clust_args])
+    
   }
 
   # RETURN HCLUST OBJECTS
   if (cluster %in% c("r", "row")) {
     return(row_clust)
   } else if (cluster %in% c("c", "column")) {
-    return(column_clust)
+    return(col_clust)
   } else {
-    return(list("row" = row_clust, "column" = column_clust))
+    return(list("row" = row_clust, "column" = col_clust))
   }
   
 }
