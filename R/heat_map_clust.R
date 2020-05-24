@@ -25,47 +25,76 @@
 #'
 #' # Hierarchical clustering
 #' heat_map_hclust <- heat_map_clust(mtcars)
-#'
 #' @export
 heat_map_clust <- function(x,
                            cluster = "row",
                            dist_method = "euclidean",
                            clust_method = "complete",
-                           ...){
-  
+                           ...) {
+
   # ARGUMENTS (METHOD)
   args <- .args_list(...)
-  
+
   # METHOD ARGUMENT
-  if("method" %in% names(args)){
+  if ("method" %in% names(args)) {
     stop("Please use dist_method and clust_method arguments.")
   }
-  
+
   # NUMERIC COLUMNS
-  num_cols <- which(unlist(lapply(seq_len(ncol(x)), function(z){
+  num_cols <- which(unlist(lapply(seq_len(ncol(x)), function(z) {
     is.numeric(x[, z])
   })))
-  
+
   # RESTRICT TO NUMERIC COLUMNS ONLY
   x <- x[, num_cols]
-  
+
   # UPDATE ARGUMENTS
-  args[["x"]] <- x
   args[["method"]] <- dist_method
-  
-  # DISTANCE MATRIX
-  dist_args <- formalArgs(stats::dist)
-  d <- do.call("dist", args[names(args) %in% dist_args])
-  
-  # UPDATE ARGUMENTS
-  args[["d"]] <- d
-  args[["method"]] <- clust_method
-  
-  # CLUSTERING
-  clust_args <- formalArgs(stats::hclust)
-  x <- do.call("hclust", args[names(args) %in% clust_args])
-  
-  # RETURN HCLUST OBJECT
-  return(x)
+
+  # ROW CLUSTERING
+  if (cluster %in% c("r", "row", "both")) {
+
+    # UPDATE ARGUMENTS
+    args[["x"]] <- x
+
+    # DISTANCE MATRIX
+    dist_args <- formalArgs(stats::dist)
+    d <- do.call("dist", args[names(args) %in% dist_args])
+
+    # UPDATE ARGUMENTS
+    args[["d"]] <- d
+    args[["method"]] <- clust_method
+
+    # CLUSTERING
+    clust_args <- formalArgs(stats::hclust)
+    row_clust <- do.call("hclust", args[names(args) %in% clust_args])
+
+    # COLUMN CLUSTERING
+  } else if (cluster %in% c("c", "column", "both")) {
+
+    # UPDATE ARGUMENTS
+    args[["x"]] <- t(x)
+
+    # DISTANCE MATRIX
+    dist_args <- formalArgs(stats::dist)
+    d <- do.call("dist", args[names(args) %in% dist_args])
+
+    # UPDATE ARGUMENTS
+    args[["d"]] <- d
+    args[["method"]] <- clust_method
+
+    # CLUSTERING
+    clust_args <- formalArgs(stats::hclust)
+    column_clust <- do.call("hclust", args[names(args) %in% clust_args])
+  }
+
+  # RETURN HCLUST OBJECTS
+  if (cluster %in% c("r", "row")) {
+    return(row_clust)
+  } else if (cluster %in% c("c", "column")) {
+    return(column_clust)
+  } else {
+    return(list("row" = row_clust, "column" = column_clust))
+  }
   
 }
