@@ -17,7 +17,7 @@ heat_map_clust(
 using \code{dist} and passed to \code{hclust} for hierarchical clustering.}
 
 \item{cluster}{indicates whether hierachical clustering should be performed
-by \code{"row"}, \code{"column"} or \code{"both},}
+by \code{"row"}, \code{"column"} or \code{"both"},}
 
 \item{dist_method}{method passed to \code{\link{dist}} to compute distance
 matrix, set to \code{"euclidean"} by default.}

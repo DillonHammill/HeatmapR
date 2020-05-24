@@ -8,7 +8,8 @@
 #'   constructing the heatmap.
 #'
 #' @importFrom methods is
-#' @importFrom graphics plot axis rect title legend text mtext
+#' @importFrom graphics plot axis rect title legend text mtext strheight
+#'   strwidth grconvertX grconvertY
 #' @importFrom grDevices colorRamp rgb adjustcolor col2rgb colorRampPalette
 #'
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
@@ -430,96 +431,182 @@ heat_map <- function(x,
     }
   }
   
-  # CONSTRUCT HEATMAP ----------------------------------------------------------
-
-  # MARGINS
-  if (is.null(margins)) {
-    # STARTING POINT
-    margins <- c(0, 0, 0, 0)
+  # COMPUTE GRAPHICAL PARAMETERS -----------------------------------------------
+  
+  # COPY DEVICE
+  # dev_par <- dev_copy(x = seq(xlim[1],
+  #                             xlim[2],
+  #                             xlim[2]-xlim[1]/10),
+  #                     y = seq(ylim[1],
+  #                             ylim[2],
+  #                             ylim[2]-ylim[1]/10),
+  #                     type = "n",
+  #                     xlim = xlim,
+  #                     ylim = ylim)
+  
+  plot(x = seq(xlim[1],
+               xlim[2],
+               xlim[2]-xlim[1]/10),
+       y = seq(ylim[1],
+               ylim[2],
+               ylim[2]-ylim[1]/10),
+       type = "n",
+       xlim = xlim,
+       ylim = ylim)
+  
+  # MARGIN SPACE
+  if(is.null(margins)){
+    # SPACING
+    margin_space <- list("title" = 0,
+                         "axis_ticks_x" = 0,
+                         "axis_text_x" = 0,
+                         "axis_label_x" = 0,
+                         "axis_ticks_y" = 0,
+                         "axis_text_y" = 0,
+                         "axis_label_y" = 0,
+                         "legend" = 0,
+                         "dendrogram" = 0,
+                         "border" = c(0,0,0,0))
+    # MARGIN LINE
+    margin_line_inch <- par("mai")[1]/par("mar")[1]
     # MARGINS
     lapply(seq_len(4), function(z){
       # X AXIS
       if(z %in% c(1,3)){
-        # AXIS 
-        if(axis_text_x_side == z){
-          # AXIS TICKS
-          if(axis_ticks_x_length != 0){
-            max_tick_length <- 0.04
-            margins[z] <<- margins[z] + 1.3 *
-              abs(max(axis_ticks_x_length)) / max_tick_length
-          }
-          # AXIS TEXT
-          if (!all(unlist(lapply(axis_text_x, ".empty")))) {
-            # HORIZONTAL
-            if (axis_text_x_angle %in% c(0, 1)) {
-              margins[z] <<- margins[z] + (0.2 * max(axis_text_x_size) + 1.4)
+        # AXIS TICKS
+        if(axis_ticks_x_length != 0){
+          max_tick_length <- 0.04
+          margin_space[["axis_ticks_x"]] <<- 1.3 *
+            abs(max(axis_ticks_x_length)) / max_tick_length
+        }
+        # X AXIS TEXT
+        if (!all(unlist(lapply(axis_text_x, ".empty")))) {
+          # HORIZONTAL
+          if (axis_text_x_angle %in% c(0, 1)) {
+            axis_text_x_height <- max(
+              LAPPLY(seq_along(axis_text_x), function(y){
+                axis_text_x_size[y] / par("cex") + 0.5
+              })
+            )
+            margin_space[["axis_text_x"]] <<- axis_text_x_height
             # VERTICAL
-            } else if (axis_text_x_angle %in% c(2, 3)) {
-              margins[z] <<- margins[z] + (0.55 * max(axis_text_x_size) * 
-                                             max(nchar(axis_text_x)) + 0.1)
-            }
-          }
-          # AXIS LABEL
-          if (!is.null(axis_label_x)) {
-            margins[z] <<- margins[z] + (0.2 * max(axis_label_x_size) + 2)
+          } else if (axis_text_x_angle %in% c(2, 3)) {
+            axis_text_x_height <- max(
+              LAPPLY(seq_along(axis_text_x), function(w){
+                nchar(axis_text_x[w]) * (axis_text_x_size[w] / par("cex")) * 0.6
+              })
+            )
+            margin_space[["axis_text_x"]] <<- axis_text_x_height
           }
         }
-      # Y AXIS  
+        # AXIS LABEL (ALWAYS PARALLEL)
+        if (!is.null(axis_label_x)) {
+          margin_space[["axis_label_x"]] <<- axis_label_x_size / 
+            par("cex") + 1
+        }
+      # Y AXIS
       }else if(z %in% c(2,4)){
         # AXIS
         if(axis_text_y_side == z){
           # AXIS TICKS
           if(axis_ticks_y_length != 0){
             max_tick_length <- 0.04
-            margins[z] <<- margins[z] + 1.3 *
+            margin_space[["axis_ticks_y"]] <<- 1.3 *
               abs(max(axis_ticks_y_length)) / max_tick_length
           }
           # AXIS TEXT
           if (!all(unlist(lapply(axis_text_y, ".empty")))) {
             # HORIZONTAL
             if (axis_text_y_angle %in% c(1,2)) {
-              margins[z] <<- margins[z] + (0.4 * max(axis_text_y_size) * 
-                                             max(nchar(axis_text_y)) + 0.1)
-            # VERTICAL
+              axis_text_y_height <- max(
+                LAPPLY(seq_along(axis_text_y), function(w){
+                  nchar(axis_text_y[w]) * (axis_text_y_size[w] / par("cex")) * 0.425
+                })
+              )
+              margin_space[["axis_text_y"]] <<- axis_text_y_height 
+              # VERTICAL
             } else if (axis_text_y_angle %in% c(0, 3)) {
-              margins[z] <<- margins[z] + (0.4 * max(axis_text_y_size) + 1.4)
+              axis_text_y_height <- max(
+                LAPPLY(seq_along(axis_text_y), function(y){
+                  axis_text_y_size[y] / par("cex") + 0.5
+                })
+              )
+              margin_space[["axis_text_y"]] <- axis_text_y_height 
             }
           }
-          # AXIS LABEL
+          # AXIS LABEL (ALWAYS PARALLEL)
           if (!is.null(axis_label_y)) {
-            margins[z] <<- margins[z] + (0.2 * max(axis_label_y_size) + 3)
+            margin_space[["axis_label_y"]] <<- axis_label_y_size / 
+              par("cex") + 1
           }
         }
       }
-      # TITLE
-      if(!is.null(title) & z == title_side){
-        margins[z] <<- margins[z] + (0.2 * max(title_text_size) + 3)
+      # TITLE (ALWAYS PARALLEL)
+      if(!is.null(title)){
+        margin_space[["title"]] <<- axis_label_y_size / 
+          par("cex") + 1
       }
       # LEGEND
-      if(legend == TRUE){
-        # VERTICAL LEGEND
-        if(z == legend_side & z %in% c(2,4)){
-          legend_box_size <- 1.5 + legend_box_width * 1
-          legend_text_width <- (0.4 * max(legend_text_size) * 
-                                  max(nchar(legend_text)) + 0.7)
-          margins[z] <<- margins[z] + 1.5 + 
-            legend_box_size + legend_text_width
-        # HORIZONTAL LEGEND  
-        }else if(z == legend_side & z %in% c(1,3)){
-          legend_box_size <- 1.5 + legend_box_height * 1
-          legend_text_height <- (0.4 * max(legend_text_size) + 0.7)
-          margins[z] <<- margins[z] + 1.5 + 
-            legend_box_size + legend_text_height
-        }
+      # if(legend == TRUE){
+      #   # VERTICAL LEGEND
+      #   if(z == legend_side & z %in% c(2,4)){
+      #     legend_box_size <- 1.5 + legend_box_width * 1
+      #     legend_text_width <- (0.4 * max(legend_text_size) * 
+      #                             max(nchar(legend_text)) + 0.7)
+      #     margins[z] <<- margins[z] + 1.5 + 
+      #       legend_box_size + legend_text_width
+      #     # HORIZONTAL LEGEND  
+      #   }else if(z == legend_side & z %in% c(1,3)){
+      #     legend_box_size <- 1.5 + legend_box_height * 1
+      #     legend_text_height <- (0.4 * max(legend_text_size) + 0.7)
+      #     margins[z] <<- margins[z] + 1.5 + 
+      #       legend_box_size + legend_text_height
+      #   }
+      # }
+      # DENDROGRAM
+        
+      # BORDER
+      margin_space[["border"]][z] <- 2
+    })
+  }
+  
+  # LEGEND_POSITION
+  
+  
+  # CLOSE COPIED DEVICE
+  # dev_copy_remove()
+  
+  # CONSTRUCT HEATMAP ----------------------------------------------------------
+  
+  # MARGINS
+  if(is.null(margins)){
+    # STARTING POINT
+    margins <- c(0, 0, 0, 0)
+    # MARGINS
+    lapply(seq_along(margins), function(z){
+      # TITLE SPACE
+      if(z == title_side & !is.null(title)){
+        margins[z] <<- margins[z] + margin_space[["title"]]
+      }
+      # X AXIS SPACE
+      if(z == axis_text_x_side){
+        margins[z] <<- margins[z] + margin_space[["axis_ticks_x"]] +
+          margin_space[["axis_text_x"]] + margin_space[["axis_label_x"]]
+      }
+      # Y AXIS SPACE
+      if(z == axis_text_y_side){
+        margins[z] <<- margins[z] + margin_space[["axis_ticks_y"]] +
+          margin_space[["axis_text_y"]] + margin_space[["axis_label_y"]]
+      }
+      # LEGEND SPACE
+      if(z == legend_side & legend != FALSE){
+        margins[z] <<- margins[z] + 5
       }
       # DENDROGRAM
       
+      # BORDER
+      margins[z] <<- margins[z] + margin_space[["border"]][z]
     })
-  }
-
-  # EMPTY MARGINS
-  if(any(margins == 0)){
-    margins[margins == 0] <- 2
   }
   
   # SAVE MARGINS GLOBALLY
