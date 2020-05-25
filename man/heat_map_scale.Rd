@@ -23,8 +23,18 @@ Apply column-wise scaling to numeric columns in a matrix or data.frame prior
 to constructing a heatmap.
 }
 \examples{
-# RANGE SCALED DATA
-mtcars_scaled <- heat_map_scale(mtcars)
+# Range scaling
+mtcars_scale_range <- heat_map_scale(mtcars,
+method = "range")
+
+# Mean scaling
+mtcars_scale_mean <- heat_map_scale(mtcars,
+method = "mean")
+
+# Z-score scaling
+mtcars_scale_zscore <- heat_map_scale(mtcars,
+method = "zscore")
+
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)

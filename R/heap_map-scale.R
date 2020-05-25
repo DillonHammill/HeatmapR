@@ -17,8 +17,18 @@
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #'
 #' @examples
-#' # RANGE SCALED DATA
-#' mtcars_scaled <- heat_map_scale(mtcars)
+#' # Range scaling
+#' mtcars_scale_range <- heat_map_scale(mtcars,
+#' method = "range")
+#' 
+#' # Mean scaling
+#' mtcars_scale_mean <- heat_map_scale(mtcars,
+#' method = "mean")
+#' 
+#' # Z-score scaling
+#' mtcars_scale_zscore <- heat_map_scale(mtcars,
+#' method = "zscore")
+#' 
 #' @export
 heat_map_scale <- function(x,
                            method = "range") {
