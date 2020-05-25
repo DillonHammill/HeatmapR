@@ -2,6 +2,10 @@
 
 #' Create heatmap using base graphics
 #'
+#' \code{heat_map()} provides an intuitive way to construct high resolution
+#' heatmaps with minimal coding and data preparation. \code{heat_map()} has
+#' support for non-numeric data, data scaling, clustering and dendrograms.
+#'
 #' @param x matrix or matrix-like object containing the data to generate the
 #'   heatmap. The supplied data may contain non-numeric columns which will be
 #'   included in the constructed heatmap, but will not be scaled or used for
@@ -90,8 +94,8 @@
 #' @param axis_text_y_angle indicates whether the row label text should be
 #'   horizontal or vertical, set to 3 by default to always be perpendicular to
 #'   the axis. See \code{\link[graphics:par]{las}} for alternatives.
-#' @param axis_text_x_adjust vertical adjustment of y axis text, set to 0.45
-#'   by default.
+#' @param axis_text_x_adjust vertical adjustment of y axis text, set to 0.45 by
+#'   default.
 #' @param axis_text_y_font numeric indicating the font to use for the row
 #'   labels, set to 1 by default for plain font. See
 #'   \code{\link[graphics:par]{font}} for alternatives.

@@ -161,8 +161,8 @@ column label text, set to 1 by default to remove transparency.}
 horizontal or vertical, set to 3 by default to always be perpendicular to
 the axis. See \code{\link[graphics:par]{las}} for alternatives.}
 
-\item{axis_text_x_adjust}{vertical adjustment of y axis text, set to 0.45
-by default.}
+\item{axis_text_x_adjust}{vertical adjustment of y axis text, set to 0.45 by
+default.}
 
 \item{axis_label_x}{label for x axis, set to NULL by default.}
 
@@ -330,7 +330,9 @@ percentage of the plot area height, set to 0.4 by default.}
 the y axis label, set to 1 by default to remove transparency.}
 }
 \description{
-Create heatmap using base graphics
+\code{heat_map()} provides an intuitive way to construct high resolution
+heatmaps with minimal coding and data preparation. \code{heat_map()} has
+support for non-numeric data, data scaling, clustering and dendrograms.
 }
 \examples{
 # Heatmap - Raw Values
