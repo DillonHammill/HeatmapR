@@ -24,6 +24,7 @@ heat_map(
   axis_text_x_col = "black",
   axis_text_x_col_alpha = 1,
   axis_text_x_angle = 3,
+  axis_text_x_adjust = 0.45,
   axis_label_x = NULL,
   axis_label_x_font = 2,
   axis_label_x_size = 1.2,
@@ -37,6 +38,7 @@ heat_map(
   axis_text_y_col = "black",
   axis_text_y_col_alpha = 1,
   axis_text_y_angle = 1,
+  axis_text_y_adjust = 0.45,
   axis_label_y = NULL,
   axis_label_y_font = 2,
   axis_label_y_size = 1.2,
@@ -158,6 +160,9 @@ column label text, set to 1 by default to remove transparency.}
 \item{axis_text_x_angle}{indicates whether the column label text should be
 horizontal or vertical, set to 3 by default to always be perpendicular to
 the axis. See \code{\link[graphics:par]{las}} for alternatives.}
+
+\item{axis_text_x_adjust}{vertical adjustment of y axis text, set to 0.45
+by default.}
 
 \item{axis_label_x}{label for x axis, set to NULL by default.}
 
@@ -329,14 +334,14 @@ Create heatmap using base graphics
 }
 \examples{
 # Heatmap - Raw Values
-heat_map(iris[1:10, ],
+heat_map(iris[1:20],
   title = "Iris Heatmap",
   axis_label_x = "Plant Parameter",
   axis_label_y = "Row ID"
 )
 
 # Heatmap - Scaled
-heat_map(iris[1:10, ],
+heat_map(iris[1:20, ],
   scale = "range",
   title = "Iris Heatmap",
   axis_label_x = "Plant Parameter",

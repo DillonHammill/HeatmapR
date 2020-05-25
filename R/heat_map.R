@@ -57,6 +57,8 @@
 #' @param axis_text_x_angle indicates whether the column label text should be
 #'   horizontal or vertical, set to 3 by default to always be perpendicular to
 #'   the axis. See \code{\link[graphics:par]{las}} for alternatives.
+#' @param axis_text_x_adjust horizontal adjustment of x axis text, set to 0.45
+#'   by default.
 #' @param axis_text_x_font numeric indicating the font to use for the column
 #'   labels, set to 1 by default for plain font. See
 #'   \code{\link[graphics:par]{font}} for alternatives.
@@ -88,6 +90,8 @@
 #' @param axis_text_y_angle indicates whether the row label text should be
 #'   horizontal or vertical, set to 3 by default to always be perpendicular to
 #'   the axis. See \code{\link[graphics:par]{las}} for alternatives.
+#' @param axis_text_x_adjust vertical adjustment of y axis text, set to 0.45
+#'   by default.
 #' @param axis_text_y_font numeric indicating the font to use for the row
 #'   labels, set to 1 by default for plain font. See
 #'   \code{\link[graphics:par]{font}} for alternatives.
@@ -187,14 +191,14 @@
 #'
 #' @examples
 #' # Heatmap - Raw Values
-#' heat_map(iris[1:10, ],
+#' heat_map(iris[1:20],
 #'   title = "Iris Heatmap",
 #'   axis_label_x = "Plant Parameter",
 #'   axis_label_y = "Row ID"
 #' )
 #'
 #' # Heatmap - Scaled
-#' heat_map(iris[1:10, ],
+#' heat_map(iris[1:20, ],
 #'   scale = "range",
 #'   title = "Iris Heatmap",
 #'   axis_label_x = "Plant Parameter",
@@ -221,6 +225,7 @@ heat_map <- function(x,
                      axis_text_x_col = "black",
                      axis_text_x_col_alpha = 1,
                      axis_text_x_angle = 3,
+                     axis_text_x_adjust = 0.45,
                      axis_label_x = NULL,
                      axis_label_x_font = 2,
                      axis_label_x_size = 1.2,
@@ -234,6 +239,7 @@ heat_map <- function(x,
                      axis_text_y_col = "black",
                      axis_text_y_col_alpha = 1,
                      axis_text_y_angle = 1,
+                     axis_text_y_adjust = 0.45,
                      axis_label_y = NULL,
                      axis_label_y_font = 2,
                      axis_label_y_size = 1.2,

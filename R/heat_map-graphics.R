@@ -118,6 +118,4 @@ user_to_line <- function(user, side){
          `2` = (par("usr")[1] - user) / (x_off * line_height),
          `3` = (user - par("usr")[4]) / (y_off * line_height),
          `4` = (user - par("usr")[2]) / (x_off * line_height))
-  
-  
 }

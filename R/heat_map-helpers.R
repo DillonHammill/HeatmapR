@@ -296,32 +296,3 @@ heat_map_layout <- function(layout = NULL){
 heat_map_record <- function(){
   recordPlot()
 }
-
-## HEATMAP_HIGHLIGHT -----------------------------------------------------------
-
-#' Highlight cells in heatmap
-#' 
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
-#' 
-#' @export
-heat_map_highlight <- function(){
-  
-}
-
-## HEAT_MAP_MARGINS ------------------------------------------------------------
-
-#' Heatmap margins
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
-#' @noRd
-.heat_map_margins <- function(){
-  
-}
-
-## HEAP_MAP_LEGEND -------------------------------------------------------------
-
-#' Heatmap legend
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
-#' @noRd
-.heat_map_legend <- function(){
-  
-}
