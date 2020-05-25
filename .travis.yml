@@ -1,4 +1,28 @@
 # R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
 
-language: R
-cache: packages
+language: r
+dist: trusty
+sudo: required
+
+matrix:
+  include:
+   - os: linux
+     r: release
+   - os: linux
+     r: devel
+     env: R_CODECOV=true
+   - os: osx
+     osx_image: xcode9.4
+     r: release
+
+cache: 
+  packages: true
+
+before_install:
+  - R -e 'install.packages("devtools")'
+
+warnings_are_errors: false
+
+# after_success:
+#   -  if [[ "${R_CODECOV}" ]]; then R -e 'covr::codecov()'; fi
+  
