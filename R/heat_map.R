@@ -306,9 +306,11 @@ heat_map <- function(x,
   }
 
   # ROW/COLUMN SCALING
-  if (scale == TRUE) {
+  if (scale != FALSE) {
     # DEFAULT
-    scale <- "range"
+    if(scale == TRUE){
+      scale <- "range"
+    }
     # SCALING
     x <- heat_map_scale(x,
       method = scale
@@ -621,25 +623,15 @@ heat_map <- function(x,
   # COMPUTE GRAPHICAL PARAMETERS -----------------------------------------------
   
   # COPY DEVICE
-  # dev_par <- dev_copy(x = seq(xlim[1],
-  #                             xlim[2],
-  #                             xlim[2]-xlim[1]/10),
-  #                     y = seq(ylim[1],
-  #                             ylim[2],
-  #                             ylim[2]-ylim[1]/10),
-  #                     type = "n",
-  #                     xlim = xlim,
-  #                     ylim = ylim)
-  
-  plot(x = seq(xlim[1],
-               xlim[2],
-               xlim[2]-xlim[1]/10),
-       y = seq(ylim[1],
-               ylim[2],
-               ylim[2]-ylim[1]/10),
-       type = "n",
-       xlim = xlim,
-       ylim = ylim)
+  dev_par <- dev_copy(x = seq(xlim[1],
+                              xlim[2],
+                              xlim[2]-xlim[1]/10),
+                      y = seq(ylim[1],
+                              ylim[2],
+                              ylim[2]-ylim[1]/10),
+                      type = "n",
+                      xlim = xlim,
+                      ylim = ylim)
   
   # MARGIN SPACE
   if(is.null(margins)){
