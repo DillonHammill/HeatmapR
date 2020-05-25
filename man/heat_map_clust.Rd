@@ -39,7 +39,6 @@ Perform hierarchical clustering for heatmap
 
 # Hierarchical clustering
 heat_map_hclust <- heat_map_clust(mtcars)
-
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)

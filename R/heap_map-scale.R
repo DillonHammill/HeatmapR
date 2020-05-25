@@ -10,9 +10,9 @@
 #'   \code{format}, set to TRUE by default.
 #' @param method type of scaling to perform, can be either \code{'range'},
 #'   \code{'mean'} or {'zscore'}. Range scaling normalizes the data to have
-#'   limits [0,1]. Mean scaling subtracts the mean (calculated excluding missing
-#'   values) from each value. Z-score scaling subtracts the mean from each value
-#'   and then divides the result by the standard deviation.
+#'   limits between 0 and 1. Mean scaling subtracts the mean (calculated
+#'   excluding missing values) from each value. Z-score scaling subtracts the
+#'   mean from each value and then divides the result by the standard deviation.
 #'
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #'

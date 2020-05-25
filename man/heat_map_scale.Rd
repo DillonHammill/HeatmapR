@@ -11,9 +11,9 @@ heat_map_scale(x, method = "range")
 
 \item{method}{type of scaling to perform, can be either \code{'range'},
 \code{'mean'} or {'zscore'}. Range scaling normalizes the data to have
-limits \link{0,1}. Mean scaling subtracts the mean (calculated excluding missing
-values) from each value. Z-score scaling subtracts the mean from each value
-and then divides the result by the standard deviation.}
+limits between 0 and 1. Mean scaling subtracts the mean (calculated
+excluding missing values) from each value. Z-score scaling subtracts the
+mean from each value and then divides the result by the standard deviation.}
 
 \item{scale}{indicates whether scaling should be applied as per
 \code{format}, set to TRUE by default.}

@@ -2,10 +2,181 @@
 
 #' Create heatmap using base graphics
 #'
-#' @param x matrix or matrix-like object containing numeric columns to be
-#'   included in heatmap. Non-matrix objects will be coerced to matrices using
-#'   \code{as.matrix} and all non-numeric columns will be removed prior to
-#'   constructing the heatmap.
+#' @param x matrix or matrix-like object containing the data to generate the
+#'   heatmap. The supplied data may contain non-numeric columns which will be
+#'   included in the constructed heatmap, but will not be scaled or used for
+#'   hierarchical clustering.
+#' @param scale indicates whether column-wise scaling should be applied to the
+#'   data prior to constructiong the heatmap (TRUE OR FALSE) or indicates the
+#'   method to use when performing column-wise scaling, options include
+#'   \code{"range"}, \code{"mean"} or \code{"zscore"}, set to \code{"range"} by
+#'   default. Range scaling subtracts the minimum value from each value in the
+#'   column and divides the result by the range of that column. Mean scaling
+#'   subtracts the mean value from each value in the column and divides the
+#'   result by the range of that column. Z-score scaling subtracts the mean
+#'   value from each value in the column and divides the result by the standard
+#'   deviation of that column. Scaling is performed internally using the
+#'   \code{\link{heat_map_scale}} function.
+#' @param dist_method name of the method to use when computing distance matrices
+#'   using \code{\link[stats:dist]{dist()}} for clustering and dendrograms, set
+#'   to \code{"euclidean"} by deafult. This argument is passed to
+#'   \code{heat_map_clust} which performs the hierarchical clustering using
+#'   \code{\link[stats:hclust]{hclust()}}.
+#' @param clust_method name of the method to use for heirarchical clustering
+#'   using \code{\link[stats:hclust]{hclust()}}, set to \code{"complete"} by
+#'   default. This argument is passed to \code{heat_map_clust} which performs
+#'   the hierarchical clustering using \code{\link[stats:hclust]{hclust()}}.
+#' @param transpose logical indicating whether to transpose the rows and columns
+#'   when constructing the heatmap, set to FALSE by default.
+#' @param round number of decimal places to round numeric values in the
+#'   constructed heatmap, set to 2 by default.
+#' @param cluster indicates whether clustering should be performed (TRUE or
+#'   FALSE) or specifies whether clustering should be performed on either the
+#'   \code{"row"}, \code{"column"} or \code{"both"}, set to FALSE by default.
+#' @param reorder logical indicating whether columns should be reordered post
+#'   clustering to align columns or rows based on relatedness, set to TRUE by
+#'   default.
+#' @param dendrogram logcial indicating whether dendrograms should be added to
+#'   the constrcted heatmap (TRUE OR FALSE) or indicates whether dendrograms
+#'   should be included for the \code{"row"}, \code{"column"} or \code{"both"},
+#'   set to FALSE by default. Setting this argument to TRUE will result in both
+#'   row and column dendrograms being included in the constructed heatmap.
+#' @param dendrogram_side numeric indicating which sides of the plot to add the
+#'   dendrograms.
+#' @param dendrogram_size numeric indicating the width of the dendrogram as a
+#'   percentage of the total rows or columns, set to 0.1 by default.
+#' @param margins a vector of length 4 indicating the number of lines to add to
+#'   the plot margins, set to NULL by default to let \code{heat_map} compute
+#'   optimal margins.
+#' @param axis_text_x vector of text to label each column in the supplied data,
+#'   set to the \code{colnames(x)} by default. Setting this argument to NA will
+#'   remove all text for the x axis.
+#' @param axis_text_x_side indicates which of side of the plot to label the
+#'   columns of the heatmap (bottom = 1 or top = 3), set to 1 by default to add
+#'   column labels below the plot.
+#' @param axis_text_x_angle indicates whether the column label text should be
+#'   horizontal or vertical, set to 3 by default to always be perpendicular to
+#'   the axis. See \code{\link[graphics:par]{las}} for alternatives.
+#' @param axis_text_x_font numeric indicating the font to use for the column
+#'   labels, set to 1 by default for plain font. See
+#'   \code{\link[graphics:par]{font}} for alternatives.
+#' @param axis_text_x_size numeric to control the size of the column labels, set
+#'   to 1 by default.
+#' @param axis_text_x_col vector of colours to use for column labels, set to
+#'   \code{"black"} by default.
+#' @param axis_text_x_col_alpha numeric to control the alpha transparency of the
+#'   column label text, set to 1 by default to remove transparency.
+#' @param axis_label_x label for x axis, set to NULL by default.
+#' @param axis_label_x_font numeric indicating the font to use for the x axis
+#'   label, set to 2 by default for bold font. See
+#'   \code{\link[graphics:par]{font}} for alternatives.
+#' @param axis_label_x_size numeric to control the size of x axis label, set to
+#'   1 by default.
+#' @param axis_label_x_col colour to use for x axis label, set to \code{"black"}
+#'   by default.
+#' @param axis_label_x_col_alpha numeric to control the alpha transparency of
+#'   the x axis label, set to 1 by default to remove transparency.
+#' @param axis_ticks_x_length numeric to control the length of the x axis ticks,
+#'   set to -0.02 by default. See \code{\link[graphics:par]{tck}} for more
+#'   details.
+#' @param axis_text_y vector of text to label each row in the supplied data, set
+#'   to the \code{rowname(x)} by default. Setting this argument to NA will
+#'   remove all text for the x axis.
+#' @param axis_text_y_side indicates which of side of the plot to label the rows
+#'   of the heatmap (left = 2 or right = 4), set to 1 by default to add row
+#'   labels below the plot.
+#' @param axis_text_y_angle indicates whether the row label text should be
+#'   horizontal or vertical, set to 3 by default to always be perpendicular to
+#'   the axis. See \code{\link[graphics:par]{las}} for alternatives.
+#' @param axis_text_y_font numeric indicating the font to use for the row
+#'   labels, set to 1 by default for plain font. See
+#'   \code{\link[graphics:par]{font}} for alternatives.
+#' @param axis_text_y_size numeric to control the size of the row labels, set to
+#'   1 by default.
+#' @param axis_text_y_col vector of colours to use for row labels, set to
+#'   \code{"black"} by default.
+#' @param axis_text_y_col_alpha numeric to control the alpha transparency of the
+#'   row label text, set to 1 by default to remove transparency.
+#' @param axis_label_y label for y axis, set to NULL by default.
+#' @param axis_label_y_font numeric indicating the font to use for the y axis
+#'   label, set to 2 by default for bold font. See
+#'   \code{\link[graphics:par]{font}} for alternatives.
+#' @param axis_label_y_size numeric to control the size of y axis label, set to
+#'   1 by default.
+#' @param axis_label_y_col colour to use for y axis label, set to \code{"black"}
+#'   by default.
+#' @param axis_label_y_col_alpha numeric to control the alpha transparency of
+#'   the y axis label, set to 1 by default to remove transparency.
+#' @param axis_ticks_y_length numeric to control the length of the y axis ticks,
+#'   set to -0.02 by default. See \code{\link[graphics:par]{tck}} for more
+#'   details.
+#' @param title text to include in the plot title, set to NULL by default.
+#' @param title_side indicates to which side of the plot the title should be
+#'   added (bottom = 1, left = 2, top = 3 or right = 4), set to 3 by default.
+#' @param title_text_font numeric indicating the font to use for the plot title,
+#'   set to 2 by default for bold font. See \code{\link[graphics:par]{font}} for
+#'   alternatives.
+#' @param title_text_size numeric to control the size of the plot title, set to
+#'   1.5 by default.
+#' @param title_text_col colour to use for yplot title, set to \code{"black"} by
+#'   default.
+#' @param title_text_col_alpha numeric to control the alpha transparency of the
+#'   plot title, set to 1 by default to remove transparency.
+#' @param box_col_palette vector of colours to select from when colouring
+#'   non-numeric columns, set to a blue to red colour palette by default.
+#' @param box_col_scale vector of colours to use for the colour scale for
+#'   numeric columns, set to a red-black-green colour scale by default.
+#' @param box_col_alpha numeric to control the alpha transparency of the box
+#'   colours, set to 1 by default to remove transparency.
+#' @param box_col_empty colour to use for missing values, set to "white" by
+#'   default.
+#' @param box_border_line_type numeric to control the line type of the box
+#'   borders, set to 1 to use solid lines by default. See
+#'   \code{\link[graphics:par]{lty}} for alternatives.
+#' @param box_border_line_width numeric to control the line thickness of the box
+#'   borders, set to 1 by default.
+#' @param box_border_line_col colour to use for box borders, set to
+#'   \code{"black"} by default.
+#' @param box_border_line_col_alpha numeric to control the alpha transparency of
+#'   the box borders, set to 1 by default to remove transparency.
+#' @param box_text logical indicating whether to display the values in the
+#'   heatmap, set to FALSE by default. Can be set to \code{"numeric"} or
+#'   \code{"character"} to only include text in columns matching this
+#'   description.
+#' @param box_text_font numeric indicating the font to use for the box text, set
+#'   to 1 by default for plain font. See \code{\link[graphics:par]{font}} for
+#'   alternatives.
+#' @param box_text_size numeric to control the size of the box text, set to 1 by
+#'   default.
+#' @param box_text_col colour to use for the box text, set to \code{"white"} by
+#'   default.
+#' @param box_text_col_alpha numeric to control the alpha transparency of the
+#'   box text, set to 1 by default to remove transparency.
+#' @param legend logical indicating whether to include a legend for numeric
+#'   colour scale, set to TRUE by default. Legends for non-numeric columns are
+#'   not currently supported.
+#' @param legend_side indicates to which side of the plot the legend should be
+#'   added (bottom = 1, left = 2, top = 3 or right = 4), set to 4 by default.
+#' @param legend_col_breaks indicates the number of colour breaks to include in
+#'   the legend, set to 25 by default.
+#' @param legend_text_breaks a vector of indices indicating which colour breaks
+#'   should be labelled with text, set to label the first and last colour breaks
+#'   by default. Note that the top break is equal to the number of legend colour
+#'   + 1.
+#' @param legend_text_font numeric indicating the font to use for the legend
+#'   text, set to 1 by default for bold font. See
+#'   \code{\link[graphics:par]{font}} for alternatives.
+#' @param legend_text_size numeric to control the size of the legend text, set
+#'   to 1.5 by default.
+#' @param legend_text_col colour to use for the legend text, set to
+#'   \code{"black"} by default.
+#' @param legend_text_col_alpha numeric to control the alpha transparency of the
+#'   legend text, set to 1 by default to remove transparency.
+#' @param legend_box_width numeric to control the width of the legend as a
+#'   percentage of the plot area width, set to 0.05 by default.
+#' @param legend_box_height numeric to control the width of the legend as a
+#'   percentage of the plot area height, set to 0.4 by default.
+#' @param ... not in use.
 #'
 #' @importFrom methods is
 #' @importFrom graphics plot axis rect title legend text mtext strheight
@@ -33,7 +204,6 @@
 #' @export
 heat_map <- function(x,
                      scale = FALSE,
-                     scale_method = "range",
                      dist_method = "euclidean",
                      clust_method = "complete",
                      transpose = FALSE,
@@ -43,6 +213,7 @@ heat_map <- function(x,
                      dendrogram = FALSE,
                      dendrogram_size = 0.2,
                      dendrogram_side = NULL,
+                     margins = NULL,
                      axis_text_x = NULL,
                      axis_text_x_side = "bottom",
                      axis_text_x_font = 1,
@@ -50,11 +221,11 @@ heat_map <- function(x,
                      axis_text_x_col = "black",
                      axis_text_x_col_alpha = 1,
                      axis_text_x_angle = 3,
-                     axis_text_x_adjust = 0.45,
                      axis_label_x = NULL,
                      axis_label_x_font = 2,
                      axis_label_x_size = 1.2,
                      axis_label_x_col = "black",
+                     axis_label_x_col_alpha = 1,
                      axis_ticks_x_length = -0.02,
                      axis_text_y = NULL,
                      axis_text_y_side = "left",
@@ -63,7 +234,6 @@ heat_map <- function(x,
                      axis_text_y_col = "black",
                      axis_text_y_col_alpha = 1,
                      axis_text_y_angle = 1,
-                     axis_text_y_adjust = 0.45,
                      axis_label_y = NULL,
                      axis_label_y_font = 2,
                      axis_label_y_size = 1.2,
@@ -74,6 +244,7 @@ heat_map <- function(x,
                      title_text_font = 2,
                      title_text_size = 1.5,
                      title_text_col = "black",
+                     title_text_col_alpha = 1,
                      box_col_palette = c(
                        "blue",
                        "turquoise",
@@ -93,12 +264,12 @@ heat_map <- function(x,
                      box_border_line_type = 1,
                      box_border_line_width = 1,
                      box_border_line_col = "black",
+                     box_border_line_col_alpha = 1,
                      box_text = FALSE,
                      box_text_font = 1,
                      box_text_size = 1,
                      box_text_col = "white",
                      box_text_col_alpha = 1,
-                     margins = NULL,
                      legend = TRUE,
                      legend_side = 4,
                      legend_col_breaks = 25,
@@ -107,8 +278,8 @@ heat_map <- function(x,
                      legend_text_size = 1,
                      legend_text_col = "black",
                      legend_text_col_alpha = 1,
-                     legend_box_width = NULL, # % of plot area x direction
-                     legend_box_height = NULL, # % of plot area y direction
+                     legend_box_width = 0.05, # % of plot area x direction
+                     legend_box_height = 0.4, # % of plot area y direction
                      ...) {
 
   # GRAPHICAL PARAMETERS -------------------------------------------------------
@@ -126,9 +297,11 @@ heat_map <- function(x,
 
   # ROW/COLUMN SCALING
   if (scale == TRUE) {
+    # DEFAULT
+    scale <- "range"
     # SCALING
     x <- heat_map_scale(x,
-      method = scale_method
+      method = scale
     )
   }
 
@@ -152,6 +325,8 @@ heat_map <- function(x,
       x[, num_cols, drop = FALSE],
       x[, char_cols, drop = FALSE]
     )
+    num_cols <- seq(1, length(num_cols), 1)
+    char_cols <- seq(length(num_cols) + 1, ncol(x), 1)
   }
 
   # ROUNDING
@@ -487,7 +662,7 @@ heat_map <- function(x,
           if (axis_text_x_angle %in% c(0, 1)) {
             axis_text_x_height <- max(
               LAPPLY(seq_along(axis_text_x), function(y){
-                axis_text_x_size[y] / par("cex") + 0.5
+                axis_text_x_size[y] / par("cex") + 0.6
               })
             )
             margin_space[["axis_text_x"]] <<- axis_text_x_height
@@ -498,6 +673,9 @@ heat_map <- function(x,
                 nchar(axis_text_x[w]) * (axis_text_x_size[w] / par("cex")) * 0.6
               })
             )
+            if(axis_text_x_height < 2){
+              axis_text_x_height <- 2
+            }
             margin_space[["axis_text_x"]] <<- axis_text_x_height
           }
         }
@@ -525,6 +703,9 @@ heat_map <- function(x,
                   nchar(axis_text_y[w]) * (axis_text_y_size[w] / par("cex")) * 0.425
                 })
               )
+              if(axis_text_y_height < 2){
+                axis_text_y_height <- 2
+              }
               margin_space[["axis_text_y"]] <<- axis_text_y_height 
               # VERTICAL
             } else if (axis_text_y_angle %in% c(0, 3)) {
@@ -533,7 +714,7 @@ heat_map <- function(x,
                   axis_text_y_size[y] / par("cex") + 0.5
                 })
               )
-              margin_space[["axis_text_y"]] <- axis_text_y_height 
+              margin_space[["axis_text_y"]] <<- axis_text_y_height 
             }
           }
           # AXIS LABEL (ALWAYS PARALLEL)
@@ -546,37 +727,86 @@ heat_map <- function(x,
       # TITLE (ALWAYS PARALLEL)
       if(!is.null(title)){
         margin_space[["title"]] <<- axis_label_y_size / 
-          par("cex") + 1
+          par("cex") + 1.2
       }
       # LEGEND
-      # if(legend == TRUE){
-      #   # VERTICAL LEGEND
-      #   if(z == legend_side & z %in% c(2,4)){
-      #     legend_box_size <- 1.5 + legend_box_width * 1
-      #     legend_text_width <- (0.4 * max(legend_text_size) * 
-      #                             max(nchar(legend_text)) + 0.7)
-      #     margins[z] <<- margins[z] + 1.5 + 
-      #       legend_box_size + legend_text_width
-      #     # HORIZONTAL LEGEND  
-      #   }else if(z == legend_side & z %in% c(1,3)){
-      #     legend_box_size <- 1.5 + legend_box_height * 1
-      #     legend_text_height <- (0.4 * max(legend_text_size) + 0.7)
-      #     margins[z] <<- margins[z] + 1.5 + 
-      #       legend_box_size + legend_text_height
-      #   }
-      # }
+      if(legend == TRUE){
+        # VERTICAL LEGEND
+        if(z == legend_side & z %in% c(2,4)){
+          legend_space <- 1
+          legend_start <- line_to_user(1, 
+                                       side = legend_side)
+          if(legend_side == 2){
+            legend_end <- user_to_line(legend_start - legend_box_width * ncol(x), 
+                                       side = legend_side)
+          }else if(legend_side == 4){
+            legend_end <- user_to_line(legend_start + legend_box_width * ncol(x), 
+                                       side = legend_side)
+          }
+          legend_text_width <- max(nchar(legend_text)) * 
+            max(legend_text_size) / par("cex") * 0.6
+          margin_space[["legend"]] <<- legend_end + legend_text_width
+        # HORIZONTAL LEGEND (HORIZONTAL TEXT)
+        }else if(z == legend_side & z %in% c(1,3)){
+          legend_space <- 1
+          legend_start <- line_to_user(1, 
+                                       side = legend_side)
+          if(legend_side == 1){
+            legend_end <- user_to_line(legend_start - legend_box_width * nrow(x),
+                                       side = legend_side)
+          }else if(legend_side == 3){
+            legend_end <- user_to_line(legend_start + legend_box_width * nrow(x), 
+                                       side = legend_side)
+          }
+          legend_text_width <- max(legend_text_size) / par("cex") + 0.5
+          margin_space[["legend"]] <<- legend_end + legend_text_width
+        }
+      }
       # DENDROGRAM
         
-      # BORDER
-      margin_space[["border"]][z] <- 2
     })
+    # BORDER
+    margin_space[["border"]] <- c(1,1,1,1)
   }
   
-  # LEGEND_POSITION
-  
+  # LEGEND_BOX CO-ORDINATES
+  if(legend == TRUE){
+    # STARTING POINT (LINES)
+    legend_box_start <- 1
+    # X AXIS TEXT - SAME SIDE
+    if(axis_text_x_side == legend_side){
+      legend_box_start <- legend_box_start + margin_space[["axis_ticks_x"]] +
+        margin_space[["axis_text_x"]] + margin_space[["axis_label_x"]]
+    }
+    # Y AXIS TEXT - SAME SIDE
+    if(axis_text_y_side == legend_side){
+      legend_box_start <- legend_box_start + margin_space[["axis_ticks_y"]] +
+        margin_space[["axis_text_y"]] + margin_space[["axis_label_y"]]
+    }
+    # TITLE - SAME SIDE
+    if(title_side == legend_side){
+      legend_box_start <- legend_box_start + margin_space[["title"]]
+    }
+    # # DENROGRAM
+    # if(dendrogram_side == legend_side){
+    #   
+    # }
+    # LEGEND_POSITION (USER)
+    legend_box_start <- line_to_user(legend_box_start, legend_side)
+    # LEGEND BOX_END
+    if(legend_side == 1){
+      legend_box_end <- legend_box_start - legend_box_width * nrow(x)
+    }else if(legend_side == 2){
+      legend_box_end <- legend_box_start - legend_box_width * ncol(x)
+    }else if(legend_side == 3){
+      legend_box_end <- legend_box_start + legend_box_width * nrow(x)
+    }else if(legend_side == 4){
+      legend_box_end <- legend_box_start + legend_box_width * ncol(x)
+    }
+  }
   
   # CLOSE COPIED DEVICE
-  # dev_copy_remove()
+  dev_copy_remove()
   
   # CONSTRUCT HEATMAP ----------------------------------------------------------
   
@@ -602,7 +832,7 @@ heat_map <- function(x,
       }
       # LEGEND SPACE
       if(z == legend_side & legend != FALSE){
-        margins[z] <<- margins[z] + 5
+        margins[z] <<- margins[z] + margin_space[["legend"]]
       }
       # DENDROGRAM
       
@@ -719,7 +949,8 @@ heat_map <- function(x,
           line = title_position,
           font = title_text_font,
           cex = title_text_size,
-          col = title_text_col,
+          col = adjustcolor(title_text_col,
+                            title_text_col_alpha),
           las = 0)
   }
 
@@ -741,7 +972,8 @@ heat_map <- function(x,
           line = axis_label_x_position,
           font = axis_label_x_font,
           cex = axis_label_x_size,
-          col = axis_label_x_col,
+          col = adjustcolor(axis_label_x_col,
+                            axis_label_x_col_alpha),
           las = 0)
   }
 
@@ -762,7 +994,8 @@ heat_map <- function(x,
           line = axis_label_y_position,
           font = axis_label_y_font,
           cex = axis_label_y_size,
-          col = axis_label_y_col,
+          col = adjustcolor(axis_label_y_col,
+                            axis_label_y_col_alpha),
           las = 0)
   }
 
@@ -791,7 +1024,8 @@ heat_map <- function(x,
         col = box_colours[y, z],
         lty = box_border_line_type,
         lwd = box_border_line_width,
-        border = box_border_line_col
+        border = adjustcolor(box_border_line_col,
+                             box_border_line_col_alpha)
       )
       # BOX TEXT
       if (box_text != FALSE) {
@@ -844,12 +1078,12 @@ heat_map <- function(x,
       legend_center <- ylim[1] + (ylim[2] - ylim[1]) / 2
       # LEGEND BORDER COORDS
       legend_border_x <- c(
-        1.05 * xlim[2],
-        1.05 * xlim[2] + legend_box_width
+        legend_box_start,
+        legend_box_end
       )
       legend_border_y <- c(
-        legend_center - legend_box_height / 2,
-        legend_center + legend_box_height / 2
+        legend_center - legend_box_height * nrow(x) / 2,
+        legend_center + legend_box_height * nrow(x) / 2
       )
       # LEGEND BORDER
       rect(legend_border_x[1],
@@ -867,8 +1101,6 @@ heat_map <- function(x,
         (legend_border_y[2] - legend_border_y[1]) /
           legend_col_breaks
       )
-      # LEGEND_SIDE
-      
       # LEGEND COLOURS
       lapply(seq_len(length(legend_breaks_y)), function(z) {
         # BOX COLOUR
@@ -886,11 +1118,21 @@ heat_map <- function(x,
         if (z %in% legend_text_breaks) {
           # LEGEND_TEXT_X
           if (nchar(legend_text[z]) > 1) {
-            legend_text_x <- legend_border_x[2] +
-              0.2 + 0.065 * legend_text_size * (nchar(legend_text[z]))
+            if(legend_side == 2){
+              legend_text_x <- legend_border_x[2] -
+              (0.2 + 0.065 * legend_text_size * (nchar(legend_text[z])))
+            }else if(legend_side == 4){
+              legend_text_x <- legend_border_x[2] +
+                (0.2 + 0.065 * legend_text_size * (nchar(legend_text[z])))
+            }
           } else {
-            legend_text_x <- legend_border_x[2] + 0.2 +
-              0.2 * 0.1 * legend_text_size
+            if(legend_side == 2){
+              legend_text_x <- legend_border_x[2] - (0.2 +
+                0.2 * 0.1 * legend_text_size)
+            }else if(legend_side == 4){
+              legend_text_x <- legend_border_x[2] + (0.2 +
+                0.2 * 0.1 * legend_text_size)
+            }
           }
           # LEGEND_TEXT_Y
           legend_text_y <- legend_breaks_y[z]
@@ -908,15 +1150,15 @@ heat_map <- function(x,
     # HORIZONTAL
     }else if(legend_side %in% c(1,3)){
       # LEGEND_CENTER
-      legend_center <- ylim[1] + (ylim[2] - ylim[1]) / 2
+      legend_center <- xlim[1] + (xlim[2] - xlim[1]) / 2
       # LEGEND BORDER
-      legend_border_x <- c(
-        1.05 * xlim[2],
-        1.05 * xlim[2] + legend_box_width
-      )
       legend_border_y <- c(
-        legend_center - legend_box_height / 2,
-        legend_center + legend_box_height / 2
+        legend_box_start,
+        legend_box_end
+      )
+      legend_border_x <- c(
+        legend_center - legend_box_height * ncol(x) / 2,
+        legend_center + legend_box_height * ncol(x) / 2
       )
       rect(legend_border_x[1],
            legend_border_y[1],
@@ -927,22 +1169,22 @@ heat_map <- function(x,
            xpd = TRUE
       )
       # LEGEND_BREAKS
-      legend_breaks_y <- seq(
-        legend_border_y[1],
-        legend_border_y[2],
-        (legend_border_y[2] - legend_border_y[1]) /
+      legend_breaks_x <- seq(
+        legend_border_x[1],
+        legend_border_x[2],
+        (legend_border_x[2] - legend_border_x[1]) /
           legend_col_breaks
       )
-      # LEGEND_SIDE
-      
+      print(legend_breaks_x)
+      print(legend_border_y)
       # LEGEND COLOURS
-      lapply(seq_len(length(legend_breaks_y)), function(z) {
+      lapply(seq_len(length(legend_breaks_x)), function(z) {
         # BOX COLOUR
-        if (z != length(legend_breaks_y)) {
-          rect(legend_border_x[1],
-               legend_breaks_y[z],
-               legend_border_x[2],
-               legend_breaks_y[z + 1],
+        if (z != length(legend_breaks_x)) {
+          rect(legend_breaks_x[z],
+               legend_border_y[1],
+               legend_breaks_x[z + 1],
+               legend_border_y[2],
                col = legend_col[z],
                border = NA,
                xpd = TRUE
@@ -952,14 +1194,24 @@ heat_map <- function(x,
         if (z %in% legend_text_breaks) {
           # LEGEND_TEXT_X
           if (nchar(legend_text[z]) > 1) {
-            legend_text_x <- legend_border_x[2] +
-              0.2 + 0.065 * legend_text_size * (nchar(legend_text[z]))
+            if(legend_side == 1){
+              legend_text_y <- legend_border_y[2] -
+                (0.6 + 0.065 * legend_text_size * (nchar(legend_text[z])))
+            }else if(legend_side == 3){
+              legend_text_y <- legend_border_y[2] +
+                (0.6 + 0.065 * legend_text_size * (nchar(legend_text[z])))
+            }
           } else {
-            legend_text_x <- legend_border_x[2] + 0.2 +
-              0.2 * 0.1 * legend_text_size
+            if(legend_side == 1){
+              legend_text_y <- legend_border_y[2] - (0.6 +
+                0.2 * 0.1 * legend_text_size)
+            }else if(legend_side == 3){
+              legend_text_y <- legend_border_y[2] + (0.6 +
+                0.2 * 0.1 * legend_text_size)
+            }
           }
           # LEGEND_TEXT_Y
-          legend_text_y <- legend_breaks_y[z]
+          legend_text_x <- legend_breaks_x[z]
           # LEGEND TEXT
           text(legend_text_x,
                legend_text_y,
