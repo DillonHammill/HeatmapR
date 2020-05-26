@@ -110,6 +110,7 @@ line_to_user <- function(line, side){
 #' Convert user co-ordinates to line co-ordinates
 #' @noRd
 user_to_line <- function(user, side){
+  print(side)
   line_height <- par("cin")[2] * par("cex") * par("lheight")
   x_off <- diff(grconvertX(0:1, "inches", "user"))
   y_off <- diff(grconvertY(0:1, "inches", "user"))

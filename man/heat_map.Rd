@@ -13,6 +13,9 @@ heat_map(
   round = 2,
   cluster = FALSE,
   reorder = TRUE,
+  dendrogram = FALSE,
+  dendrogram_size = 0.2,
+  dendrogram_scale = FALSE,
   margins = NULL,
   axis_text_x = NULL,
   axis_text_x_side = "bottom",
@@ -116,6 +119,20 @@ FALSE) or specifies whether clustering should be performed on either the
 \item{reorder}{logical indicating whether columns should be reordered post
 clustering to align columns or rows based on relatedness, set to TRUE by
 default. Columns and rows must be reordered if dendrograms are added.}
+
+\item{dendrogram}{logcial indicating whether dendrograms should be added to
+the constrcted heatmap (TRUE OR FALSE) or indicates whether dendrograms
+should be included for the \code{"row"}, \code{"column"} or \code{"both"},
+set to FALSE by default. Setting this argument to TRUE will result in both
+row and column dendrograms being included in the constructed heatmap.
+Dendrograms are always added to the side opposite the labelled axis.}
+
+\item{dendrogram_size}{numeric indicating the width of the dendrogram as a
+percentage of the total rows or columns, set to 0.2 by default.}
+
+\item{dendrogram_scale}{logical indicating whether dendrogram heights should
+be scaled to be the same size for better visualization, set to FALSE by
+default.}
 
 \item{margins}{a vector of length 4 indicating the number of lines to add to
 the plot margins, set to NULL by default to let \code{heat_map} compute

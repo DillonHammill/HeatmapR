@@ -40,6 +40,17 @@
 #' @param reorder logical indicating whether columns should be reordered post
 #'   clustering to align columns or rows based on relatedness, set to TRUE by
 #'   default. Columns and rows must be reordered if dendrograms are added.
+#' @param dendrogram logcial indicating whether dendrograms should be added to
+#'   the constrcted heatmap (TRUE OR FALSE) or indicates whether dendrograms
+#'   should be included for the \code{"row"}, \code{"column"} or \code{"both"},
+#'   set to FALSE by default. Setting this argument to TRUE will result in both
+#'   row and column dendrograms being included in the constructed heatmap.
+#'   Dendrograms are always added to the side opposite the labelled axis.
+#' @param dendrogram_size numeric indicating the width of the dendrogram as a
+#'   percentage of the total rows or columns, set to 0.2 by default.
+#' @param dendrogram_scale logical indicating whether dendrogram heights should
+#'   be scaled to be the same size for better visualization, set to FALSE by
+#'   default.
 #' @param margins a vector of length 4 indicating the number of lines to add to
 #'   the plot margins, set to NULL by default to let \code{heat_map} compute
 #'   optimal margins.
@@ -178,6 +189,7 @@
 #' @param ... not in use.
 #'
 #' @importFrom methods is
+#' @importFrom stats as.dendrogram
 #' @importFrom graphics plot axis rect title legend text mtext strheight
 #'   strwidth grconvertX grconvertY
 #' @importFrom grDevices colorRamp rgb adjustcolor col2rgb colorRampPalette
@@ -209,6 +221,9 @@ heat_map <- function(x,
                      round = 2,
                      cluster = FALSE,
                      reorder = TRUE,
+                     dendrogram = FALSE,
+                     dendrogram_size = 0.2,
+                     dendrogram_scale = FALSE,
                      margins = NULL,
                      axis_text_x = NULL,
                      axis_text_x_side = "bottom",
@@ -276,8 +291,8 @@ heat_map <- function(x,
                      legend_text_size = 1,
                      legend_text_col = "black",
                      legend_text_col_alpha = 1,
-                     legend_box_width = 0.05, # % of plot area x direction
-                     legend_box_height = 0.4, # % of plot area y direction
+                     legend_box_width = 0.05,
+                     legend_box_height = 0.4,
                      ...) {
 
   # GRAPHICAL PARAMETERS -------------------------------------------------------
@@ -296,7 +311,7 @@ heat_map <- function(x,
   # ROW/COLUMN SCALING
   if (scale != FALSE) {
     # DEFAULT
-    if(scale == TRUE){
+    if (scale == TRUE) {
       scale <- "range"
     }
     # SCALING
@@ -334,6 +349,12 @@ heat_map <- function(x,
     x[, num_cols] <- round(x[, num_cols, drop = FALSE], round)
   }
 
+  # DENDROGRAM
+  if (dendrogram != FALSE) {
+    cluster <- dendrogram
+    reorder <- dendrogram
+  }
+
   # CLUSTERING
   if (cluster != FALSE) {
     # CLUSTER REQUIRES NUMERIC COLUMN(S)
@@ -352,32 +373,32 @@ heat_map <- function(x,
       ...
     )
     # SORT
-    if(reorder != FALSE){
+    if (reorder != FALSE) {
       # CLUSTER
-      if(cluster == FALSE){
+      if (cluster == FALSE) {
         message("Clustering is required to reorder columns or rows.")
       }
       # DEFAULT
-      if(reorder == TRUE){
+      if (reorder == TRUE) {
         reorder <- cluster
       }
       # ROW ORDER
-      if(reorder == "row"){
-        if(cluster == "row"){
+      if (reorder == "row") {
+        if (cluster == "row") {
           x <- x[heat_map_clust$order, ]
-        }else if(cluster == "both"){
+        } else if (cluster == "both") {
           x < x[heat_map_clust[[1]]$order, ]
         }
-      # COLUMN ORDER
-      }else if(reorder == "column"){
-        if(cluster == "column"){
+        # COLUMN ORDER
+      } else if (reorder == "column") {
+        if (cluster == "column") {
           x <- x[, c(heat_map_clust$order, char_cols)]
-        }else if(cluster == "both"){
+        } else if (cluster == "both") {
           x <- x[, c(heat_map_clust[[2]]$order, char_cols)]
         }
-      # BOTH ORDER
-      }else if(reorder == "both"){
-        if(cluster == "both"){
+        # BOTH ORDER
+      } else if (reorder == "both") {
+        if (cluster == "both") {
           # ROW
           x <- x[heat_map_clust[[1]]$order, ]
           # COLUMN
@@ -385,8 +406,8 @@ heat_map <- function(x,
         }
       }
     }
-  }  
-  
+  }
+
   # BOX CLASSES
   box_classes <- lapply(seq_len(ncol(x)), function(z) {
     if (is.numeric(x[, z])) {
@@ -424,7 +445,7 @@ heat_map <- function(x,
     })
     names(box_levels) <- box_col_palette(length(box_levels))
   }
-  
+
   # BOX COLOURS - MISSING VALUES
   box_colours <- lapply(box_columns, function(z) {
     # RESCALE NUMERIC [0,1]
@@ -473,7 +494,7 @@ heat_map <- function(x,
     # TRANSPOSE BOX_CLASSES
     box_classes <- t(box_classes)
   }
-  
+
   # HEATMAP PARAMETERS ---------------------------------------------------------
 
   # AXES_LIMITS
@@ -552,284 +573,311 @@ heat_map <- function(x,
     ),
     round
   )
-  
+
   # LEGEND DIMENSIONS
-  if(legend == TRUE){
+  if (legend == TRUE) {
     # WIDTH
-    if(is.null(legend_box_width)){
+    if (is.null(legend_box_width)) {
       legend_bow_width <- 0.1
     }
     # HEIGHT
-    if(is.null(legend_box_height)){
+    if (is.null(legend_box_height)) {
       legend_box_height <- 0.1
     }
   }
-  
+
   # SIDE ARGUMENTS (NUMERIC)
-  lapply(c("legend_side",
-           "title_side",
-           "axis_text_x_side",
-           "axis_text_y_side"), function(z){
-             assign(z,
-                    side_to_num(eval(parse(text = z))),
-                    envir = parent.frame())
-           })  
-  
-  # # DENDROGRAM SIDE
-  # if(dendrogram != FALSE){
-  #   # DENDROGRAM SIDE
-  #   if(is.null(dendrogram_side)){
-  #         # BOTH
-  #   if(dendrogram %in% c("b", "both")){
-  #     dendrogram <- seq_len(4)[-c(axis_text_x_side,
-  #                                 axis_text_y_side)]
-  #   # ROW
-  #   }else if(dendrogram %in% c("r", "row")){
-  #     dendrogram <- c(2,4)[-match(axis_text_x_side, c(2,4))]
-  #   # COLUMN
-  #   }else if(dendrogram %in% c("c", "column")){
-  #     dendrogram <- c(1,3)[-match(axis_text_y_side, c(1,3))]
-  #   }
-  #   # DENDROGRAM SIDE SUPPLIED
-  #   }else if(!is.null(dendrogram_side)){
-  #     # NUMERIC
-  #     dendrogram_side <- side_to_num(dendrogram_side)
-  #     # DENDROGRAM SIDE CANNOT BE SAME AS AXES
-  #     if(axis_text_x_side %in% dendrogram_side){
-  #       message("Cannot place dendrogram on the same side as the x axis.")
-  #       dendrogram_side[dendrogram_side == axis_text_x_side] <- 
-  #         c(1,3)[-match(axis_text_x_side, c(1,3))]
-  #     }else if(axis_text_y_side %in% dendrogram_side){
-  #       message("Cannot place dendrogram on the same side as the y axis.")
-  #       dendrogram_side[dendrogram_side == axis_text_y_side] <- 
-  #         c(2,4)[-match(axis_text_y_side, c(2,4))]
-  #     }
-  #   }
-  # }
-  
+  lapply(c(
+    "legend_side",
+    "title_side",
+    "axis_text_x_side",
+    "axis_text_y_side"
+  ), function(z) {
+    assign(z,
+      side_to_num(eval(parse(text = z))),
+      envir = parent.frame()
+    )
+  })
+
+  # DENDROGRAM SIDE
+  if (dendrogram != FALSE) {
+    # BOTH
+    if (dendrogram %in% c("b", "both")) {
+      dendrogram_side <- seq_len(4)[-c(
+        axis_text_x_side,
+        axis_text_y_side
+      )]
+      # ROW
+    } else if (dendrogram %in% c("r", "row")) {
+      dendrogram_side <- c(2, 4)[-match(axis_text_y_side, c(2, 4))]
+      # COLUMN
+    } else if (dendrogram %in% c("c", "column")) {
+      dendrogram_side <- c(1, 3)[-match(axis_text_x_side, c(1, 3))]
+    }
+  } else {
+    dendrogram_side <- 0
+  }
+
   # COMPUTE GRAPHICAL PARAMETERS -----------------------------------------------
-  
+
   # COPY DEVICE
-  dev_par <- dev_copy(x = seq(xlim[1],
-                              xlim[2],
-                              xlim[2]-xlim[1]/10),
-                      y = seq(ylim[1],
-                              ylim[2],
-                              ylim[2]-ylim[1]/10),
-                      type = "n",
-                      xlim = xlim,
-                      ylim = ylim)
-  
+  dev_par <- dev_copy(
+    x = seq(
+      xlim[1],
+      xlim[2],
+      xlim[2] - xlim[1] / 10
+    ),
+    y = seq(
+      ylim[1],
+      ylim[2],
+      ylim[2] - ylim[1] / 10
+    ),
+    type = "n",
+    xlim = xlim,
+    ylim = ylim
+  )
+
   # MARGIN SPACE
-  if(is.null(margins)){
-    # SPACING
-    margin_space <- list("title" = 0,
-                         "axis_ticks_x" = 0,
-                         "axis_text_x" = 0,
-                         "axis_label_x" = 0,
-                         "axis_ticks_y" = 0,
-                         "axis_text_y" = 0,
-                         "axis_label_y" = 0,
-                         "legend" = 0,
-                         "dendrogram" = 0,
-                         "border" = c(0,0,0,0))
-    # MARGIN LINE
-    margin_line_inch <- par("mai")[1]/par("mar")[1]
-    # MARGINS
-    lapply(seq_len(4), function(z){
-      # X AXIS
-      if(z %in% c(1,3)){
-        # AXIS TICKS
-        if(axis_ticks_x_length != 0){
-          max_tick_length <- 0.04
-          margin_space[["axis_ticks_x"]] <<- 1.3 *
-            abs(max(axis_ticks_x_length)) / max_tick_length
+  margin_space <- list(
+    "title" = 0,
+    "axis_ticks_x" = 0,
+    "axis_text_x" = 0,
+    "axis_label_x" = 0,
+    "axis_ticks_y" = 0,
+    "axis_text_y" = 0,
+    "axis_label_y" = 0,
+    "legend" = 0,
+    "dendrogram_row" = 0,
+    "dendrogram_col" = 0,
+    "border" = c(0, 0, 0, 0)
+  )
+  # MARGINS
+  lapply(seq_len(4), function(z) {
+    # X AXIS
+    if (z %in% c(1, 3)) {
+      # AXIS TICKS
+      if (axis_ticks_x_length != 0) {
+        max_tick_length <- 0.04
+        margin_space[["axis_ticks_x"]] <<- 1.3 *
+          abs(max(axis_ticks_x_length)) / max_tick_length
+      }
+      # X AXIS TEXT
+      if (!all(unlist(lapply(axis_text_x, ".empty")))) {
+        # HORIZONTAL
+        if (axis_text_x_angle %in% c(0, 1)) {
+          axis_text_x_height <- max(
+            LAPPLY(seq_along(axis_text_x), function(y) {
+              axis_text_x_size[y] / par("cex") + 0.6
+            })
+          )
+          margin_space[["axis_text_x"]] <<- axis_text_x_height
+          # VERTICAL
+        } else if (axis_text_x_angle %in% c(2, 3)) {
+          axis_text_x_height <- max(
+            LAPPLY(seq_along(axis_text_x), function(w) {
+              nchar(axis_text_x[w]) * (axis_text_x_size[w] / par("cex")) * 0.6
+            })
+          )
+          if (axis_text_x_height < 2) {
+            axis_text_x_height <- 2
+          }
+          margin_space[["axis_text_x"]] <<- axis_text_x_height
         }
-        # X AXIS TEXT
-        if (!all(unlist(lapply(axis_text_x, ".empty")))) {
+      }
+      # AXIS LABEL (ALWAYS PARALLEL)
+      if (!is.null(axis_label_x)) {
+        margin_space[["axis_label_x"]] <<- axis_label_x_size /
+          par("cex") + 1
+      }
+      # Y AXIS
+    } else if (z %in% c(2, 4)) {
+      # AXIS
+      if (axis_text_y_side == z) {
+        # AXIS TICKS
+        if (axis_ticks_y_length != 0) {
+          max_tick_length <- 0.04
+          margin_space[["axis_ticks_y"]] <<- 1.3 *
+            abs(max(axis_ticks_y_length)) / max_tick_length
+        }
+        # AXIS TEXT
+        if (!all(unlist(lapply(axis_text_y, ".empty")))) {
           # HORIZONTAL
-          if (axis_text_x_angle %in% c(0, 1)) {
-            axis_text_x_height <- max(
-              LAPPLY(seq_along(axis_text_x), function(y){
-                axis_text_x_size[y] / par("cex") + 0.6
+          if (axis_text_y_angle %in% c(1, 2)) {
+            axis_text_y_height <- max(
+              LAPPLY(seq_along(axis_text_y), function(w) {
+                nchar(axis_text_y[w]) * (axis_text_y_size[w] / par("cex")) * 0.425
               })
             )
-            margin_space[["axis_text_x"]] <<- axis_text_x_height
-            # VERTICAL
-          } else if (axis_text_x_angle %in% c(2, 3)) {
-            axis_text_x_height <- max(
-              LAPPLY(seq_along(axis_text_x), function(w){
-                nchar(axis_text_x[w]) * (axis_text_x_size[w] / par("cex")) * 0.6
-              })
-            )
-            if(axis_text_x_height < 2){
-              axis_text_x_height <- 2
+            if (axis_text_y_height < 2) {
+              axis_text_y_height <- 2
             }
-            margin_space[["axis_text_x"]] <<- axis_text_x_height
+            margin_space[["axis_text_y"]] <<- axis_text_y_height
+            # VERTICAL
+          } else if (axis_text_y_angle %in% c(0, 3)) {
+            axis_text_y_height <- max(
+              LAPPLY(seq_along(axis_text_y), function(y) {
+                axis_text_y_size[y] / par("cex") + 0.5
+              })
+            )
+            margin_space[["axis_text_y"]] <<- axis_text_y_height
           }
         }
         # AXIS LABEL (ALWAYS PARALLEL)
-        if (!is.null(axis_label_x)) {
-          margin_space[["axis_label_x"]] <<- axis_label_x_size / 
+        if (!is.null(axis_label_y)) {
+          margin_space[["axis_label_y"]] <<- axis_label_y_size /
             par("cex") + 1
         }
-      # Y AXIS
-      }else if(z %in% c(2,4)){
-        # AXIS
-        if(axis_text_y_side == z){
-          # AXIS TICKS
-          if(axis_ticks_y_length != 0){
-            max_tick_length <- 0.04
-            margin_space[["axis_ticks_y"]] <<- 1.3 *
-              abs(max(axis_ticks_y_length)) / max_tick_length
-          }
-          # AXIS TEXT
-          if (!all(unlist(lapply(axis_text_y, ".empty")))) {
-            # HORIZONTAL
-            if (axis_text_y_angle %in% c(1,2)) {
-              axis_text_y_height <- max(
-                LAPPLY(seq_along(axis_text_y), function(w){
-                  nchar(axis_text_y[w]) * (axis_text_y_size[w] / par("cex")) * 0.425
-                })
-              )
-              if(axis_text_y_height < 2){
-                axis_text_y_height <- 2
-              }
-              margin_space[["axis_text_y"]] <<- axis_text_y_height 
-              # VERTICAL
-            } else if (axis_text_y_angle %in% c(0, 3)) {
-              axis_text_y_height <- max(
-                LAPPLY(seq_along(axis_text_y), function(y){
-                  axis_text_y_size[y] / par("cex") + 0.5
-                })
-              )
-              margin_space[["axis_text_y"]] <<- axis_text_y_height 
-            }
-          }
-          # AXIS LABEL (ALWAYS PARALLEL)
-          if (!is.null(axis_label_y)) {
-            margin_space[["axis_label_y"]] <<- axis_label_y_size / 
-              par("cex") + 1
-          }
+      }
+    }
+    # TITLE (ALWAYS PARALLEL)
+    if (!is.null(title)) {
+      margin_space[["title"]] <<- axis_label_y_size /
+        par("cex") + 1.2
+    }
+    # LEGEND
+    if (legend == TRUE) {
+      # VERTICAL LEGEND
+      if (z == legend_side & z %in% c(2, 4)) {
+        legend_space <- 1
+        legend_start <- line_to_user(1,
+          side = legend_side
+        )
+        if (legend_side == 2) {
+          legend_end <- user_to_line(legend_start - legend_box_width * ncol(x),
+            side = legend_side
+          )
+        } else if (legend_side == 4) {
+          legend_end <- user_to_line(legend_start + legend_box_width * ncol(x),
+            side = legend_side
+          )
         }
-      }
-      # TITLE (ALWAYS PARALLEL)
-      if(!is.null(title)){
-        margin_space[["title"]] <<- axis_label_y_size / 
-          par("cex") + 1.2
-      }
-      # LEGEND
-      if(legend == TRUE){
-        # VERTICAL LEGEND
-        if(z == legend_side & z %in% c(2,4)){
-          legend_space <- 1
-          legend_start <- line_to_user(1, 
-                                       side = legend_side)
-          if(legend_side == 2){
-            legend_end <- user_to_line(legend_start - legend_box_width * ncol(x), 
-                                       side = legend_side)
-          }else if(legend_side == 4){
-            legend_end <- user_to_line(legend_start + legend_box_width * ncol(x), 
-                                       side = legend_side)
-          }
-          legend_text_width <- max(nchar(legend_text)) * 
-            max(legend_text_size) / par("cex") * 0.6
-          margin_space[["legend"]] <<- legend_end + legend_text_width
+        legend_text_width <- max(nchar(legend_text)) *
+          max(legend_text_size) / par("cex") * 0.6
+        margin_space[["legend"]] <<- legend_end + legend_text_width
         # HORIZONTAL LEGEND (HORIZONTAL TEXT)
-        }else if(z == legend_side & z %in% c(1,3)){
-          legend_space <- 1
-          legend_start <- line_to_user(1, 
-                                       side = legend_side)
-          if(legend_side == 1){
-            legend_end <- user_to_line(legend_start - legend_box_width * nrow(x),
-                                       side = legend_side)
-          }else if(legend_side == 3){
-            legend_end <- user_to_line(legend_start + legend_box_width * nrow(x), 
-                                       side = legend_side)
-          }
-          legend_text_width <- max(legend_text_size) / par("cex") + 0.5
-          margin_space[["legend"]] <<- legend_end + legend_text_width
+      } else if (z == legend_side & z %in% c(1, 3)) {
+        legend_space <- 1
+        legend_start <- line_to_user(1,
+          side = legend_side
+        )
+        if (legend_side == 1) {
+          legend_end <- user_to_line(legend_start - legend_box_width * nrow(x),
+            side = legend_side
+          )
+        } else if (legend_side == 3) {
+          legend_end <- user_to_line(legend_start + legend_box_width * nrow(x),
+            side = legend_side
+          )
         }
+        legend_text_width <- max(legend_text_size) / par("cex") + 0.5
+        margin_space[["legend"]] <<- legend_end + legend_text_width
       }
-    })
-    # BORDER
-    margin_space[["border"]] <- c(1,1,1,1)
+    }
+  })
+  # DENDROGRAM
+  if (dendrogram != FALSE) {
+    # ROW
+    dendro_size_user <- ncol(x) + ceiling(dendrogram_size * ncol(x))
+    dendro_size_lines <- user_to_line(dendro_size_user,
+      side = 4
+    )
+    margin_space[["dendrogram_row"]] <- dendro_size_lines + 1
+    # COLUMN
+    dendro_size_user <- nrow(x) + ceiling(dendrogram_size * nrow(x))
+    dendro_size_lines <- user_to_line(dendro_size_user,
+      side = 3
+    )
+    margin_space[["dendrogram_col"]] <- dendro_size_lines + 1
   }
-  
+  # BORDER
+  margin_space[["border"]] <- c(1, 1, 1, 1)
+
   # LEGEND_BOX CO-ORDINATES
-  if(legend == TRUE){
+  if (legend == TRUE) {
     # STARTING POINT (LINES)
     legend_box_start <- 1
     # X AXIS TEXT - SAME SIDE
-    if(axis_text_x_side == legend_side){
+    if (axis_text_x_side == legend_side) {
       legend_box_start <- legend_box_start + margin_space[["axis_ticks_x"]] +
         margin_space[["axis_text_x"]] + margin_space[["axis_label_x"]]
     }
     # Y AXIS TEXT - SAME SIDE
-    if(axis_text_y_side == legend_side){
+    if (axis_text_y_side == legend_side) {
       legend_box_start <- legend_box_start + margin_space[["axis_ticks_y"]] +
         margin_space[["axis_text_y"]] + margin_space[["axis_label_y"]]
     }
     # TITLE - SAME SIDE
-    if(title_side == legend_side){
+    if (title_side == legend_side) {
       legend_box_start <- legend_box_start + margin_space[["title"]]
     }
-    # # DENROGRAM
-    # if(dendrogram_side == legend_side){
-    #   
-    # }
+    # # DENDROGRAM
+    if (legend_side %in% dendrogram_side) {
+      if (legend_side %in% c(2, 4)) {
+        legend_box_start <- legend_box_start + margin_space[["dendrogram_row"]]
+      } else if (legend_side %in% c(1, 3)) {
+        legend_box_start <- legend_box_start + margin_space[["dendrogram_col"]]
+      }
+    }
     # LEGEND_POSITION (USER)
     legend_box_start <- line_to_user(legend_box_start, legend_side)
     # LEGEND BOX_END
-    if(legend_side == 1){
+    if (legend_side == 1) {
       legend_box_end <- legend_box_start - legend_box_width * nrow(x)
-    }else if(legend_side == 2){
+    } else if (legend_side == 2) {
       legend_box_end <- legend_box_start - legend_box_width * ncol(x)
-    }else if(legend_side == 3){
+    } else if (legend_side == 3) {
       legend_box_end <- legend_box_start + legend_box_width * nrow(x)
-    }else if(legend_side == 4){
+    } else if (legend_side == 4) {
       legend_box_end <- legend_box_start + legend_box_width * ncol(x)
     }
   }
-  
+
   # CLOSE COPIED DEVICE
   dev_copy_remove()
-  
+
   # CONSTRUCT HEATMAP ----------------------------------------------------------
-  
+
   # MARGINS
-  if(is.null(margins)){
+  if (is.null(margins)) {
     # STARTING POINT
     margins <- c(0, 0, 0, 0)
     # MARGINS
-    lapply(seq_along(margins), function(z){
+    lapply(seq_along(margins), function(z) {
       # TITLE SPACE
-      if(z == title_side & !is.null(title)){
+      if (z == title_side & !is.null(title)) {
         margins[z] <<- margins[z] + margin_space[["title"]]
       }
       # X AXIS SPACE
-      if(z == axis_text_x_side){
+      if (z == axis_text_x_side) {
         margins[z] <<- margins[z] + margin_space[["axis_ticks_x"]] +
           margin_space[["axis_text_x"]] + margin_space[["axis_label_x"]]
       }
       # Y AXIS SPACE
-      if(z == axis_text_y_side){
+      if (z == axis_text_y_side) {
         margins[z] <<- margins[z] + margin_space[["axis_ticks_y"]] +
           margin_space[["axis_text_y"]] + margin_space[["axis_label_y"]]
       }
       # LEGEND SPACE
-      if(z == legend_side & legend != FALSE){
+      if (z == legend_side & legend != FALSE) {
         margins[z] <<- margins[z] + margin_space[["legend"]]
       }
       # DENDROGRAM
-      
+      if (z %in% dendrogram_side & dendrogram != FALSE) {
+        if (z %in% c(2, 4)) {
+          margins[z] <<- margins[z] + margin_space[["dendrogram_row"]]
+        } else if (z %in% c(1, 3)) {
+          margins[z] <<- margins[z] + margin_space[["dendrogram_col"]]
+        }
+      }
       # BORDER
       margins[z] <<- margins[z] + margin_space[["border"]][z]
     })
   }
-  
+
   # SAVE MARGINS GLOBALLY
   options("heat_map_margins" = margins)
+
+  print(margins)
 
   # SET MARGINS
   par("mar" = margins)
@@ -929,61 +977,70 @@ heat_map <- function(x,
 
   # TITLE
   if (!is.null(title)) {
-    title_position <- margins[title_side] - 
+    title_position <- margins[title_side] -
       0.6 * (0.2 * max(title_text_size) + 3)
     mtext(title,
-          side = title_side,
-          line = title_position,
-          font = title_text_font,
-          cex = title_text_size,
-          col = adjustcolor(title_text_col,
-                            title_text_col_alpha),
-          las = 0)
+      side = title_side,
+      line = title_position,
+      font = title_text_font,
+      cex = title_text_size,
+      col = adjustcolor(
+        title_text_col,
+        title_text_col_alpha
+      ),
+      las = 0
+    )
   }
 
   # X AXIS LABEL
   if (!is.null(axis_label_x)) {
     # TITLE & AXIS LABEL SAME SIDE
     if (axis_text_x_side == title_side) {
-      axis_label_x_position <- margins[axis_text_x_side] - 
+      axis_label_x_position <- margins[axis_text_x_side] -
         (0.2 * max(title_text_size) + 3) -
         0.6 * (0.2 * max(axis_label_x_size) + 2)
-    # TITLE & AXIS LABEL DIFFERENT SIDES
+      # TITLE & AXIS LABEL DIFFERENT SIDES
     } else {
-      axis_label_x_position <- margins[axis_text_x_side] - 
+      axis_label_x_position <- margins[axis_text_x_side] -
         0.6 * (0.2 * max(axis_label_x_size) + 2)
     }
     # AXIS LABEL
     mtext(axis_label_x,
-          side = axis_text_x_side,
-          line = axis_label_x_position,
-          font = axis_label_x_font,
-          cex = axis_label_x_size,
-          col = adjustcolor(axis_label_x_col,
-                            axis_label_x_col_alpha),
-          las = 0)
+      side = axis_text_x_side,
+      line = axis_label_x_position,
+      font = axis_label_x_font,
+      cex = axis_label_x_size,
+      col = adjustcolor(
+        axis_label_x_col,
+        axis_label_x_col_alpha
+      ),
+      las = 0
+    )
   }
 
   # Y AXIS LABEL
   if (!is.null(axis_label_y)) {
     # TITLE & AXIS LABEL SAME SIDE
     if (axis_text_y_side == title_side) {
-      axis_label_y_position <- margins[axis_text_y_side] - 
+      axis_label_y_position <- margins[axis_text_y_side] -
         (0.2 * max(title_text_size) + 3) -
         0.6 * (0.2 * max(axis_label_y_size) + 2)
       # TITLE & AXIS LABEL DIFFERENT SIDES
     } else {
-      axis_label_y_position <- margins[axis_text_y_side] - 
+      axis_label_y_position <- margins[axis_text_y_side] -
         0.6 * (0.2 * max(axis_label_y_size) + 2)
     }
     mtext(axis_label_y,
-          side = axis_text_y_side,
-          line = axis_label_y_position,
-          font = axis_label_y_font,
-          cex = axis_label_y_size,
-          col = adjustcolor(axis_label_y_col,
-                            axis_label_y_col_alpha),
-          las = 0)
+      side = axis_text_y_side,
+      line = axis_label_y_position,
+      font = axis_label_y_font,
+      cex = axis_label_y_size,
+      col = adjustcolor(
+        axis_label_y_col,
+        axis_label_y_col_alpha
+      ),
+      las = 0
+    )
   }
 
   # BOXES
@@ -1011,8 +1068,10 @@ heat_map <- function(x,
         col = box_colours[y, z],
         lty = box_border_line_type,
         lwd = box_border_line_width,
-        border = adjustcolor(box_border_line_col,
-                             box_border_line_col_alpha)
+        border = adjustcolor(
+          box_border_line_col,
+          box_border_line_col_alpha
+        )
       )
       # BOX TEXT
       if (box_text != FALSE) {
@@ -1044,23 +1103,123 @@ heat_map <- function(x,
       }
     })
   })
-  
+
+  # DENDROGRAM
+  if (dendrogram != FALSE) {
+    # ROW
+    if (dendrogram %in% c("row", "both")) {
+      # ROW_CLUST
+      if (dendrogram == "row") {
+        row_clust <- heat_map_clust
+      } else {
+        row_clust <- heat_map_clust[[1]]
+      }
+      # RESCALE TO HEAT_MAP
+      min_height <- min(row_clust$height)
+      max_height <- max(row_clust$height)
+      dend_size <- ceiling(dendrogram_size * ncol(x))
+      dend_range <- c(ncol(x), ncol(x) + dend_size)
+      row_clust$height <- LAPPLY(row_clust$height, function(z) {
+        dend_range[1] + ((z - min_height) / (max_height - min_height)) *
+          diff(dend_range)
+      })
+      # DENDROGRAM SCALING
+      if (dendrogram_scale == TRUE) {
+        dend_breaks <- dend_range[1] + seq_along(row_clust$height) *
+          diff(dend_range) / length(row_clust$height)
+        row_clust$height <- dend_breaks
+      }
+      # DENDROGRAM
+      dendro <- as.dendrogram(row_clust)
+      # DENDROGRAM_DATA
+      dendro_data <- dendro_data(dendro)
+      # DENDROGRAM SEGMENTS
+      dendro_segments <- dendro_data$segments
+      # SWAP X/Y FOR HORIZONTAL DENDRO
+      colnames(dendro_segments) <- c("y", "x", "yend", "xend")
+      # ADJUST TO CENTER IN BOX
+      dendro_segments[, c("y", "yend")] <- dendro_segments[, c("y", "yend")] - 0.5
+      # ADJUST ANCHORING
+      dendro_segments[dendro_segments[, "xend"] == 0, "xend"] <- ncol(x)
+      # FLIP ORDER (HORIZONTAL)
+      dendro_segments[, c("y", "yend")] <- abs(dendro_segments[, c("y", "yend")] - nrow(x))
+      # LEFT REQUIRES DIFF COORDS
+      if (2 %in% dendrogram_side) {
+        # INVERT & SHIFT
+        dendro_segments[, c("x", "xend")] <- -dendro_segments[, c("x", "xend")] + ncol(x)
+      }
+      # ADD DENDROGRAM TO HEATMAP
+      lapply(seq_len(nrow(dendro_segments)), function(z) {
+        lines(dendro_segments[z, c("x", "xend")],
+          dendro_segments[z, c("y", "yend")],
+          xpd = TRUE
+        )
+      })
+    }
+    # COLUMN
+    if (dendrogram %in% c("column", "both")) {
+      # COL_CLUST
+      if (dendrogram == "column") {
+        col_clust <- heat_map_clust
+      } else {
+        col_clust <- heat_map_clust[[2]]
+      }
+      # RESCALE TO HEAT_MAP
+      min_height <- min(col_clust$height)
+      max_height <- max(col_clust$height)
+      dend_size <- ceiling(dendrogram_size * nrow(x))
+      dend_range <- c(nrow(x), nrow(x) + dend_size)
+      col_clust$height <- LAPPLY(col_clust$height, function(z) {
+        dend_range[1] + ((z - min_height) / (max_height - min_height)) *
+          diff(dend_range)
+      })
+      # DENDROGRAM SCALING
+      if (dendrogram_scale == TRUE) {
+        dend_breaks <- dend_range[1] + seq_along(col_clust$height) *
+          diff(dend_range) / length(col_clust$height)
+        col_clust$height <- dend_breaks
+      }
+      # DENDROGRAM
+      dendro <- as.dendrogram(col_clust)
+      # DENDROGRAM_DATA
+      dendro_data <- dendro_data(dendro)
+      # DENDROGRAM SEGMENTS
+      dendro_segments <- dendro_data$segments
+      # ADJUST TO CENTER IN HEATMAP BOXES
+      dendro_segments[, c("x", "xend")] <- dendro_segments[, c("x", "xend")] - 0.5
+      # ADJUST ANCHORING
+      dendro_segments[dendro_segments[, "yend"] == 0, "yend"] <- nrow(x)
+      # BOTTOM COORDS
+      if (1 %in% dendrogram_side) {
+        # INVERT & SHIFT
+        dendro_segments[, c("y", "yend")] <- -dendro_segments[, c("y", "yend")] + nrow(x)
+      }
+      # ADD DENDROGRAM TO HEATMAP
+      lapply(seq_len(nrow(dendro_segments)), function(z) {
+        lines(dendro_segments[z, c("x", "xend")],
+          dendro_segments[z, c("y", "yend")],
+          xpd = TRUE
+        )
+      })
+    }
+  }
+
   # LEGEND
   if (legend == TRUE) {
     # LEGEND_TEXT_BREAKS
     if (is.null(legend_text_breaks)) {
       legend_text_breaks <- c(1, legend_col_breaks + 1)
-    }   
+    }
     # LEGEND_COL
     legend_col <- box_col_scale((legend_text - box_min) /
-                                  (box_max - box_min))
+      (box_max - box_min))
     legend_col <- rgb(legend_col[, 1],
-                      legend_col[, 2],
-                      legend_col[, 3],
-                      maxColorValue = 255
+      legend_col[, 2],
+      legend_col[, 3],
+      maxColorValue = 255
     )
     # VERTICAL
-    if(legend_side %in% c(2,4)){
+    if (legend_side %in% c(2, 4)) {
       # LEGEND_CENTER
       legend_center <- ylim[1] + (ylim[2] - ylim[1]) / 2
       # LEGEND BORDER COORDS
@@ -1074,12 +1233,12 @@ heat_map <- function(x,
       )
       # LEGEND BORDER
       rect(legend_border_x[1],
-           legend_border_y[1],
-           legend_border_x[2],
-           legend_border_y[2],
-           border = "black",
-           lwd = 1,
-           xpd = TRUE
+        legend_border_y[1],
+        legend_border_x[2],
+        legend_border_y[2],
+        border = "black",
+        lwd = 1,
+        xpd = TRUE
       )
       # LEGEND_BREAKS
       legend_breaks_y <- seq(
@@ -1093,30 +1252,30 @@ heat_map <- function(x,
         # BOX COLOUR
         if (z != length(legend_breaks_y)) {
           rect(legend_border_x[1],
-               legend_breaks_y[z],
-               legend_border_x[2],
-               legend_breaks_y[z + 1],
-               col = legend_col[z],
-               border = NA,
-               xpd = TRUE
+            legend_breaks_y[z],
+            legend_border_x[2],
+            legend_breaks_y[z + 1],
+            col = legend_col[z],
+            border = NA,
+            xpd = TRUE
           )
         }
         # BOX TEXT
         if (z %in% legend_text_breaks) {
           # LEGEND_TEXT_X
           if (nchar(legend_text[z]) > 1) {
-            if(legend_side == 2){
+            if (legend_side == 2) {
               legend_text_x <- legend_border_x[2] -
-              (0.2 + 0.065 * legend_text_size * (nchar(legend_text[z])))
-            }else if(legend_side == 4){
+                (0.2 + 0.065 * legend_text_size * (nchar(legend_text[z])))
+            } else if (legend_side == 4) {
               legend_text_x <- legend_border_x[2] +
                 (0.2 + 0.065 * legend_text_size * (nchar(legend_text[z])))
             }
           } else {
-            if(legend_side == 2){
+            if (legend_side == 2) {
               legend_text_x <- legend_border_x[2] - (0.2 +
                 0.2 * 0.1 * legend_text_size)
-            }else if(legend_side == 4){
+            } else if (legend_side == 4) {
               legend_text_x <- legend_border_x[2] + (0.2 +
                 0.2 * 0.1 * legend_text_size)
             }
@@ -1125,17 +1284,17 @@ heat_map <- function(x,
           legend_text_y <- legend_breaks_y[z]
           # LEGEND TEXT
           text(legend_text_x,
-               legend_text_y,
-               labels = legend_text[z],
-               font = legend_text_font,
-               cex = legend_text_size,
-               col = legend_text_col,
-               xpd = TRUE
+            legend_text_y,
+            labels = legend_text[z],
+            font = legend_text_font,
+            cex = legend_text_size,
+            col = legend_text_col,
+            xpd = TRUE
           )
         }
       })
-    # HORIZONTAL
-    }else if(legend_side %in% c(1,3)){
+      # HORIZONTAL
+    } else if (legend_side %in% c(1, 3)) {
       # LEGEND_CENTER
       legend_center <- xlim[1] + (xlim[2] - xlim[1]) / 2
       # LEGEND BORDER
@@ -1148,12 +1307,12 @@ heat_map <- function(x,
         legend_center + legend_box_height * ncol(x) / 2
       )
       rect(legend_border_x[1],
-           legend_border_y[1],
-           legend_border_x[2],
-           legend_border_y[2],
-           border = "black",
-           lwd = 1,
-           xpd = TRUE
+        legend_border_y[1],
+        legend_border_x[2],
+        legend_border_y[2],
+        border = "black",
+        lwd = 1,
+        xpd = TRUE
       )
       # LEGEND_BREAKS
       legend_breaks_x <- seq(
@@ -1167,30 +1326,30 @@ heat_map <- function(x,
         # BOX COLOUR
         if (z != length(legend_breaks_x)) {
           rect(legend_breaks_x[z],
-               legend_border_y[1],
-               legend_breaks_x[z + 1],
-               legend_border_y[2],
-               col = legend_col[z],
-               border = NA,
-               xpd = TRUE
+            legend_border_y[1],
+            legend_breaks_x[z + 1],
+            legend_border_y[2],
+            col = legend_col[z],
+            border = NA,
+            xpd = TRUE
           )
         }
         # BOX TEXT
         if (z %in% legend_text_breaks) {
           # LEGEND_TEXT_X
           if (nchar(legend_text[z]) > 1) {
-            if(legend_side == 1){
+            if (legend_side == 1) {
               legend_text_y <- legend_border_y[2] -
                 (0.6 + 0.065 * legend_text_size * (nchar(legend_text[z])))
-            }else if(legend_side == 3){
+            } else if (legend_side == 3) {
               legend_text_y <- legend_border_y[2] +
                 (0.6 + 0.065 * legend_text_size * (nchar(legend_text[z])))
             }
           } else {
-            if(legend_side == 1){
+            if (legend_side == 1) {
               legend_text_y <- legend_border_y[2] - (0.6 +
                 0.2 * 0.1 * legend_text_size)
-            }else if(legend_side == 3){
+            } else if (legend_side == 3) {
               legend_text_y <- legend_border_y[2] + (0.6 +
                 0.2 * 0.1 * legend_text_size)
             }
@@ -1199,12 +1358,12 @@ heat_map <- function(x,
           legend_text_x <- legend_breaks_x[z]
           # LEGEND TEXT
           text(legend_text_x,
-               legend_text_y,
-               labels = legend_text[z],
-               font = legend_text_font,
-               cex = legend_text_size,
-               col = legend_text_col,
-               xpd = TRUE
+            legend_text_y,
+            labels = legend_text[z],
+            font = legend_text_font,
+            cex = legend_text_size,
+            col = legend_text_col,
+            xpd = TRUE
           )
         }
       })
