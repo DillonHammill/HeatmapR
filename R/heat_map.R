@@ -22,8 +22,8 @@
 #'   deviation of that column. Scaling is performed internally using the
 #'   \code{\link{heat_map_scale}} function.
 #' @param dist_method name of the method to use when computing distance matrices
-#'   using \code{\link[stats:dist]{dist()}} for clustering and dendrograms, set
-#'   to \code{"euclidean"} by deafult. This argument is passed to
+#'   using \code{\link[stats:dist]{dist()}} for clustering, set to
+#'   \code{"euclidean"} by deafult. This argument is passed to
 #'   \code{heat_map_clust} which performs the hierarchical clustering using
 #'   \code{\link[stats:hclust]{hclust()}}.
 #' @param clust_method name of the method to use for heirarchical clustering
@@ -39,16 +39,7 @@
 #'   \code{"row"}, \code{"column"} or \code{"both"}, set to FALSE by default.
 #' @param reorder logical indicating whether columns should be reordered post
 #'   clustering to align columns or rows based on relatedness, set to TRUE by
-#'   default.
-#' @param dendrogram logcial indicating whether dendrograms should be added to
-#'   the constrcted heatmap (TRUE OR FALSE) or indicates whether dendrograms
-#'   should be included for the \code{"row"}, \code{"column"} or \code{"both"},
-#'   set to FALSE by default. Setting this argument to TRUE will result in both
-#'   row and column dendrograms being included in the constructed heatmap.
-#' @param dendrogram_side numeric indicating which sides of the plot to add the
-#'   dendrograms.
-#' @param dendrogram_size numeric indicating the width of the dendrogram as a
-#'   percentage of the total rows or columns, set to 0.1 by default.
+#'   default. Columns and rows must be reordered if dendrograms are added.
 #' @param margins a vector of length 4 indicating the number of lines to add to
 #'   the plot margins, set to NULL by default to let \code{heat_map} compute
 #'   optimal margins.
@@ -86,7 +77,7 @@
 #'   set to -0.02 by default. See \code{\link[graphics:par]{tck}} for more
 #'   details.
 #' @param axis_text_y vector of text to label each row in the supplied data, set
-#'   to the \code{rowname(x)} by default. Setting this argument to NA will
+#'   to the \code{rownames(x)} by default. Setting this argument to NA will
 #'   remove all text for the x axis.
 #' @param axis_text_y_side indicates which of side of the plot to label the rows
 #'   of the heatmap (left = 2 or right = 4), set to 1 by default to add row
@@ -218,9 +209,6 @@ heat_map <- function(x,
                      round = 2,
                      cluster = FALSE,
                      reorder = TRUE,
-                     dendrogram = FALSE,
-                     dendrogram_size = 0.2,
-                     dendrogram_side = NULL,
                      margins = NULL,
                      axis_text_x = NULL,
                      axis_text_x_side = "bottom",
@@ -346,11 +334,6 @@ heat_map <- function(x,
     x[, num_cols] <- round(x[, num_cols, drop = FALSE], round)
   }
 
- # DENDROGRAM
-  if (dendrogram != FALSE) {
-    cluster <- dendrogram
-  }
-
   # CLUSTERING
   if (cluster != FALSE) {
     # CLUSTER REQUIRES NUMERIC COLUMN(S)
@@ -379,23 +362,27 @@ heat_map <- function(x,
         reorder <- cluster
       }
       # ROW ORDER
-      if(reorder == "row" & cluster == "row"){
-        x <- x[heat_map_clust$order, ]
-      }else if(reorder == "row" & cluster == "both"){
-        x < x[heat_map_clust[[1]]$order, ]
-      }
+      if(reorder == "row"){
+        if(cluster == "row"){
+          x <- x[heat_map_clust$order, ]
+        }else if(cluster == "both"){
+          x < x[heat_map_clust[[1]]$order, ]
+        }
       # COLUMN ORDER
-      if(reorder == "column" & cluster == "column"){
-        x <- x[, heat_map_clust$order]
-      }else if(reorder == "column" & cluster == "both"){
-        x <- x[,heat_map_clust[[2]]$order]
-      }
-      # BOTH
-      if(reorder == "both" & cluster == "both"){
-        # ROW
-        x < x[heat_map_clust[[1]]$order, ]
-        # COLUMN
-        x <- x[, heat_map_clust[[2]]$order]
+      }else if(reorder == "column"){
+        if(cluster == "column"){
+          x <- x[, c(heat_map_clust$order, char_cols)]
+        }else if(cluster == "both"){
+          x <- x[, c(heat_map_clust[[2]]$order, char_cols)]
+        }
+      # BOTH ORDER
+      }else if(reorder == "both"){
+        if(cluster == "both"){
+          # ROW
+          x <- x[heat_map_clust[[1]]$order, ]
+          # COLUMN
+          x <- x[, c(heat_map_clust[[2]]$order, char_cols)]
+        }
       }
     }
   }  
@@ -588,37 +575,37 @@ heat_map <- function(x,
                     envir = parent.frame())
            })  
   
-  # DENDROGRAM SIDE
-  if(dendrogram != FALSE){
-    # DENDROGRAM SIDE
-    if(is.null(dendrogram_side)){
-          # BOTH
-    if(dendrogram %in% c("b", "both")){
-      dendrogram <- seq_len(4)[-c(axis_text_x_side,
-                                  axis_text_y_side)]
-    # ROW
-    }else if(dendrogram %in% c("r", "row")){
-      dendrogram <- c(2,4)[-match(axis_text_x_side, c(2,4))]
-    # COLUMN
-    }else if(dendrogram %in% c("c", "column")){
-      dendrogram <- c(1,3)[-match(axis_text_y_side, c(1,3))]
-    }
-    # DENDROGRAM SIDE SUPPLIED
-    }else if(!is.null(dendrogram_side)){
-      # NUMERIC
-      dendrogram_side <- side_to_num(dendrogram_side)
-      # DENDROGRAM SIDE CANNOT BE SAME AS AXES
-      if(axis_text_x_side %in% dendrogram_side){
-        message("Cannot place dendrogram on the same side as the x axis.")
-        dendrogram_side[dendrogram_side == axis_text_x_side] <- 
-          c(1,3)[-match(axis_text_x_side, c(1,3))]
-      }else if(axis_text_y_side %in% dendrogram_side){
-        message("Cannot place dendrogram on the same side as the y axis.")
-        dendrogram_side[dendrogram_side == axis_text_y_side] <- 
-          c(2,4)[-match(axis_text_y_side, c(2,4))]
-      }
-    }
-  }
+  # # DENDROGRAM SIDE
+  # if(dendrogram != FALSE){
+  #   # DENDROGRAM SIDE
+  #   if(is.null(dendrogram_side)){
+  #         # BOTH
+  #   if(dendrogram %in% c("b", "both")){
+  #     dendrogram <- seq_len(4)[-c(axis_text_x_side,
+  #                                 axis_text_y_side)]
+  #   # ROW
+  #   }else if(dendrogram %in% c("r", "row")){
+  #     dendrogram <- c(2,4)[-match(axis_text_x_side, c(2,4))]
+  #   # COLUMN
+  #   }else if(dendrogram %in% c("c", "column")){
+  #     dendrogram <- c(1,3)[-match(axis_text_y_side, c(1,3))]
+  #   }
+  #   # DENDROGRAM SIDE SUPPLIED
+  #   }else if(!is.null(dendrogram_side)){
+  #     # NUMERIC
+  #     dendrogram_side <- side_to_num(dendrogram_side)
+  #     # DENDROGRAM SIDE CANNOT BE SAME AS AXES
+  #     if(axis_text_x_side %in% dendrogram_side){
+  #       message("Cannot place dendrogram on the same side as the x axis.")
+  #       dendrogram_side[dendrogram_side == axis_text_x_side] <- 
+  #         c(1,3)[-match(axis_text_x_side, c(1,3))]
+  #     }else if(axis_text_y_side %in% dendrogram_side){
+  #       message("Cannot place dendrogram on the same side as the y axis.")
+  #       dendrogram_side[dendrogram_side == axis_text_y_side] <- 
+  #         c(2,4)[-match(axis_text_y_side, c(2,4))]
+  #     }
+  #   }
+  # }
   
   # COMPUTE GRAPHICAL PARAMETERS -----------------------------------------------
   
@@ -764,8 +751,6 @@ heat_map <- function(x,
           margin_space[["legend"]] <<- legend_end + legend_text_width
         }
       }
-      # DENDROGRAM
-        
     })
     # BORDER
     margin_space[["border"]] <- c(1,1,1,1)
@@ -1059,7 +1044,7 @@ heat_map <- function(x,
       }
     })
   })
-
+  
   # LEGEND
   if (legend == TRUE) {
     # LEGEND_TEXT_BREAKS
@@ -1177,8 +1162,6 @@ heat_map <- function(x,
         (legend_border_x[2] - legend_border_x[1]) /
           legend_col_breaks
       )
-      print(legend_breaks_x)
-      print(legend_border_y)
       # LEGEND COLOURS
       lapply(seq_len(length(legend_breaks_x)), function(z) {
         # BOX COLOUR

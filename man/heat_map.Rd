@@ -13,9 +13,6 @@ heat_map(
   round = 2,
   cluster = FALSE,
   reorder = TRUE,
-  dendrogram = FALSE,
-  dendrogram_size = 0.2,
-  dendrogram_side = NULL,
   margins = NULL,
   axis_text_x = NULL,
   axis_text_x_side = "bottom",
@@ -96,8 +93,8 @@ deviation of that column. Scaling is performed internally using the
 \code{\link{heat_map_scale}} function.}
 
 \item{dist_method}{name of the method to use when computing distance matrices
-using \code{\link[stats:dist]{dist()}} for clustering and dendrograms, set
-to \code{"euclidean"} by deafult. This argument is passed to
+using \code{\link[stats:dist]{dist()}} for clustering, set to
+\code{"euclidean"} by deafult. This argument is passed to
 \code{heat_map_clust} which performs the hierarchical clustering using
 \code{\link[stats:hclust]{hclust()}}.}
 
@@ -118,19 +115,7 @@ FALSE) or specifies whether clustering should be performed on either the
 
 \item{reorder}{logical indicating whether columns should be reordered post
 clustering to align columns or rows based on relatedness, set to TRUE by
-default.}
-
-\item{dendrogram}{logcial indicating whether dendrograms should be added to
-the constrcted heatmap (TRUE OR FALSE) or indicates whether dendrograms
-should be included for the \code{"row"}, \code{"column"} or \code{"both"},
-set to FALSE by default. Setting this argument to TRUE will result in both
-row and column dendrograms being included in the constructed heatmap.}
-
-\item{dendrogram_size}{numeric indicating the width of the dendrogram as a
-percentage of the total rows or columns, set to 0.1 by default.}
-
-\item{dendrogram_side}{numeric indicating which sides of the plot to add the
-dendrograms.}
+default. Columns and rows must be reordered if dendrograms are added.}
 
 \item{margins}{a vector of length 4 indicating the number of lines to add to
 the plot margins, set to NULL by default to let \code{heat_map} compute
@@ -184,7 +169,7 @@ set to -0.02 by default. See \code{\link[graphics:par]{tck}} for more
 details.}
 
 \item{axis_text_y}{vector of text to label each row in the supplied data, set
-to the \code{rowname(x)} by default. Setting this argument to NA will
+to the \code{rownames(x)} by default. Setting this argument to NA will
 remove all text for the x axis.}
 
 \item{axis_text_y_side}{indicates which of side of the plot to label the rows

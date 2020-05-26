@@ -89,7 +89,7 @@ heat_map_clust <- function(x,
     col_clust <- do.call("hclust", args[names(args) %in% clust_args])
     
   }
-
+  
   # RETURN HCLUST OBJECTS
   if (cluster %in% c("r", "row")) {
     return(row_clust)
