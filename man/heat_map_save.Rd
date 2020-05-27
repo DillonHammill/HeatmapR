@@ -46,6 +46,7 @@ created using \code{heat_map_layout}, set to NULL by default.}
 Save high resolution images
 }
 \examples{
+\dontrun{
 # Save Heatmap
 heat_map_save("Heatmap.png",
 height = 7, 
@@ -57,7 +58,7 @@ scale = "range",
 title = "Iris Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
-
+}
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)

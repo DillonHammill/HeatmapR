@@ -29,6 +29,7 @@
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' 
 #' @examples 
+#' \dontrun{
 #' # Save Heatmap
 #' heat_map_save("Heatmap.png",
 #' height = 7, 
@@ -40,7 +41,7 @@
 #' title = "Iris Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
-#' 
+#' }
 #' @export
 heat_map_save <- function(save_as,
                           width = 7,
@@ -220,6 +221,7 @@ heat_map_complete <- function(){
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' 
 #' @examples
+#' \dontrun{
 #' # Save heatmap
 #' heat_map_save("Heatmap.png",
 #' height = 7, 
@@ -244,7 +246,7 @@ heat_map_complete <- function(){
 #' 
 #' # Signal completion
 #' heat_map_complete()
-#' 
+#' }
 #' @export
 heat_map_layout <- function(layout = NULL){
   

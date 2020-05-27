@@ -17,6 +17,7 @@ column (2) order, set to row order by default.}
 Arrange multiple heatmaps
 }
 \examples{
+\dontrun{
 # Save heatmap
 heat_map_save("Heatmap.png",
 height = 7, 
@@ -41,7 +42,7 @@ axis_label_y = "Row ID")
 
 # Signal completion
 heat_map_complete()
-
+}
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)
