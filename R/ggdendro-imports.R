@@ -7,6 +7,8 @@
 #'   "Rectangle" will draw rectangular lines, while "triangle" will draw
 #'   triangular lines.
 #' @param ... ignored
+#' @importFrom stats is.leaf
+#' @importFrom graphics points
 #' @noRd
 dendrogram_data <- function (x, type = c("rectangle", "triangle"), ...){ 
   
@@ -218,6 +220,7 @@ dendrogram_data <- function (x, type = c("rectangle", "triangle"), ...){
 
 ### Code copied from stats:::.memberDend
 
+#' @noRd
 .memberDend <- function (x) 
 {
   r <- attr(x, "x.member")
@@ -233,7 +236,8 @@ dendrogram_data <- function (x, type = c("rectangle", "triangle"), ...){
 # plotNodeLimit -----------------------------------------------------------
 
 ### Code copied from stats:::plotNodeLimit
-
+#' @importFrom stats is.leaf
+#' @noRd
 plotNodeLimit <- function (x1, x2, subtree, center) 
 {
   inner <- !is.leaf(subtree) && x1 != x2
@@ -268,6 +272,6 @@ plotNodeLimit <- function (x1, x2, subtree, center)
 
 ### Code copied from stats:::.midDend
 
-
+#' @noRd
 .midDend <- function (x) 
   if (is.null(mp <- attr(x, "midpoint"))) 0 else mp

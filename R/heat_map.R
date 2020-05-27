@@ -96,7 +96,7 @@
 #' @param axis_text_y_angle indicates whether the row label text should be
 #'   horizontal or vertical, set to 3 by default to always be perpendicular to
 #'   the axis. See \code{\link[graphics:par]{las}} for alternatives.
-#' @param axis_text_x_adjust vertical adjustment of y axis text, set to 0.45 by
+#' @param axis_text_y_adjust vertical adjustment of y axis text, set to 0.45 by
 #'   default.
 #' @param axis_text_y_font numeric indicating the font to use for the row
 #'   labels, set to 1 by default for plain font. See
@@ -191,7 +191,7 @@
 #' @importFrom methods is
 #' @importFrom stats as.dendrogram
 #' @importFrom graphics plot axis rect title legend text mtext strheight
-#'   strwidth grconvertX grconvertY
+#'   strwidth grconvertX grconvertY lines
 #' @importFrom grDevices colorRamp rgb adjustcolor col2rgb colorRampPalette
 #'   dev.set
 #'
@@ -252,6 +252,7 @@ heat_map <- function(x,
                      axis_label_y_font = 2,
                      axis_label_y_size = 1.2,
                      axis_label_y_col = "black",
+                     axis_label_y_col_alpha = 1,
                      axis_ticks_y_length = -0.02,
                      title = NULL,
                      title_side = 3,
@@ -1136,7 +1137,7 @@ heat_map <- function(x,
       # DENDROGRAM
       dendro <- as.dendrogram(row_clust)
       # DENDROGRAM_DATA
-      dendro_data <- dendro_data(dendro)
+      dendro_data <- dendrogram_data(dendro)
       # DENDROGRAM SEGMENTS
       dendro_segments <- dendro_data$segments
       # SWAP X/Y FOR HORIZONTAL DENDRO
@@ -1186,7 +1187,7 @@ heat_map <- function(x,
       # DENDROGRAM
       dendro <- as.dendrogram(col_clust)
       # DENDROGRAM_DATA
-      dendro_data <- dendro_data(dendro)
+      dendro_data <- dendrogram_data(dendro)
       # DENDROGRAM SEGMENTS
       dendro_segments <- dendro_data$segments
       # ADJUST TO CENTER IN HEATMAP BOXES

@@ -43,6 +43,7 @@ heat_map(
   axis_label_y_font = 2,
   axis_label_y_size = 1.2,
   axis_label_y_col = "black",
+  axis_label_y_col_alpha = 1,
   axis_ticks_y_length = -0.02,
   title = NULL,
   title_side = 3,
@@ -163,8 +164,8 @@ column label text, set to 1 by default to remove transparency.}
 horizontal or vertical, set to 3 by default to always be perpendicular to
 the axis. See \code{\link[graphics:par]{las}} for alternatives.}
 
-\item{axis_text_x_adjust}{vertical adjustment of y axis text, set to 0.45 by
-default.}
+\item{axis_text_x_adjust}{horizontal adjustment of x axis text, set to 0.45
+by default.}
 
 \item{axis_label_x}{label for x axis, set to NULL by default.}
 
@@ -210,6 +211,9 @@ row label text, set to 1 by default to remove transparency.}
 horizontal or vertical, set to 3 by default to always be perpendicular to
 the axis. See \code{\link[graphics:par]{las}} for alternatives.}
 
+\item{axis_text_y_adjust}{vertical adjustment of y axis text, set to 0.45 by
+default.}
+
 \item{axis_label_y}{label for y axis, set to NULL by default.}
 
 \item{axis_label_y_font}{numeric indicating the font to use for the y axis
@@ -221,6 +225,9 @@ label, set to 2 by default for bold font. See
 
 \item{axis_label_y_col}{colour to use for y axis label, set to \code{"black"}
 by default.}
+
+\item{axis_label_y_col_alpha}{numeric to control the alpha transparency of
+the y axis label, set to 1 by default to remove transparency.}
 
 \item{axis_ticks_y_length}{numeric to control the length of the y axis ticks,
 set to -0.02 by default. See \code{\link[graphics:par]{tck}} for more
@@ -327,9 +334,6 @@ percentage of the plot area width, set to 0.05 by default.}
 percentage of the plot area height, set to 0.4 by default.}
 
 \item{...}{not in use.}
-
-\item{axis_label_y_col_alpha}{numeric to control the alpha transparency of
-the y axis label, set to 1 by default to remove transparency.}
 }
 \description{
 \code{heat_map()} provides an intuitive way to construct high resolution

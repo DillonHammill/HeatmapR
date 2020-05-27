@@ -16,7 +16,7 @@ heat_map_layout(c(1,2))
 
 # Construct raw heatmap
 heat_map(iris[1:10,],
-scale = NULL,
+scale = FALSE,
 title = "Iris Raw Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")

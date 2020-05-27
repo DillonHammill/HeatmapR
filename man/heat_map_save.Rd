@@ -31,7 +31,7 @@ set to 7 by default for image with width of 7 inches.}
 (\code{mm}). Set to \code{"in"} by default. Units cannot be altered for
 \code{svg} and \code{pdf} graphics devices.}
 
-\item{res}{resolution in ppi, set to 300 by default.}
+\item{res}{resolution in dpi, set to 300 by default.}
 
 \item{multiple}{logical indicating whether multiple pages should be saved to
 separate numbered files, set to \code{TRUE} by default.}

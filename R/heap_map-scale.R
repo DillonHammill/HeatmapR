@@ -6,8 +6,6 @@
 #' to constructing a heatmap.
 #'
 #' @param x matrix-like object to be scaled.
-#' @param scale indicates whether scaling should be applied as per
-#'   \code{format}, set to TRUE by default.
 #' @param method type of scaling to perform, can be either \code{'range'},
 #'   \code{'mean'} or {'zscore'}. Range scaling normalizes the data to have
 #'   limits between 0 and 1. Mean scaling subtracts the mean (calculated
@@ -55,14 +53,14 @@ heat_map_scale <- function(x,
     if (is.numeric(x[, z])) {
       # RANGE
       if (grepl("range", method, ignore.case = TRUE) |
-        grepl("r", method, ignore.case = TRUE)) {
+        grepl("^r", method, ignore.case = TRUE)) {
         x[, z] <<- .scale_range(x[, z])
         # MEAN
       } else if (grepl("mean", method, ignore.case = TRUE) |
-        grepl("m", method, ignore.case = TRUE)) {
+        grepl("^m", method, ignore.case = TRUE)) {
         x[, z] <<- .scale_mean(x[, z])
         # Z-SCORE
-      } else if (grepl("z", method, ignore.case = TRUE)) {
+      } else if (grepl("^z", method, ignore.case = TRUE)) {
         x[, z] <<- .scale_zscore(x[, z])
       } else {
         stop(paste0(method, " is not a supported scaling method."))

@@ -15,7 +15,7 @@
 #'   (\code{px}), inches (\code{inches}), centimetres (\code{cm}) or millimetres
 #'   (\code{mm}). Set to \code{"in"} by default. Units cannot be altered for
 #'   \code{svg} and \code{pdf} graphics devices.
-#' @param res resolution in ppi, set to 300 by default.
+#' @param res resolution in dpi, set to 300 by default.
 #' @param multiple logical indicating whether multiple pages should be saved to
 #'   separate numbered files, set to \code{TRUE} by default.
 #' @param layout a vector or matrix defining the custom layout of the plot to be
@@ -171,11 +171,11 @@ heat_map_reset <- function(){
 #' width = 5)
 #' 
 #' # Custom layout
-#' heat_map(layout = c(1,2))
+#' heat_map_layout(layout = c(1,2))
 #' 
 #' # Construct raw heatmap
 #' heat_map(iris[1:10,],
-#' scale = NULL,
+#' scale = FALSE,
 #' title = "Iris Raw Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
@@ -230,7 +230,7 @@ heat_map_complete <- function(){
 #' 
 #' # Construct raw heatmap
 #' heat_map(iris[1:10,],
-#' scale = NULL,
+#' scale = FALSE,
 #' title = "Iris Raw Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
@@ -293,7 +293,7 @@ heat_map_layout <- function(layout = NULL){
 #'
 #' # Construct raw heatmap
 #' heat_map(iris[1:10,],
-#' scale = NULL,
+#' scale = FALSE,
 #' title = "Iris Raw Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")

@@ -23,7 +23,26 @@ knitr::opts_chunk$set(
 [![Last-changedate](https://img.shields.io/badge/last%20change-`r gsub('-', '--', Sys.Date())`-yellowgreen.svg)](/commits/master)
 <!-- badges: end -->
 
-**heatmapr** makes it easy to generate high quality heatmaps with minimal data preprocessing or manual customization. 
+**heatmapr** it a lightweight R package that makes it easy to generate high quality heatmaps with minimal data preprocessing or manual customization.
+
+## Availabe Packages for Heatmaps
+
+- heatmap() in the stats package
+- [qplots](https://cran.r-project.org/web/packages/gplots/index.html)
+- [superheat](https://github.com/rlbarter/superheat)
+- [ggplot2](https://github.com/tidyverse/ggplot2)
+- [plotly](https://github.com/ropensci/plotly)
+- [ComplexHeatmap](https://github.com/jokergoo/ComplexHeatmap)
+
+## Benefits of heatmapr
+`heatmapr` has a number of benefits over other heatmap packages:
+
+* **heatmapr** is built using base graphics, so there is no required `ggplot2` knowledge in order to use this package.
+* **heatmapr** is extremely lighweight and therefore there are no external dependencies that need to be installed.
+* **heatmapr** is designed under ROpenSci naming guidelines for a consistent and intuitive user experience.
+* unlike other heatmap packages that use base graphics, **heatmapr** actually returns the plot object instead of an image. This makes it easy to arrange multiple plots in complex layouts without sacrificing resolution.
+* **heatmapr** is fully customizable and comes with useful saving API (`heat_map_save()`) to export high resolution images.
+* **heatmapr** handles datasets that contain non-numeric or missing data, which means you don't have to spend ages formatting and pre-processing the data.
 
 ## Installation
 
@@ -35,7 +54,7 @@ devtools::install_github("DillonHammill/heatmapr")
 
 ## Usage
 
-Creating heatmaps is as easy as loading **heatmapr** and supplying your dataset to the `heat_map()` function. This will generate a heatmap with the default red to green colour scale. 
+Creating heatmaps is as easy as loading **heatmapr** and supplying your dataset to the `heat_map()` function. For details on customising your heatmaps, refer to the package vignette.
 
 ```{r, eval =TRUE, echo = FALSE}
 library(heatmapr)
@@ -43,7 +62,9 @@ library(heatmapr)
 
 ```{r, eval = FALSE}
 library(heatmapr)
-heat_map(mtcars)
+heat_map(mtcars,
+         scale = "range",
+         dendrogram = "both")
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
@@ -51,108 +72,23 @@ heat_map_save("man/figures/README-heatmapr-1.png",
               height = 7,
               width = 10,
               res = 500)
-heat_map(mtcars)
+heat_map(mtcars,
+         scale = "range",
+         dendrogram = "both")
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
 knitr::include_graphics('man/figures/README-heatmapr-1.png')
 ```
 
-Obviously this heatmap is not very informative as the variables in the `mtcars` dataset are on vastly different scales. Fortunately, `heat_map()` can take of care of the scaling for us to put all of the variables on a similar scale. `heat_map()` will perform column-wise scaling using either the `range`, `mean` or `zscore` scaling methods. Let's apply `range` scaling to the `mtcars` dataset and change the colour scale to white-yellow-red:
+## Code of Conduct
 
-```{r, eval = FALSE}
-heat_map(mtcars,
-         scale = "range",
-         box_col_scale = c("white",
-                           "yellow",
-                           "orange",
-                           "red",
-                           "darkred"))
+Please note that the heatmapr project is released with a [Contributor Code of Conduct](https://contributor-covenant.org/version/2/0/CODE_OF_CONDUCT.html). By contributing to this project, you agree to abide by its terms.
+
+## Citation
+
+A **heatmapr** publication is on the way, but in the meantime if you use **heatmapr** for your work please cite the package as follows:
+
+```{r, eval = TRUE}
+citation("heatmapr")
 ```
-
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("man/figures/README-heatmapr-2.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars,
-         scale = "range",
-         box_col_scale = c("white",
-                           "yellow",
-                           "orange",
-                           "red",
-                           "darkred"))
-```
-
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('man/figures/README-heatmapr-2.png')
-```
-
-Clearly, scaling has a big impact on how the data is visualized and so it is a good idea to play around with the different scaling methods to get the best visualization of the data. `heat_map()` can also perform hierachical clustering by `row`, `column` or `both`, and the data can then be reordered to group the data based on relatedness. This reordering can be manually turned off by setting `reorder = FALSE`. Let's perform hierarchical clustering on both the rows and columns and allow `heat_map()` to reorder the data:
-
-```{r, eval = FALSE}
-heat_map(mtcars,
-         scale = "range",
-         cluster = "both",
-         box_col_scale = c("white",
-                           "yellow",
-                           "orange",
-                           "red",
-                           "darkred"))
-```
-
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("man/figures/README-heatmapr-3.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars,
-         scale = "range",
-         cluster = "both",
-         box_col_scale = c("white",
-                           "yellow",
-                           "orange",
-                           "red",
-                           "darkred"))
-```
-
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('man/figures/README-heatmapr-3.png')
-```
-
-Sometimes it is useful to include non-numeric variables in the heatmap as well. `heat_map()` takes care of this by moving non-numeric variables to the right of the heatmap and does not use these variables during scaling and clustering. Colours for these non-numeric variables are selected from `box_col_palette`. Here is an example using the `iris` dataset, in which the `species` column contains non-numeric data.
-
-```{r, eval = FALSE}
-heat_map(iris,
-         scale = "range",
-         cluster = "both",
-         box_col_scale = c("red", 
-                           "black",
-                           "green"),
-         box_col_palette = c("purple",
-                             "orange",
-                             "blue"))
-```
-
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("man/figures/README-heatmapr-4.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(iris,
-         scale = "range",
-         cluster = "both",
-         box_col_scale = c("red", 
-                           "black",
-                           "green"),
-         box_col_palette = c("purple",
-                             "orange",
-                             "blue"))
-```
-
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('man/figures/README-heatmapr-4.png')
-```
-
-
-
