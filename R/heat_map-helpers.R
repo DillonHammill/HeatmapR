@@ -121,8 +121,8 @@ heat_map_save <- function(save_as,
     heat_map_layout(layout = layout)
   }
   
-  # SIGNAL SAVE
-  options("heat_map_save" = TRUE)
+  # SIGNAL SAVE - DEVICE 
+  options("heat_map_save" = dev.cur())
   
 }
 
@@ -140,10 +140,16 @@ heat_map_save <- function(save_as,
 heat_map_reset <- function(){
   
   # HEAT_MAP_SAVE
-  options("heat_map_save" = FALSE)
+  options("heat_map_save" = NULL)
   
   # HEAT_MAP_CUSTOM
   options("heat_map_custom" = FALSE)
+  
+  # HEAT_MAP_COPY
+  options("heat_map_copy" = NULL)
+  
+  # HEAT_MAP_MARGINS
+  options("heat_map_margins" = NULL)
   
   # TURN OFF GRAPHICS DEVICE
   heat_map_complete()
@@ -186,7 +192,17 @@ heat_map_reset <- function(){
 #' 
 #' @export
 heat_map_complete <- function(){
-  dev.off()
+  
+  # CLOSE DEVICE
+  if(!is.null(getOption("heat_map_save"))){
+    dev.off(getOption("heat_map_save"))
+  }else{
+    dev.off()
+  } 
+  
+  # RESET HEAT_MAP_SAVE
+  options("heat_map_save" = NULL)
+
 }
 
 ## HEAT_MAP_LAYOUT -------------------------------------------------------------

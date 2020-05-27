@@ -6,7 +6,7 @@
 #' @param ... additional arguments passed to plot.
 #' @return list of graphical parameters for copied device.
 #' @importFrom graphics par
-#' @importFrom grDevices dev.size png
+#' @importFrom grDevices dev.size png dev.cur
 #' @noRd
 dev_copy <- function(...){
   
@@ -18,14 +18,15 @@ dev_copy <- function(...){
   
   # DEVICE RESOLUTION (PX/IN)
   dev_res <- (dev_px/dev_in)[1]
-    
-  # TEMPFILE
-  tempfile <- paste0(tempdir(),
-                     .Platform$file.sep,
-                     "heat_map_copy.png")
   
-  # MIMIC DEVICE
-  png(tempfile,
+  # CURRENT TEMP FILES
+  options("heat_map_temp_files" = list.files(tempdir()))
+  
+  # TEMP FILE
+  temp_file <- tempfile("heat_map_copy", fileext = ".png")
+  
+  # MIMIC DEVICE - TEMP FILE
+  png(temp_file,
       width = dev_in[1],
       height = dev_in[2],
       res = dev_res,
@@ -35,6 +36,9 @@ dev_copy <- function(...){
   if(length(as.list(...)) != 0){
     plot(...)
   }
+  
+  # GLOBAL OPTION
+  options("heat_map_copy" = dev.cur())
   
   # RETURN GRAPHICS PARAMETERS
   return(par())
@@ -48,21 +52,22 @@ dev_copy <- function(...){
 dev_copy_remove <- function(){
   
   # CLOSE DEVICE
-  dev.off()
+  dev.off(getOption("heat_map_copy"))
   
-  # REMOVE TEMPFILE
-  if(any(grepl("heat_map_copy.png", list.files(tempdir())))){
-    # FILES TO REMOVE
-    temp_dir <- tempdir()
-    temp_files <- list.files(temp_dir)
-    files <- temp_files[which(grepl("heat_map_copy.png", temp_files))]
-    # REMOVE FILES
-    lapply(files, function(file){
-      file.remove(paste0(temp_dir,
+  # DELETE TEMP FILES
+  temp_files_prior <- getOption("heat_map_temp_files")
+  if(!is.null(temp_files_prior)){
+    temp_files_current <- list.files(tempdir())
+    if(!all(temp_files_current %in% temp_files_prior)){
+      temp_files_remove <- temp_files_current[!temp_files_current %in% 
+                                                temp_files_prior]
+      file.remove(paste0(tempdir(),
                          .Platform$file.sep,
-                         file))
-    })
+                         temp_files_remove))
+    }
   }
+
+  # NULL RETURN
   invisible(NULL)
   
 }
@@ -110,7 +115,6 @@ line_to_user <- function(line, side){
 #' Convert user co-ordinates to line co-ordinates
 #' @noRd
 user_to_line <- function(user, side){
-  print(side)
   line_height <- par("cin")[2] * par("cex") * par("lheight")
   x_off <- diff(grconvertX(0:1, "inches", "user"))
   y_off <- diff(grconvertY(0:1, "inches", "user"))

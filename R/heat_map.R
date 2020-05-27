@@ -193,12 +193,13 @@
 #' @importFrom graphics plot axis rect title legend text mtext strheight
 #'   strwidth grconvertX grconvertY
 #' @importFrom grDevices colorRamp rgb adjustcolor col2rgb colorRampPalette
+#'   dev.set
 #'
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #'
 #' @examples
 #' # Heatmap - Raw Values
-#' heat_map(iris[1:20],
+#' heat_map(iris[1:20, ],
 #'   title = "Iris Heatmap",
 #'   axis_label_x = "Plant Parameter",
 #'   axis_label_y = "Row ID"
@@ -834,7 +835,12 @@ heat_map <- function(x,
 
   # CLOSE COPIED DEVICE
   dev_copy_remove()
-
+  
+  # SWITCH DEVICE
+  if(!is.null(getOption("heat_map_save"))){
+    dev.set(getOption("heat_map_save"))
+  }
+  
   # CONSTRUCT HEATMAP ----------------------------------------------------------
 
   # MARGINS
@@ -876,8 +882,6 @@ heat_map <- function(x,
 
   # SAVE MARGINS GLOBALLY
   options("heat_map_margins" = margins)
-
-  print(margins)
 
   # SET MARGINS
   par("mar" = margins)
@@ -1376,7 +1380,7 @@ heat_map <- function(x,
   heat_map <- heat_map_record()
 
   # SAVE HEATMAP
-  if (getOption("heat_map_save")) {
+  if (!is.null(getOption("heat_map_save"))) {
     if (!getOption("heat_map_custom")) {
       heat_map_complete()
     }

@@ -338,7 +338,7 @@ support for non-numeric data, data scaling, clustering and dendrograms.
 }
 \examples{
 # Heatmap - Raw Values
-heat_map(iris[1:20],
+heat_map(iris[1:20, ],
   title = "Iris Heatmap",
   axis_label_x = "Plant Parameter",
   axis_label_y = "Row ID"
