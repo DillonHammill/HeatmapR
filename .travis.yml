@@ -22,7 +22,11 @@ before_install:
   - R -e 'install.packages("devtools")'
   
 install:
-  - R -e 'devtools::install_github("r-lib/covr")'
+  - R -e 'install.packages("covr")'
+  - R -e 'install.packages("vdiffr")'
+  - R -e 'install.packages("rmarkdown")'
+  - R -e 'install.packages("testthat")'
+  - R -e 'install.packages("knitr")'
 
 warnings_are_errors: false
 
