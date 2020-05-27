@@ -18,7 +18,8 @@ coverage](https://codecov.io/gh/DillonHammill/heatmapr/branch/master/graph/badge
 
 **heatmapr** it a lightweight R package that makes it easy to generate
 high quality heatmaps with minimal data preprocessing or manual
-customization.
+customization. Visit the **heatmapr** website to get started
+(<https://dillonhammill.github.io/heatmapr/>).
 
 ## Availabe Packages for Heatmaps
 
