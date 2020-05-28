@@ -10,6 +10,7 @@ heat_map_complete()
 Indicate when a heatmap is complete and ready for saving
 }
 \examples{
+\dontrun{
 # Save heatmap
 heat_map_save("Heatmap.png",
 height = 7, 
@@ -34,7 +35,7 @@ axis_label_y = "Row ID")
 
 # Signal completion
 heat_map_complete()
-
+}
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)

@@ -134,9 +134,10 @@ heat_map_save <- function(save_as,
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' 
 #' @examples 
-#' # Reset heatmapr settings
+#' \dontrun{
+#' # Reset HeatmapR settings
 #' heat_map_reset()
-#' 
+#' }
 #' @export
 heat_map_reset <- function(){
   
@@ -161,11 +162,12 @@ heat_map_reset <- function(){
 
 #' Indicate when a heatmap is complete and ready for saving
 #' 
-#' @importFrom grDevices dev.off
+#' @importFrom grDevices dev.off dev.cur
 #' 
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #' 
 #' @examples 
+#' \dontrun{
 #' # Save heatmap
 #' heat_map_save("Heatmap.png",
 #' height = 7, 
@@ -190,7 +192,7 @@ heat_map_reset <- function(){
 #' 
 #' # Signal completion
 #' heat_map_complete()
-#' 
+#' }
 #' @export
 heat_map_complete <- function(){
   
@@ -198,7 +200,9 @@ heat_map_complete <- function(){
   if(!is.null(getOption("heat_map_save"))){
     dev.off(getOption("heat_map_save"))
   }else{
-    dev.off()
+    if(!dev.cur() == 1){
+      dev.off()
+    }
   } 
   
   # RESET HEAT_MAP_SAVE
@@ -313,4 +317,45 @@ heat_map_layout <- function(layout = NULL){
 #' @export
 heat_map_record <- function(){
   recordPlot()
+}
+
+## HEAT_MAP_NEW ----------------------------------------------------------------
+
+#' Open a pop-up graphics device for heatmaps
+#'
+#' @param popup logical indicating whether a popup graphics device should be
+#'   opened.
+#' @param ... additional arguments passed to
+#'   \code{\link[grDevices:dev]{dev.new}}:
+#'
+#' @importFrom grDevices dev.cur dev.new
+#'
+#' @examples
+#' \dontrun{
+#' # Open platform-specific graphics device
+#' heat_map_new(popup = TRUE)
+#' }
+#'
+#' @author Dillon Hammill, \email{Dillon.Hammill@anu.edu.au}
+#'
+#' @export
+heat_map_new <- function(popup = FALSE, ...){
+  # Null graphics device -> RStudioGD
+  if(dev.cur() == 1) {
+    dev.new()
+  }
+  # Open popup window - either windows/X11/xquartz
+  if(popup == TRUE){
+    if(.Platform$OS.type == "windows"){
+      suppressWarnings(dev.new(...))
+    }else if (.Platform$OS.type == "unix") {
+      if (Sys.info()["sysname"] == "Linux") {
+        # Cairo needed for semi-transparency
+        suppressWarnings(dev.new(type = "cairo", ...))
+      }else if(Sys.info()["sysname"] == "Darwin"){
+        suppressWarnings(dev.new(...))
+      }
+    }
+  }
+  options("heat_map_device" = dev.cur())
 }

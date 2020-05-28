@@ -1,4 +1,4 @@
 library(testthat)
-library(heatmapr)
+library(HeatmapR)
 
-test_check("heatmapr")
+test_check("HeatmapR")

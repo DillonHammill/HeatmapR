@@ -1,4 +1,4 @@
-Package: heatmapr
+Package: HeatmapR
 Type: Package
 Title: Create Heatmaps using Base Graphics
 Version: 0.0.1
@@ -10,8 +10,8 @@ Authors@R:
            email = "Dillon.Hammill@anu.edu.au",
            comment = c(ORCID = "0000-0002-1407-7223"))
 Description: Create heatmaps using base graphics.
-URL: https://github.com/DillonHammill/heatmapr
-BugReports: https://github.com/DillonHammill/heatmapr/issues
+URL: https://github.com/DillonHammill/HeatmapR
+BugReports: https://github.com/DillonHammill/HeatmapR/issues
 Depends:
   R (>= 3.5)
 Imports:

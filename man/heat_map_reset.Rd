@@ -10,9 +10,10 @@ heat_map_reset()
 Reset all heatmap related settings
 }
 \examples{
-# Reset heatmapr settings
+\dontrun{
+# Reset HeatmapR settings
 heat_map_reset()
-
+}
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)

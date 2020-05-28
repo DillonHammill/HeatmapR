@@ -1,5 +1,5 @@
 ---
-title: "heatmapr"
+title: "HeatmapR"
 output: 
   rmarkdown::html_vignette:
     includes:
@@ -26,7 +26,7 @@ readr::write_lines(html, path = "logo.html")
 ```
 
 ## Overview
-The key functions in **heatmapr** are summarised below:
+The key functions in **HeatmapR** are summarised below:
 
 - `heat_map()` creates the heatmaps
 - `heat_map_clust()` is used inside `heat_map()` to perform hierarchical clustering on the dataset using `stats::hclust()`
@@ -35,23 +35,23 @@ The key functions in **heatmapr** are summarised below:
 - `heat_map_save()` can be called prior to any `heat_map()` call to save a high resolution image.
 - `heat_map_record()` can be called after any `heat_map()` calls to record the current plot for saving to an R object.
 - `heat_map_complete()` can be called when creating complex layouts to indicate when the resulting layout should be saved to file using `heat_map_save()`.
-- `heat_map_reset()` resets all **heatmapr** associated settings in case things are not working as they should.
+- `heat_map_reset()` resets all **HeatmapR** associated settings in case things are not working as they should.
 
 ## 1. Construct a Basic Heatmap
 
-Constructing a heatmap is as simple loading the **heatmapr** package and supplying your dataset to the `heat_map()` function. This will create a heatmap using the raw data and a default red-green colour scale.
+Constructing a heatmap is as simple loading the **HeatmapR** package and supplying your dataset to the `heat_map()` function. This will create a heatmap using the raw data and a default red-green colour scale.
 
 ```{r, echo = FALSE, eval = TRUE}
-library(heatmapr)
+library(HeatmapR)
 ```
 
 ```{r, eval = FALSE}
-library(heatmapr)
+library(HeatmapR)
 heat_map(mtcars)
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-1.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-1.png",
               height = 7,
               width = 10,
               res = 500)
@@ -59,7 +59,7 @@ heat_map(mtcars)
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-1.png')
+knitr::include_graphics('HeatmapR/HeatmapR-1.png')
 ```
 
 ## 2. Column-Wise Scaling
@@ -76,7 +76,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-2.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-2.png",
               height = 7,
               width = 10,
               res = 500)
@@ -84,7 +84,7 @@ heat_map(mtcars, scale = "range")
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-2.png')
+knitr::include_graphics('HeatmapR/HeatmapR-2.png')
 ```
 
 ## 2.2 Mean Scaling
@@ -97,7 +97,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-3.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-3.png",
               height = 7,
               width = 10,
               res = 500)
@@ -105,7 +105,7 @@ heat_map(mtcars, scale = "mean")
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-3.png')
+knitr::include_graphics('HeatmapR/HeatmapR-3.png')
 ```
 
 ## 2.3 Z-Score Scaling
@@ -118,7 +118,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-4.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-4.png",
               height = 7,
               width = 10,
               res = 500)
@@ -126,7 +126,7 @@ heat_map(mtcars, scale = "zscore")
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-4.png')
+knitr::include_graphics('HeatmapR/HeatmapR-4.png')
 ```
 
 ## 3. Hierarchical Clustering
@@ -142,7 +142,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-5.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-5.png",
               height = 7,
               width = 10,
               res = 500)
@@ -152,7 +152,7 @@ heat_map(mtcars,
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-5.png')
+knitr::include_graphics('HeatmapR/HeatmapR-5.png')
 ```
 
 ## 3.2 Columns
@@ -164,7 +164,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-6.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-6.png",
               height = 7,
               width = 10,
               res = 500)
@@ -174,7 +174,7 @@ heat_map(mtcars,
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-6.png')
+knitr::include_graphics('HeatmapR/HeatmapR-6.png')
 ```
 
 ## 3.3 Rows and Columns
@@ -186,7 +186,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-7.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-7.png",
               height = 7,
               width = 10,
               res = 500)
@@ -196,7 +196,7 @@ heat_map(mtcars,
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-7.png')
+knitr::include_graphics('HeatmapR/HeatmapR-7.png')
 ```
 
 ## 4. Dendrograms
@@ -212,7 +212,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-8.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-8.png",
               height = 7,
               width = 10,
               res = 500)
@@ -222,7 +222,7 @@ heat_map(mtcars,
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-8.png')
+knitr::include_graphics('HeatmapR/HeatmapR-8.png')
 ```
 
 ## 4.2 Columns
@@ -234,7 +234,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-9.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-9.png",
               height = 7,
               width = 10,
               res = 500)
@@ -244,7 +244,7 @@ heat_map(mtcars,
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-9.png')
+knitr::include_graphics('HeatmapR/HeatmapR-9.png')
 ```
 
 ## 4.3 Rows and Columns
@@ -256,7 +256,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-10.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-10.png",
               height = 7,
               width = 10,
               res = 500)
@@ -266,7 +266,7 @@ heat_map(mtcars,
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-10.png')
+knitr::include_graphics('HeatmapR/HeatmapR-10.png')
 ```
 
 ## 4.4 Scaled Branch Heights
@@ -279,7 +279,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-11.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-11.png",
               height = 7,
               width = 10,
               res = 500)
@@ -290,7 +290,7 @@ heat_map(mtcars,
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-11.png')
+knitr::include_graphics('HeatmapR/HeatmapR-11.png')
 ```
 
 ## 7. Display Values
@@ -306,7 +306,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-12.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-12.png",
               height = 7,
               width = 10,
               res = 500)
@@ -318,7 +318,7 @@ heat_map(mtcars,
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-12.png')
+knitr::include_graphics('HeatmapR/HeatmapR-12.png')
 ```
 
 ## 7. Categorical Variables
@@ -337,7 +337,7 @@ heat_map(iris[sample(150, 30), ],
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-13.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-13.png",
               height = 10,
               width = 7,
               res = 500)
@@ -352,7 +352,7 @@ heat_map(iris[sample(150, 30), ],
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-13.png')
+knitr::include_graphics('HeatmapR/HeatmapR-13.png')
 ```
 
 ## 8. Customization
@@ -385,7 +385,7 @@ heat_map(mtcars,
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/heatmapr/heatmapr-14.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-14.png",
               height = 10,
               width = 10,
               res = 500)
@@ -415,7 +415,7 @@ heat_map(mtcars,
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-14.png')
+knitr::include_graphics('HeatmapR/HeatmapR-14.png')
 ```
 
 ## 9. Save High Resolution Images
@@ -455,11 +455,11 @@ heat_map(mtcars,
 
 ## 10. Layouts
 
-**heatmapr** has full support for custom plot layouts using `heat_map_layout()`. It is also now possible to arrange your heatmaps with any other plot constructed using base graphics using `layout()` or `par("mfrow")` or `par("mfcol")`. `heat_map_layout()` is simply a conveient wrapper fro these tradional base graphics layout functions. You will need to call `heat_map_save()` prior to `heat_map_layout()` to save high resolution images of custom layouts. You also need to let `heat_map()` know when the layout is ready from saving by running `heat_map_complete()`.
+**HeatmapR** has full support for custom plot layouts using `heat_map_layout()`. It is also now possible to arrange your heatmaps with any other plot constructed using base graphics using `layout()` or `par("mfrow")` or `par("mfcol")`. `heat_map_layout()` is simply a conveient wrapper fro these tradional base graphics layout functions. You will need to call `heat_map_save()` prior to `heat_map_layout()` to save high resolution images of custom layouts. You also need to let `heat_map()` know when the layout is ready from saving by running `heat_map_complete()`.
 
 ```{r, eval = FALSE, echo = FALSE}
 # Save to file
-heat_map_save("vignettes/heatmapr/heatmapr-15.png",
+heat_map_save("vignettes/HeatmapR/HeatmapR-15.png",
               height = 14,
               width = 7,
               res = 500)
@@ -510,10 +510,10 @@ heat_map_complete()
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('heatmapr/heatmapr-15.png')
+knitr::include_graphics('HeatmapR/HeatmapR-15.png')
 ```
 
 ## Summary
 
-**heatmapr** is a powerful package for constructing heatmaps that has support for data scaling, hierarchical clustering, dendrograms and categorical variables. Furthermore, **heatmapr** is easy to use, fully customizable, exports high resolution images and has full support for multiplot layouts. 
+**HeatmapR** is a powerful package for constructing heatmaps that has support for data scaling, hierarchical clustering, dendrograms and categorical variables. Furthermore, **HeatmapR** is easy to use, fully customizable, exports high resolution images and has full support for multiplot layouts. 
 

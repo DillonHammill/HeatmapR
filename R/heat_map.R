@@ -186,6 +186,8 @@
 #'   percentage of the plot area width, set to 0.05 by default.
 #' @param legend_box_height numeric to control the width of the legend as a
 #'   percentage of the plot area height, set to 0.4 by default.
+#' @param popup logical indicating whether the heatmap should be constructed in
+#'   a pop-up graphics device, set to FALSE by default.
 #' @param ... not in use.
 #'
 #' @importFrom methods is
@@ -295,6 +297,7 @@ heat_map <- function(x,
                      legend_text_col_alpha = 1,
                      legend_box_width = 0.05,
                      legend_box_height = 0.4,
+                     popup = FALSE,
                      ...) {
 
   # GRAPHICAL PARAMETERS -------------------------------------------------------
@@ -302,6 +305,11 @@ heat_map <- function(x,
   # RESET ORIGINAL PARAMETERS
   old_pars <- .par("mar")
   on.exit(par(old_pars))
+  
+  # POPUP DEVICE
+  if(!is.null(getOption("heat_map_save"))){
+    popup <- FALSE
+  }
 
   # PREPARE DATA ---------------------------------------------------------------
 
@@ -622,6 +630,9 @@ heat_map <- function(x,
 
   # COMPUTE GRAPHICAL PARAMETERS -----------------------------------------------
 
+  # OPEN GRAPHICS DEVICE
+  heat_map_new(popup = popup)
+  
   # COPY DEVICE
   dev_par <- dev_copy(
     x = seq(
@@ -837,9 +848,11 @@ heat_map <- function(x,
   # CLOSE COPIED DEVICE
   dev_copy_remove()
   
-  # SWITCH DEVICE
+  # USE SAVING DEVICE
   if(!is.null(getOption("heat_map_save"))){
     dev.set(getOption("heat_map_save"))
+  }else{
+    dev.set(getOption("heat_map_device"))
   }
   
   # CONSTRUCT HEATMAP ----------------------------------------------------------

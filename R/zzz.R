@@ -17,4 +17,7 @@
   # HEAT_MAP_FILES
   options("heat_map_temp_files" = NULL)
   
+  # HEAT_MAP_DEVICE
+  options("heat_map_device" = NULL)
+  
 }

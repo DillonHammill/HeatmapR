@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Indicate when a heatmap is complete and ready for saving — heat_map_complete • HeatmapR</title>
+<title>Open a pop-up graphics device for heatmaps — heat_map_new • HeatmapR</title>
 
 <!-- favicons -->
 <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
@@ -46,8 +46,8 @@
 
 
 
-<meta property="og:title" content="Indicate when a heatmap is complete and ready for saving — heat_map_complete" />
-<meta property="og:description" content="Indicate when a heatmap is complete and ready for saving" />
+<meta property="og:title" content="Open a pop-up graphics device for heatmaps — heat_map_new" />
+<meta property="og:description" content="Open a pop-up graphics device for heatmaps" />
 <meta property="og:image" content="/logo.png" />
 
 
@@ -122,45 +122,37 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Indicate when a heatmap is complete and ready for saving</h1>
+    <h1>Open a pop-up graphics device for heatmaps</h1>
     <small class="dont-index">Source: <a href='https://github.com/DillonHammill/HeatmapR/blob/master/R/heat_map-helpers.R'><code>R/heat_map-helpers.R</code></a></small>
-    <div class="hidden name"><code>heat_map_complete.Rd</code></div>
+    <div class="hidden name"><code>heat_map_new.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Indicate when a heatmap is complete and ready for saving</p>
+    <p>Open a pop-up graphics device for heatmaps</p>
     </div>
 
-    <pre class="usage"><span class='fu'>heat_map_complete</span>()</pre>
+    <pre class="usage"><span class='fu'>heat_map_new</span>(<span class='kw'>popup</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='no'>...</span>)</pre>
 
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>popup</th>
+      <td><p>logical indicating whether a popup graphics device should be
+opened.</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>additional arguments passed to
+<code>dev.new</code>:</p></td>
+    </tr>
+    </table>
 
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='kw'>if</span> (<span class='fl'>FALSE</span>) {
-<span class='co'># Save heatmap</span>
-<span class='fu'><a href='heat_map_save.html'>heat_map_save</a></span>(<span class='st'>"Heatmap.png"</span>,
-<span class='kw'>height</span> <span class='kw'>=</span> <span class='fl'>7</span>,
-<span class='kw'>width</span> <span class='kw'>=</span> <span class='fl'>5</span>)
-
-<span class='co'># Custom layout</span>
-<span class='fu'><a href='heat_map_layout.html'>heat_map_layout</a></span>(<span class='kw'>layout</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>1</span>,<span class='fl'>2</span>))
-
-<span class='co'># Construct raw heatmap</span>
-<span class='fu'><a href='heat_map.html'>heat_map</a></span>(<span class='no'>iris</span>[<span class='fl'>1</span>:<span class='fl'>10</span>,],
-<span class='kw'>scale</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-<span class='kw'>title</span> <span class='kw'>=</span> <span class='st'>"Iris Raw Heatmap"</span>,
-<span class='kw'>axis_label_x</span> <span class='kw'>=</span> <span class='st'>"Plant Parameter"</span>,
-<span class='kw'>axis_label_y</span> <span class='kw'>=</span> <span class='st'>"Row ID"</span>)
-
-<span class='co'># Construct scaled heatmap</span>
-<span class='fu'><a href='heat_map.html'>heat_map</a></span>(<span class='no'>iris</span>[<span class='fl'>1</span>:<span class='fl'>10</span>,],
-<span class='kw'>scale</span> <span class='kw'>=</span> <span class='st'>"range"</span>,
-<span class='kw'>title</span> <span class='kw'>=</span> <span class='st'>"Iris Scaled Heatmap"</span>,
-<span class='kw'>axis_label_x</span> <span class='kw'>=</span> <span class='st'>"Plant Parameter"</span>,
-<span class='kw'>axis_label_y</span> <span class='kw'>=</span> <span class='st'>"Row ID"</span>)
-
-<span class='co'># Signal completion</span>
-<span class='fu'>heat_map_complete</span>()
+<span class='co'># Open platform-specific graphics device</span>
+<span class='fu'>heat_map_new</span>(<span class='kw'>popup</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>)
 }</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

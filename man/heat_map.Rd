@@ -75,6 +75,7 @@ heat_map(
   legend_text_col_alpha = 1,
   legend_box_width = 0.05,
   legend_box_height = 0.4,
+  popup = FALSE,
   ...
 )
 }
@@ -332,6 +333,9 @@ percentage of the plot area width, set to 0.05 by default.}
 
 \item{legend_box_height}{numeric to control the width of the legend as a
 percentage of the plot area height, set to 0.4 by default.}
+
+\item{popup}{logical indicating whether the heatmap should be constructed in
+a pop-up graphics device, set to FALSE by default.}
 
 \item{...}{not in use.}
 }
