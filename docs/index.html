@@ -86,34 +86,29 @@
 <!-- badges: start -->
 
 <p><strong>HeatmapR</strong> it a lightweight R package that makes it easy to generate high quality heatmaps with minimal data preprocessing or manual customization. Visit the <strong>HeatmapR</strong> website to get started <a href="https://dillonhammill.github.io/HeatmapR/" class="uri">https://dillonhammill.github.io/HeatmapR/</a>.</p>
-<div id="availabe-packages-for-heatmaps" class="section level2">
+<div id="overview" class="section level2">
 <h2 class="hasAnchor">
-<a href="#availabe-packages-for-heatmaps" class="anchor"></a>Availabe Packages for Heatmaps</h2>
-<ul>
-<li>heatmap() in the stats package</li>
-<li><a href="https://cran.r-project.org/web/packages/gplots/index.html">qplots</a></li>
-<li><a href="https://github.com/rlbarter/superheat">superheat</a></li>
-<li><a href="https://github.com/tidyverse/ggplot2">ggplot2</a></li>
-<li><a href="https://github.com/ropensci/plotly">plotly</a></li>
-<li><a href="https://github.com/jokergoo/ComplexHeatmap">ComplexHeatmap</a></li>
-</ul>
+<a href="#overview" class="anchor"></a>Overview</h2>
+<p>As the dimensionality of datasets continues to increase there is a need for visualisation tools such as heatmaps to present data in an easily interpretable way. The construction of complex heatmaps poses a number of challenges as they are composed multiple graphical elements, such as a coloured matrix, dendrograms, cluster sub-divisions, axes, titles and legends. The first base graphics implementation of heatmaps included <code><a href="https://rdrr.io/r/stats/heatmap.html">heatmap()</a></code> in the <code>stats</code> package and <code>heatmap.2()</code> in the <a href="https://cran.r-project.org/web/packages/gplots/index.html">gplots</a>. The packages attempt to solve these graphical challenges by treating each graphical component as a separate plot element and arranging them using <code><a href="https://rdrr.io/r/graphics/layout.html">layout()</a></code>. This approach can generate complex heatmaps but it rendered users unable to arrange the heatmap with additional plot elements. <strong>HeatmapR</strong> aims to address these layout issues using solely a base graphics approach.</p>
 </div>
-<div id="benefits-of-heatmapr" class="section level2">
+<div id="heatmapr" class="section level2">
 <h2 class="hasAnchor">
-<a href="#benefits-of-heatmapr" class="anchor"></a>Benefits of HeatmapR</h2>
-<p><code>HeatmapR</code> has a number of benefits over other heatmap packages:</p>
+<a href="#heatmapr" class="anchor"></a>HeatmapR</h2>
+<p><strong>HeatmapR</strong> has a number of benefits over other heatmap packages:</p>
 <ul>
 <li>
-<strong>HeatmapR</strong> is built using base graphics, so there is no required <code>ggplot2</code> knowledge in order to use this package.</li>
+<strong>HeatmapR</strong> is built using base graphics, so there is no required <code>ggplot2</code> or <code>plotly</code> knowledge in order to use this package.</li>
 <li>
 <strong>HeatmapR</strong> is extremely lighweight and therefore there are no external dependencies that need to be installed.</li>
 <li>
 <strong>HeatmapR</strong> is designed under ROpenSci naming guidelines for a consistent and intuitive user experience.</li>
-<li>unlike other heatmap packages that use base graphics, <strong>HeatmapR</strong> actually returns the plot object instead of an image. This makes it easy to arrange multiple plots in complex layouts without sacrificing resolution.</li>
+<li>Unlike other heatmap packages that use base graphics, <strong>HeatmapR</strong> actually returns the plot object instead of an image. This makes it easy to arrange multiple plots in complex layouts without sacrificing resolution.</li>
 <li>
 <strong>HeatmapR</strong> is fully customizable and comes with useful saving API (<code><a href="reference/heat_map_save.html">heat_map_save()</a></code>) to export high resolution images.</li>
 <li>
-<strong>HeatmapR</strong> handles datasets that contain non-numeric or missing data, which means you don’t have to spend ages formatting and pre-processing the data.</li>
+<strong>HeatmapR</strong> handles datasets that contain non-numeric or missing data, which means you don’t have to spend ages formatting and pre-processing the data beforehand.</li>
+<li>
+<strong>HeatmapR</strong> generates publication ready images with minimal manual customization, making it ideal for users that have limited coding experience.</li>
 </ul>
 </div>
 <div id="installation" class="section level2">
@@ -131,6 +126,11 @@
          <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
          <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"both"</span>)</pre></div>
 <p><img src="reference/figures/README-HeatmapR-1.png" width="95%" style="display: block; margin: auto;"></p>
+</div>
+<div id="acknowledgements" class="section level2">
+<h2 class="hasAnchor">
+<a href="#acknowledgements" class="anchor"></a>Acknowledgements</h2>
+<p><strong>HeatmapR</strong> relies on statistical methods in the <code>stats</code> package to compute distance matrices and perform hiearchical clustering. <strong>HeatmapR</strong> also uses some modified <code>stats</code> code from the <a href="https://github.com/andrie/ggdendro">ggdendro</a> package to get the co-ordinates for the dendrogram line segments.</p>
 </div>
 <div id="code-of-conduct" class="section level2">
 <h2 class="hasAnchor">
@@ -197,7 +197,7 @@
 <li><a href="https://travis-ci.com/DillonHammill/HeatmapR"><img src="https://travis-ci.com/DillonHammill/HeatmapR.svg?branch=master" alt="Travis build status"></a></li>
 <li><a href="https://codecov.io/gh/DillonHammill/HeatmapR?branch=master"><img src="https://codecov.io/gh/DillonHammill/HeatmapR/branch/master/graph/badge.svg" alt="Codecov test coverage"></a></li>
 <li><a href="https://www.tidyverse.org/lifecycle/#maturing"><img src="https://img.shields.io/badge/lifecycle-maturing-blue.svg" alt="lifecycle"></a></li>
-<li><a href="/commits/master"><img src="https://img.shields.io/badge/last%20change-2020--05--28-yellowgreen.svg" alt="Last-changedate"></a></li>
+<li><a href="/commits/master"><img src="https://img.shields.io/badge/last%20change-2020--05--29-yellowgreen.svg" alt="Last-changedate"></a></li>
 </ul>
 </div>
 </div>

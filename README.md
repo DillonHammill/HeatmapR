@@ -13,7 +13,7 @@ status](https://travis-ci.com/DillonHammill/HeatmapR.svg?branch=master)](https:/
 [![Codecov test
 coverage](https://codecov.io/gh/DillonHammill/HeatmapR/branch/master/graph/badge.svg)](https://codecov.io/gh/DillonHammill/HeatmapR?branch=master)
 [![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![Last-changedate](https://img.shields.io/badge/last%20change-2020--05--28-yellowgreen.svg)](/commits/master)
+[![Last-changedate](https://img.shields.io/badge/last%20change-2020--05--29-yellowgreen.svg)](/commits/master)
 <!-- badges: end -->
 
 **HeatmapR** it a lightweight R package that makes it easy to generate
@@ -21,26 +21,34 @@ high quality heatmaps with minimal data preprocessing or manual
 customization. Visit the **HeatmapR** website to get started
 <https://dillonhammill.github.io/HeatmapR/>.
 
-## Availabe Packages for Heatmaps
+## Overview
 
-  - heatmap() in the stats package
-  - [qplots](https://cran.r-project.org/web/packages/gplots/index.html)
-  - [superheat](https://github.com/rlbarter/superheat)
-  - [ggplot2](https://github.com/tidyverse/ggplot2)
-  - [plotly](https://github.com/ropensci/plotly)
-  - [ComplexHeatmap](https://github.com/jokergoo/ComplexHeatmap)
+As the dimensionality of datasets continues to increase there is a need
+for visualisation tools such as heatmaps to present data in an easily
+interpretable way. The construction of complex heatmaps poses a number
+of challenges as they are composed multiple graphical elements, such as
+a coloured matrix, dendrograms, cluster sub-divisions, axes, titles and
+legends. The first base graphics implementation of heatmaps included
+`heatmap()` in the `stats` package and `heatmap.2()` in the
+[gplots](https://cran.r-project.org/web/packages/gplots/index.html). The
+packages attempt to solve these graphical challenges by treating each
+graphical component as a separate plot element and arranging them using
+`layout()`. This approach can generate complex heatmaps but it rendered
+users unable to arrange the heatmap with additional plot elements.
+**HeatmapR** aims to address these layout issues using solely a base
+graphics approach.
 
-## Benefits of HeatmapR
+## HeatmapR
 
-`HeatmapR` has a number of benefits over other heatmap packages:
+**HeatmapR** has a number of benefits over other heatmap packages:
 
   - **HeatmapR** is built using base graphics, so there is no required
-    `ggplot2` knowledge in order to use this package.
+    `ggplot2` or `plotly` knowledge in order to use this package.
   - **HeatmapR** is extremely lighweight and therefore there are no
     external dependencies that need to be installed.
   - **HeatmapR** is designed under ROpenSci naming guidelines for a
     consistent and intuitive user experience.
-  - unlike other heatmap packages that use base graphics, **HeatmapR**
+  - Unlike other heatmap packages that use base graphics, **HeatmapR**
     actually returns the plot object instead of an image. This makes it
     easy to arrange multiple plots in complex layouts without
     sacrificing resolution.
@@ -48,7 +56,10 @@ customization. Visit the **HeatmapR** website to get started
     (`heat_map_save()`) to export high resolution images.
   - **HeatmapR** handles datasets that contain non-numeric or missing
     data, which means you don’t have to spend ages formatting and
-    pre-processing the data.
+    pre-processing the data beforehand.
+  - **HeatmapR** generates publication ready images with minimal manual
+    customization, making it ideal for users that have limited coding
+    experience.
 
 ## Installation
 
@@ -72,6 +83,14 @@ heat_map(mtcars,
 ```
 
 <img src="man/figures/README-HeatmapR-1.png" width="95%" style="display: block; margin: auto;" />
+
+## Acknowledgements
+
+**HeatmapR** relies on statistical methods in the `stats` package to
+compute distance matrices and perform hiearchical clustering.
+**HeatmapR** also uses some modified `stats` code from the
+[ggdendro](https://github.com/andrie/ggdendro) package to get the
+co-ordinates for the dendrogram line segments.
 
 ## Code of Conduct
 
