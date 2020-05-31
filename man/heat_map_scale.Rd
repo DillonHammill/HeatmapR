@@ -4,10 +4,13 @@
 \alias{heat_map_scale}
 \title{Scale numeric data prior to constructing heatmap}
 \usage{
-heat_map_scale(x, method = "range")
+heat_map_scale(x, scale = "column", method = "range")
 }
 \arguments{
 \item{x}{matrix-like object to be scaled.}
+
+\item{scale}{indicates whether the data should be scaled by \code{"row"} or
+\code{"column"}, set to \code{"column"} by default.}
 
 \item{method}{type of scaling to perform, can be either \code{'range'},
 \code{'mean'} or {'zscore'}. Range scaling normalizes the data to have
@@ -16,8 +19,8 @@ excluding missing values) from each value. Z-score scaling subtracts the
 mean from each value and then divides the result by the standard deviation.}
 }
 \description{
-Apply column-wise scaling to numeric columns in a matrix or data.frame prior
-to constructing a heatmap.
+Apply column-wise or row-wise scaling to numeric columns in a matrix or
+data.frame prior to constructing a heatmap.
 }
 \examples{
 # Range scaling
