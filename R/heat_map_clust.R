@@ -22,9 +22,9 @@
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #'
 #' @examples
-#'
 #' # Hierarchical clustering
 #' heat_map_hclust <- heat_map_clust(mtcars)
+#' 
 #' @export
 heat_map_clust <- function(x,
                            cluster = "row",
@@ -49,7 +49,8 @@ heat_map_clust <- function(x,
   x <- x[, num_cols]
 
   # ROW CLUSTERING
-  if (cluster %in% c("r", "row", "both")) {
+  if (grepl("^r", cluster, ignore.case = TRUE) |
+      grepl("^b", cluster, ignore.case = TRUE)) {
 
     # UPDATE ARGUMENTS
     args[["x"]] <- x
@@ -70,7 +71,8 @@ heat_map_clust <- function(x,
   }
   
   # COLUMN CLUSTERING  
-  if (cluster %in% c("c", "column", "both")) {
+  if (grepl("^c", cluster, ignore.case = TRUE) |
+      grepl("^b", cluster, ignore.case = TRUE)) {
 
     # UPDATE ARGUMENTS
     args[["x"]] <- t(x)
@@ -91,12 +93,13 @@ heat_map_clust <- function(x,
   }
   
   # RETURN HCLUST OBJECTS
-  if (cluster %in% c("r", "row")) {
+  if (grepl("^r", cluster, ignore.case = TRUE)) {
     return(row_clust)
-  } else if (cluster %in% c("c", "column")) {
+  } else if (grepl("^c", cluster, ignore.case = TRUE)) {
     return(col_clust)
   } else {
-    return(list("row" = row_clust, "column" = col_clust))
+    return(list("row" = row_clust, 
+                "column" = col_clust))
   }
   
 }

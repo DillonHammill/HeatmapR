@@ -7,6 +7,7 @@
 heat_map(
   x,
   scale = FALSE,
+  scale_method = "range",
   dist_method = "euclidean",
   clust_method = "complete",
   transpose = FALSE,
@@ -85,16 +86,19 @@ heatmap. The supplied data may contain non-numeric columns which will be
 included in the constructed heatmap, but will not be scaled or used for
 hierarchical clustering.}
 
-\item{scale}{indicates whether column-wise scaling should be applied to the
-data prior to constructiong the heatmap (TRUE OR FALSE) or indicates the
-method to use when performing column-wise scaling, options include
-\code{"range"}, \code{"mean"} or \code{"zscore"}, set to \code{"range"} by
-default. Range scaling subtracts the minimum value from each value in the
-column and divides the result by the range of that column. Mean scaling
-subtracts the mean value from each value in the column and divides the
-result by the range of that column. Z-score scaling subtracts the mean
-value from each value in the column and divides the result by the standard
-deviation of that column. Scaling is performed internally using the
+\item{scale}{indicates whether the data should be scaled by \code{"column"}
+or \code{"row"} prior to heatmap construction, set to FALSE by default to
+use the data as supplied.}
+
+\item{scale_method}{indicates the method to use when performing row-wise or
+column-wise scaling, options include \code{"range"}, \code{"mean"} or
+\code{"zscore"}, set to \code{"range"} by default. Range scaling subtracts
+the minimum value from each value in the row/column and divides the result
+by the range of that row/column. Mean scaling subtracts the mean value from
+each value in the row/column and divides the result by the range of that
+row/column. Z-score scaling subtracts the mean value from each value in the
+row/column and divides the result by the standard deviation of that
+row/column. Scaling is performed internally using the
 \code{\link{heat_map_scale}} function.}
 
 \item{dist_method}{name of the method to use when computing distance matrices

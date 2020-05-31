@@ -10,16 +10,18 @@
 #'   heatmap. The supplied data may contain non-numeric columns which will be
 #'   included in the constructed heatmap, but will not be scaled or used for
 #'   hierarchical clustering.
-#' @param scale indicates whether column-wise scaling should be applied to the
-#'   data prior to constructiong the heatmap (TRUE OR FALSE) or indicates the
-#'   method to use when performing column-wise scaling, options include
-#'   \code{"range"}, \code{"mean"} or \code{"zscore"}, set to \code{"range"} by
-#'   default. Range scaling subtracts the minimum value from each value in the
-#'   column and divides the result by the range of that column. Mean scaling
-#'   subtracts the mean value from each value in the column and divides the
-#'   result by the range of that column. Z-score scaling subtracts the mean
-#'   value from each value in the column and divides the result by the standard
-#'   deviation of that column. Scaling is performed internally using the
+#' @param scale indicates whether the data should be scaled by \code{"column"}
+#'   or \code{"row"} prior to heatmap construction, set to FALSE by default to
+#'   use the data as supplied.
+#' @param scale_method indicates the method to use when performing row-wise or
+#'   column-wise scaling, options include \code{"range"}, \code{"mean"} or
+#'   \code{"zscore"}, set to \code{"range"} by default. Range scaling subtracts
+#'   the minimum value from each value in the row/column and divides the result
+#'   by the range of that row/column. Mean scaling subtracts the mean value from
+#'   each value in the row/column and divides the result by the range of that
+#'   row/column. Z-score scaling subtracts the mean value from each value in the
+#'   row/column and divides the result by the standard deviation of that
+#'   row/column. Scaling is performed internally using the
 #'   \code{\link{heat_map_scale}} function.
 #' @param dist_method name of the method to use when computing distance matrices
 #'   using \code{\link[stats:dist]{dist()}} for clustering, set to
@@ -218,6 +220,7 @@
 #' @export
 heat_map <- function(x,
                      scale = FALSE,
+                     scale_method = "range",
                      dist_method = "euclidean",
                      clust_method = "complete",
                      transpose = FALSE,
@@ -311,40 +314,22 @@ heat_map <- function(x,
     popup <- FALSE
   }
 
-  # PREPARE DATA ---------------------------------------------------------------
+  # ORGANISE DATA --------------------------------------------------------------
 
   # VECTOR TO MATRIX
   if (is.null(ncol(x))) {
     x <- matrix(x)
   }
 
-  # ROW/COLUMN SCALING
-  if (scale != FALSE) {
-    # DEFAULT
-    if (scale == TRUE) {
-      scale <- "range"
-    }
-    # SCALING
-    x <- heat_map_scale(x,
-      method = scale
-    )
-  }
-
   # NUMERIC COLUMNS
   num_cols <- which(unlist(lapply(seq_len(ncol(x)), function(z) {
     is.numeric(x[, z])
   })))
-
-  # CHARACTER COLUMNS
+  
+  # NON-NUMERIC COLUMNS
   char_cols <- seq_len(ncol(x))[-num_cols]
-
-  # NUMERIC COLUMNS NOT REQUIRED
-  if (length(num_cols) != 0) {
-    box_min <- round(min(x[, num_cols, drop = FALSE]), round)
-    box_max <- round(max(x[, num_cols, drop = FALSE]), round)
-  }
-
-  # NUMERIC COLUMNS ON LEFT
+  
+  # MOVE NUMERIC COLUMNS TO LEFT
   if (length(char_cols) != 0) {
     x <- cbind(
       x[, num_cols, drop = FALSE],
@@ -353,12 +338,23 @@ heat_map <- function(x,
     num_cols <- seq(1, length(num_cols), 1)
     char_cols <- seq(length(num_cols) + 1, ncol(x), 1)
   }
-
-  # ROUNDING
-  if (length(num_cols) != 0) {
-    x[, num_cols] <- round(x[, num_cols, drop = FALSE], round)
+  
+  # SCALING --------------------------------------------------------------------
+  
+  # ROW/COLUMN SCALING
+  if (scale != FALSE) {
+    # DEFAULT - COLUMN-WISE
+    if(scale == TRUE){
+      scale <- "column"
+    }
+    # SCALING
+    x <- heat_map_scale(x,
+                        scale = scale,
+                        method = scale)
   }
 
+  # CLUSTERING -----------------------------------------------------------------
+  
   # DENDROGRAM
   if (dendrogram != FALSE) {
     cluster <- dendrogram
@@ -418,6 +414,17 @@ heat_map <- function(x,
     }
   }
 
+  # ROUNDING -------------------------------------------------------------------
+  
+  # ROUNDING & VALUE RANGE
+  if (length(num_cols) != 0) {
+    x[, num_cols] <- round(x[, num_cols, drop = FALSE], round)
+    box_min <- min(x[, num_cols, drop = FALSE])
+    box_max <- max(x[, num_cols, drop = FALSE])
+  }  
+  
+  
+  
   # BOX CLASSES
   box_classes <- lapply(seq_len(ncol(x)), function(z) {
     if (is.numeric(x[, z])) {

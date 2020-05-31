@@ -50,7 +50,7 @@ heat_map_scale <- function(x,
   })))
   
   # COLUMN-WISE SCALING
-  if(grepl("c", scale, ignore.case = TRUE)){
+  if(grepl("^c", scale, ignore.case = TRUE)){
     # MESSAGE
     message(paste0(
       "Applying ",
@@ -75,7 +75,7 @@ heat_map_scale <- function(x,
       }
     })
   # ROW-WISE SCALING  
-  }else if(grepl("r", scale, ignore.case = TRUE)){
+  }else if(grepl("^r", scale, ignore.case = TRUE)){
     # MESSAGE
     message(paste0(
       "Applying ",

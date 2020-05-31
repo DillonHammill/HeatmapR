@@ -36,9 +36,9 @@ the clustering process.
 Perform hierarchical clustering for heatmap
 }
 \examples{
-
 # Hierarchical clustering
 heat_map_hclust <- heat_map_clust(mtcars)
+
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)
