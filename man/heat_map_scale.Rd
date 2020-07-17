@@ -2,7 +2,7 @@
 % Please edit documentation in R/heap_map-scale.R
 \name{heat_map_scale}
 \alias{heat_map_scale}
-\title{Scale numeric data prior to constructing heatmap}
+\title{Scale numeric data prior to constructing heat_map}
 \usage{
 heat_map_scale(x, scale = "column", method = "range")
 }
@@ -20,7 +20,7 @@ mean from each value and then divides the result by the standard deviation.}
 }
 \description{
 Apply column-wise or row-wise scaling to numeric columns in a matrix or
-data.frame prior to constructing a heatmap.
+data.frame prior to constructing a \code{heat_map}.
 }
 \examples{
 # Range scaling
