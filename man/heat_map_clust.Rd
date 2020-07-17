@@ -2,7 +2,7 @@
 % Please edit documentation in R/heat_map_clust.R
 \name{heat_map_clust}
 \alias{heat_map_clust}
-\title{Perform hierarchical clustering for heatmap}
+\title{Perform hierarchical clustering for heat_map}
 \usage{
 heat_map_clust(
   x,
@@ -33,7 +33,7 @@ object of class \code{hclust} which describes the tree produced by
 the clustering process.
 }
 \description{
-Perform hierarchical clustering for heatmap
+Perform hierarchical clustering for heat_map
 }
 \examples{
 # Hierarchical clustering

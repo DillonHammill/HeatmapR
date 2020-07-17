@@ -1,6 +1,6 @@
 ## HEAT_MAP_CLUST --------------------------------------------------------------
 
-#' Perform hierarchical clustering for heatmap
+#' Perform hierarchical clustering for heat_map
 #'
 #' @param x matrix-like object to cluster. The distance matrix will be computed
 #'   using \code{dist} and passed to \code{hclust} for hierarchical clustering.
@@ -41,13 +41,9 @@ heat_map_clust <- function(x,
   }
 
   # NUMERIC COLUMNS
-  num_cols <- which(unlist(lapply(seq_len(ncol(x)), function(z) {
-    is.numeric(x[, z])
-  })))
-
-  # RESTRICT TO NUMERIC COLUMNS ONLY
+  num_cols <- which(apply(x, 2, is.numeric))
   x <- x[, num_cols]
-
+  
   # ROW CLUSTERING
   if (grepl("^r", cluster, ignore.case = TRUE) |
       grepl("^b", cluster, ignore.case = TRUE)) {
