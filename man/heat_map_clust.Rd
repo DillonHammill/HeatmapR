@@ -2,7 +2,7 @@
 % Please edit documentation in R/heat_map_clust.R
 \name{heat_map_clust}
 \alias{heat_map_clust}
-\title{Perform hierarchical clustering for heat_map}
+\title{Perform hierarchical clustering for heat_map rows and columns}
 \usage{
 heat_map_clust(
   x,
@@ -16,8 +16,10 @@ heat_map_clust(
 \item{x}{matrix-like object to cluster. The distance matrix will be computed
 using \code{dist} and passed to \code{hclust} for hierarchical clustering.}
 
-\item{cluster}{indicates whether hierachical clustering should be performed
-by \code{"row"}, \code{"column"} or \code{"both"},}
+\item{cluster}{indicates whether hierarchical clustering should be performed
+by \code{"row"}, \code{"column"} or \code{"both"}. Optionally a list
+containing objects of class \code{hclust} defining custom clustering for
+rows and or columns.}
 
 \item{dist_method}{method passed to \code{\link{dist}} to compute distance
 matrix, set to \code{"euclidean"} by default.}
@@ -33,7 +35,7 @@ object of class \code{hclust} which describes the tree produced by
 the clustering process.
 }
 \description{
-Perform hierarchical clustering for heat_map
+Perform hierarchical clustering for heat_map rows and columns
 }
 \examples{
 # Hierarchical clustering

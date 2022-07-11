@@ -122,12 +122,13 @@ constructed heatmap, set to 2 by default.}
 FALSE) or specifies whether clustering should be performed on either the
 \code{"row"}, \code{"column"} or \code{"both"}, set to FALSE by default.}
 
-\item{reorder}{logical indicating whether columns should be reordered post
-clustering to align columns or rows based on relatedness, set to TRUE by
-default. Columns and rows must be reordered if dendrograms are added.}
+\item{reorder}{options include \code{"row"}, \code{"column"} or \code{"both"}
+to indicate whether rows and/or columns should be reordered based on
+heirarchical clustering, set to TRUE by default.Columns and rows must be
+reordered if dendrograms are added.}
 
 \item{dendrogram}{logcial indicating whether dendrograms should be added to
-the constrcted heatmap (TRUE OR FALSE) or indicates whether dendrograms
+the constructed heatmap (TRUE OR FALSE) or indicates whether dendrograms
 should be included for the \code{"row"}, \code{"column"} or \code{"both"},
 set to FALSE by default. Setting this argument to TRUE will result in both
 row and column dendrograms being included in the constructed heatmap.

@@ -42,34 +42,38 @@ heat_map_scale <- function(x,
   if(grepl("^c", scale, ignore.case = TRUE)){
     message(
       paste0(
-        "Applying", method, " scaling to each column..."
+        "Applying ", method, " scaling to each column..."
       )
     )
     scale <- 2
   }else{
     message(
       paste0(
-        "Applying", method, " scaling to each column..."
+        "Applying ", method, " scaling to each column..."
       )
     )
     scale <- 1
   }
   
   # SCALING
-  num_data <- apply(num_data, scale, function(x){
-    # RANGE SCALING
-    if(grepl("^r", method, ignore.case = TRUE)){
-      .scale_range(x)
+  num_data <- apply(
+    num_data, 
+    scale, 
+    function(x){
+      # RANGE SCALING
+      if(grepl("^r", method, ignore.case = TRUE)){
+        .scale_range(x)
       # MEAN
-    }else if(grepl("^m", method, ignore.case = TRUE)){
-      .scale_mean(x)
+      }else if(grepl("^m", method, ignore.case = TRUE)){
+        .scale_mean(x)
       # Z-SCORE
-    }else if(grepl("^z", method, ignore.case = TRUE)){
-      .scale_zscore(x)
-    }else{
-      paste0(method, " is not a supported scaling method.")
+      }else if(grepl("^z", method, ignore.case = TRUE)){
+        .scale_zscore(x)
+      }else{
+        paste0(method, " is not a supported scaling method.")
+      }
     }
-  })
+  )
   
   # REPLACE ORIGINAL DATA
   x[, num_cols] <- num_data
@@ -88,13 +92,16 @@ heat_map_scale <- function(x,
   x_min <- min(x, na.rm = TRUE)
   x_max <- max(x, na.rm = TRUE)
   # RANGE SCALING
-  lapply(seq_along(x), function(z) {
-    if (is.na(x[z])) {
-      return(NA)
-    } else {
-      x[z] <<- (x[z] - x_min) / (x_max - x_min)
+  lapply(
+    seq_along(x), 
+    function(z) {
+      if (is.na(x[z])) {
+        return(NA)
+      } else {
+        x[z] <<- (x[z] - x_min) / (x_max - x_min)
+      }
     }
-  })
+  )
   return(x)
 }
 
@@ -108,13 +115,16 @@ heat_map_scale <- function(x,
   # MEAN
   x_mean <- mean(x, na.rm = TRUE)
   # MEAN SCALING
-  lapply(seq_along(x), function(z) {
-    if (is.na(x[z])) {
-      return(NA)
-    } else {
-      x[z] <<- (x[z] - x_mean)/ (x_max - x_min)
+  lapply(
+    seq_along(x), 
+    function(z) {
+      if (is.na(x[z])) {
+        return(NA)
+      } else {
+        x[z] <<- (x[z] - x_mean)/ (x_max - x_min)
+      }
     }
-  })
+  )
   return(x)
 }
 
@@ -128,12 +138,15 @@ heat_map_scale <- function(x,
   # SD
   x_sd <- sd(x, na.rm = TRUE)
   # Z-SCORE SCALING
-  lapply(seq_along(x), function(z) {
-    if (is.na(x[z])) {
-      return(NA)
-    } else {
-      x[z] <<- (x[z] - x_mean) / x_sd
+  lapply(
+    seq_along(x), 
+    function(z) {
+      if (is.na(x[z])) {
+        return(NA)
+      } else {
+        x[z] <<- (x[z] - x_mean) / x_sd
+      }
     }
-  })
+  )
   return(x)
 }
