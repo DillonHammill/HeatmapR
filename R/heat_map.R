@@ -369,7 +369,12 @@ heat_map <- function(x,
   if (!dendrogram %in% FALSE) {
     cluster <- dendrogram
     reorder <- dendrogram
-  }
+    if(dendrogram %in% TRUE) {
+      dendrogram <- "both"
+      cluster <- "both"
+      reorder <- "both"
+    }
+  } 
   
   # REORDER
   if(reorder %in% TRUE) {
@@ -384,7 +389,7 @@ heat_map <- function(x,
     }
     # CLUSTER ROWS BY DEFAULT
     if (cluster == TRUE) {
-      cluster <- "row"
+      cluster <- "both"
     }
     # CLUSTERING
     heat_map_clust <- heat_map_clust(x,
@@ -412,8 +417,8 @@ heat_map <- function(x,
   # ROUNDING & VALUE RANGE
   if (length(num_cols) != 0) {
     x[, num_cols] <- round(x[, num_cols, drop = FALSE], round)
-    box_min <- min(x[, num_cols, drop = FALSE])
-    box_max <- max(x[, num_cols, drop = FALSE])
+    box_min <- min(x[, num_cols, drop = FALSE], na.rm = TRUE)
+    box_max <- max(x[, num_cols, drop = FALSE], na.rm = TRUE)
   }  
 
   # BOX CLASSES
@@ -492,10 +497,11 @@ heat_map <- function(x,
               return(box_col_empty)
             } else if (is.numeric(q)) {
               box_col <- box_col_scale(q)
-              box_col <- rgb(box_col[, 1],
-                             box_col[, 2],
-                             box_col[, 3],
-                             maxColorValue = 255
+              box_col <- rgb(
+                box_col[, 1],
+                box_col[, 2],
+                box_col[, 3],
+                maxColorValue = 255
               )
               return(box_col)
             } else if (is.character(q)) {
@@ -569,16 +575,22 @@ heat_map <- function(x,
 
   # X AXIS TEXT POSITION
   axis_text_x_position <- unlist(
-    lapply(seq(xlim[1], xlim[2] - 1, 1), function(z) {
-      return((z + (z + 1)) / 2)
-    })
+    lapply(
+      seq(xlim[1], xlim[2] - 1, 1),
+      function(z) {
+        return((z + (z + 1)) / 2)
+      }
+    )
   )
 
   # Y AXIS TEXT POSITION
   axis_text_y_position <- unlist(
-    lapply(seq(ylim[1], ylim[2] - 1, 1), function(z) {
-      return((z + (z + 1)) / 2)
-    })
+    lapply(
+      seq(ylim[1], ylim[2] - 1, 1), 
+      function(z) {
+        return((z + (z + 1)) / 2)
+      }
+    )
   )
 
   # X AXIS ARGUMENTS
@@ -634,30 +646,23 @@ heat_map <- function(x,
 
   # DENDROGRAM SIDE
   if (!dendrogram %in% FALSE) {
-    # DENDROGRAM
-    if(dendrogram %in% TRUE) {
-      dendrogram <- names(heat_map_clust)[
-        -unlist(lapply(heat_map_clust, "is.null"))
-      ]
-      if(is.null(dendrogram)) {
-        dendrogram <- NULL
-      }
-    }
     # BOTH
-    if (dendrogram %in% c("b", "both")) {
+    if (grepl("^b", dendrogram, ignore.case = TRUE)) {
       dendrogram_side <- seq_len(4)[-c(
         axis_text_x_side,
         axis_text_y_side
       )]
-      # ROW
-    } else if (dendrogram %in% c("r", "row")) {
+    # ROW
+    } else if (grepl("^r", dendrogram, ignore.case = TRUE)) {
       dendrogram_side <- c(2, 4)[-match(axis_text_y_side, c(2, 4))]
-      # COLUMN
-    } else if (dendrogram %in% c("c", "column")) {
+    # COLUMN
+    } else if (grepl("^c", dendrogram, ignore.case = TRUE)) {
       dendrogram_side <- c(1, 3)[-match(axis_text_x_side, c(1, 3))]
+    # NONE
     } else {
       dendrogram_side <- 0
     }
+  # NONE
   } else {
     dendrogram_side <- 0
   }
@@ -699,130 +704,146 @@ heat_map <- function(x,
     "border" = c(0, 0, 0, 0)
   )
   # MARGINS
-  lapply(seq_len(4), function(z) {
-    # X AXIS
-    if (z %in% c(1, 3)) {
-      # AXIS TICKS
-      if (axis_ticks_x_length != 0) {
-        max_tick_length <- 0.04
-        margin_space[["axis_ticks_x"]] <<- 1.3 *
-          abs(max(axis_ticks_x_length)) / max_tick_length
-      }
-      # X AXIS TEXT
-      if (!all(unlist(lapply(axis_text_x, ".empty")))) {
-        # HORIZONTAL
-        if (axis_text_x_angle %in% c(0, 1)) {
-          axis_text_x_height <- max(
-            LAPPLY(seq_along(axis_text_x), function(y) {
-              axis_text_x_size[y] / par("cex") + 0.6
-            })
-          )
-          margin_space[["axis_text_x"]] <<- axis_text_x_height
-          # VERTICAL
-        } else if (axis_text_x_angle %in% c(2, 3)) {
-          axis_text_x_height <- max(
-            LAPPLY(seq_along(axis_text_x), function(w) {
-              nchar(axis_text_x[w]) * (axis_text_x_size[w] / par("cex")) * 0.6
-            })
-          )
-          if (axis_text_x_height < 2) {
-            axis_text_x_height <- 2
-          }
-          margin_space[["axis_text_x"]] <<- axis_text_x_height
-        }
-      }
-      # AXIS LABEL (ALWAYS PARALLEL)
-      if (!is.null(axis_label_x)) {
-        margin_space[["axis_label_x"]] <<- axis_label_x_size /
-          par("cex") + 1
-      }
-      # Y AXIS
-    } else if (z %in% c(2, 4)) {
-      # AXIS
-      if (axis_text_y_side == z) {
+  lapply(
+    seq_len(4), 
+    function(z) {
+      # X AXIS
+      if (z %in% c(1, 3)) {
         # AXIS TICKS
-        if (axis_ticks_y_length != 0) {
+        if (axis_ticks_x_length != 0) {
           max_tick_length <- 0.04
-          margin_space[["axis_ticks_y"]] <<- 1.3 *
-            abs(max(axis_ticks_y_length)) / max_tick_length
+          margin_space[["axis_ticks_x"]] <<- 1.3 *
+            abs(max(axis_ticks_x_length)) / max_tick_length
         }
-        # AXIS TEXT
-        if (!all(unlist(lapply(axis_text_y, ".empty")))) {
+        # X AXIS TEXT
+        if (!all(unlist(lapply(axis_text_x, ".empty")))) {
           # HORIZONTAL
-          if (axis_text_y_angle %in% c(1, 2)) {
-            axis_text_y_height <- max(
-              LAPPLY(seq_along(axis_text_y), function(w) {
-                nchar(axis_text_y[w]) * (axis_text_y_size[w] / par("cex")) * 0.425
-              })
+          if (axis_text_x_angle %in% c(0, 1)) {
+            axis_text_x_height <- max(
+              LAPPLY(
+                seq_along(axis_text_x), 
+                function(y) {
+                  axis_text_x_size[y] / par("cex") + 0.6
+                }
+              )
             )
-            if (axis_text_y_height < 2) {
-              axis_text_y_height <- 2
-            }
-            margin_space[["axis_text_y"]] <<- axis_text_y_height
+            margin_space[["axis_text_x"]] <<- axis_text_x_height
             # VERTICAL
-          } else if (axis_text_y_angle %in% c(0, 3)) {
-            axis_text_y_height <- max(
-              LAPPLY(seq_along(axis_text_y), function(y) {
-                axis_text_y_size[y] / par("cex") + 0.5
-              })
+          } else if (axis_text_x_angle %in% c(2, 3)) {
+            axis_text_x_height <- max(
+              LAPPLY(
+                seq_along(axis_text_x), 
+                function(w) {
+                  nchar(axis_text_x[w]) * (axis_text_x_size[w] / par("cex")) * 0.6
+                }
+              )
             )
-            margin_space[["axis_text_y"]] <<- axis_text_y_height
+            if (axis_text_x_height < 2) {
+              axis_text_x_height <- 2
+            }
+            margin_space[["axis_text_x"]] <<- axis_text_x_height
           }
         }
         # AXIS LABEL (ALWAYS PARALLEL)
-        if (!is.null(axis_label_y)) {
-          margin_space[["axis_label_y"]] <<- axis_label_y_size /
+        if (!is.null(axis_label_x)) {
+          margin_space[["axis_label_x"]] <<- axis_label_x_size /
             par("cex") + 1
         }
+        # Y AXIS
+      } else if (z %in% c(2, 4)) {
+        # AXIS
+        if (axis_text_y_side == z) {
+          # AXIS TICKS
+          if (axis_ticks_y_length != 0) {
+            max_tick_length <- 0.04
+            margin_space[["axis_ticks_y"]] <<- 1.3 *
+              abs(max(axis_ticks_y_length)) / max_tick_length
+          }
+          # AXIS TEXT
+          if (!all(unlist(lapply(axis_text_y, ".empty")))) {
+            # HORIZONTAL
+            if (axis_text_y_angle %in% c(1, 2)) {
+              axis_text_y_height <- max(
+                LAPPLY(
+                  seq_along(axis_text_y), 
+                  function(w) {
+                    nchar(axis_text_y[w]) * (axis_text_y_size[w] / 
+                                               par("cex")) * 0.425
+                  }
+                )
+              )
+              if (axis_text_y_height < 2) {
+                axis_text_y_height <- 2
+              }
+              margin_space[["axis_text_y"]] <<- axis_text_y_height
+              # VERTICAL
+            } else if (axis_text_y_angle %in% c(0, 3)) {
+              axis_text_y_height <- max(
+                LAPPLY(
+                  seq_along(axis_text_y),
+                  function(y) {
+                    axis_text_y_size[y] / par("cex") + 0.5
+                  }
+                )
+              )
+              margin_space[["axis_text_y"]] <<- axis_text_y_height
+            }
+          }
+          # AXIS LABEL (ALWAYS PARALLEL)
+          if (!is.null(axis_label_y)) {
+            margin_space[["axis_label_y"]] <<- axis_label_y_size /
+              par("cex") + 1
+          }
+        }
+      }
+      # TITLE (ALWAYS PARALLEL)
+      if (!is.null(title)) {
+        margin_space[["title"]] <<- axis_label_y_size /
+          par("cex") + 1.2
+      }
+      # LEGEND
+      if (legend == TRUE) {
+        # VERTICAL LEGEND
+        if (z == legend_side & z %in% c(2, 4)) {
+          legend_space <- 1
+          legend_start <- line_to_user(1,
+                                       side = legend_side
+          )
+          if (legend_side == 2) {
+            legend_end <- user_to_line(legend_start - legend_box_width * ncol(x),
+                                       side = legend_side
+            )
+          } else if (legend_side == 4) {
+            legend_end <- user_to_line(legend_start + legend_box_width * ncol(x),
+                                       side = legend_side
+            )
+          }
+          legend_text_width <- max(nchar(legend_text)) *
+            max(legend_text_size) / par("cex") * 0.6
+          margin_space[["legend"]] <<- legend_end + legend_text_width
+          # HORIZONTAL LEGEND (HORIZONTAL TEXT)
+        } else if (z == legend_side & z %in% c(1, 3)) {
+          legend_space <- 1
+          legend_start <- line_to_user(1,
+                                       side = legend_side
+          )
+          if (legend_side == 1) {
+            legend_end <- user_to_line(legend_start - legend_box_width * nrow(x),
+                                       side = legend_side
+            )
+          } else if (legend_side == 3) {
+            legend_end <- user_to_line(legend_start + legend_box_width * nrow(x),
+                                       side = legend_side
+            )
+          }
+          legend_text_width <- max(legend_text_size) / par("cex") + 0.5
+          margin_space[["legend"]] <<- legend_end + legend_text_width
+        }
       }
     }
-    # TITLE (ALWAYS PARALLEL)
-    if (!is.null(title)) {
-      margin_space[["title"]] <<- axis_label_y_size /
-        par("cex") + 1.2
-    }
-    # LEGEND
-    if (legend == TRUE) {
-      # VERTICAL LEGEND
-      if (z == legend_side & z %in% c(2, 4)) {
-        legend_space <- 1
-        legend_start <- line_to_user(1,
-          side = legend_side
-        )
-        if (legend_side == 2) {
-          legend_end <- user_to_line(legend_start - legend_box_width * ncol(x),
-            side = legend_side
-          )
-        } else if (legend_side == 4) {
-          legend_end <- user_to_line(legend_start + legend_box_width * ncol(x),
-            side = legend_side
-          )
-        }
-        legend_text_width <- max(nchar(legend_text)) *
-          max(legend_text_size) / par("cex") * 0.6
-        margin_space[["legend"]] <<- legend_end + legend_text_width
-        # HORIZONTAL LEGEND (HORIZONTAL TEXT)
-      } else if (z == legend_side & z %in% c(1, 3)) {
-        legend_space <- 1
-        legend_start <- line_to_user(1,
-          side = legend_side
-        )
-        if (legend_side == 1) {
-          legend_end <- user_to_line(legend_start - legend_box_width * nrow(x),
-            side = legend_side
-          )
-        } else if (legend_side == 3) {
-          legend_end <- user_to_line(legend_start + legend_box_width * nrow(x),
-            side = legend_side
-          )
-        }
-        legend_text_width <- max(legend_text_size) / par("cex") + 0.5
-        margin_space[["legend"]] <<- legend_end + legend_text_width
-      }
-    }
-  })
+  )
   # DENDROGRAM
-  if (dendrogram != FALSE) {
+  if (!dendrogram %in% FALSE) {
     # ROW
     dendro_size_user <- ncol(x) + ceiling(dendrogram_size * ncol(x))
     dendro_size_lines <- user_to_line(dendro_size_user,
@@ -952,18 +973,19 @@ heat_map <- function(x,
     lapply(
       seq_len(length(axis_text_x)), 
       function(z) {
-        axis(axis_text_x_side,
-             at = axis_text_x_position[z],
-             labels = axis_text_x[z],
-             las = axis_text_x_angle,
-             padj = axis_text_x_adjust,
-             tck = axis_ticks_x_length,
-             font.axis = axis_text_x_font[z],
-             cex.axis = axis_text_x_size[z],
-             col.axis = adjustcolor(
-               axis_text_x_col[z],
-               axis_text_x_col_alpha[z]
-             )
+        axis(
+          axis_text_x_side,
+          at = axis_text_x_position[z],
+          labels = axis_text_x[z],
+          las = axis_text_x_angle,
+          padj = axis_text_x_adjust,
+          tck = axis_ticks_x_length,
+          font.axis = axis_text_x_font[z],
+          cex.axis = axis_text_x_size[z],
+          col.axis = adjustcolor(
+            axis_text_x_col[z],
+            axis_text_x_col_alpha[z]
+          )
         )
       }
     )
@@ -972,18 +994,19 @@ heat_map <- function(x,
     lapply(
       seq_len(length(axis_text_x)), 
       function(z) {
-        axis(axis_text_x_side,
-             at = axis_text_x_position[z],
-             labels = axis_text_x[z],
-             las = axis_text_x_angle,
-             hadj = axis_text_x_adjust,
-             tck = axis_ticks_x_length,
-             font.axis = axis_text_x_font[z],
-             cex.axis = axis_text_x_size[z],
-             col.axis = adjustcolor(
-               axis_text_x_col[z],
-               axis_text_x_col_alpha[z]
-             )
+        axis(
+          axis_text_x_side,
+          at = axis_text_x_position[z],
+          labels = axis_text_x[z],
+          las = axis_text_x_angle,
+          hadj = axis_text_x_adjust,
+          tck = axis_ticks_x_length,
+          font.axis = axis_text_x_font[z],
+          cex.axis = axis_text_x_size[z],
+          col.axis = adjustcolor(
+            axis_text_x_col[z],
+            axis_text_x_col_alpha[z]
+          )
         )
       }
     )
@@ -994,18 +1017,19 @@ heat_map <- function(x,
     lapply(
       seq_len(length(axis_text_y)), 
       function(z) {
-        axis(axis_text_y_side,
-             at = axis_text_y_position[z],
-             labels = axis_text_y[z],
-             las = axis_text_y_angle,
-             padj = axis_text_y_adjust,
-             tck = axis_ticks_y_length,
-             font.axis = axis_text_y_font[z],
-             cex.axis = axis_text_y_size[z],
-             col.axis = adjustcolor(
-               axis_text_y_col[z],
-               axis_text_y_col_alpha[z]
-             )
+        axis(
+          axis_text_y_side,
+          at = axis_text_y_position[z],
+          labels = axis_text_y[z],
+          las = axis_text_y_angle,
+          padj = axis_text_y_adjust,
+          tck = axis_ticks_y_length,
+          font.axis = axis_text_y_font[z],
+          cex.axis = axis_text_y_size[z],
+          col.axis = adjustcolor(
+            axis_text_y_col[z],
+            axis_text_y_col_alpha[z]
+          )
         )
       }
     )
@@ -1014,18 +1038,19 @@ heat_map <- function(x,
     lapply(
       seq_len(length(axis_text_y)), 
       function(z) {
-        axis(axis_text_y_side,
-             at = axis_text_y_position[z],
-             labels = axis_text_y[z],
-             las = axis_text_y_angle,
-             hadj = axis_text_y_adjust,
-             tck = axis_ticks_y_length,
-             font.axis = axis_text_y_font[z],
-             cex.axis = axis_text_y_size[z],
-             col.axis = adjustcolor(
-               axis_text_y_col[z],
-               axis_text_y_col_alpha[z]
-             )
+        axis(
+          axis_text_y_side,
+          at = axis_text_y_position[z],
+          labels = axis_text_y[z],
+          las = axis_text_y_angle,
+          hadj = axis_text_y_adjust,
+          tck = axis_ticks_y_length,
+          font.axis = axis_text_y_font[z],
+          cex.axis = axis_text_y_size[z],
+          col.axis = adjustcolor(
+            axis_text_y_col[z],
+            axis_text_y_col_alpha[z]
+          )
         )
       }
     )
@@ -1043,7 +1068,8 @@ heat_map <- function(x,
   if (!is.null(title)) {
     title_position <- margins[title_side] -
       0.6 * (0.2 * max(title_text_size) + 3)
-    mtext(title,
+    mtext(
+      title,
       side = title_side,
       line = title_position,
       font = title_text_font,
@@ -1069,7 +1095,8 @@ heat_map <- function(x,
         0.6 * (0.2 * max(axis_label_x_size) + 2)
     }
     # AXIS LABEL
-    mtext(axis_label_x,
+    mtext(
+      axis_label_x,
       side = axis_text_x_side,
       line = axis_label_x_position,
       font = axis_label_x_font,
@@ -1094,7 +1121,8 @@ heat_map <- function(x,
       axis_label_y_position <- margins[axis_text_y_side] -
         0.6 * (0.2 * max(axis_label_y_size) + 2)
     }
-    mtext(axis_label_y,
+    mtext(
+      axis_label_y,
       side = axis_text_y_side,
       line = axis_label_y_position,
       font = axis_label_y_font,
@@ -1177,22 +1205,21 @@ heat_map <- function(x,
   # DENDROGRAM
   if (dendrogram != FALSE) {
     # ROW
-    if (dendrogram %in% c("row", "both")) {
+    if (grepl("^r|^b", dendrogram, ignore.case = TRUE)) {
       # ROW_CLUST
-      if (dendrogram == "row") {
-        row_clust <- heat_map_clust
-      } else {
-        row_clust <- heat_map_clust[[1]]
-      }
+      row_clust <- heat_map_clust[[1]]
       # RESCALE TO HEAT_MAP
       min_height <- min(row_clust$height)
       max_height <- max(row_clust$height)
       dend_size <- ceiling(dendrogram_size * ncol(x))
       dend_range <- c(ncol(x), ncol(x) + dend_size)
-      row_clust$height <- LAPPLY(row_clust$height, function(z) {
-        dend_range[1] + ((z - min_height) / (max_height - min_height)) *
-          diff(dend_range)
-      })
+      row_clust$height <- LAPPLY(
+        row_clust$height, 
+        function(z) {
+          dend_range[1] + ((z - min_height) / (max_height - min_height)) *
+            diff(dend_range)
+        }
+      )
       # DENDROGRAM SCALING
       if (dendrogram_scale == TRUE) {
         dend_breaks <- dend_range[1] + seq_along(row_clust$height) *
@@ -1230,13 +1257,9 @@ heat_map <- function(x,
       )
     }
     # COLUMN
-    if (dendrogram %in% c("column", "both")) {
+    if (grepl("^c|^b", dendrogram, ignore.case = TRUE)) {
       # COL_CLUST
-      if (dendrogram == "column") {
-        col_clust <- heat_map_clust
-      } else {
-        col_clust <- heat_map_clust[[2]]
-      }
+      col_clust <- heat_map_clust[[2]]
       # RESCALE TO HEAT_MAP
       min_height <- min(col_clust$height)
       max_height <- max(col_clust$height)
@@ -1332,13 +1355,14 @@ heat_map <- function(x,
         function(z) {
           # BOX COLOUR
           if (z != length(legend_breaks_y)) {
-            rect(legend_border_x[1],
-                 legend_breaks_y[z],
-                 legend_border_x[2],
-                 legend_breaks_y[z + 1],
-                 col = legend_col[z],
-                 border = NA,
-                 xpd = TRUE
+            rect(
+              legend_border_x[1],
+              legend_breaks_y[z],
+              legend_border_x[2],
+              legend_breaks_y[z + 1],
+              col = legend_col[z],
+              border = NA,
+              xpd = TRUE
             )
           }
           # BOX TEXT
@@ -1354,23 +1378,24 @@ heat_map <- function(x,
               }
             } else {
               if (legend_side == 2) {
-                legend_text_x <- legend_border_x[2] - (0.2 +
-                                                         0.2 * 0.1 * legend_text_size)
+                legend_text_x <- legend_border_x[2] - 
+                  (0.2 + 0.2 * 0.1 * legend_text_size)
               } else if (legend_side == 4) {
-                legend_text_x <- legend_border_x[2] + (0.2 +
-                                                         0.2 * 0.1 * legend_text_size)
+                legend_text_x <- legend_border_x[2] + 
+                  (0.2 + 0.2 * 0.1 * legend_text_size)
               }
             }
             # LEGEND_TEXT_Y
             legend_text_y <- legend_breaks_y[z]
             # LEGEND TEXT
-            text(legend_text_x,
-                 legend_text_y,
-                 labels = legend_text[z],
-                 font = legend_text_font,
-                 cex = legend_text_size,
-                 col = legend_text_col,
-                 xpd = TRUE
+            text(
+              legend_text_x,
+              legend_text_y,
+              labels = legend_text[z],
+              font = legend_text_font,
+              cex = legend_text_size,
+              col = legend_text_col,
+              xpd = TRUE
             )
           }
         }
@@ -1388,7 +1413,8 @@ heat_map <- function(x,
         legend_center - legend_box_height * ncol(x) / 2,
         legend_center + legend_box_height * ncol(x) / 2
       )
-      rect(legend_border_x[1],
+      rect(
+        legend_border_x[1],
         legend_border_y[1],
         legend_border_x[2],
         legend_border_y[2],
@@ -1409,13 +1435,14 @@ heat_map <- function(x,
         function(z) {
           # BOX COLOUR
           if (z != length(legend_breaks_x)) {
-            rect(legend_breaks_x[z],
-                 legend_border_y[1],
-                 legend_breaks_x[z + 1],
-                 legend_border_y[2],
-                 col = legend_col[z],
-                 border = NA,
-                 xpd = TRUE
+            rect(
+              legend_breaks_x[z],
+              legend_border_y[1],
+              legend_breaks_x[z + 1],
+              legend_border_y[2],
+              col = legend_col[z],
+              border = NA,
+              xpd = TRUE
             )
           }
           # BOX TEXT
@@ -1431,23 +1458,24 @@ heat_map <- function(x,
               }
             } else {
               if (legend_side == 1) {
-                legend_text_y <- legend_border_y[2] - (0.6 +
-                                                         0.2 * 0.1 * legend_text_size)
+                legend_text_y <- legend_border_y[2] - 
+                  (0.6 + 0.2 * 0.1 * legend_text_size)
               } else if (legend_side == 3) {
-                legend_text_y <- legend_border_y[2] + (0.6 +
-                                                         0.2 * 0.1 * legend_text_size)
+                legend_text_y <- legend_border_y[2] + 
+                  (0.6 + 0.2 * 0.1 * legend_text_size)
               }
             }
             # LEGEND_TEXT_Y
             legend_text_x <- legend_breaks_x[z]
             # LEGEND TEXT
-            text(legend_text_x,
-                 legend_text_y,
-                 labels = legend_text[z],
-                 font = legend_text_font,
-                 cex = legend_text_size,
-                 col = legend_text_col,
-                 xpd = TRUE
+            text(
+              legend_text_x,
+              legend_text_y,
+              labels = legend_text[z],
+              font = legend_text_font,
+              cex = legend_text_size,
+              col = legend_text_col,
+              xpd = TRUE
             )
           }
         }
