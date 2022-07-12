@@ -76,7 +76,7 @@ heat_map_clust <- function(x,
       args[["x"]] <- x
       args[["method"]] <- dist_method
       # AITCHISON DISTANCE MATRIX
-      if(grepl("^ait", args$method, ignore.case = TRUE)) {
+      if(grepl("^ait", dist_method, ignore.case = TRUE)) {
         # ADIST - ROBCOMPOSITIONS
         if(!requireNamespace("robCompositions")) {
           stop(
@@ -84,9 +84,16 @@ heat_map_clust <- function(x,
             "robCompositions package from CRAN."
           )
         }
+        # NON-ZERO VALUES REQUIRED
+        if(any(x == 0)) {
+          stop(
+            "Computation of Aitchison distance requires non-zero values, ",
+            "please add a value lower than the detection limit to all values."
+          )
+        }
         # COMPUTE AITCHISON DISTANCE MATRIX
         d <- matrix(
-          o,
+          0,
           ncol = nrow(x),
           nrow = nrow(x),
           dimnames = list(
@@ -135,7 +142,7 @@ heat_map_clust <- function(x,
       args[["x"]] <- t(x)
       args[["method"]] <- dist_method
       # AITCHISON DISTANCE MATRIX
-      if(grepl("^ait", args$method, ignore.case = TRUE)) {
+      if(grepl("^ait", dist_method, ignore.case = TRUE)) {
         # ADIST - ROBCOMPOSITIONS
         if(!requireNamespace("robCompositions")) {
           stop(
@@ -145,7 +152,7 @@ heat_map_clust <- function(x,
         }
         # COMPUTE AITCHISON DISTANCE MATRIX
         d <- matrix(
-          o,
+          0,
           ncol = nrow(x),
           nrow = nrow(x),
           dimnames = list(
