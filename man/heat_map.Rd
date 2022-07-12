@@ -103,7 +103,7 @@ row/column. Scaling is performed internally using the
 
 \item{dist_method}{name of the method to use when computing distance matrices
 using \code{\link[stats:dist]{dist()}} for clustering, set to
-\code{"euclidean"} by deafult. This argument is passed to
+\code{"euclidean"} by default. This argument is passed to
 \code{heat_map_clust} which performs the hierarchical clustering using
 \code{\link[stats:hclust]{hclust()}}.}
 

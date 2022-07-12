@@ -9,7 +9,8 @@
 #'   containing objects of class \code{hclust} defining custom clustering for
 #'   rows and or columns.
 #' @param dist_method method passed to \code{\link{dist}} to compute distance
-#'   matrix, set to \code{"euclidean"} by default.
+#'   matrix, set to \code{"euclidean"} by default. Alternatively, for
+#'   compositional data users can compute the \code{"Aitchison"} distance.
 #' @param clust_method agglomeration method passed to \code{\link{hclust}} to
 #'   perform hierarchical clustering, set to \code{"complete"} by default.
 #' @param ... additional arguments passed to \code{\link{dist}} or
@@ -18,7 +19,7 @@
 #' @return object of class \code{hclust} which describes the tree produced by
 #'   the clustering process.
 #'
-#' @importFrom stats dist hclust
+#' @importFrom stats dist hclust as.dist
 #' @importFrom methods formalArgs is
 #'
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
@@ -74,9 +75,45 @@ heat_map_clust <- function(x,
       # UPDATE ARGUMENTS
       args[["x"]] <- x
       args[["method"]] <- dist_method
-      # DISTANCE MATRIX
-      dist_args <- formalArgs(stats::dist)
-      d <- do.call("dist", args[names(args) %in% dist_args])
+      # AITCHISON DISTANCE MATRIX
+      if(grepl("^ait", args$method, ignore.case = TRUE)) {
+        # ADIST - ROBCOMPOSITIONS
+        if(!requireNamespace("robCompositions")) {
+          stop(
+            "Computation of Aitchison distance matrix requires the ",
+            "robCompositions package from CRAN."
+          )
+        }
+        # COMPUTE AITCHISON DISTANCE MATRIX
+        d <- matrix(
+          o,
+          ncol = nrow(x),
+          nrow = nrow(x),
+          dimnames = list(
+            rownames(x),
+            rownames(x)
+          )
+        )
+        for(i in 1:nrow(x)) {
+          for(j in i:nrow(x)) {
+            d[i, j] <- d[j, i] <- do.call(
+              "aDist",
+              list(
+                x = x[i, ],
+                y = x[j, ]
+              )
+            )
+          }
+        }
+        d <- as.dist(d)
+      # STATS::DIST MATRIX
+      } else {
+        dist_args <- formalArgs(stats::dist)
+        d <- do.call(
+          "dist", 
+          args[names(args) %in% dist_args]
+        )
+      }
       # UPDATE ARGUMENTS
       args[["d"]] <- d
       args[["method"]] <- clust_method
@@ -97,9 +134,45 @@ heat_map_clust <- function(x,
       # UPDATE ARGUMENTS
       args[["x"]] <- t(x)
       args[["method"]] <- dist_method
-      # DISTANCE MATRIX
-      dist_args <- formalArgs(stats::dist)
-      d <- do.call("dist", args[names(args) %in% dist_args])
+      # AITCHISON DISTANCE MATRIX
+      if(grepl("^ait", args$method, ignore.case = TRUE)) {
+        # ADIST - ROBCOMPOSITIONS
+        if(!requireNamespace("robCompositions")) {
+          stop(
+            "Computation of Aitchison distance matrix requires the ",
+            "robCompositions package from CRAN."
+          )
+        }
+        # COMPUTE AITCHISON DISTANCE MATRIX
+        d <- matrix(
+          o,
+          ncol = nrow(x),
+          nrow = nrow(x),
+          dimnames = list(
+            colnames(x),
+            colnames(x)
+          )
+        )
+        for(i in 1:ncol(x)) {
+          for(j in i:ncol(x)) {
+            d[i, j] <- d[j, i] <- do.call(
+              "aDist",
+              list(
+                x = x[, i],
+                y = x[, j]
+              )
+            )
+          }
+        }
+        d <- as.dist(d)
+      # STATS::DIST MATRIX
+      } else {
+        dist_args <- formalArgs(stats::dist)
+        d <- do.call(
+          "dist",
+          args[names(args) %in% dist_args]
+        )
+      }
       # UPDATE ARGUMENTS
       args[["d"]] <- d
       args[["method"]] <- clust_method

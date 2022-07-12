@@ -22,7 +22,8 @@ containing objects of class \code{hclust} defining custom clustering for
 rows and or columns.}
 
 \item{dist_method}{method passed to \code{\link{dist}} to compute distance
-matrix, set to \code{"euclidean"} by default.}
+matrix, set to \code{"euclidean"} by default. Alternatively, for
+compositional data users can compute the \code{"Aitchison"} distance.}
 
 \item{clust_method}{agglomeration method passed to \code{\link{hclust}} to
 perform hierarchical clustering, set to \code{"complete"} by default.}
