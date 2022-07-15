@@ -373,6 +373,9 @@ heat_map <- function(x,
       dendrogram <- "both"
       cluster <- "both"
       reorder <- "both"
+    } else {
+      cluster <- dendrogram
+      reorder <- dendrogram
     }
   } 
   
@@ -399,13 +402,13 @@ heat_map <- function(x,
       ...
     )
     # SORT
-    if (reorder != FALSE) {
+    if (!reorder %in% FALSE) {
       # ROW ORDER
       if (grepl("^b|^r", reorder, ignore.case = TRUE) & 
           !is.null(heat_map_clust$row)) {
-        x < x[heat_map_clust$row$order, ]
+        x <- x[heat_map_clust$row$order, ]
       # COLUMN ORDER
-      } else if (grepl("^b|^r", reorder, ignore.case = TRUE) & 
+      } else if (grepl("^b|^c", reorder, ignore.case = TRUE) & 
                  !is.null(heat_map_clust$col)) {
         x <- x[, c(heat_map_clust$col$order, char_cols)]
       }
@@ -917,36 +920,39 @@ heat_map <- function(x,
     # STARTING POINT
     margins <- c(0, 0, 0, 0)
     # MARGINS
-    lapply(seq_along(margins), function(z) {
-      # TITLE SPACE
-      if (z == title_side & !is.null(title)) {
-        margins[z] <<- margins[z] + margin_space[["title"]]
-      }
-      # X AXIS SPACE
-      if (z == axis_text_x_side) {
-        margins[z] <<- margins[z] + margin_space[["axis_ticks_x"]] +
-          margin_space[["axis_text_x"]] + margin_space[["axis_label_x"]]
-      }
-      # Y AXIS SPACE
-      if (z == axis_text_y_side) {
-        margins[z] <<- margins[z] + margin_space[["axis_ticks_y"]] +
-          margin_space[["axis_text_y"]] + margin_space[["axis_label_y"]]
-      }
-      # LEGEND SPACE
-      if (z == legend_side & legend != FALSE) {
-        margins[z] <<- margins[z] + margin_space[["legend"]]
-      }
-      # DENDROGRAM
-      if (z %in% dendrogram_side & !dendrogram %in% FALSE) {
-        if (z %in% c(2, 4)) {
-          margins[z] <<- margins[z] + margin_space[["dendrogram_row"]]
-        } else if (z %in% c(1, 3)) {
-          margins[z] <<- margins[z] + margin_space[["dendrogram_col"]]
+    lapply(
+      seq_along(margins), 
+      function(z) {
+        # TITLE SPACE
+        if (z == title_side & !is.null(title)) {
+          margins[z] <<- margins[z] + margin_space[["title"]]
         }
+        # X AXIS SPACE
+        if (z == axis_text_x_side) {
+          margins[z] <<- margins[z] + margin_space[["axis_ticks_x"]] +
+            margin_space[["axis_text_x"]] + margin_space[["axis_label_x"]]
+        }
+        # Y AXIS SPACE
+        if (z == axis_text_y_side) {
+          margins[z] <<- margins[z] + margin_space[["axis_ticks_y"]] +
+            margin_space[["axis_text_y"]] + margin_space[["axis_label_y"]]
+        }
+        # LEGEND SPACE
+        if (z == legend_side & legend != FALSE) {
+          margins[z] <<- margins[z] + margin_space[["legend"]]
+        }
+        # DENDROGRAM
+        if (z %in% dendrogram_side & !dendrogram %in% FALSE) {
+          if (z %in% c(2, 4)) {
+            margins[z] <<- margins[z] + margin_space[["dendrogram_row"]]
+          } else if (z %in% c(1, 3)) {
+            margins[z] <<- margins[z] + margin_space[["dendrogram_col"]]
+          }
+        }
+        # BORDER
+        margins[z] <<- margins[z] + margin_space[["border"]][z]
       }
-      # BORDER
-      margins[z] <<- margins[z] + margin_space[["border"]][z]
-    })
+    )
   }
 
   # SAVE MARGINS GLOBALLY
