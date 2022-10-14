@@ -49,7 +49,7 @@ heat_map_scale <- function(x,
   }else{
     message(
       paste0(
-        "Applying ", method, " scaling to each column..."
+        "Applying ", method, " scaling to each row..."
       )
     )
     scale <- 1

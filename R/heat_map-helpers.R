@@ -1,5 +1,7 @@
 ## HEAT_MAP HELPER FUNCTIONS ---------------------------------------------------
 
+# TODO: ADD HEAT_MAP_CUSTOM() & HEAT_MAP_LAYOUT()
+
 ## HEAT_MAP_SAVE ---------------------------------------------------------------
 
 #' Save high resolution images
@@ -123,7 +125,7 @@ heat_map_save <- function(save_as,
   }
   
   # SIGNAL SAVE - DEVICE 
-  options("heat_map_save" = dev.cur())
+  options("heat_map_save" = TRUE)
   
 }
 
@@ -142,16 +144,10 @@ heat_map_save <- function(save_as,
 heat_map_reset <- function(){
   
   # HEAT_MAP_SAVE
-  options("heat_map_save" = NULL)
+  options("heat_map_save" = FALSE)
   
   # HEAT_MAP_CUSTOM
   options("heat_map_custom" = FALSE)
-  
-  # HEAT_MAP_COPY
-  options("heat_map_copy" = NULL)
-  
-  # HEAT_MAP_MARGINS
-  options("heat_map_margins" = NULL)
   
   # TURN OFF GRAPHICS DEVICE
   heat_map_complete()
@@ -197,8 +193,10 @@ heat_map_reset <- function(){
 heat_map_complete <- function(){
   
   # CLOSE DEVICE
-  if(!is.null(getOption("heat_map_save"))){
-    dev.off(getOption("heat_map_save"))
+  if(getOption("heat_map_save")) {
+    if(!dev.cur() == 1){
+      dev.off()
+    }
   }else{
     if(!dev.cur() == 1){
       dev.off()
@@ -206,7 +204,7 @@ heat_map_complete <- function(){
   } 
   
   # RESET HEAT_MAP_SAVE
-  options("heat_map_save" = NULL)
+  options("heat_map_save" = FALSE)
 
 }
 
@@ -325,10 +323,13 @@ heat_map_record <- function(){
 #'
 #' @param popup logical indicating whether a popup graphics device should be
 #'   opened.
+#' @param popup_size indicates the size of the popup graphics device in inches,
+#'   set to \code{c(8,8)} by default.
 #' @param ... additional arguments passed to
 #'   \code{\link[grDevices:dev]{dev.new}}:
 #'
-#' @importFrom grDevices dev.cur dev.new
+#' @importFrom grDevices x11 dev.new dev.cur
+#' @importFrom graphics par
 #'
 #' @examples
 #' \dontrun{
@@ -339,23 +340,185 @@ heat_map_record <- function(){
 #' @author Dillon Hammill, \email{Dillon.Hammill@anu.edu.au}
 #'
 #' @export
-heat_map_new <- function(popup = FALSE, ...){
-  # Null graphics device -> RStudioGD
-  if(dev.cur() == 1) {
-    dev.new()
+heat_map_new <- function(popup = FALSE,
+                         popup_size = c(8,8),
+                         ...){
+  
+  # HEAT_MAP_SAVE() ------------------------------------------------------------
+  
+  # CYTO_PLOT_SAVE - POPUP -> FALSE
+  if(getOption("heat_map_save")) {
+    popup <- FALSE
   }
-  # Open popup window - either windows/X11/xquartz
-  if(popup == TRUE){
-    if(.Platform$OS.type == "windows"){
-      suppressWarnings(dev.new(...))
-    }else if (.Platform$OS.type == "unix") {
-      if (Sys.info()["sysname"] == "Linux") {
-        # Cairo needed for semi-transparency
-        suppressWarnings(dev.new(type = "cairo", ...))
-      }else if(Sys.info()["sysname"] == "Darwin"){
-        suppressWarnings(dev.new(...))
+  
+  # OPEN GRAPHICS DEVICE -------------------------------------------------------
+  
+  # CYTO_PLOT_SAVE
+  if(getOption("heat_map_save")) {
+    # DON'T OPEN NEW DEVICE - USE EXISTING DEVICE (PDF MULTIPAGE)
+    dev_new <- FALSE
+    dev_empty <- dev_empty()
+  # # SHINY - CUSTOM REQUIRES FLAG - DEV_EMPTY() ALWAYS FALSE
+  # } else if(shiny::isRunning()) {
+  #   dev_new <- FALSE
+  #   if(is.null(getOption("heat_map_shiny"))) {
+  #     dev_empty <- TRUE
+  #     cyto_option("heat_map_shiny", TRUE)
+  #   } else {
+  #     dev_empty <- FALSE
+  #   }
+  # NEW GRAPHICS DEVICE REQUIRED?
+  } else {
+    # NULL -> RSTUDIOGD
+    if (dev.cur() == 1) {
+      dev.new()
+    }
+    # NEW DEVICE
+    if (popup) {
+      dev_new <- "popup"
+    } else {
+      dev_new <- "rstudio"
+    }
+    # CURRENT DEVICE
+    dev_old <- names(dev.cur())
+    if (grepl("rstudio", dev_old, ignore.case = TRUE)) {
+      dev_old <- "rstudio"
+    } else {
+      dev_old <- "popup"
+    }
+    # CURRENT DEVICE - RSTUDIO
+    if (dev_old == "rstudio") {
+      # REQUIRE - POPUP
+      if (dev_new == "popup") {
+        # NEW POPUP DEVICE REQUIRED
+        dev_new <- "popup"
+        dev_empty <- TRUE
+        # REQUIRE - RSTUDIO
+      } else {
+        # EMPTY DEVICE
+        if(dev_empty()) {
+          dev_new <- FALSE
+          dev_empty <- TRUE
+          # CUSTOM PLOTTING FUNCTION - OPEN NEW DEVICE WHEN FULL
+        } else if(getOption("heat_map_custom")) {
+          # OPEN NEW DEVICE WHEN FULL
+          if(par("page")) {
+            dev_new <- "rstudio"
+            dev_empty <- TRUE
+          } else {
+            dev_new <- FALSE
+            dev_empty <- FALSE
+          }
+          # NEW LAYOUT
+        } else {
+          dev_new <- "rstudio"
+          dev_empty <- TRUE
+        }
+      }
+      # CURRENT DEVICE - POPUP
+    } else if(dev_old == "popup") {
+      # REQUIRE POPUP
+      if (dev_new == "popup") {
+        # EMPTY DEVICE
+        if(dev_empty()){
+          dev_new <- FALSE
+          dev_empty <- TRUE
+          # CUSTOM PLOTTING FUNCTION - OPEN NEW DEVICE WHEN FULL
+        } else if(getOption("heat_map_custom")) {
+          # OPEN NEW GRAPHICS DEVICE WHEN FULL
+          if(par("page")) {
+            dev_new <- "popup"
+            dev_empty <- TRUE
+          } else {
+            dev_new <- FALSE
+            dev_empty <- FALSE
+          }
+          # NEW LAYOUT
+        } else {
+          dev_new <- "popup"
+          dev_empty <- TRUE
+        }
+        # REQUIRE - RSTUDIO
+      } else {
+        # NEW RSTUDIO DEVICE REQUIRED
+        dev_new <- "rstudio"
+        dev_empty <- TRUE
+      }
+    }
+    # OPEN NEW GRAPHICS DEVICE
+    if (dev_new != FALSE) {
+      # POPUP DEVICE
+      if (dev_new == "popup") {
+        # Below code restricts to RStudio device in non-interactive mode
+        # Removed to allow users to use popup window non-interactively
+        # if (interactive() & cyto_option("CytoExploreR_interactive")) {
+        if (.Platform$OS.type == "windows") {
+          suppressWarnings(
+            dev.new(
+              height = popup_size[1],
+              width = popup_size[2],
+              unit = "in",
+              noRStudioGD = TRUE
+            )
+          )
+        } else if (.Platform$OS.type == "unix") {
+          if (Sys.info()["sysname"] == "Linux") {
+            # dev.new() opens slower xquarts
+            # x11 opens through R graphics - much faster rendering
+            # Cairo needed for semi-transparency
+            # nbcairo used for speed
+            suppressWarnings(
+              x11(
+                height = popup_size[1],
+                width = popup_size[2],
+                type = "nbcairo"
+              )
+            )
+          } else if (Sys.info()["sysname"] == "Darwin") {
+            suppressWarnings(
+              x11(
+                height = popup_size[1],
+                width = popup_size[2],
+                type = "nbcairo"
+              )
+            )
+          }
+        }
+        # }
+        # NON-POPUP DEVICE - RSTUDIO | SHINY (CAIRO)
+      } else if(dev_new == "rstudio") {
+        # dev_ind <- which(
+        #   grepl(
+        #     dev_new,
+        #     names(dev.list()),
+        #     ignore.case = TRUE
+        #   )
+        # )
+        # if (length(dev_ind) != 0) {
+        #   dev.off(dev.list()[dev_ind])
+        # } else {
+        #   graphics.off()
+        # }
+        # NEW DEVICE
+        # dev.new(noRStudioGD = FALSE)
       }
     }
   }
-  options("heat_map_device" = dev.cur())
+  
+}
+
+## DEV_EMPTY -------------------------------------------------------------------
+
+#' Check if graphics device is empty
+#' @importFrom graphics par
+#' @noRd
+dev_empty <- function() {
+  # DEVICE EMPTY - NEW CAN ONLY BE CALLED IF PLOT EXISTS
+  old_par <- .par("new")
+  dev_empty <- tryCatch(
+    par(new = TRUE)[["new"]],
+    warning = function(w){TRUE},
+    finally = function(f){FALSE})
+  par(old_par)
+  return(dev_empty)
 }

@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 [![Last-changedate](https://img.shields.io/badge/last%20change-`r gsub('-', '--', Sys.Date())`-yellowgreen.svg)](/commits/master)
 <!-- badges: end -->
 
-**HeatmapR** it a lightweight R package that makes it easy to generate high quality heatmaps with minimal data preprocessing or manual customization. Visit the **HeatmapR** website to get started https://dillonhammill.github.io/HeatmapR/.
+**HeatmapR** it a lightweight R package that makes it easy to generate high quality, complex heatmaps with minimal data preprocessing or manual customization. Visit the **HeatmapR** website to get started https://dillonhammill.github.io/HeatmapR/.
 
 ## Overview
 As the dimensionality of datasets continues to increase there is a need for visualisation tools such as heatmaps to present data in an easily interpretable way. The construction of complex heatmaps poses a number of challenges as they are composed multiple graphical elements, such as a coloured matrix, dendrograms, cluster sub-divisions, axes, titles and legends. The first base graphics implementation of heatmaps included `heatmap()` in the `stats` package and `heatmap.2()` in the  [gplots](https://cran.r-project.org/web/packages/gplots/index.html). The packages attempt to solve these graphical challenges by treating each graphical component as a separate plot element and arranging them using `layout()`. This approach can generate complex heatmaps but it rendered users unable to arrange the heatmap with additional plot elements. **HeatmapR** aims to address these layout issues using solely a base graphics approach. 
@@ -31,7 +31,7 @@ As the dimensionality of datasets continues to increase there is a need for visu
 ## HeatmapR
 **HeatmapR** has a number of benefits over other heatmap packages:
 
-* **HeatmapR** is built using base graphics, so there is no required `ggplot2` or `plotly` knowledge in order to use this package.
+* **HeatmapR** is built using base graphics to remove the need for familiarity with `ggplot2` or `plotly`.
 * **HeatmapR** is extremely lighweight and therefore there are no external dependencies that need to be installed.
 * **HeatmapR** is designed under ROpenSci naming guidelines for a consistent and intuitive user experience.
 * Unlike other heatmap packages that use base graphics, **HeatmapR** actually returns the plot object instead of an image. This makes it easy to arrange multiple plots in complex layouts without sacrificing resolution.
@@ -57,19 +57,39 @@ library(HeatmapR)
 
 ```{r, eval = FALSE}
 library(HeatmapR)
-heat_map(mtcars,
-         scale = "range",
-         dendrogram = "both")
+heat_map(
+  mtcars,
+  scale = "column",
+  scale_method = "range",
+  tree_x = TRUE,
+  tree_y = TRUE,
+  tree_cut_x = 4,
+  tree_cut_y = 12,
+  cell_size = TRUE,
+  cell_shape = "circle",
+  title = "mtcars"
+)
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("man/figures/README-HeatmapR-1.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars,
-         scale = "range",
-         dendrogram = "both")
+heat_map_save(
+  "man/figures/README-HeatmapR-1.png",
+  height = 14,
+  width = 8,
+  res = 500)
+heat_map(
+  mtcars,
+  scale = "column",
+  scale_method = "range",
+  tree_x = TRUE,
+  tree_y = TRUE,
+  tree_cut_x = 4,
+  tree_cut_y = 12,
+  cell_size = TRUE,
+  cell_shape = "circle",
+  legend_size = 1.2,
+  title = "mtcars"
+)
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
@@ -77,7 +97,7 @@ knitr::include_graphics('man/figures/README-HeatmapR-1.png')
 ```
 
 ## Acknowledgements
-**HeatmapR** relies on statistical methods in the `stats` package to compute distance matrices and perform hiearchical clustering. **HeatmapR** also uses some modified `stats` code from the  [ggdendro](https://github.com/andrie/ggdendro) package to get the co-ordinates for the dendrogram line segments. 
+**HeatmapR** relies on statistical methods in the `stats` package to compute distance matrices and perform hierarchical clustering. **HeatmapR** also uses some modified `stats` code from the  [ggdendro](https://github.com/andrie/ggdendro) package to get the co-ordinates for the dendrogram line segments. 
 
 ## Code of Conduct
 
@@ -85,7 +105,7 @@ Please note that the HeatmapR project is released with a [Contributor Code of Co
 
 ## Citation
 
-A **HeatmapR** publication is on the way, but in the meantime if you use **HeatmapR** for your work please cite the package as follows:
+If you use **HeatmapR** for your work please cite the package as follows:
 
 ```{r, eval = TRUE}
 citation("HeatmapR")

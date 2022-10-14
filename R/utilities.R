@@ -128,3 +128,25 @@
 LAPPLY <- function(...){
   unlist(lapply(...))
 }
+
+## RESCALE ---------------------------------------------------------------------
+
+#' Rescale values to new range
+#' @noRd
+.rescale <- function(x,
+                     limits,
+                     scale = c(0, 1)) {
+  
+  # LIMITS MISSING
+  if(missing(limits)) {
+    limits <- range(x)
+  }
+  
+  # RESCALE
+  if(scale[2] < scale[1]) {
+    scale[1] - ((x - min(limits))/(diff(range(limits)))) * diff(range(scale))
+  } else {
+    scale[1] + ((x - min(limits))/(diff(range(limits)))) * diff(range(scale))
+  }
+
+}

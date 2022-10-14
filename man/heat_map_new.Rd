@@ -4,11 +4,14 @@
 \alias{heat_map_new}
 \title{Open a pop-up graphics device for heatmaps}
 \usage{
-heat_map_new(popup = FALSE, ...)
+heat_map_new(popup = FALSE, popup_size = c(8, 8), ...)
 }
 \arguments{
 \item{popup}{logical indicating whether a popup graphics device should be
 opened.}
+
+\item{popup_size}{indicates the size of the popup graphics device in inches,
+set to \code{c(8,8)} by default.}
 
 \item{...}{additional arguments passed to
 \code{\link[grDevices:dev]{dev.new}}:}

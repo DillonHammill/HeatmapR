@@ -26,20 +26,21 @@ readr::write_lines(html, path = "logo.html")
 ```
 
 ## Overview
+
 The key functions in **HeatmapR** are summarised below:
 
-- `heat_map()` creates the heatmaps
-- `heat_map_clust()` is used inside `heat_map()` to perform hierarchical clustering on the dataset using `stats::hclust()`
-- `heat_map_scale()` is used inside `heat_map()` to apply column-wise mean, z-score or range scaling to the dataset prior to constructing the heatmap.
-- `heat_map_layout()` allows you to create custom plot layouts to arrange multiple heatmaps.
-- `heat_map_save()` can be called prior to any `heat_map()` call to save a high resolution image.
-- `heat_map_record()` can be called after any `heat_map()` calls to record the current plot for saving to an R object.
-- `heat_map_complete()` can be called when creating complex layouts to indicate when the resulting layout should be saved to file using `heat_map_save()`.
-- `heat_map_reset()` resets all **HeatmapR** associated settings in case things are not working as they should.
+-   `heat_map()` creates the heatmaps
+-   `heat_map_clust()` is used inside `heat_map()` to perform hierarchical clustering on the dataset using `stats::hclust()`
+-   `heat_map_scale()` is used inside `heat_map()` to apply column-wise mean, z-score or range scaling to the dataset prior to constructing the heatmap.
+-   `heat_map_layout()` allows you to create custom plot layouts to arrange multiple heatmaps.
+-   `heat_map_save()` can be called prior to any `heat_map()` call to save a high resolution image.
+-   `heat_map_record()` can be called after any `heat_map()` calls to record the current plot for saving to an R object.
+-   `heat_map_complete()` can be called when creating complex layouts to indicate when the resulting layout should be saved to file using `heat_map_save()`.
+-   `heat_map_reset()` resets all **HeatmapR** associated settings in case things are not working as they should.
 
 ## 1. Construct a Basic Heatmap
 
-Constructing a heatmap is as simple loading the **HeatmapR** package and supplying your dataset to the `heat_map()` function. This will create a heatmap using the raw data and a default red-green colour scale.
+Constructing a heatmap is as simple loading the **HeatmapR** package and supplying your dataset to the `heat_map()` function. This will create a heatmap using the raw data and a default hybrid viridis colour scale.
 
 ```{r, echo = FALSE, eval = TRUE}
 library(HeatmapR)
@@ -51,10 +52,12 @@ heat_map(mtcars)
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-1.png",
-              height = 7,
-              width = 10,
-              res = 500)
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-1.png",
+  height = 7,
+  width = 9,
+  res = 500
+)
 heat_map(mtcars)
 ```
 
@@ -62,458 +65,250 @@ heat_map(mtcars)
 knitr::include_graphics('HeatmapR/HeatmapR-1.png')
 ```
 
-## 2. Column-Wise Scaling
+## 2. Handling of Values in `HeatmapR`
 
-The heatmap above is not very informative due to each of the column being on vastly different scales. `heat_map()` can perform column-wise range, mean or z-score scaling using `heat_map_scale()` to help improve the visualisation of the data. The type of scaling to perform can be controlled through the `scale` argument.
+`HeatmapR` accepts any matrix-like data structure as input and is capable of handling any value types, including numeric, character, factor and missing (NA). Only numeric values are used when performing hierarchical clustering but non_numeric columns will still be included in the resulting heatmap. The colour for the cells in the heatmap is dependent on the type of value in each cell, colours for numeric data are selected from `cell_col_scale`, whilst colours for non-numeric data and missing values are selected from `cell_col_palette` and `cell_col_empty` respectively. Non-numeric columns will always be moved to the right hand side of the heatmap to distinguish them from numeric columns used for hierarchical clustering. The value of each cell can be displayed by setting `cell_text = TRUE`. Below is an example showing the handling of various data types within `heat_map()` using a modified version of the `iris` dataset which contains some missing values.
 
-## 2.1 Range Scaling
-
-The `range` scaling method takes each value in a column, subtracts the minimum value in that column and divides the result by the range of that column. This results in the data being rescaled to have values between 0 and 1.
+```{r, eval = TRUE, echo = FALSE}
+set.seed(2022)
+```
 
 ```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range")
+# Modified subset of iris dataset with missing values
+iris_sub <- iris[sample(1:nrow(iris), 25), ]
+iris_sub[c(2, 19, 14, 7), 2] <- NA
+iris_sub[c(4, 9, 17, 25), 3] <- NA
+
+# Build heatmap
+heat_map(
+  iris_sub,
+  cell_text = TRUE,
+  cell_col_empty = "grey40",
+  cell_col_scale = c(
+    "yellow",
+    "orange",
+    "red",
+    "black"
+  ),
+  cell_col_palette = c(
+    "magenta",
+    "blue",
+    "green3"
+  )
+)
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-2.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, scale = "range")
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-2.png",
+  height = 7,
+  width = 7,
+  res = 500
+)
+iris_sub <- iris[sample(1:nrow(iris), 25), ]
+iris_sub[c(2, 19, 14, 7), 2] <- NA
+iris_sub[c(4, 9, 17, 25), 3] <- NA
+heat_map(
+  iris_sub,
+  cell_text = TRUE,
+  cell_col_empty = "grey40",
+  cell_col_scale = c(
+    "yellow",
+    "orange",
+    "red",
+    "black"
+  ),
+  cell_col_palette = c(
+    "magenta",
+    "blue",
+    "green3"
+  )
+)
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
 knitr::include_graphics('HeatmapR/HeatmapR-2.png')
 ```
 
-## 2.2 Mean Scaling
+# 3. Cell Properties
 
-The `mean` scaling method takes each value in a column, subtracts the mean value in that column and divides the result by the range of that column.
+`heat_map()` contains a family of `cell_` arguments which allow for the customisation of the shape, size, colour, borders and text of cells within a heatmap. 
+
+## 3.1 Cell Shape
+
+`heat_map()` supports different cell shapes through the `cell_shape` argument which can be set to either `"rect"` (default), `"circle"` or `"diamond"`. Alternatively, a matrix of shapes can be supplied to use different shapes for cells.
 
 ```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "mean")
+heat_map(
+  mtcars,
+  cell_shape = "circle"
+)
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-3.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, scale = "mean")
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-3.png",
+  height = 11,
+  width = 7,
+  res = 500
+)
+heat_map(
+  mtcars,
+  cell_shape = "circle"
+)
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
 knitr::include_graphics('HeatmapR/HeatmapR-3.png')
 ```
 
-## 2.3 Z-Score Scaling
-
-The `z-score` scaling method takes each value in a column, subtracts the mean value in that column and divides the result by the standard deviation of that column.
-
 ```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "zscore")
+heat_map(
+  mtcars,
+  cell_shape = "diamond"
+)
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-4.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, scale = "zscore")
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-4.png",
+  height = 11,
+  width = 7,
+  res = 500
+)
+heat_map(
+  mtcars,
+  cell_shape = "diamond"
+)
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
 knitr::include_graphics('HeatmapR/HeatmapR-4.png')
 ```
 
-## 3. Hierarchical Clustering
+## 3.2 Cell Size
 
-`heat_map()` can also perform hierarchical clustering using the `heat_map_clust()` function. `heat_map()` supports performing hierarchical clustering on both rows and columns through the `cluster` argument. In `heat_map()` hierachical clustering is always performed post data scaling and the data is automatically reordered based on the clustering result.
-
-## 3.1 Rows
+The size of each cell is controlled through the `cell_size` argument. Setting `cell_size = TRUE` will scale the size of each cell based on its value. Alternatively, a matrix of the same dimensions and orientation as the input matrix can be supplied to control the size of the cells in heatmap.
 
 ```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range",
-         cluster = "row")
+heat_map(
+  mtcars,
+  cell_shape = "circle",
+  cell_size = TRUE
+)
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-5.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, 
-         scale = "range",
-         cluster = "row")
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-5.png",
+  height = 11,
+  width = 7,
+  res = 500
+)
+heat_map(
+  mtcars,
+  cell_shape = "circle",
+  cell_size = TRUE,
+  legend_size = 1.5
+)
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
 knitr::include_graphics('HeatmapR/HeatmapR-5.png')
 ```
 
-## 3.2 Columns
+## 3.3 Cell Colours
+
+The colour of each cell is dependent on the type of data in that cell. For numeric data, the colours are selected from `cell_col_scale`, non-numeric values are selected from `cell_col_palette` and missing values are selected from `cell_col_empty`.
+
+
+
+
+## 3.4 Cell Borders
+
+
+
+## 3.5 Cell Annotation
 
 ```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range",
-         cluster = "column")
+heat_map(
+  mtcars,
+  cell_text = TRUE,
+  cell_text_font = 2,
+  cell_text_col = "black",
+  cell_text_col_alpha = 1,
+  cell_col_alpha = 0.9,
+  title = "mtcars"
+)
 ```
 
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-6.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, 
-         scale = "range",
-         cluster = "column")
-```
 
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-6.png')
-```
+# 4. Data Scaling
 
-## 3.3 Rows and Columns
+
+
+## 4.1 Types of Data Scaling
+
+## 4.2 Scaling Rows
+
+## 4.3 Scaling Columns
+
+
+# 5. Bar Plots
+
+
+
+## 5.1 Values
 
 ```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range",
-         cluster = "both")
+heat_map(
+  mtcars,
+  bar_values_x = c(1:ncol(mtcars)),
+  bar_size_x = 0.6,
+  bar_values_y = c(1:nrow(mtcars)),
+  bar_size_y = 1,
+  title = "mtcars"
+)
 ```
 
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-7.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, 
-         scale = "range",
-         cluster = "both")
-```
+## 5.2 Customisation
 
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-7.png')
-```
 
-## 4. Dendrograms
+# 6. Hierarchical Clustering
 
-In addition to reordering data post hierarchical clustering, `heat_map()` also has support for displaying dendrograms through its `dendrogram` argument. The `dendrogram_scale` argument can be used to scale the branch heights to be the same so that it is easier to see the relationships between the rows or columns.
+## 6.1 Dendrograms
 
-## 4.1 Rows
+## 6.2 Dendrogram Scaling
 
-```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "row")
-```
+## 6.3 Tree size
 
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-8.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "row")
-```
+## 6.4 Tree Cutting
 
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-8.png')
-```
+## 6.5 Custom Distance Matrix
 
-## 4.2 Columns
+## 6.6 Cluster Labels
 
-```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "column")
-```
 
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-9.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "column")
-```
+# 7. Legends
 
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-9.png')
-```
+## 7.1 Cell Size Legend
 
-## 4.3 Rows and Columns
+## 7.2 Cell Colour Legend
 
-```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "both")
-```
+## 7.3 Legend Size and Position
 
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-10.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "both")
-```
 
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-10.png')
-```
+# 8. Layouts
 
-## 4.4 Scaled Branch Heights
+## 8.1 Multiple Heatmaps
 
-```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "both",
-         dendrogram_scale = TRUE)
-```
+## 8.2 Layouts with other plots
 
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-11.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "both",
-         dendrogram_scale = TRUE)
-```
 
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-11.png')
-```
+# 9. Export
 
-## 7. Display Values
+## 9.1 `heat_map_save()`
 
-To display the values in the heatmap, simply set `box_text = TRUE` and customize the text using the `box_text_font`, `box_text_size` and `box_text_col` arguments.
 
-```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "both",
-         dendrogram_scale = TRUE,
-         box_text = TRUE)
-```
 
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-12.png",
-              height = 7,
-              width = 10,
-              res = 500)
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "both",
-         dendrogram_scale = TRUE, 
-         box_text = TRUE)
-```
-
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-12.png')
-```
-
-## 7. Categorical Variables
-
-`heat_map()` also has full support for datasets that contain non-numeric columns. These columns will be moved to the right of the heatmap and excluded from any scaling, heirarchical clustering or dendrograms. At release, `heat_map()` does not have support for adding legends for these columns, but it is possible to just add text for these non-numeric varaibles by setting `box_text = "character"`. The colours for non-numeric variables can be altered through the `box_col_palette` argument.
-
-```{r, eval = FALSE}
-heat_map(iris[sample(150, 30), ], 
-         scale = "range",
-         dendrogram = "both",
-         dendrogram_scale = TRUE,
-         box_text = "character",
-         box_col_palette = c("magenta",
-                             "blue",
-                             "orange"))
-```
-
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-13.png",
-              height = 10,
-              width = 7,
-              res = 500)
-heat_map(iris[sample(150, 30), ], 
-         scale = "range",
-         dendrogram = "both",
-         dendrogram_scale = TRUE,
-         box_text = "character",
-         box_col_palette = c("magenta",
-                             "blue",
-                             "orange"))
-```
-
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-13.png')
-```
-
-## 8. Customization
-
-There are countless ways to customize the appearance of your heatmap using `heat_map()`. Below is an example where a number of features have been customized:
-
-```{r, eval = FALSE}
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "both",
-         dendrogram_scale = TRUE,
-         box_text = TRUE,
-         box_text_font = 3,
-         box_text_col = "black",
-         box_text_col_alpha = 0.5,
-         box_border_line_col = "white",
-         box_col_scale = c("white",
-                           "yellow",
-                           "orange",
-                           "red"),
-         title = "mtcars",
-         title_text_font = 2,
-         title_text_size = 1.5,
-         title_text_col = "red",
-         legend_side = 1,
-         axis_text_x_side = 3,
-         axis_text_y_side = 2,
-         axis_label_x = "Parameter",
-         axis_label_y = "Model")
-```
-
-```{r, eval = FALSE, echo = FALSE}
-heat_map_save("vignettes/HeatmapR/HeatmapR-14.png",
-              height = 10,
-              width = 10,
-              res = 500)
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "both",
-         dendrogram_scale = TRUE,
-         box_text = TRUE,
-         box_text_size = 0.8,
-         box_text_font = 3,
-         box_text_col = "black",
-         box_text_col_alpha = 0.5,
-         box_border_line_col = "white",
-         box_col_scale = c("white",
-                           "yellow",
-                           "orange",
-                           "red"),
-         title = "mtcars",
-         title_text_font = 2,
-         title_text_size = 1.5,
-         title_text_col = "red",
-         legend_side = 1,
-         axis_text_x_side = 3,
-         axis_text_y_side = 2,
-         axis_label_x = "Parameter",
-         axis_label_y = "Model")
-```
-
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-14.png')
-```
-
-## 9. Save High Resolution Images
-
-Saving high resolution heatmaps is as easy as calling `heat_map_save()` prior to calling `heat_map()`. Simply supply a name for the file with a png, jpeg, pdf, tiff or svg file extension and specify the dimensions of the image in inches. For example, the previous plot was exported to a png file using the following code:
-
-```{r, eval = FALSE}
-# HEAT_MAP_SAVE
-heat_map_save("heat_map.png",
-              width = 10,
-              height = 10,
-              res = 500)
-# HEAT_MAP
-heat_map(mtcars, 
-         scale = "range",
-         dendrogram = "both",
-         dendrogram_scale = TRUE,
-         box_text = TRUE,
-         box_text_font = 3,
-         box_text_col = "black",
-         box_text_col_alpha = 0.5,
-         box_border_line_col = "white",
-         box_col_scale = c("white",
-                           "yellow",
-                           "orange",
-                           "red"),
-         title = "mtcars",
-         title_text_font = 2,
-         title_text_size = 1.5,
-         title_text_col = "red",
-         legend_side = 1,
-         axis_text_x_side = 3,
-         axis_text_y_side = 2,
-         axis_label_x = "Parameter",
-         axis_label_y = "Model")
-```
-
-## 10. Layouts
-
-**HeatmapR** has full support for custom plot layouts using `heat_map_layout()`. It is also now possible to arrange your heatmaps with any other plot constructed using base graphics using `layout()` or `par("mfrow")` or `par("mfcol")`. `heat_map_layout()` is simply a conveient wrapper fro these tradional base graphics layout functions. You will need to call `heat_map_save()` prior to `heat_map_layout()` to save high resolution images of custom layouts. You also need to let `heat_map()` know when the layout is ready from saving by running `heat_map_complete()`.
-
-```{r, eval = FALSE, echo = FALSE}
-# Save to file
-heat_map_save("vignettes/HeatmapR/HeatmapR-15.png",
-              height = 14,
-              width = 7,
-              res = 500)
-# Create layout
-heat_map_layout(c(2,1))
-# mtcars
-heat_map(mtcars,
-         scale = "range",
-         dendrogram = "both",
-         box_col_scale = c("white",
-                           "yellow",
-                           "orange",
-                           "red"))
-# iris
-heat_map(iris[sample(150, 30),],
-         scale = "mean",
-         dendrogram = "both",
-         box_text = "character",
-         box_text_col = "black")
-# LAYOUT COMPLETE
-heat_map_complete()
-```
-
-```{r, eval = FALSE}
-# Save to file
-heat_map_save("heat_map_layout.png",
-              height = 14,
-              width = 7,
-              res = 500)
-# Create layout
-heat_map_layout(c(2,1))
-# mtcars
-heat_map(mtcars,
-         scale = "range",
-         dendrogram = "both",
-         box_col_scale = c("white",
-                           "yellow",
-                           "orange",
-                           "red"))
-# iris
-heat_map(iris[sample(150, 30),],
-         scale = "mean",
-         dendrogram = "both",
-         box_text = "character",
-         box_text_col = "black")
-# LAYOUT COMPLETE
-heat_map_complete()
-```
-
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-15.png')
-```
-
-## Summary
-
-**HeatmapR** is a powerful package for constructing heatmaps that has support for data scaling, hierarchical clustering, dendrograms and categorical variables. Furthermore, **HeatmapR** is easy to use, fully customizable, exports high resolution images and has full support for multiplot layouts. 
 

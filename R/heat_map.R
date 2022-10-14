@@ -1,548 +1,1289 @@
-## HEAT_MAP --------------------------------------------------------------------
+# HEAT_MAP ---------------------------------------------------------------------
 
-#' Create heatmap using base graphics
+#' Create a complex heatmap using base graphics
 #'
-#' \code{heat_map()} provides an intuitive way to construct high resolution
-#' heatmaps with minimal coding and data preparation. \code{heat_map()} has
-#' support for non-numeric data, data scaling, clustering and dendrograms.
-#'
-#' @param x matrix or matrix-like object containing the data to generate the
-#'   heatmap. The supplied data may contain non-numeric columns which will be
-#'   included in the constructed heatmap, but will not be scaled or used for
+#' @param x matrix or data.frame containing the data to display in the heatmap.
+#' @param scale logical indicating whether the data should be scaled prior to
+#'   constructing the heatmap. Addition options include \code{"column"} or
+#'   \code{"row"} to indicate whether scaling should be performed across
+#'   \code{rows} or \code{columns}.
+#' @param scale_method indicates the type of scaling to perform on \code{rows}
+#'   or \code{columns} as indicated by \code{scale}, options include
+#'   \code{"range"}, \code{"mean"} or \code{"zscore"}. Set to \code{"range"} by
+#'   default.
+#' @param dist_method indicates the type of distance metric to use when
+#'   constructing dendrograms, set to \code{"euclidean"} distance by default.
+#'   See \code{?dist} for alternatives.
+#' @param clust_method indicates the type of agglomeration method to use when
+#'   constructing performing hierarchical clustering, set to \code{"complete"}
+#'   by default. See \code{?hclust} for alternatives.
+#' @param round indicates the number of decimal places to round values when
+#'   \code{cell_text = TRUE} and values are displayed in the heatmap, set to 2
+#'   decimal places by default
+#' @param tree options include \code{"row"}, \code{"y"}, \code{"column"},
+#'   \code{"x"} or \code{"both"} to indicate the axes for which dendrograms
+#'   should be constructed, set to FALSE by default. This argument overrides the
+#'   \code{tree_x} and \code{tree_y} arguments.
+#' @param tree_x logical indicating whether dendrograms should be constructed
+#'   for the x axis (columns), set to NULL by default.
+#' @param tree_size_x numeric to control the height of the dendrogram for the x
+#'   axis, set to 1 by default.
+#' @param tree_scale_x logical indicating whether the branch heights of the x
+#'   axis dendrogram should be scaled for better visualisation, set to FALSE by
+#'   default.
+#' @param tree_cut_x either a numeric ranging from 0 to 1 indicating the branch
+#'   cut height for x axis dendrogram or an integer indicating the desired
+#'   number of clusters to obtain by cutting the x axis dendrogram.
+#' @param tree_split_x a numeric to control the spacing between x axis tree
+#'   splits, set to 1 by default. Setting the argument to 0 will remove a axis
+#'   tree splits.
+#' @param tree_label_x logical indicating whether a label should be added for
+#'   each cluster within the x axis tree when \code{tree_cut_x} is specified,
+#'   set to FALSE by default.
+#' @param tree_label_size_x numeric to control the height of the tree cluster
+#'   labels for the x axis tree, set to 0.1 by default.
+#' @param tree_label_col_x vector of colours to use for x axis tree cluster
+#'   labels, set to "grey40" by default.
+#' @param tree_label_col_alpha_x numeric to control the transparency of the x
+#'   axis tree cluster labels, set to 1 by default to use solid colours.
+#' @param tree_label_text_x a vector of text to include in the x axis tree
+#'   cluster labels, set to NA by default.
+#' @param tree_label_text_font_x a vector of font types to use for text in x
+#'   axis cluster labels, set to 1 by default for plain text. See \code{font} in
+#'   \code{?par} for alternatives.
+#' @param tree_label_text_size_x a vector of numerics to control the size of the
+#'   text in the x axis cluster labels, set to 1 by default.
+#' @param tree_label_text_col_x a vector of colours to control the colour of
+#'   text in x axis cluster labels, set to \code{"black"} by default.
+#' @param tree_label_text_col_alpha_x a vector of numerics to control the
+#'   transparency of text in x axis cluster labels, set to 1 by default to use
+#'   solid colours.
+#' @param tree_y logical indicating whether dendrograms should be constructed
+#'   for the y axis (rows), set to NULL by default.
+#' @param tree_size_y numeric to control the width of the dendrogram for the y
+#'   axis, set to 1 by default.
+#' @param tree_scale_y logical indicating whether the branch heights of the y
+#'   axis dendrogram should be scaled for better visualisation, set to FALSE by
+#'   default.
+#' @param tree_cut_y either a numeric ranging from 0 to 1 indicating the branch
+#'   cut height for y axis dendrogram or an integer indicating the desired
+#'   number of clusters to obtain by cutting the y axis dendrogram.
+#' @param tree_split_y a numeric to control the spacing between y axis tree
+#'   splits, set to 1 by default. Setting the argument to 0 will remove a axis
+#'   tree splits.
+#' @param tree_label_y logical indicating whether a label should be added for
+#'   each cluster within the y axis tree when \code{tree_cut_y} is specified,
+#'   set to FALSE by default.
+#' @param tree_label_size_y numeric to control the width of the tree cluster
+#'   labels for the y axis tree, set to 0.1 by default.
+#' @param tree_label_col_y vector of colours to use for y axis tree cluster
+#'   labels, set to "grey40" by default.
+#' @param tree_label_col_alpha_y numeric to control the transparency of the y
+#'   axis tree cluster labels, set to 1 by default to use solid colours.
+#' @param tree_label_text_y a vector of text to include in the y axis tree
+#'   cluster labels, set to NA by default.
+#' @param tree_label_text_font_y a vector of font types to use for text in y
+#'   axis cluster labels, set to 1 by default for plain text. See \code{font} in
+#'   \code{?par} for alternatives.
+#' @param tree_label_text_size_y a vector of numerics to control the size of the
+#'   text in the y axis cluster labels, set to 1 by default.
+#' @param tree_label_text_col_y a vector of colours to control the colour of
+#'   text in y axis cluster labels, set to \code{"black"} by default.
+#' @param tree_label_text_col_alpha_y a vector of numerics to control the
+#'   transparency of text in y axis cluster labels, set to 1 by default to use
+#'   solid colours.
+#' @param cell_shape indicates the shape to use for the cells in the heatmap,
+#'   options include \code{"rect"}, \code{"circle"} or \code{"diamond"}.
+#' @param cell_size logical indicating whether each cell in the heatmap should
+#'   be scaled by the value in \code{x}, set to FALSE by default. Alternatively,
+#'   a matrix of the same dimensions as \code{x} containing the values by which
+#'   the size of each cell should be scaled.
+#' @param cell_col_palette a vector of colours from which colours are selected
+#'   for columns containing non-numeric data.
+#' @param cell_col_scale a vector of colours to use for the colour scale of
+#'   numeric values, set to a hybrid colour-blind friendly viridis colour
+#'   palette by default.
+#' @param cell_col_alpha a numeric to control the fill transparency of cells
+#'   within the heatmap, set to 1 by default to use solid colours.
+#' @param cell_col_empty a colour to use for missing values in \code{x}, set to
+#'   \code{"white"} by default.
+#' @param cell_border_line_type a integer to indicate the type of line to use
+#'   for cell borders, set to 1 by default for solid lines. See \code{lty} in
+#'   \code{?par} for alternatives.
+#' @param cell_border_line_width a numeric to control the with of cell borders,
+#'   set to 1 by default.
+#' @param cell_border_line_col indicates the colour to use for cell borders, set
+#'   to \code{"black"} by default.
+#' @param cell_border_line_col_alpha numeric to control the transparency of cell
+#'   borders, set to 1 by default to use solid colours.
+#' @param cell_text logical indicating whether the values in \code{x} should be
+#'   displayed in each cell of the heatmap, set to FALSE by default.
+#' @param cell_text_font an integer to control the font face of cell text, set
+#'   to 1 by default. See \code{font} in \code{?par} for alternatives.
+#' @param cell_text_size numeric to control the size of cell text, set to 1 by
+#'   default.
+#' @param cell_text_col colour to use for cell text, set to \code{"white"} by
+#'   default,
+#' @param cell_text_col_alpha numeric ranging from 0 to 1 to control the
+#'   transparency of cell text, set to 1 by default to use solid colours for
+#'   cell text.
+#' @param bar_size_x numeric to control the height of x axis bar plot, set to 1
+#'   by default.
+#' @param bar_values_x a vector of values to display in x axis bar plot,
+#'   supplied in the order matching the original columns of \code{x} or named
+#'   with the column names of \code{x}. The values supplied to
+#'   \code{bar_values_x} will be internally reordered to match the order of
+#'   columns as determined by hierarchical clustering.
+#' @param bar_label_x axis label to use for the x axis bar plot.
+#' @param bar_label_text_font_x font to use for the axis label of the x axis bar
+#'   plot, set to 1 by default. See \code{font} in \code{?par} for alternatives.
+#' @param bar_label_text_size_x numeric to control the size of the axis text in
+#'   x axis bar plots, set to 1 by default.
+#' @param bar_label_text_col_x colour to use for the axis text in x axis bar
+#'   plot, set to \code{"black"} by default.
+#' @param bar_label_text_col_alpha_x numeric ranging from 0 to 1 to control the
+#'   transparency of axis text in x axis bar plot, set to 1 by default to use
+#'   solid colours.
+#' @param bar_fill_x a vector of colours to use for the bars in the x axis bar
+#'   plot, set to \code{"grey40"} by default.
+#' @param bar_fill_alpha_x a numeric ranging from 0 to 1 to control the fill
+#'   transparency of bars in x axis bar plot, set to 1 by default to use solid
+#'   colours.
+#' @param bar_line_type_x integer to control the line type of bar borders in the
+#'   x axis bar plot, set to 1 by default to use solid lines. See \code{lty} in
+#'   \code{?par} for alternatives.
+#' @param bar_line_width_x numeric to control the width bar borders in x axis
+#'   bar plot, set to 1 by default.
+#' @param bar_line_col_x colour to use for bar borders in x axis bar plot, set
+#'   to \code{"black"} by default.
+#' @param bar_line_col_alpha_x numeric ranging from 0 to 1 to control the
+#'   transparency of bar borders in x axis bar plot, set to 1 by default.
+#' @param bar_size_y numeric to control the width of y axis bar plot, set to 1
+#'   by default.
+#' @param bar_values_y a vector of values to display in y axis bar plot,
+#'   supplied in the order matching the original rownames of \code{x} or named
+#'   with the row names of \code{x}. The values supplied to \code{bar_values_y}
+#'   will be internally reordered to match the order of rows as determined by
 #'   hierarchical clustering.
-#' @param scale indicates whether the data should be scaled by \code{"column"}
-#'   or \code{"row"} prior to heatmap construction, set to FALSE by default to
-#'   use the data as supplied.
-#' @param scale_method indicates the method to use when performing row-wise or
-#'   column-wise scaling, options include \code{"range"}, \code{"mean"} or
-#'   \code{"zscore"}, set to \code{"range"} by default. Range scaling subtracts
-#'   the minimum value from each value in the row/column and divides the result
-#'   by the range of that row/column. Mean scaling subtracts the mean value from
-#'   each value in the row/column and divides the result by the range of that
-#'   row/column. Z-score scaling subtracts the mean value from each value in the
-#'   row/column and divides the result by the standard deviation of that
-#'   row/column. Scaling is performed internally using the
-#'   \code{\link{heat_map_scale}} function.
-#' @param dist_method name of the method to use when computing distance matrices
-#'   using \code{\link[stats:dist]{dist()}} for clustering, set to
-#'   \code{"euclidean"} by default. This argument is passed to
-#'   \code{heat_map_clust} which performs the hierarchical clustering using
-#'   \code{\link[stats:hclust]{hclust()}}.
-#' @param clust_method name of the method to use for heirarchical clustering
-#'   using \code{\link[stats:hclust]{hclust()}}, set to \code{"complete"} by
-#'   default. This argument is passed to \code{heat_map_clust} which performs
-#'   the hierarchical clustering using \code{\link[stats:hclust]{hclust()}}.
-#' @param transpose logical indicating whether to transpose the rows and columns
-#'   when constructing the heatmap, set to FALSE by default.
-#' @param round number of decimal places to round numeric values in the
-#'   constructed heatmap, set to 2 by default.
-#' @param cluster indicates whether clustering should be performed (TRUE or
-#'   FALSE) or specifies whether clustering should be performed on either the
-#'   \code{"row"}, \code{"column"} or \code{"both"}, set to FALSE by default.
-#' @param reorder options include \code{"row"}, \code{"column"} or \code{"both"}
-#'   to indicate whether rows and/or columns should be reordered based on
-#'   heirarchical clustering, set to TRUE by default.Columns and rows must be
-#'   reordered if dendrograms are added.
-#' @param dendrogram logcial indicating whether dendrograms should be added to
-#'   the constructed heatmap (TRUE OR FALSE) or indicates whether dendrograms
-#'   should be included for the \code{"row"}, \code{"column"} or \code{"both"},
-#'   set to FALSE by default. Setting this argument to TRUE will result in both
-#'   row and column dendrograms being included in the constructed heatmap.
-#'   Dendrograms are always added to the side opposite the labelled axis.
-#' @param dendrogram_size numeric indicating the width of the dendrogram as a
-#'   percentage of the total rows or columns, set to 0.2 by default.
-#' @param dendrogram_scale logical indicating whether dendrogram heights should
-#'   be scaled to be the same size for better visualization, set to FALSE by
-#'   default.
-#' @param margins a vector of length 4 indicating the number of lines to add to
-#'   the plot margins, set to NULL by default to let \code{heat_map} compute
-#'   optimal margins.
-#' @param axis_text_x vector of text to label each column in the supplied data,
-#'   set to the \code{colnames(x)} by default. Setting this argument to NA will
-#'   remove all text for the x axis.
-#' @param axis_text_x_side indicates which of side of the plot to label the
-#'   columns of the heatmap (bottom = 1 or top = 3), set to 1 by default to add
-#'   column labels below the plot.
-#' @param axis_text_x_angle indicates whether the column label text should be
-#'   horizontal or vertical, set to 3 by default to always be perpendicular to
-#'   the axis. See \code{\link[graphics:par]{las}} for alternatives.
-#' @param axis_text_x_adjust horizontal adjustment of x axis text, set to 0.45
+#' @param bar_label_y axis label to use for the y axis bar plot.
+#' @param bar_label_text_font_y font to use for the axis label of the y axis bar
+#'   plot, set to 1 by default. See \code{font} in \code{?par} for alternatives.
+#' @param bar_label_text_size_y numeric to control the size of the axis text in
+#'   y axis bar plots, set to 1 by default.
+#' @param bar_label_text_col_y colour to use for the axis text in y axis bar
+#'   plot, set to \code{"black"} by default.
+#' @param bar_label_text_col_alpha_y numeric ranging from 0 to 1 to control the
+#'   transparency of axis text in y axis bar plot, set to 1 by default to use
+#'   solid colours.
+#' @param bar_fill_y a vector of colours to use for the bars in the y axis bar
+#'   plot, set to \code{"grey40"} by default.
+#' @param bar_fill_alpha_y a numeric ranging from 0 to 1 to control the fill
+#'   transparency of bars in y axis bar plot, set to 1 by default to use solid
+#'   colours.
+#' @param bar_line_type_y integer to control the line type of bar borders in the
+#'   y axis bar plot, set to 1 by default to use solid lines. See \code{lty} in
+#'   \code{?par} for alternatives.
+#' @param bar_line_width_y numeric to control the width bar borders in y axis
+#'   bar plot, set to 1 by default.
+#' @param bar_line_col_y colour to use for bar borders in y axis bar plot, set
+#'   to \code{"black"} by default.
+#' @param bar_line_col_alpha_y numeric ranging from 0 to 1 to control the
+#'   transparency of bar borders in y axis bar plot, set to 1 by default.
+#' @param axis_text_x vector of text to use for x axis labels  supplied in the
+#'   order matching the constructed heatmap, set to NULL by default to use the
+#'   column names of \code{x}.
+#' @param axis_text_side_x indicates whether the x axis text should be on the
+#'   \code{1 - "bottom"} or \code{3 - "top"} of the heatmap, set to
+#'   \code{"bottom"} by default. All other heatmap components, including the
+#'   tree, tree labels and bar plot will be positioned on the opposite side to
+#'   the axis text.
+#' @param axis_text_font_x integer to control the font face of x axis labels,
+#'   set to 1 by default. See \code{font} in \code{?par} for alternatives.
+#' @param axis_text_size_x numeric to control the size of x axis text, set to 1
 #'   by default.
-#' @param axis_text_x_font numeric indicating the font to use for the column
-#'   labels, set to 1 by default for plain font. See
-#'   \code{\link[graphics:par]{font}} for alternatives.
-#' @param axis_text_x_size numeric to control the size of the column labels, set
-#'   to 1 by default.
-#' @param axis_text_x_col vector of colours to use for column labels, set to
+#' @param axis_text_col_x colour to use for x axis text labels, set to
 #'   \code{"black"} by default.
-#' @param axis_text_x_col_alpha numeric to control the alpha transparency of the
-#'   column label text, set to 1 by default to remove transparency.
-#' @param axis_label_x label for x axis, set to NULL by default.
-#' @param axis_label_x_font numeric indicating the font to use for the x axis
-#'   label, set to 2 by default for bold font. See
-#'   \code{\link[graphics:par]{font}} for alternatives.
-#' @param axis_label_x_size numeric to control the size of x axis label, set to
-#'   1 by default.
-#' @param axis_label_x_col colour to use for x axis label, set to \code{"black"}
-#'   by default.
-#' @param axis_label_x_col_alpha numeric to control the alpha transparency of
-#'   the x axis label, set to 1 by default to remove transparency.
-#' @param axis_ticks_x_length numeric to control the length of the x axis ticks,
-#'   set to -0.02 by default. See \code{\link[graphics:par]{tck}} for more
-#'   details.
-#' @param axis_text_y vector of text to label each row in the supplied data, set
-#'   to the \code{rownames(x)} by default. Setting this argument to NA will
-#'   remove all text for the x axis.
-#' @param axis_text_y_side indicates which of side of the plot to label the rows
-#'   of the heatmap (left = 2 or right = 4), set to 1 by default to add row
-#'   labels below the plot.
-#' @param axis_text_y_angle indicates whether the row label text should be
-#'   horizontal or vertical, set to 3 by default to always be perpendicular to
-#'   the axis. See \code{\link[graphics:par]{las}} for alternatives.
-#' @param axis_text_y_adjust vertical adjustment of y axis text, set to 0.45 by
-#'   default.
-#' @param axis_text_y_font numeric indicating the font to use for the row
-#'   labels, set to 1 by default for plain font. See
-#'   \code{\link[graphics:par]{font}} for alternatives.
-#' @param axis_text_y_size numeric to control the size of the row labels, set to
-#'   1 by default.
-#' @param axis_text_y_col vector of colours to use for row labels, set to
+#' @param axis_text_col_alpha_x numeric ranging from 0 to 1 to control the
+#'   transparency of x axis text labels, set to 1 by default to use solid text
+#'   colours.
+#' @param axis_text_angle_x integer to control the angle of x axis text labels
+#'   relative to the x axis, set to 3 by default. See \code{las} in \code{?par}
+#'   for alternatives.
+#' @param axis_text_adjust_x numeric to adjust position x axis text relative to
+#'   x axis ticks, set to 0.45 by default.
+#' @param axis_label_x label to use for the x axis.
+#' @param axis_label_font_x integer to control the font face of the x axis
+#'   label, set to 2 by default.
+#' @param axis_label_size_x numeric to control the size of the x axis label, set
+#'   to 1.2 by default.
+#' @param axis_label_col_x colour to use for x axis label text, set to
 #'   \code{"black"} by default.
-#' @param axis_text_y_col_alpha numeric to control the alpha transparency of the
-#'   row label text, set to 1 by default to remove transparency.
-#' @param axis_label_y label for y axis, set to NULL by default.
-#' @param axis_label_y_font numeric indicating the font to use for the y axis
-#'   label, set to 2 by default for bold font. See
-#'   \code{\link[graphics:par]{font}} for alternatives.
-#' @param axis_label_y_size numeric to control the size of y axis label, set to
-#'   1 by default.
-#' @param axis_label_y_col colour to use for y axis label, set to \code{"black"}
+#' @param axis_label_col_alpha_x numeric ranging from 0 to 1 to control the
+#'   transparency of the x axis label text, set to 1 by default to use solid
+#'   colours.
+#' @param axis_ticks_length_x numeric to control the length of the x axis ticks,
+#'   set to 1 by default.
+#' @param axis_text_y vector of text to use for y axis labels  supplied in the
+#'   order matching the constructed heatmap, set to NULL by default to use the
+#'   row names of \code{x}.
+#' @param axis_text_side_y indicates whether the y axis text should be on the
+#'   \code{2 - "left"} or \code{4 - "right"} of the heatmap, set to
+#'   \code{"left"} by default. All other heatmap components, including the tree,
+#'   tree labels and bar plot will be positioned on the opposite side to the
+#'   axis text.
+#' @param axis_text_font_y integer to control the font face of y axis labels,
+#'   set to 1 by default. See \code{font} in \code{?par} for alternatives.
+#' @param axis_text_size_y numeric to control the size of y axis text, set to 1
 #'   by default.
-#' @param axis_label_y_col_alpha numeric to control the alpha transparency of
-#'   the y axis label, set to 1 by default to remove transparency.
-#' @param axis_ticks_y_length numeric to control the length of the y axis ticks,
-#'   set to -0.02 by default. See \code{\link[graphics:par]{tck}} for more
-#'   details.
-#' @param title text to include in the plot title, set to NULL by default.
-#' @param title_side indicates to which side of the plot the title should be
-#'   added (bottom = 1, left = 2, top = 3 or right = 4), set to 3 by default.
-#' @param title_text_font numeric indicating the font to use for the plot title,
-#'   set to 2 by default for bold font. See \code{\link[graphics:par]{font}} for
+#' @param axis_text_col_y colour to use for y axis text labels, set to
+#'   \code{"black"} by default.
+#' @param axis_text_col_alpha_y numeric ranging from 0 to 1 to control the
+#'   transparency of y axis text labels, set to 1 by default to use solid text
+#'   colours.
+#' @param axis_text_angle_y integer to control the angle of y axis text labels
+#'   relative to the y axis, set to 3 by default. See \code{las} in \code{?par}
+#'   for alternatives.
+#' @param axis_text_adjust_y numeric to adjust position y axis text relative to
+#'   y axis ticks, set to 0.45 by default.
+#' @param axis_label_y label to use for the y axis.
+#' @param axis_label_font_y integer to control the font face of the y axis
+#'   label, set to 2 by default.
+#' @param axis_label_size_y numeric to control the size of the y axis label, set
+#'   to 1.2 by default.
+#' @param axis_label_col_y colour to use for y axis label text, set to
+#'   \code{"black"} by default.
+#' @param axis_label_col_alpha_y numeric ranging from 0 to 1 to control the
+#'   transparency of the y axis label text, set to 1 by default to use solid
+#'   colours.
+#' @param axis_ticks_length_y numeric to control the length of the y axis ticks,
+#'   set to 1 by default.
+#' @param margins vector of numerics to control the size of the margins around
+#'   the \code{bottom}, \code{left}, \code{top} and \code{right} of the heatmap.
+#'   Setting any of these values to NA will allow for internal computation of
+#'   optimal heatmap margins.
+#' @param title text to include in the title above the heatmap.
+#' @param title_text_font integer to control the font face for the heatmap
+#'   title, set to 2 by default. See \code{font} in \code{?par} for
 #'   alternatives.
-#' @param title_text_size numeric to control the size of the plot title, set to
-#'   1.5 by default.
-#' @param title_text_col colour to use for yplot title, set to \code{"black"} by
-#'   default.
-#' @param title_text_col_alpha numeric to control the alpha transparency of the
-#'   plot title, set to 1 by default to remove transparency.
-#' @param box_col_palette vector of colours to select from when colouring
-#'   non-numeric columns, set to a blue to red colour palette by default.
-#' @param box_col_scale vector of colours to use for the colour scale for
-#'   numeric columns, set to a red-black-green colour scale by default.
-#' @param box_col_alpha numeric to control the alpha transparency of the box
-#'   colours, set to 1 by default to remove transparency.
-#' @param box_col_empty colour to use for missing values, set to "white" by
-#'   default.
-#' @param box_border_line_type numeric to control the line type of the box
-#'   borders, set to 1 to use solid lines by default. See
-#'   \code{\link[graphics:par]{lty}} for alternatives.
-#' @param box_border_line_width numeric to control the line thickness of the box
-#'   borders, set to 1 by default.
-#' @param box_border_line_col colour to use for box borders, set to
+#' @param title_text_size numeric to control the size of the text in the heatmap
+#'   title, set to 1.2 by default.
+#' @param title_text_col colour to use for text in heatmap title, set to
 #'   \code{"black"} by default.
-#' @param box_border_line_col_alpha numeric to control the alpha transparency of
-#'   the box borders, set to 1 by default to remove transparency.
-#' @param box_text logical indicating whether to display the values in the
-#'   heatmap, set to FALSE by default. Can be set to \code{"numeric"} or
-#'   \code{"character"} to only include text in columns matching this
-#'   description.
-#' @param box_text_font numeric indicating the font to use for the box text, set
-#'   to 1 by default for plain font. See \code{\link[graphics:par]{font}} for
-#'   alternatives.
-#' @param box_text_size numeric to control the size of the box text, set to 1 by
+#' @param title_text_col_alpha numeric ranging from 0 to 1 to control the
+#'   transparency of text in heatmap title, set to 1 by default for solid
+#'   colours.
+#' @param legend logical indicating whether to include a legend in the heatmap,
+#'   set to TRUE by default. Alternatively, \code{"size"}, \code{"shape"} or
+#'   \code{"both"} to indicate the type(s) of legends to include in the heatmap.
+#' @param legend_size numeric to control the amount of space allocated to the
+#'   legend, set to 1 by default.
+#' @param legend_col_scale_size numeric to control the width of the legend
+#'   colour scale relative to the allocated space for the legend, set to 1 by
 #'   default.
-#' @param box_text_col colour to use for the box text, set to \code{"white"} by
-#'   default.
-#' @param box_text_col_alpha numeric to control the alpha transparency of the
-#'   box text, set to 1 by default to remove transparency.
-#' @param legend logical indicating whether to include a legend for numeric
-#'   colour scale, set to TRUE by default. Legends for non-numeric columns are
-#'   not currently supported.
-#' @param legend_side indicates to which side of the plot the legend should be
-#'   added (bottom = 1, left = 2, top = 3 or right = 4), set to 4 by default.
-#' @param legend_col_breaks indicates the number of colour breaks to include in
-#'   the legend, set to 25 by default.
-#' @param legend_text_breaks a vector of indices indicating which colour breaks
-#'   should be labelled with text, set to label the first and last colour breaks
-#'   by default. Note that the top break is equal to the number of legend colour
-#'   + 1.
-#' @param legend_text_font numeric indicating the font to use for the legend
-#'   text, set to 1 by default for bold font. See
-#'   \code{\link[graphics:par]{font}} for alternatives.
-#' @param legend_text_size numeric to control the size of the legend text, set
-#'   to 1.5 by default.
-#' @param legend_text_col colour to use for the legend text, set to
-#'   \code{"black"} by default.
-#' @param legend_text_col_alpha numeric to control the alpha transparency of the
-#'   legend text, set to 1 by default to remove transparency.
-#' @param legend_box_width numeric to control the width of the legend as a
-#'   percentage of the plot area width, set to 0.05 by default.
-#' @param legend_box_height numeric to control the width of the legend as a
-#'   percentage of the plot area height, set to 0.4 by default.
+#' @param legend_text_font integer to control the font face for legend text, set
+#'   to 1 by default. See \code{font} in \code{?par} for alternatives.
+#' @param legend_text_size numeric to control the size of text in the legend,
+#'   set to 1 by default.
+#' @param legend_text_col colour to use for text in the legend, set to
+#'   \code{"black"}.
+#' @param legend_text_col_alpha numeric to control the transparency of text in
+#'   the legend, set to 1 by default to use solid colours.
 #' @param popup logical indicating whether the heatmap should be constructed in
-#'   a pop-up graphics device, set to FALSE by default.
+#'   a popup window, set to TRUE by default.
+#' @param popup_size vector to control the height and width of the popup window
+#'   in inches, set to \code{c(7,7)}.
 #' @param ... not in use.
 #'
-#' @importFrom methods is
-#' @importFrom stats as.dendrogram
-#' @importFrom graphics plot axis rect title legend text mtext strheight
-#'   strwidth grconvertX grconvertY lines
-#' @importFrom grDevices colorRamp rgb adjustcolor col2rgb colorRampPalette
-#'   dev.set
+#' @return a recorded heatmap.
+#'
+#' @importFrom grDevices colorRamp colorRampPalette rgb
+#' @importFrom graphics mtext polygon text segments
 #'
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #'
 #' @examples
-#' # Heatmap - Raw Values
-#' heat_map(iris[1:20, ],
-#'   title = "Iris Heatmap",
-#'   axis_label_x = "Plant Parameter",
-#'   axis_label_y = "Row ID"
-#' )
+#' heat_map(
+#'   mtcars,
+#'   scale = "column",
+#'   cell_shape = "circle",
+#'   cell_size = TRUE,
+#'   tree_x = TRUE,
+#'   tree_cut_x = 3,
+#'   tree_y = TRUE,
+#'   tree_cut_y = 3,
+#'   bar_values_x = 1:11,
+#'   bar_fill_x = rainbow(11),
+#'   bar_values_y = 1:32,
+#'   bar_fill_y = rainbow(32)
+#'  )
 #'
-#' # Heatmap - Scaled
-#' heat_map(iris[1:20, ],
-#'   scale = "range",
-#'   title = "Iris Heatmap",
-#'   axis_label_x = "Plant Parameter",
-#'   axis_label_y = "Row ID",
-#'   box_col_scale = c("yellow", "orange", "red")
-#' )
 #' @export
 heat_map <- function(x,
                      scale = FALSE,
                      scale_method = "range",
                      dist_method = "euclidean",
                      clust_method = "complete",
-                     transpose = FALSE,
-                     round = 2,
-                     cluster = FALSE,
-                     reorder = TRUE,
-                     dendrogram = FALSE,
-                     dendrogram_size = 0.2,
-                     dendrogram_scale = FALSE,
-                     margins = NULL,
+                     round  = 2,
+                     tree = FALSE,
+                     tree_x = NULL,
+                     tree_size_x = 1,
+                     tree_scale_x = FALSE,
+                     tree_cut_x = NULL,
+                     tree_split_x = 1,
+                     tree_label_x = FALSE,
+                     tree_label_size_x = 0.1,
+                     tree_label_col_x = "grey40",
+                     tree_label_col_alpha_x = 1,
+                     tree_label_text_x = NA,
+                     tree_label_text_font_x = 1,
+                     tree_label_text_size_x = 1,
+                     tree_label_text_col_x = "black",
+                     tree_label_text_col_alpha_x = 1,
+                     tree_y = NULL,
+                     tree_size_y = 1,
+                     tree_scale_y = FALSE,
+                     tree_cut_y = NULL,
+                     tree_split_y = 1,
+                     tree_label_y = FALSE,
+                     tree_label_size_y = 0.1,
+                     tree_label_col_y = "grey40",
+                     tree_label_col_alpha_y = 1,
+                     tree_label_text_y = NA,
+                     tree_label_text_font_y = 1,
+                     tree_label_text_size_y = 1,
+                     tree_label_text_col_y = "black",
+                     tree_label_text_col_alpha_y = 1,
+                     cell_shape = "rect",
+                     cell_size = FALSE,
+                     cell_col_palette = c(
+                       "red",
+                       "blue",
+                       "green",
+                       "orange",
+                       "magenta",
+                       "purple"
+                     ),
+                     cell_col_scale,
+                     cell_col_alpha = 1,
+                     cell_col_empty = "white",
+                     cell_border_line_type = 1,
+                     cell_border_line_width = 1,
+                     cell_border_line_col = "black",
+                     cell_border_line_col_alpha = 1,
+                     cell_text = FALSE,
+                     cell_text_font = 1,
+                     cell_text_size = 1,
+                     cell_text_col = "white",
+                     cell_text_col_alpha = 1,
+                     bar_size_x = 1,
+                     bar_values_x = NULL,
+                     bar_label_x = NULL,
+                     bar_label_text_font_x = 1,
+                     bar_label_text_size_x = 1,
+                     bar_label_text_col_x = "black",
+                     bar_label_text_col_alpha_x = 1,
+                     bar_fill_x = "grey40",
+                     bar_fill_alpha_x = 1,
+                     bar_line_type_x = 1,
+                     bar_line_width_x = 1,
+                     bar_line_col_x = "black",
+                     bar_line_col_alpha_x = 1,
+                     bar_size_y = 1,
+                     bar_values_y = NULL,
+                     bar_label_y = NULL,
+                     bar_label_text_font_y = 1,
+                     bar_label_text_size_y = 1,
+                     bar_label_text_col_y = "black",
+                     bar_label_text_col_alpha_y = 1,
+                     bar_fill_y = "grey40",
+                     bar_fill_alpha_y = 1,
+                     bar_line_type_y = 1,
+                     bar_line_width_y = 1,
+                     bar_line_col_y = "black",
+                     bar_line_col_alpha_y = 1,
                      axis_text_x = NULL,
-                     axis_text_x_side = "bottom",
-                     axis_text_x_font = 1,
-                     axis_text_x_size = 1,
-                     axis_text_x_col = "black",
-                     axis_text_x_col_alpha = 1,
-                     axis_text_x_angle = 3,
-                     axis_text_x_adjust = 0.45,
+                     axis_text_side_x = "bottom",
+                     axis_text_font_x = 1,
+                     axis_text_size_x = 1,
+                     axis_text_col_x = "black",
+                     axis_text_col_alpha_x = 1,
+                     axis_text_angle_x = 3,
+                     axis_text_adjust_x = 0.45,
                      axis_label_x = NULL,
-                     axis_label_x_font = 2,
-                     axis_label_x_size = 1.2,
-                     axis_label_x_col = "black",
-                     axis_label_x_col_alpha = 1,
-                     axis_ticks_x_length = -0.02,
+                     axis_label_font_x = 2,
+                     axis_label_size_x = 1.2,
+                     axis_label_col_x = "black",
+                     axis_label_col_alpha_x = 1,
+                     axis_ticks_length_x = 1,
                      axis_text_y = NULL,
-                     axis_text_y_side = "left",
-                     axis_text_y_font = 1,
-                     axis_text_y_size = 1,
-                     axis_text_y_col = "black",
-                     axis_text_y_col_alpha = 1,
-                     axis_text_y_angle = 1,
-                     axis_text_y_adjust = 0.45,
+                     axis_text_side_y = "left",
+                     axis_text_font_y = 1,
+                     axis_text_size_y = 1,
+                     axis_text_col_y = "black",
+                     axis_text_col_alpha_y = 1,
+                     axis_text_angle_y = 1,
+                     axis_text_adjust_y = 0.45,
                      axis_label_y = NULL,
-                     axis_label_y_font = 2,
-                     axis_label_y_size = 1.2,
-                     axis_label_y_col = "black",
-                     axis_label_y_col_alpha = 1,
-                     axis_ticks_y_length = -0.02,
+                     axis_label_font_y = 2,
+                     axis_label_size_y = 1.2,
+                     axis_label_col_y = "black",
+                     axis_label_col_alpha_y = 1,
+                     axis_ticks_length_y = 1,
+                     margins = c(NA, NA, NA, NA),
                      title = NULL,
-                     title_side = 3,
                      title_text_font = 2,
                      title_text_size = 1.5,
                      title_text_col = "black",
                      title_text_col_alpha = 1,
-                     box_col_palette = c(
-                       "blue",
-                       "turquoise",
-                       "green",
-                       "yellow",
-                       "orange",
-                       "red",
-                       "darkred"
-                     ),
-                     box_col_scale = c(
-                       "red",
-                       "black",
-                       "green"
-                     ),
-                     box_col_alpha = 1,
-                     box_col_empty = "white",
-                     box_border_line_type = 1,
-                     box_border_line_width = 1,
-                     box_border_line_col = "black",
-                     box_border_line_col_alpha = 1,
-                     box_text = FALSE,
-                     box_text_font = 1,
-                     box_text_size = 1,
-                     box_text_col = "white",
-                     box_text_col_alpha = 1,
                      legend = TRUE,
-                     legend_side = 4,
-                     legend_col_breaks = 25,
-                     legend_text_breaks = NULL,
+                     legend_size = 1,
+                     legend_col_scale_size = 1,
                      legend_text_font = 1,
                      legend_text_size = 1,
                      legend_text_col = "black",
                      legend_text_col_alpha = 1,
-                     legend_box_width = 0.05,
-                     legend_box_height = 0.4,
-                     popup = FALSE,
+                     popup = TRUE,
+                     popup_size = c(7,7),
                      ...) {
-
+  
+  # TODO: REFINE TITLE & AXES LABEL POSITION
+  # TODO: ADD TITLES TO LEGENDS
+  # TODO: ADD AXIS TEXT & LABELS TO BARS
+  # TODO: SCALING OF TERMINAL TREE NODES WITH SAME DEPTH
+  
   # GRAPHICAL PARAMETERS -------------------------------------------------------
-
+  
   # RESET ORIGINAL PARAMETERS
   old_pars <- .par("mar")
   on.exit(par(old_pars))
   
-  # POPUP DEVICE
-  if(!is.null(getOption("heat_map_save"))){
-    popup <- FALSE
+  # DATA -----------------------------------------------------------------------
+  
+  # VECTOR -> MATRIX
+  if(is.null(dim(x))) {
+    if(class(x) == "list") {
+      x <- data.frame(x)
+    } else {
+      x <- data.frame(x)
+    }
   }
-
-  # ORGANISE DATA --------------------------------------------------------------
-
-  # VECTOR TO MATRIX
-  if (is.null(ncol(x))) {
-    x <- matrix(x)
-  }
-
+  
   # NUMERIC COLUMNS
   num_cols <- which(
-    unlist(
-      lapply(
-        seq_len(ncol(x)), 
-        function(z) {
-          is.numeric(x[, z])
-        }
-      )
+    sapply(
+      1:ncol(x),
+      function(z) {
+        is.numeric(x[, z, drop = TRUE])
+      }
     )
   )
+
+  # CHARACTER COLUMNS
+  char_cols <- seq_len(
+    ncol(x)
+  )[-num_cols]
   
-  # NON-NUMERIC COLUMNS
-  char_cols <- seq_len(ncol(x))[-num_cols]
+  # COLUMN INDICES
+  col_ind <- c(num_cols, char_cols)
   
-  # MOVE NUMERIC COLUMNS TO LEFT
-  if (length(char_cols) != 0) {
-    x <- cbind(
-      x[, num_cols, drop = FALSE],
-      x[, char_cols, drop = FALSE]
-    )
-    num_cols <- seq(1, length(num_cols), 1)
-    char_cols <- seq(length(num_cols) + 1, ncol(x), 1)
-  }
+  # ROW INDICES
+  row_ind <- 1:nrow(x) 
   
   # SCALING --------------------------------------------------------------------
   
   # ROW/COLUMN SCALING
-  if (scale != FALSE) {
+  if (!scale %in% FALSE) {
     # DEFAULT - COLUMN-WISE
-    if(scale == TRUE){
+    if(scale %in% TRUE) {
       scale <- "column"
     }
     # SCALING
-    x <- heat_map_scale(
-      x,
+    x[, num_cols] <- heat_map_scale(
+      x[, num_cols],
       scale = scale,
       method = scale_method
     )
   }
-
+  
   # CLUSTERING -----------------------------------------------------------------
   
-  # DENDROGRAM
-  if (!dendrogram %in% FALSE) {
-    cluster <- dendrogram
-    reorder <- dendrogram
-    if(dendrogram %in% TRUE) {
-      dendrogram <- "both"
-      cluster <- "both"
-      reorder <- "both"
-    } else {
-      cluster <- dendrogram
-      reorder <- dendrogram
+  # TREE -> OVERRIDES TREE_X | TREE_Y
+  if(!tree %in% FALSE) {
+    # BOTH
+    if(grepl("^b", tree, ignore.case = TRUE)) {
+      tree_x <- TRUE
+      tree_y <- TRUE
+    # COLUMN | X
+    } else if(grepl("^c|^x", tree, ignore.case = TRUE)) {
+      tree_x <- TRUE
+      tree_y <- NULL
+    # ROW | y
+    } else if(grepl("^r|^y", tree, ignore.case = TRUE)) {
+      tree_x <- NULL
+      tree_y <- TRUE
     }
-  } 
-  
-  # REORDER
-  if(reorder %in% TRUE) {
-    reorder <- "both"
   }
   
-  # CLUSTERING
-  if (!cluster %in% FALSE) {
-    # CLUSTER REQUIRES NUMERIC COLUMN(S)
-    if (length(char_cols) == ncol(x)) {
-      stop("Clustering can only be performed on numeric columns.")
+  # TREE_CUT_X 
+  if(!is.null(tree_cut_x)) {
+    if(!tree_cut_x %in% c(0,1)) {
+      tree_x <- TRUE
     }
-    # CLUSTER ROWS BY DEFAULT
-    if (cluster == TRUE) {
-      cluster <- "both"
+  }
+  
+  # TREE_CUT_Y
+  if(!is.null(tree_cut_y)) {
+    if(!tree_cut_y %in% c(0,1)) {
+      tree_y <- TRUE
     }
-    # CLUSTERING
-    heat_map_clust <- heat_map_clust(x,
-      cluster = cluster,
-      dist_method = dist_method,
-      clust_method = clust_method,
+  }
+  
+  # TODO: ADD SUPPORT FOR DISTANCE MATRIX | HCLUST
+  
+  # X CLUSTERING REQUIRED
+  if(!is.null(tree_x) & length(num_cols) > 0) {
+    # COLUMN CLUSTERING
+    tree_x <- heat_map_clust(
+      x[, num_cols],
+      tree = if(class(tree_x) %in% c("dist", "hclust")) {
+        tree_x
+      } else {
+        2
+      },
+      dist = dist_method,
+      method = clust_method,
+      scale = tree_scale_x,
+      cut = tree_cut_x,
       ...
     )
-    # SORT
-    if (!reorder %in% FALSE) {
-      # ROW ORDER
-      if (grepl("^b|^r", reorder, ignore.case = TRUE) & 
-          !is.null(heat_map_clust$row)) {
-        x <- x[heat_map_clust$row$order, ]
-      # COLUMN ORDER
-      } else if (grepl("^b|^c", reorder, ignore.case = TRUE) & 
-                 !is.null(heat_map_clust$col)) {
-        x <- x[, c(heat_map_clust$col$order, char_cols)]
-      }
+    # ADD CHARCTER COLUMNS AS CUT
+    if(!is.null(tree_x$cut) & length(char_cols) > 0) {
+      tree_x$cut <- c(
+        tree_x$cut,
+        structure(
+          rep(
+            max(tree_x$cut) + 1,
+            length(char_cols)
+          ),
+          names = colnames(x)[(length(num_cols) + 1):ncol(x)]
+        )
+      )
+      tree_x$order <- c(
+        tree_x$order,
+        seq(
+          length(tree_x$order) + 1,
+          ncol(x)
+        )
+      )
     }
+    # UPDATE COLUMN INDICES
+    col_ind[1:length(num_cols)] <- col_ind[1:length(num_cols)][tree_x$order[1:length(num_cols)]]
   }
-
+  
+  # Y CLUSTERING REQUIRED
+  if(!is.null(tree_y) & length(num_cols) > 0) {
+    # COLUMN CLUSTERING
+    tree_y <- heat_map_clust(
+      x[, num_cols],
+      tree = if(class(tree_y) %in%  c("dist", "hclust")) {
+        tree_y
+      } else {
+        1
+      },
+      dist = dist_method,
+      method = clust_method,
+      scale = tree_scale_y,
+      cut = tree_cut_y,
+      ...
+    )
+    # UPDATE ROW INDICES
+    row_ind <- row_ind[tree_y$order]
+  }
+  
+  # REVERSE ROW INDICES
+  row_ind <- rev(row_ind)
+  
   # ROUNDING -------------------------------------------------------------------
+  
+  # NUMERIC COLUMNS INDICES
+  num_cols_ind <- seq_along(num_cols)
+  
+  # CHARACTER COLUMN INDICES
+  if(length(char_cols) > 0) {
+    char_cols_ind <- seq(
+      max(num_cols_ind) + 1,
+      ncol(x),
+      1
+    )
+  } else {
+    char_cols_ind <- integer(0)
+  }
   
   # ROUNDING & VALUE RANGE
   if (length(num_cols) != 0) {
-    x[, num_cols] <- round(x[, num_cols, drop = FALSE], round)
-    box_min <- min(x[, num_cols, drop = FALSE], na.rm = TRUE)
-    box_max <- max(x[, num_cols, drop = FALSE], na.rm = TRUE)
+    x[, num_cols_ind] <- round(
+      x[, num_cols_ind, drop = FALSE],
+      round
+    )
+    cell_min <- min(
+      x[, num_cols_ind, drop = FALSE],
+      na.rm = TRUE
+    )
+    cell_max <- max(
+      x[, num_cols_ind, drop = FALSE],
+      na.rm = TRUE
+    )
   }  
-
-  # BOX CLASSES
-  box_classes <- lapply(
-    seq_len(ncol(x)), 
-    function(z) {
-      if (is.numeric(x[, z])) {
-        return(rep("numeric", nrow(x)))
-      } else if (is.factor(x[, z])) {
-        return(rep("character", nrow(x)))
+  
+  # BAR VALUES -----------------------------------------------------------------
+  
+  # BAR_VALUES_X
+  if(!is.null(bar_values_x)) {
+    if(!is.null(names(bar_values_x))) {
+      if(all(names(bar_values_x) %in% colnames(x))) {
+        bar_values_x <- bar_values_x[colnames(x)[col_ind]]
       } else {
-        return(rep("character", nrow(x)))
+        bar_values_x <- bar_values_x[col_ind]
       }
+    } else {
+      bar_values_x <- bar_values_x[col_ind]
     }
-  )
-  box_classes <- do.call("cbind", box_classes)
-
-  # BOX COLOUR SCALE
-  if (!is.function(box_col_scale)) {
-    box_col_scale <- colorRamp(box_col_scale)
+  }
+  
+  # BAR_VALUES_Y
+  if(!is.null(bar_values_y)) {
+    if(!is.null(names(bar_values_y))) {
+      if(all(names(bar_values_y) %in% rownames(x))) {
+        bar_values_y <- bar_values_y[rownames(x)[rev(row_ind)]]
+      } else {
+        bar_values_y <- bar_values_y[rev(row_ind)]
+      }
+    } else {
+      bar_values_y <- bar_values_y[rev(row_ind)]
+    }
+  }
+  
+  # CELL ARGUMENTS -------------------------------------------------------------
+  
+  # CELL_SIZE
+  if(is.logical(cell_size)) {
+    if(all(cell_size %in% FALSE)) {
+      cell_size <- 1
+    } else {
+      cell_size <- x
+    }
+  }
+  
+  # CELL_SIZE MIN & MAX
+  if(!is.null(dim(cell_size)) & length(num_cols) > 0) {
+    cell_size[, num_cols_ind] <- round(
+      cell_size[, num_cols_ind, drop = FALSE],
+      round
+    )
+    cell_size_min <- min(
+      cell_size[, num_cols_ind, drop = FALSE],
+      na.rm = TRUE
+    )
+    cell_size_max <- max(
+      cell_size[, num_cols_ind, drop = FALSE],
+      na.rm = TRUE
+    )
+  } else {
+    cell_size_min = NULL
+    cell_size_max = NULL
+  }
+  
+  # CELL_TEXT
+  if(is.logical(cell_text)) {
+    if(all(cell_text %in% FALSE)) {
+      cell_text <- NA
+    } else {
+      cell_text <- x
+    }
   }
 
-  # BOX COLOUR PALETTE
-  if (!is.function(box_col_palette)) {
-    box_col_palette <- colorRampPalette(box_col_palette)
+  # CELL_SHAPE
+  if(!cell_shape %in% c("circle", "rect", "diamond")) {
+    warning(
+      paste0(
+        "'cell_shape' must be either circle, rect or diamond!"
+      )
+    )
+    cell_shape <- "rect"
   }
-
-  # BOX_COLUMNS
-  box_columns <- lapply(
-    seq_len(ncol(x)), 
-    function(z) {
-      x[, z]
-    }
-  )
-
-  # CHARACTER ROWS/COLUMNS PRESENT
+  
+  # CELL_COLOUR_SCALE
+  if(missing(cell_col_scale)) {
+    # CUSTOM VIRIDIS PALETTE
+    cell_col_scale <- colorRamp(
+      c(
+        "#440154FF",
+        "#482173FF",
+        "#433E85FF",
+        "#38598CFF",
+        "#2D708EFF",
+        "#25858EFF",
+        "#1E9B8AFF",
+        "#2BB07FFF",
+        "#51C56AFF",
+        "#85D54AFF",
+        "#C2DF23FF",
+        "#E1DD37FF",
+        "#FCD225FF",
+        "#FDAD32FF",
+        "#F58C46FF",
+        "#E76F5AFF",
+        "#D5546EFF",
+        "#C03A83FF",
+        "#A62098FF",
+        "#8707A6FF"
+      )
+    )
+  # COLOURS SUPPLIED MANUALLY
+  } else if(!is.function(cell_col_scale)) {
+    cell_col_scale <- colorRamp(
+      cell_col_scale
+    )
+  }
+  
+  # CELL_COL_PALETTE
+  if(!is.function(cell_col_palette)) {
+    cell_col_palette <- colorRampPalette(
+      cell_col_palette
+    )
+  }
+  
+  # CHARACTER COLUMN COLOURS
   if (length(char_cols) != 0) {
-    box_levels <- c()
+    cell_levels <- c()
     lapply(
-      char_cols, 
+      char_cols_ind, 
       function(z) {
         levels <- unique(as.vector(x[, z]))
         levels <- levels[!is.na(levels)]
-        box_levels <<- c(box_levels, levels)
+        cell_levels <<- c(cell_levels, levels)
       }
     )
-    names(box_levels) <- box_col_palette(length(box_levels))
+    names(cell_levels) <- cell_col_palette(length(cell_levels))
   }
-
-  # BOX COLOURS - MISSING VALUES
-  box_colours <- lapply(
-    box_columns, 
-    function(z) {
-      # RESCALE NUMERIC [0,1]
-      w <- unlist(
-        lapply(
-          z, 
-          function(y) {
-            if (is.numeric(y)) {
-              return((y - box_min) / (box_max - box_min))
-            } else {
-              if (is.factor(y)) {
-                return(as.vector(y))
+  
+  # AXES SPLITS ----------------------------------------------------------------
+  
+  # COMPUTE X CENTERS - CELLS | BARS | TREE (CENTERS)
+  x_splits <- list(c(0))
+  x_centers <- unlist(
+    lapply(
+      seq_len(ncol(x)),
+      function(z) {
+        # CELLS SPLIT INTO CLUSTERS
+        if(!is.null(tree_x) & tree_split_x != 0 & !is.null(tree_x$cut)) {
+          v <- tree_x$cut[z]
+          if(z == 1) {
+            w <- v
+          } else {
+            w <- tree_x$cut[z - 1]
+          }
+          # INSERT SPLIT
+          if(v != w) {
+            x_splits <<- c(
+              x_splits,
+              list(
+                c(
+                  (z - 1) * 1 + (w - 1) * 0.5 * tree_split_x,
+                  (z - 1) * 1 + w * 0.5 * tree_split_x
+                )
+              )
+            )
+          }
+          return(0.5 + (z - 1) * 1 + (v - 1) * 0.5 * tree_split_x)
+        # NO CELL SPLITS
+        } else {
+          return(0.5 + (z - 1) * 1)
+        }
+      }
+    )
+  )
+  x_splits <- c(x_splits, list(c(max(x_centers) + 0.5)))
+  
+  # COMPUTE Y CENTERS - CELLS | BARS | TREE
+  y_splits <- list(c(0))
+  y_centers <- unlist(
+    lapply(
+      seq_len(nrow(x)),
+      function(z) {
+        # CELLS SPLIT INTO CLUSTERS
+        if(!is.null(tree_y) & tree_split_y != 0 & !is.null(tree_y$cut)) {
+          v <- tree_y$cut[z]
+          if(z == 1) {
+            w <- 0
+          } else {
+            w <- tree_y$cut[z - 1]
+          }
+          # INSERT SPLIT
+          if(v != w & w != 0) {
+            y_splits <<- c(
+              y_splits,
+              list(
+                c(
+                  (z - 1) * 1 + (w - 1) * 0.5 * tree_split_y,
+                  (z - 1) * 1 + w * 0.5 * tree_split_y
+                )
+              )
+            )
+          }
+          return(0.5 + (z - 1) * 1 + (v - 1) * 0.5 * tree_split_y)
+        # NO CELL SPLITS
+        } else {
+          return(0.5 + (z - 1) * 1)
+        }
+      }
+    )
+  )
+  y_splits <- c(y_splits, list(c(max(y_centers) + 0.5)))
+  
+  # CELL PROPERTIES ------------------------------------------------------------
+  
+  # CELL PROPERTIES
+  cell_prop <- structure(
+    lapply(
+      col_ind,
+      function(z) {
+        # LOOP THROUGH ROWS
+        cells <- lapply(
+          row_ind,
+          function(w) {
+            # CREATE A NEW CELL
+            cell <- list(
+              "value" = x[w, z],
+              "shape" = if(is.null(dim(cell_shape))){
+                cell_shape
               } else {
-                return(y)
+                cell_shape[w, z]
+              },
+              "center" = c(
+                x_centers[match(z, col_ind)],
+                y_centers[match(w, rev(row_ind))]
+              ),
+              "text" = NA,
+              "class" = if(is.factor(x[w, z])){
+                "character"
+              } else {
+                class(x[w, z])
+              },
+              "colour" = NA,
+              "size" = 1
+            )
+            # RESCALE NUMERIC [0,1]
+            k <- x[w, z]
+            if (is.numeric(k)) {
+              k <- (k - cell_min) / (cell_max - cell_min)
+            } else {
+              if (is.factor(k)) {
+                k <- as.vector(k)
               }
             }
-          }
-        )
-      )
-      cols <- unlist(
-        lapply(
-          w, 
-          function(q) {
-            if (is.na(q)) {
-              return(box_col_empty)
-            } else if (is.numeric(q)) {
-              box_col <- box_col_scale(q)
-              box_col <- rgb(
-                box_col[, 1],
-                box_col[, 2],
-                box_col[, 3],
-                maxColorValue = 255
+            # COLOURS
+            cell[["colour"]] <- if(is.na(k)) {
+              adjustcolor(
+                cell_col_empty,
+                cell_col_alpha
               )
-              return(box_col)
-            } else if (is.character(q)) {
-              return(names(box_levels)[match(q, box_levels)])
+            } else if(is.numeric(k)) {
+              cell_col <- cell_col_scale(k)
+              adjustcolor(
+                rgb(
+                  cell_col[, 1],
+                  cell_col[, 2],
+                  cell_col[, 3],
+                  maxColorValue = 255
+                ),
+                cell_col_alpha
+              )
+            } else {
+              adjustcolor(
+                names(cell_levels)[match(k, cell_levels)],
+                cell_col_alpha
+              )
             }
+            # SIZE
+            if(!is.null(dim(cell_size))) {
+              if(is.numeric(cell_size[w, z])) {
+                cell[["size"]] <- (cell_size[w, z] - cell_size_min) /
+                  (cell_size_max - cell_size_min)
+              } else {
+                cell[["size"]] <- 1
+              }
+            }
+            # TEXT
+            if(!is.null(dim(cell_text))) {
+              cell[["text"]] <- cell_text[w, z]
+            }
+            return(cell)
           }
         )
-      )
-      cols <- adjustcolor(cols, box_col_alpha)
-      return(cols)
-    }
+        # RETURN CELLS
+        return(cells)
+      }
+    ),
+    names = colnames(x)
   )
-  box_colours <- do.call("cbind", box_colours)
-
-  # TRANSPOSE
-  if (transpose == TRUE) {
-    # NAMES
-    col_names <- colnames(x)
-    row_names <- rownames(x)
-    # TRANSPOSE
-    x <- t(x) # character strings from here onwards
-    colnames(x) <- row_names
-    rownames(x) <- col_names
-    # TRANSPOSE BOX_COLOURS
-    box_colours <- t(box_colours)
-    # TRANSPOSE BOX_CLASSES
-    box_classes <- t(box_classes)
+  
+  # # DATA TRANSFPOSE ------------------------------------------------------------
+  # 
+  # # TODO: TRANSPOSE & BARS?
+  # 
+  # # TRANSPOSE
+  # if (transpose == TRUE) {
+  #   # NAMES
+  #   col_names <- colnames(x)
+  #   row_names <- rownames(x)
+  #   # TRANSPOSE
+  #   x <- t(x) # character strings from here onwards
+  #   colnames(x) <- row_names
+  #   rownames(x) <- col_names
+  #   # TRANSPOSE CELL PROPERTIES
+  #   cell_prop <- lapply(
+  #     seq_along(cell_prop[[1]]),
+  #     function(z) {
+  #       lapply(
+  #         cell_prop,
+  #         function(v) {
+  #           cell <- cell_prop[[v]][[z]]
+  #           cell[["center"]] <- rev(cell[["center"]])
+  #           return(cell)
+  #         }
+  #       )
+  #       return(cell)
+  #     }
+  #   )
+  #   # TRANSPOSE BAR VALUES
+  #   vals <- bar_values_x
+  #   bar_values_x <- bar_values_y
+  #   bar_values_y <- vals
+  # }
+  
+  # AXES SIDES -----------------------------------------------------------------
+  
+  # AXIS_TEXT_SIDE_X
+  if(is.character(axis_text_side_x)) {
+    if(grepl("^t", axis_text_side_x, ignore.case = TRUE)) {
+      axis_text_side_x <- 3
+    } else {
+      axis_text_side_x <- 1
+    }
+  }
+  
+  # AXIS_TEXT_SIDE_Y
+  if(is.character(axis_text_side_y)) {
+    if(grepl("^r", axis_text_side_y, ignore.case = TRUE)) {
+      axis_text_side_y <- 4
+    } else {
+      axis_text_side_y <- 2
+    }
+  }
+  
+  # HEATMAP DIMENSIONS ---------------------------------------------------------
+  
+  # HEATMAP XLIM
+  heatmap_xlim  <- c(min(x_centers) - 0.5, max(x_centers) + 0.5)
+  
+  # HEATMAP YLIM
+  heatmap_ylim <- c(min(y_centers) - 0.5, max(y_centers) + 0.5)
+  
+  # X AXIS BAR GRAPH 
+  if(!is.null(bar_values_x)) {
+    # BAR GRAPH ABOVE HEATMAP
+    if(axis_text_side_x == 1) {
+      bar_x_xlim <- heatmap_xlim
+      bar_x_ylim <- c(
+        max(heatmap_ylim),
+        max(heatmap_ylim) + 0.2 * bar_size_x * diff(range(heatmap_ylim))
+      )
+    # BAR GRAPH BELOW HEATMAP
+    } else {
+      bar_x_xlim <- heatmap_xlim
+      bar_x_ylim <- c(
+        min(heatmap_ylim),
+        min(heatmap_ylim) - 0.2 * bar_size_x * diff(range(heatmap_ylim))
+      )
+    }
+  # NO X AXIS BAR GRAPH 
+  } else {
+    # BAR GRAPH ABOVE HEATMAP
+    if(axis_text_side_x == 1) {
+      bar_x_xlim <- c(max(heatmap_xlim), max(heatmap_xlim))
+      bar_x_ylim <- c(max(heatmap_ylim), max(heatmap_ylim))
+    # BAR GRAPH BELOW HEATMAP
+    } else {
+      bar_x_xlim <- c(max(heatmap_xlim), max(heatmap_xlim))
+      bar_x_ylim <- c(min(heatmap_ylim), min(heatmap_ylim))
+    }
+  }
+  
+  # Y AXIS BAR GRAPH
+  if(!is.null(bar_values_y)) {
+    # BAR GRAPH RIGHT OF HEATMAP
+    if(axis_text_side_y == 2) {
+      bar_y_xlim <- c(
+        max(heatmap_xlim),
+        max(heatmap_xlim) + 0.2 * bar_size_y * diff(range(heatmap_xlim))
+      )
+      bar_y_ylim <- heatmap_ylim
+    # BAR GRAPH LEFT OF HEATMAP
+    } else {
+      bar_y_xlim <- c(
+        min(heatmap_xlim),
+        min(heatmap_xlim) - 0.2 * bar_size_y * diff(range(heatmap_xlim))
+      )
+      bar_y_ylim <- heatmap_ylim
+    }
+  # NO Y AXIS BAR GRAPH
+  } else {
+    # BAR GRAPH RIGHT OF HEATMAP
+    if(axis_text_side_y == 2) {
+      bar_y_xlim <- c(max(heatmap_xlim), max(heatmap_xlim))
+      bar_y_ylim <- c(max(heatmap_ylim), max(heatmap_ylim))
+    # BAR GRAPH LEFT OF HEATMAP
+    } else {
+      bar_y_xlim <- c(min(heatmap_xlim), min(heatmap_xlim))
+      bar_y_ylim <- c(max(heatmap_ylim), max(heatmap_ylim))
+    }
+  }
+  
+  # X AXIS TREE LABELS
+  if(tree_label_x) {
+    # X AXIS TREE LABELS ABOVE HEATMAP
+    if(axis_text_side_x == 1) {
+      tree_label_x_xlim <- heatmap_xlim
+      tree_label_x_ylim <- c(
+        max(bar_x_ylim),
+        max(bar_x_ylim) +  tree_label_size_x
+      )
+    # X AXIS TREE LABELS BELOW HEATMAP
+    } else {
+      tree_label_x_xlim <- heatmap_xlim
+      tree_label_x_ylim <- c(
+        min(bar_x_ylim),
+        min(bar_x_ylim) - tree_label_size_x
+      )
+    }
+  # NO X AXIS TREE LABELS
+  } else {
+    # X AXIS TREE LABELS ABOVE HEATMAP
+    if(axis_text_side_x == 1) {
+      tree_label_x_xlim <- rep(max(heatmap_xlim), 2)
+      tree_label_x_ylim <- rep(max(bar_x_ylim), 2)
+      # X AXIS TREE LABELS BELOW HEATMAP
+    } else {
+      tree_label_x_xlim <- rep(max(heatmap_xlim), 2)
+      tree_label_x_ylim <- rep(min(bar_x_ylim), 2)
+    }
+  }
+  
+  # Y AXIS TREE LABELS
+  if(tree_label_y) {
+    # Y AXIS TREE LABELS RIGHT
+    if(axis_text_side_y == 2) {
+      tree_label_y_xlim <- c(
+        max(bar_y_xlim),
+        max(bar_y_xlim) + tree_label_size_y
+      )
+      tree_label_y_ylim <- heatmap_ylim
+    # Y AXIS TREE LABELS LEFT
+    } else {
+      tree_label_y_xlim <- c(
+        min(bar_y_xlim),
+        min(bar_y_xlim) - tree_label_size_y  
+      )
+      tree_label_y_ylim <- heatmap_ylim
+    }
+  # NO Y AXIS TREE LABELS
+  } else {
+    # Y AXIS TREE LABELS RIGHT
+    if(axis_text_side_y == 2) {
+      tree_label_y_xlim <- rep(max(bar_y_xlim), 2)
+      tree_label_y_ylim <- rep(max(heatmap_ylim), 2)
+    # Y AXIS TREE LABELS
+    } else {
+      tree_label_y_xlim <- rep(min(bar_y_xlim), 2)
+      tree_label_y_ylim <- rep(max(heatmap_ylim), 2)
+    }
+  }
+  
+  # X AXIS TREE
+  if(!is.null(tree_x)) {
+    # TREE ABOVE HEATMAP
+    if(axis_text_side_x == 1) {
+      tree_x_xlim <- tree_label_x_xlim
+      tree_x_ylim <- c(
+        max(tree_label_x_ylim),
+        max(tree_label_x_ylim) + 0.2 * tree_size_x * diff(range(heatmap_ylim))
+      )
+    # TREE BELOW HEATMAP
+    } else {
+      tree_x_xlim <- tree_label_x_xlim
+      tree_x_ylim <- c(
+        min(tree_label_x_ylim),
+        min(tree_label_x_ylim) - 0.2 * tree_size_x * diff(range(heatmap_ylim))
+      )
+    }
+  # NO X AXIS TREE
+  } else {
+    # TREE ABOVE HEATMAP
+    if(axis_text_side_x == 1) {
+      tree_x_xlim <- c(max(tree_label_x_xlim), max(tree_label_x_xlim))
+      tree_x_ylim <- c(max(tree_label_x_ylim), max(tree_label_x_ylim))
+    # BAR BELOW HEATMAP
+    } else {
+      tree_x_xlim <- c(max(tree_label_x_xlim), max(tree_label_x_xlim))
+      tree_x_ylim <- c(min(tree_label_x_ylim), min(tree_label_x_ylim))
+    }
   }
 
-  # HEATMAP PARAMETERS ---------------------------------------------------------
-
-  # AXES_LIMITS
-  ylim <- c(0, nrow(x))
-  xlim <- c(0, ncol(x))
-
+  # Y AXIS TREE
+  if(!is.null(tree_y)) {
+    # TREE RIGHT OF HEATMAP
+    if(axis_text_side_y == 2) {
+      tree_y_xlim <- c(
+        max(tree_label_y_xlim),
+        max(tree_label_y_xlim) + 0.2 * tree_size_y * diff(range(heatmap_xlim))
+      )
+      tree_y_ylim <- heatmap_ylim
+    # TREE LEFT OF HEATMAP
+    } else {
+      tree_y_xlim <- c(
+        min(tree_label_y_xlim),
+        min(tree_label_y_xlim) - 0.2 * tree_size_y * diff(range(heatmap_xlim))
+      )
+      tree_y_ylim <- heatmap_ylim
+    }
+  # NO Y AXIS TREE
+  } else {
+    # TREE RIGHT OF HEATMAP
+    if(axis_text_side_y == 2) {
+      tree_y_xlim <- c(max(tree_label_y_xlim), max(tree_label_y_xlim))
+      tree_y_ylim <- c(max(tree_label_y_ylim), max(tree_label_y_ylim))
+    # TREE LEFT OF HEATMAP
+    } else {
+      tree_y_xlim <- c(min(tree_label_y_xlim), min(tree_label_y_xlim))
+      tree_y_ylim <- c(max(tree_label_y_ylim), max(tree_label_y_ylim))
+    }
+  }
+    
+  # LEGEND - OPPOSITE Y AXIS TEXT
+  if(!legend %in% FALSE) {
+    # DEFAULT LEGEND
+    if(legend %in% TRUE) {
+      legend <- "both"
+    }
+    # COMPUTE LEGEND X DIMENSIONS - 15% of XLIM
+    legend_size <- legend_size * 0.15 * diff(
+      range(
+        c(
+          heatmap_xlim,
+          bar_y_xlim,
+          tree_label_y_xlim,
+          tree_y_xlim
+        )
+      )
+    )
+    # # MINIMUM LEGEND SIZE - 5 UNITS WIDE
+    # if(grepl("^b|^s", legend, ignore.case = TRUE) & legend_size < 5) {
+    #   legend_size  <- 5
+    # }
+    # LEGEND RIGHT
+    if(axis_text_side_y == 2) {
+      legend_xlim  <- c(
+        max(tree_y_xlim),
+        max(tree_y_xlim) + legend_size
+      )
+    # LEGEND LEFT
+    } else {
+      legend_xlim  <- c(
+        min(tree_y_xlim) - legend_size,
+        min(tree_y_xlim)
+      )
+    }
+  # NO LEGEND
+  } else {
+    # LEGEND - RIGHT
+    if(axis_text_side_y == 2) {
+      legend_xlim  <- rep(
+        max(
+          c(
+            heatmap_xlim,
+            bar_y_xlim,
+            tree_label_y_xlim,
+            tree_y_xlim
+          )
+        )
+      )
+    # LEGEND - LEFT
+    } else {
+      legend_xlim  <- rep(
+        min(
+          c(
+            heatmap_xlim,
+            bar_y_xlim,
+            tree_label_y_xlim,
+            tree_y_xlim
+          )
+        )
+      )
+    }
+  }
+  
+  # HEATMAP AXES ---------------------------------------------------------------
+    
+  # X AXIS LIMITS
+  xlim <- c(
+    min(
+      c(
+        heatmap_xlim,
+        bar_y_xlim,
+        tree_label_y_xlim,
+        tree_y_xlim,
+        legend_xlim 
+      )
+    ),
+    max(
+      c(
+        heatmap_xlim,
+        bar_y_xlim,
+        tree_label_y_xlim,
+        tree_y_xlim,
+        legend_xlim
+      )
+    )
+  )
+  
+  # Y AXIS LIMITS 
+  ylim <- c(
+    min(
+      c(
+        heatmap_ylim,
+        bar_x_ylim,
+        tree_label_x_ylim,
+        tree_x_ylim
+      )
+    ),
+    max(
+      c(
+        heatmap_ylim,
+        bar_x_ylim,
+        tree_label_x_ylim,
+        tree_x_ylim
+      )
+    )
+  )
+  
   # X AXIS TEXT
   if (is.null(axis_text_x)) {
-    axis_text_x <- colnames(x)
+    if(is.null(colnames(x))) {
+      axis_text_x <- c(1:ncol(x))[col_ind]
+    } else {
+      axis_text_x <- colnames(x)[col_ind]
+    }
   } else {
     if (.all_na(axis_text_x)) {
       axis_text_x <- rep("", ncol(x))
@@ -550,10 +1291,19 @@ heat_map <- function(x,
       axis_text_x[!is.na(axis_text_x)] <- ""
     }
   }
-
+  
+  # X AXIS LABEL
+  if(is.null(axis_label_x)) {
+    axis_label_x <- ""
+  }
+  
   # Y AXIS TEXT
   if (is.null(axis_text_y)) {
-    axis_text_y <- rev(rownames(x))
+    if(is.null(rownames(x))) {
+      axis_text_y <- c(1:nrow(x))[row_ind]
+    } else {
+      axis_text_y <- rev(rownames(x)[row_ind])
+    }
   } else {
     if (.all_na(axis_text_y)) {
       axis_text_y <- rep("", ncol(x))
@@ -561,408 +1311,114 @@ heat_map <- function(x,
       axis_text_y[!is.na(axis_text_y)] <- ""
     }
   }
-
-  # X AXIS TEXT SIDE
-  if (axis_text_x_side == "bottom") {
-    axis_text_x_side <- 1
-  } else if (axis_text_x_side == "top") {
-    axis_text_x_side <- 3
-  }
-
-  # Y AXIS TEXT SIDE
-  if (axis_text_y_side == "left") {
-    axis_text_y_side <- 2
-  } else if (axis_text_y_side == "right") {
-    axis_text_y_side <- 4
-  }
-
-  # X AXIS TEXT POSITION
-  axis_text_x_position <- unlist(
-    lapply(
-      seq(xlim[1], xlim[2] - 1, 1),
-      function(z) {
-        return((z + (z + 1)) / 2)
-      }
-    )
-  )
-
-  # Y AXIS TEXT POSITION
-  axis_text_y_position <- unlist(
-    lapply(
-      seq(ylim[1], ylim[2] - 1, 1), 
-      function(z) {
-        return((z + (z + 1)) / 2)
-      }
-    )
-  )
-
-  # X AXIS ARGUMENTS
-  axis_text_x_font <- rep(axis_text_x_font, length(axis_text_x))
-  axis_text_x_size <- rep(axis_text_x_size, length(axis_text_x))
-  axis_text_x_col <- rep(axis_text_x_col, length(axis_text_x))
-  axis_text_x_col_alpha <- rep(axis_text_x_col_alpha, length(axis_text_x))
-
-  # Y AXIS ARGUMENTS
-  axis_text_y_font <- rep(axis_text_y_font, length(axis_text_y))
-  axis_text_y_size <- rep(axis_text_y_size, length(axis_text_y))
-  axis_text_y_col <- rep(axis_text_y_col, length(axis_text_y))
-  axis_text_y_col_alpha <- rep(axis_text_y_col_alpha, length(axis_text_y))
-
-  # LEGEND_TEXT
-  legend_text <- round(
-    seq(
-      box_min,
-      box_max,
-      (box_max - box_min) /
-        legend_col_breaks
-    ),
-    round
-  )
-
-  # LEGEND DIMENSIONS
-  if (legend == TRUE) {
-    # WIDTH
-    if (is.null(legend_box_width)) {
-      legend_bow_width <- 0.1
-    }
-    # HEIGHT
-    if (is.null(legend_box_height)) {
-      legend_box_height <- 0.1
-    }
-  }
-
-  # SIDE ARGUMENTS (NUMERIC)
-  lapply(
-    c(
-      "legend_side",
-      "title_side",
-      "axis_text_x_side",
-      "axis_text_y_side"
-    ), 
-    function(z) {
-      assign(z,
-        side_to_num(eval(parse(text = z))),
-        envir = parent.frame()
-      )
-    }
-  )
-
-  # DENDROGRAM SIDE
-  if (!dendrogram %in% FALSE) {
-    # BOTH
-    if (grepl("^b", dendrogram, ignore.case = TRUE)) {
-      dendrogram_side <- seq_len(4)[-c(
-        axis_text_x_side,
-        axis_text_y_side
-      )]
-    # ROW
-    } else if (grepl("^r", dendrogram, ignore.case = TRUE)) {
-      dendrogram_side <- c(2, 4)[-match(axis_text_y_side, c(2, 4))]
-    # COLUMN
-    } else if (grepl("^c", dendrogram, ignore.case = TRUE)) {
-      dendrogram_side <- c(1, 3)[-match(axis_text_x_side, c(1, 3))]
-    # NONE
-    } else {
-      dendrogram_side <- 0
-    }
-  # NONE
-  } else {
-    dendrogram_side <- 0
-  }
-
-  # COMPUTE GRAPHICAL PARAMETERS -----------------------------------------------
-
-  # OPEN GRAPHICS DEVICE
-  heat_map_new(popup = popup)
   
-  # COPY DEVICE
-  dev_par <- dev_copy(
-    x = seq(
-      xlim[1],
-      xlim[2],
-      xlim[2] - xlim[1] / 10
-    ),
-    y = seq(
-      ylim[1],
-      ylim[2],
-      ylim[2] - ylim[1] / 10
-    ),
-    type = "n",
-    xlim = xlim,
-    ylim = ylim
-  )
+  # Y AXIS LABEL
+  if(is.null(axis_label_y)) {
+    axis_label_y <- ""
+  }
+  
+  # HEATMAP MARGINS ------------------------------------------------------------
 
-  # MARGIN SPACE
-  margin_space <- list(
-    "title" = 0,
-    "axis_ticks_x" = 0,
-    "axis_text_x" = 0,
-    "axis_label_x" = 0,
-    "axis_ticks_y" = 0,
-    "axis_text_y" = 0,
-    "axis_label_y" = 0,
-    "legend" = 0,
-    "dendrogram_row" = 0,
-    "dendrogram_col" = 0,
-    "border" = c(0, 0, 0, 0)
-  )
-  # MARGINS
-  lapply(
-    seq_len(4), 
-    function(z) {
-      # X AXIS
-      if (z %in% c(1, 3)) {
-        # AXIS TICKS
-        if (axis_ticks_x_length != 0) {
-          max_tick_length <- 0.04
-          margin_space[["axis_ticks_x"]] <<- 1.3 *
-            abs(max(axis_ticks_x_length)) / max_tick_length
-        }
-        # X AXIS TEXT
-        if (!all(unlist(lapply(axis_text_x, ".empty")))) {
-          # HORIZONTAL
-          if (axis_text_x_angle %in% c(0, 1)) {
-            axis_text_x_height <- max(
-              LAPPLY(
-                seq_along(axis_text_x), 
-                function(y) {
-                  axis_text_x_size[y] / par("cex") + 0.6
-                }
-              )
-            )
-            margin_space[["axis_text_x"]] <<- axis_text_x_height
-            # VERTICAL
-          } else if (axis_text_x_angle %in% c(2, 3)) {
-            axis_text_x_height <- max(
-              LAPPLY(
-                seq_along(axis_text_x), 
-                function(w) {
-                  nchar(axis_text_x[w]) * (axis_text_x_size[w] / par("cex")) * 0.6
-                }
-              )
-            )
-            if (axis_text_x_height < 2) {
-              axis_text_x_height <- 2
-            }
-            margin_space[["axis_text_x"]] <<- axis_text_x_height
-          }
-        }
-        # AXIS LABEL (ALWAYS PARALLEL)
-        if (!is.null(axis_label_x)) {
-          margin_space[["axis_label_x"]] <<- axis_label_x_size /
-            par("cex") + 1
-        }
-        # Y AXIS
-      } else if (z %in% c(2, 4)) {
-        # AXIS
-        if (axis_text_y_side == z) {
-          # AXIS TICKS
-          if (axis_ticks_y_length != 0) {
-            max_tick_length <- 0.04
-            margin_space[["axis_ticks_y"]] <<- 1.3 *
-              abs(max(axis_ticks_y_length)) / max_tick_length
-          }
-          # AXIS TEXT
-          if (!all(unlist(lapply(axis_text_y, ".empty")))) {
-            # HORIZONTAL
-            if (axis_text_y_angle %in% c(1, 2)) {
-              axis_text_y_height <- max(
-                LAPPLY(
-                  seq_along(axis_text_y), 
-                  function(w) {
-                    nchar(axis_text_y[w]) * (axis_text_y_size[w] / 
-                                               par("cex")) * 0.425
-                  }
-                )
-              )
-              if (axis_text_y_height < 2) {
-                axis_text_y_height <- 2
+  # PREPARE MARGINS
+  margins <- rep(c(margins, rep(NA, 4)), length.out = 4)
+  
+  # COMPUTE MARGINS
+  margins <- unlist(
+    lapply(
+      seq_along(margins),
+      function(z) {
+        # COMPUTE MARGIN
+        if(is.na(margins[z])) {
+          # BOTTOM
+          if(z == 1) {
+            # MARGIN BUFFER
+            m <- 2
+            # AXIS_TEXT + AXIS_LABEL
+            if(axis_text_side_x == 1) {
+              # AXIS TEXT
+              m <- m + 0.4 * max(nchar(axis_text_x)) * max(axis_text_size_x)
+              # AXIS LABEL
+              if(nchar(axis_label_x) > 0) {
+                m <- m + 2
               }
-              margin_space[["axis_text_y"]] <<- axis_text_y_height
-              # VERTICAL
-            } else if (axis_text_y_angle %in% c(0, 3)) {
-              axis_text_y_height <- max(
-                LAPPLY(
-                  seq_along(axis_text_y),
-                  function(y) {
-                    axis_text_y_size[y] / par("cex") + 0.5
-                  }
-                )
-              )
-              margin_space[["axis_text_y"]] <<- axis_text_y_height
             }
+            return(m)
+          # LEFT
+          } else if(z == 2) {
+            # MARGIN BUFFER
+            m <- 2
+            # AXIS_TEXT + AXIS_LABEL
+            if(axis_text_side_y == 2) {
+              # AXIS TEXT
+              m <- 2 + 0.4 * max(nchar(axis_text_y)) * max(axis_text_size_y)
+              # AXIS LABEL
+              if(nchar(axis_label_y) > 0) {
+                m <- m + 2
+              }
+            }
+            # # LEGEND
+            # if(!legend %in% FALSE & axis_text_side_y == 4) {
+            #   m <- m + 6
+            # }
+            return(m)
+          # TOP
+          } else if(z == 3) {
+            # MARGIN BUFFER
+            m <- 2
+            # AXIS_TEXT + AXIS_LABEL
+            if(axis_text_side_x == 3) {
+              # AXIS TEXT
+              m <- 2 + 0.4 * max(nchar(axis_text_x)) * max(axis_text_size_x)
+              # AXIS LABEL
+              if(nchar(axis_label_x) > 0) {
+                m <- m + 2
+              }
+            }
+            # TITLE
+            if(!is.null(title)) {
+              m <- m + 2
+            }
+            return(m)
+          # RIGHT
+          } else {
+            # MARGIN BUFFER
+            m <- 2
+            # AXIS_TEXT + AXIS_LABEL
+            if(axis_text_side_y == 4) {
+              # AXIS TEXT
+              m <- 2 + 0.4 * max(nchar(axis_text_y)) * max(axis_text_size_y)
+              # AXIS LABEL
+              if(nchar(axis_label_y) > 0) {
+                m <- m + 2
+              }
+            }
+            # # LEGEND
+            # if(!legend %in% FALSE & axis_text_side_y == 2) {
+            #   m <- m + 6
+            # }
+            return(m)
           }
-          # AXIS LABEL (ALWAYS PARALLEL)
-          if (!is.null(axis_label_y)) {
-            margin_space[["axis_label_y"]] <<- axis_label_y_size /
-              par("cex") + 1
-          }
+        } else {
+          return(margins[z])
         }
       }
-      # TITLE (ALWAYS PARALLEL)
-      if (!is.null(title)) {
-        margin_space[["title"]] <<- axis_label_y_size /
-          par("cex") + 1.2
-      }
-      # LEGEND
-      if (legend == TRUE) {
-        # VERTICAL LEGEND
-        if (z == legend_side & z %in% c(2, 4)) {
-          legend_space <- 1
-          legend_start <- line_to_user(1,
-                                       side = legend_side
-          )
-          if (legend_side == 2) {
-            legend_end <- user_to_line(legend_start - legend_box_width * ncol(x),
-                                       side = legend_side
-            )
-          } else if (legend_side == 4) {
-            legend_end <- user_to_line(legend_start + legend_box_width * ncol(x),
-                                       side = legend_side
-            )
-          }
-          legend_text_width <- max(nchar(legend_text)) *
-            max(legend_text_size) / par("cex") * 0.6
-          margin_space[["legend"]] <<- legend_end + legend_text_width
-          # HORIZONTAL LEGEND (HORIZONTAL TEXT)
-        } else if (z == legend_side & z %in% c(1, 3)) {
-          legend_space <- 1
-          legend_start <- line_to_user(1,
-                                       side = legend_side
-          )
-          if (legend_side == 1) {
-            legend_end <- user_to_line(legend_start - legend_box_width * nrow(x),
-                                       side = legend_side
-            )
-          } else if (legend_side == 3) {
-            legend_end <- user_to_line(legend_start + legend_box_width * nrow(x),
-                                       side = legend_side
-            )
-          }
-          legend_text_width <- max(legend_text_size) / par("cex") + 0.5
-          margin_space[["legend"]] <<- legend_end + legend_text_width
-        }
-      }
-    }
+    )
   )
-  # DENDROGRAM
-  if (!dendrogram %in% FALSE) {
-    # ROW
-    dendro_size_user <- ncol(x) + ceiling(dendrogram_size * ncol(x))
-    dendro_size_lines <- user_to_line(dendro_size_user,
-      side = 4
-    )
-    margin_space[["dendrogram_row"]] <- dendro_size_lines + 1
-    # COLUMN
-    dendro_size_user <- nrow(x) + ceiling(dendrogram_size * nrow(x))
-    dendro_size_lines <- user_to_line(dendro_size_user,
-      side = 3
-    )
-    margin_space[["dendrogram_col"]] <- dendro_size_lines + 1
-  }
-  # BORDER
-  margin_space[["border"]] <- c(1, 1, 1, 1)
-
-  # LEGEND_BOX CO-ORDINATES
-  if (legend == TRUE) {
-    # STARTING POINT (LINES)
-    legend_box_start <- 1
-    # X AXIS TEXT - SAME SIDE
-    if (axis_text_x_side == legend_side) {
-      legend_box_start <- legend_box_start + margin_space[["axis_ticks_x"]] +
-        margin_space[["axis_text_x"]] + margin_space[["axis_label_x"]]
-    }
-    # Y AXIS TEXT - SAME SIDE
-    if (axis_text_y_side == legend_side) {
-      legend_box_start <- legend_box_start + margin_space[["axis_ticks_y"]] +
-        margin_space[["axis_text_y"]] + margin_space[["axis_label_y"]]
-    }
-    # TITLE - SAME SIDE
-    if (title_side == legend_side) {
-      legend_box_start <- legend_box_start + margin_space[["title"]]
-    }
-    # # DENDROGRAM
-    if (legend_side %in% dendrogram_side) {
-      if (legend_side %in% c(2, 4)) {
-        legend_box_start <- legend_box_start + margin_space[["dendrogram_row"]]
-      } else if (legend_side %in% c(1, 3)) {
-        legend_box_start <- legend_box_start + margin_space[["dendrogram_col"]]
-      }
-    }
-    # LEGEND_POSITION (USER)
-    legend_box_start <- line_to_user(legend_box_start, legend_side)
-    # LEGEND BOX_END
-    if (legend_side == 1) {
-      legend_box_end <- legend_box_start - legend_box_width * nrow(x)
-    } else if (legend_side == 2) {
-      legend_box_end <- legend_box_start - legend_box_width * ncol(x)
-    } else if (legend_side == 3) {
-      legend_box_end <- legend_box_start + legend_box_width * nrow(x)
-    } else if (legend_side == 4) {
-      legend_box_end <- legend_box_start + legend_box_width * ncol(x)
-    }
-  }
-
-  # CLOSE COPIED DEVICE
-  dev_copy_remove()
   
-  # USE SAVING DEVICE
-  if(!is.null(getOption("heat_map_save"))){
-    dev.set(getOption("heat_map_save"))
-  }else{
-    dev.set(getOption("heat_map_device"))
-  }
+  # HEATMAP CONSTRUCTION -------------------------------------------------------
   
-  # CONSTRUCT HEATMAP ----------------------------------------------------------
-
-  # MARGINS
-  if (is.null(margins)) {
-    # STARTING POINT
-    margins <- c(0, 0, 0, 0)
-    # MARGINS
-    lapply(
-      seq_along(margins), 
-      function(z) {
-        # TITLE SPACE
-        if (z == title_side & !is.null(title)) {
-          margins[z] <<- margins[z] + margin_space[["title"]]
-        }
-        # X AXIS SPACE
-        if (z == axis_text_x_side) {
-          margins[z] <<- margins[z] + margin_space[["axis_ticks_x"]] +
-            margin_space[["axis_text_x"]] + margin_space[["axis_label_x"]]
-        }
-        # Y AXIS SPACE
-        if (z == axis_text_y_side) {
-          margins[z] <<- margins[z] + margin_space[["axis_ticks_y"]] +
-            margin_space[["axis_text_y"]] + margin_space[["axis_label_y"]]
-        }
-        # LEGEND SPACE
-        if (z == legend_side & legend != FALSE) {
-          margins[z] <<- margins[z] + margin_space[["legend"]]
-        }
-        # DENDROGRAM
-        if (z %in% dendrogram_side & !dendrogram %in% FALSE) {
-          if (z %in% c(2, 4)) {
-            margins[z] <<- margins[z] + margin_space[["dendrogram_row"]]
-          } else if (z %in% c(1, 3)) {
-            margins[z] <<- margins[z] + margin_space[["dendrogram_col"]]
-          }
-        }
-        # BORDER
-        margins[z] <<- margins[z] + margin_space[["border"]][z]
-      }
-    )
-  }
-
-  # SAVE MARGINS GLOBALLY
-  options("heat_map_margins" = margins)
-
+  # POPUP
+  heat_map_new(
+    popup = popup,
+    popup_size = popup_size
+  )
+  
   # SET MARGINS
   par("mar" = margins)
-
+  
   # PLOT
-  plot(1,
+  plot(
+    1,
     type = "n",
     axes = FALSE,
     xlim = xlim,
@@ -973,534 +1429,404 @@ heat_map <- function(x,
     xaxs = "i",
     yaxs = "i"
   )
-
-  # PERPENDICULAR X AXIS
-  if (axis_text_x_angle %in% c(2, 3)) {
-    lapply(
-      seq_len(length(axis_text_x)), 
-      function(z) {
-        axis(
-          axis_text_x_side,
-          at = axis_text_x_position[z],
-          labels = axis_text_x[z],
-          las = axis_text_x_angle,
-          padj = axis_text_x_adjust,
-          tck = axis_ticks_x_length,
-          font.axis = axis_text_x_font[z],
-          cex.axis = axis_text_x_size[z],
-          col.axis = adjustcolor(
-            axis_text_x_col[z],
-            axis_text_x_col_alpha[z]
-          )
+  
+  # X AXIS
+  mapply(
+    function(x_center,
+             axis_text_x,
+             axis_text_font_x,
+             axis_text_size_x,
+             axis_text_col_x,
+             axis_text_col_alpha_x) {
+      axis(
+        axis_text_side_x,
+        at = x_center,
+        labels = axis_text_x,
+        las = axis_text_angle_x,
+        padj = axis_text_adjust_x,
+        tck = -0.02 * axis_ticks_length_x,
+        font.axis = axis_text_font_x,
+        cex.axis = axis_text_size_x,
+        col.axis = adjustcolor(
+          axis_text_col_x,
+          axis_text_col_alpha_x
         )
-      }
-    )
-  # PARALLEL X AXIS
-  } else {
-    lapply(
-      seq_len(length(axis_text_x)), 
-      function(z) {
-        axis(
-          axis_text_x_side,
-          at = axis_text_x_position[z],
-          labels = axis_text_x[z],
-          las = axis_text_x_angle,
-          hadj = axis_text_x_adjust,
-          tck = axis_ticks_x_length,
-          font.axis = axis_text_x_font[z],
-          cex.axis = axis_text_x_size[z],
-          col.axis = adjustcolor(
-            axis_text_x_col[z],
-            axis_text_x_col_alpha[z]
-          )
-        )
-      }
-    )
-  }
-
-  # PERPENDICULAR Y AXIS
-  if (axis_text_y_angle %in% c(1, 2)) {
-    lapply(
-      seq_len(length(axis_text_y)), 
-      function(z) {
-        axis(
-          axis_text_y_side,
-          at = axis_text_y_position[z],
-          labels = axis_text_y[z],
-          las = axis_text_y_angle,
-          padj = axis_text_y_adjust,
-          tck = axis_ticks_y_length,
-          font.axis = axis_text_y_font[z],
-          cex.axis = axis_text_y_size[z],
-          col.axis = adjustcolor(
-            axis_text_y_col[z],
-            axis_text_y_col_alpha[z]
-          )
-        )
-      }
-    )
-    # PARALLEL Y AXIS
-  } else {
-    lapply(
-      seq_len(length(axis_text_y)), 
-      function(z) {
-        axis(
-          axis_text_y_side,
-          at = axis_text_y_position[z],
-          labels = axis_text_y[z],
-          las = axis_text_y_angle,
-          hadj = axis_text_y_adjust,
-          tck = axis_ticks_y_length,
-          font.axis = axis_text_y_font[z],
-          cex.axis = axis_text_y_size[z],
-          col.axis = adjustcolor(
-            axis_text_y_col[z],
-            axis_text_y_col_alpha[z]
-          )
-        )
-      }
-    )
-  }
-
-  # BORDER
-  rect(par("usr")[1],
-    par("usr")[3],
-    par("usr")[2],
-    par("usr")[4],
-    border = "black"
+      )
+    },
+    x_centers,
+    axis_text_x,
+    axis_text_font_x,
+    axis_text_size_x,
+    axis_text_col_x,
+    axis_text_col_alpha_x
   )
-
+  
+  # Y AXIS
+  mapply(
+    function(y_center,
+             axis_text_y,
+             axis_text_font_y,
+             axis_text_size_y,
+             axis_text_col_y,
+             axis_text_col_alpha_y) {
+      axis(
+        axis_text_side_y,
+        at = y_center,
+        labels = axis_text_y,
+        las = axis_text_angle_y,
+        padj = axis_text_adjust_y,
+        tck = -0.02 * axis_ticks_length_y,
+        font.axis = axis_text_font_y,
+        cex.axis = axis_text_size_y,
+        col.axis = adjustcolor(
+          axis_text_col_y,
+          axis_text_col_alpha_y
+        )
+      )
+    },
+    y_centers,
+    axis_text_y,
+    axis_text_font_y,
+    axis_text_size_y,
+    axis_text_col_y,
+    axis_text_col_alpha_y
+  )
+  
+  # HEATMAP BORDER
+  heat_map_border(
+    x_splits,
+    y_splits
+  )
+  
   # TITLE
   if (!is.null(title)) {
-    title_position <- margins[title_side] -
-      0.6 * (0.2 * max(title_text_size) + 3)
     mtext(
       title,
-      side = title_side,
-      line = title_position,
+      side = 3,
+      line = margins[3] - 2,
       font = title_text_font,
       cex = title_text_size,
       col = adjustcolor(
         title_text_col,
         title_text_col_alpha
       ),
-      las = 0
+      las = 0,
+      adj = (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
     )
   }
-
+  
   # X AXIS LABEL
   if (!is.null(axis_label_x)) {
-    # TITLE & AXIS LABEL SAME SIDE
-    if (axis_text_x_side == title_side) {
-      axis_label_x_position <- margins[axis_text_x_side] -
-        (0.2 * max(title_text_size) + 3) -
-        0.6 * (0.2 * max(axis_label_x_size) + 2)
-      # TITLE & AXIS LABEL DIFFERENT SIDES
-    } else {
-      axis_label_x_position <- margins[axis_text_x_side] -
-        0.6 * (0.2 * max(axis_label_x_size) + 2)
-    }
     # AXIS LABEL
     mtext(
       axis_label_x,
-      side = axis_text_x_side,
-      line = axis_label_x_position,
-      font = axis_label_x_font,
-      cex = axis_label_x_size,
+      side = axis_text_side_x,
+      line = if(axis_text_side_x == 1) {
+        margins[axis_text_side_x] - 2
+      } else {
+        if(is.null(title)) {
+          margins[axis_text_side_x] - 2
+        } else {
+          margins[axis_text_side_x] - 4
+        }
+      },
+      font = axis_label_font_x,
+      cex = axis_label_size_x,
       col = adjustcolor(
-        axis_label_x_col,
-        axis_label_x_col_alpha
+        axis_label_col_x,
+        axis_label_col_alpha_x
       ),
-      las = 0
+      las = 0,
+      adj = (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
     )
   }
-
+  
   # Y AXIS LABEL
   if (!is.null(axis_label_y)) {
-    # TITLE & AXIS LABEL SAME SIDE
-    if (axis_text_y_side == title_side) {
-      axis_label_y_position <- margins[axis_text_y_side] -
-        (0.2 * max(title_text_size) + 3) -
-        0.6 * (0.2 * max(axis_label_y_size) + 2)
-      # TITLE & AXIS LABEL DIFFERENT SIDES
-    } else {
-      axis_label_y_position <- margins[axis_text_y_side] -
-        0.6 * (0.2 * max(axis_label_y_size) + 2)
-    }
     mtext(
       axis_label_y,
-      side = axis_text_y_side,
-      line = axis_label_y_position,
-      font = axis_label_y_font,
-      cex = axis_label_y_size,
+      side = axis_text_side_y,
+      line = margins[axis_text_side_y] - 2,
+      font = axis_label_font_y,
+      cex = axis_label_size_y,
       col = adjustcolor(
-        axis_label_y_col,
-        axis_label_y_col_alpha
+        axis_label_col_y,
+        axis_label_col_alpha_y
       ),
-      las = 0
+      las = 0,
+      adj = (mean(heatmap_ylim) - min(ylim))/diff(range(ylim))
     )
   }
-
-  # BOXES
+  
+  # HEATMAP CELLS
   lapply(
-    seq_len(ncol(x)), 
-    function(z) {
-      # COLUMN
-      box_column <- x[, z]
-      # X COORDS
-      box_x_coords <- seq(xlim[1], xlim[2], 1)[c(z, z + 1)]
-      # X CENTER COORD
-      box_x_center <- mean(box_x_coords)
-      # ROWS
+    cell_prop,
+    function(cells) {
       lapply(
-        seq_len(length(box_column)), 
-        function(y) {
-          # BOX
-          box <- box_column[y]
-          # Y COORDS
-          box_y_coords <- seq(ylim[2], ylim[1], -1)[c(y, y + 1)]
-          # Y CENTER COORD
-          box_y_center <- mean(box_y_coords)
-          # BOX
-          rect(
-            xleft = min(box_x_coords),
-            ybottom = min(box_y_coords),
-            xright = max(box_x_coords),
-            ytop = max(box_y_coords),
-            col = box_colours[y, z],
-            lty = box_border_line_type,
-            lwd = box_border_line_width,
-            border = adjustcolor(
-              box_border_line_col,
-              box_border_line_col_alpha
-            )
-          )
-          # BOX TEXT
-          if (box_text != FALSE) {
-            # NUMERIC BOXES ONLY
-            if (grepl("num", box_text)) {
-              if (box_classes[y, z] == "numeric") {
-                box_text <- TRUE
-              }
-              # CHARACTER BOXES ONLY
-            } else if (grepl("char", box_text, ignore.case = TRUE)) {
-              if (box_classes[y, z] == "character") {
-                box_text <- TRUE
-              }
-            }
-            # BOX TEXT
-            if (box_text == TRUE & !is.na(box)) {
-              text(
-                x = box_x_center,
-                y = box_y_center,
-                labels = box,
-                font = box_text_font,
-                cex = box_text_size,
-                col = adjustcolor(
-                  box_text_col,
-                  box_text_col_alpha
-                )
+        cells,
+        function(cell) {
+          # RECTANGLE
+          if(cell[["shape"]] == "rect") {
+            rect(
+              xleft = cell[["center"]][1] - 0.5 * cell[["size"]],
+              ybottom = cell[["center"]][2] - 0.5 * cell[["size"]],
+              xright = cell[["center"]][1] + 0.5 * cell[["size"]],
+              ytop = cell[["center"]][2] + 0.5 * cell[["size"]],
+              col = cell[["colour"]],
+              lty = cell_border_line_type,
+              lwd = cell_border_line_width,
+              border = adjustcolor(
+                cell_border_line_col,
+                cell_border_line_col_alpha
               )
-            }
+            )
+          # DIAMOND
+          } else if(cell[["shape"]] == "diamond") {
+            polygon(
+              x = c(
+                cell[["center"]][1] - 0.5 * cell[["size"]],
+                cell[["center"]][1],
+                cell[["center"]][1] + 0.5 * cell[["size"]],
+                cell[["center"]][1]
+              ),
+              y = c(
+                cell[["center"]][2],
+                cell[["center"]][2] + 0.5 * cell[["size"]],
+                cell[["center"]][2],
+                cell[["center"]][2] - 0.5 * cell[["size"]]
+              ),
+              col = cell[["colour"]],
+              lty = cell_border_line_type,
+              lwd = cell_border_line_width,
+              border = adjustcolor(
+                cell_border_line_col,
+                cell_border_line_col_alpha
+              )
+            )
+          # CIRCLE
+          } else if(cell[["shape"]] == "circle") {
+            # CIRCLE CO-ORDINATES
+            coords <- do.call(
+              "rbind",
+              lapply(
+                seq(0, 2, 1/25), # ANGLES
+                function(z) {
+                  c(
+                    "x" = cell[["center"]][1] + 
+                      cell[["size"]] * 0.5 * sin(z * pi),
+                    "y" = cell[["center"]][2] + 
+                      cell[["size"]] * 0.5 * cos(z * pi)
+                  )
+                }
+              )
+            )
+            colnames(coords) <- c("x", "y")
+            # CIRCLE
+            polygon(
+              x = coords[, "x"],
+              y = coords[, "y"],
+              col = cell[["colour"]],
+              border = adjustcolor(
+                cell_border_line_col,
+                cell_border_line_col_alpha
+              ),
+              lty = cell_border_line_type,
+              lwd = cell_border_line_width
+            )
+          # UNSUPPORTED SHAPE
+          } else {
+            stop(
+              paste0(
+                "'cell_shape' must be either 'rect', 'diamond' or 'circle'!"
+              )
+            )
+          }
+          # CELL TEXT
+          if(!is.na(cell[["text"]])) {
+            text(
+              x = cell[["center"]][1],
+              y = cell[["center"]][2],
+              labels = cell[["text"]],
+              font = cell_text_font,
+              cex = cell_text_size,
+              col = adjustcolor(
+                cell_text_col,
+                cell_text_col_alpha
+              )
+            )
           }
         }
       )
     }
   )
 
-  # DENDROGRAM
-  if (dendrogram != FALSE) {
-    # ROW
-    if (grepl("^r|^b", dendrogram, ignore.case = TRUE)) {
-      # ROW_CLUST
-      row_clust <- heat_map_clust[[1]]
-      # RESCALE TO HEAT_MAP
-      min_height <- min(row_clust$height)
-      max_height <- max(row_clust$height)
-      dend_size <- ceiling(dendrogram_size * ncol(x))
-      dend_range <- c(ncol(x), ncol(x) + dend_size)
-      row_clust$height <- LAPPLY(
-        row_clust$height, 
-        function(z) {
-          dend_range[1] + ((z - min_height) / (max_height - min_height)) *
-            diff(dend_range)
-        }
-      )
-      # DENDROGRAM SCALING
-      if (dendrogram_scale == TRUE) {
-        dend_breaks <- dend_range[1] + seq_along(row_clust$height) *
-          diff(dend_range) / length(row_clust$height)
-        row_clust$height <- dend_breaks
-      }
-      # DENDROGRAM
-      dendro <- as.dendrogram(row_clust)
-      # DENDROGRAM_DATA
-      dendro_data <- dendrogram_data(dendro)
-      # DENDROGRAM SEGMENTS
-      dendro_segments <- dendro_data$segments
-      # SWAP X/Y FOR HORIZONTAL DENDRO
-      colnames(dendro_segments) <- c("y", "x", "yend", "xend")
-      # ADJUST TO CENTER IN BOX
-      dendro_segments[, c("y", "yend")] <- dendro_segments[, c("y", "yend")] - 0.5
-      # ADJUST ANCHORING
-      dendro_segments[dendro_segments[, "xend"] == 0, "xend"] <- ncol(x)
-      # FLIP ORDER (HORIZONTAL)
-      dendro_segments[, c("y", "yend")] <- abs(dendro_segments[, c("y", "yend")] - nrow(x))
-      # LEFT REQUIRES DIFF COORDS
-      if (2 %in% dendrogram_side) {
-        # INVERT & SHIFT
-        dendro_segments[, c("x", "xend")] <- -dendro_segments[, c("x", "xend")] + ncol(x)
-      }
-      # ADD DENDROGRAM TO HEATMAP
-      lapply(
-        seq_len(nrow(dendro_segments)), 
-        function(z) {
-          lines(dendro_segments[z, c("x", "xend")],
-                dendro_segments[z, c("y", "yend")],
-                xpd = TRUE
-          )
-        }
-      )
-    }
-    # COLUMN
-    if (grepl("^c|^b", dendrogram, ignore.case = TRUE)) {
-      # COL_CLUST
-      col_clust <- heat_map_clust[[2]]
-      # RESCALE TO HEAT_MAP
-      min_height <- min(col_clust$height)
-      max_height <- max(col_clust$height)
-      dend_size <- ceiling(dendrogram_size * nrow(x))
-      dend_range <- c(nrow(x), nrow(x) + dend_size)
-      col_clust$height <- LAPPLY(
-        col_clust$height, 
-        function(z) {
-          dend_range[1] + ((z - min_height) / (max_height - min_height)) *
-            diff(dend_range)
-        }  
-      )
-      # DENDROGRAM SCALING
-      if (dendrogram_scale == TRUE) {
-        dend_breaks <- dend_range[1] + seq_along(col_clust$height) *
-          diff(dend_range) / length(col_clust$height)
-        col_clust$height <- dend_breaks
-      }
-      # DENDROGRAM
-      dendro <- as.dendrogram(col_clust)
-      # DENDROGRAM_DATA
-      dendro_data <- dendrogram_data(dendro)
-      # DENDROGRAM SEGMENTS
-      dendro_segments <- dendro_data$segments
-      # ADJUST TO CENTER IN HEATMAP BOXES
-      dendro_segments[, c("x", "xend")] <- dendro_segments[, c("x", "xend")] - 0.5
-      # ADJUST ANCHORING
-      dendro_segments[dendro_segments[, "yend"] == 0, "yend"] <- nrow(x)
-      # BOTTOM COORDS
-      if (1 %in% dendrogram_side) {
-        # INVERT & SHIFT
-        dendro_segments[, c("y", "yend")] <- -dendro_segments[, c("y", "yend")] + nrow(x)
-      }
-      # ADD DENDROGRAM TO HEATMAP
-      lapply(
-        seq_len(nrow(dendro_segments)), 
-        function(z) {
-          lines(dendro_segments[z, c("x", "xend")],
-            dendro_segments[z, c("y", "yend")],
-            xpd = TRUE
-          )
-        }
-      )
-    }
-  }
-
-  # LEGEND
-  if (legend == TRUE) {
-    # LEGEND_TEXT_BREAKS
-    if (is.null(legend_text_breaks)) {
-      legend_text_breaks <- c(1, legend_col_breaks + 1)
-    }
-    # LEGEND_COL
-    legend_col <- box_col_scale((legend_text - box_min) /
-      (box_max - box_min))
-    legend_col <- rgb(legend_col[, 1],
-      legend_col[, 2],
-      legend_col[, 3],
-      maxColorValue = 255
+  # BAR GRAPHS -----------------------------------------------------------------
+  
+  # X BAR GRAPH
+  if(!is.null(bar_values_x)) {
+    heat_map_bar(
+      bar_values_x,
+      xlim = bar_x_xlim,
+      ylim = bar_x_ylim,
+      centers_x = x_centers,
+      splits_x = x_splits,
+      label = bar_label_x,
+      label_text_font = bar_label_text_font_x,
+      label_text_size = bar_label_text_size_x,
+      label_text_col = bar_label_text_col_x,
+      label_text_col_alpha = bar_label_text_col_alpha_x,
+      fill = bar_fill_x,
+      fill_alpha = bar_fill_alpha_x,
+      line_type = bar_line_type_x,
+      line_width = bar_line_width_x,
+      line_col = bar_line_col_x,
+      line_col_alpha = bar_line_col_alpha_x,
+      axis_text_side_y = axis_text_side_y,
+      axis_text_font_y = axis_text_font_y,
+      axis_text_size_y = axis_text_size_y,
+      axis_text_col_y = axis_text_col_y,
+      axis_text_col_alpha_y = axis_text_col_alpha_y,
+      axis_text_angle_y = axis_text_angle_y,
+      axis_text_adjust_y = axis_text_adjust_y,
+      axis_ticks_length_y = axis_ticks_length_y
     )
-    # VERTICAL
-    if (legend_side %in% c(2, 4)) {
-      # LEGEND_CENTER
-      legend_center <- ylim[1] + (ylim[2] - ylim[1]) / 2
-      # LEGEND BORDER COORDS
-      legend_border_x <- c(
-        legend_box_start,
-        legend_box_end
-      )
-      legend_border_y <- c(
-        legend_center - legend_box_height * nrow(x) / 2,
-        legend_center + legend_box_height * nrow(x) / 2
-      )
-      # LEGEND BORDER
-      rect(legend_border_x[1],
-        legend_border_y[1],
-        legend_border_x[2],
-        legend_border_y[2],
-        border = "black",
-        lwd = 1,
-        xpd = TRUE
-      )
-      # LEGEND_BREAKS
-      legend_breaks_y <- seq(
-        legend_border_y[1],
-        legend_border_y[2],
-        (legend_border_y[2] - legend_border_y[1]) /
-          legend_col_breaks
-      )
-      # LEGEND COLOURS
-      lapply(
-        seq_len(length(legend_breaks_y)), 
-        function(z) {
-          # BOX COLOUR
-          if (z != length(legend_breaks_y)) {
-            rect(
-              legend_border_x[1],
-              legend_breaks_y[z],
-              legend_border_x[2],
-              legend_breaks_y[z + 1],
-              col = legend_col[z],
-              border = NA,
-              xpd = TRUE
-            )
-          }
-          # BOX TEXT
-          if (z %in% legend_text_breaks) {
-            # LEGEND_TEXT_X
-            if (nchar(legend_text[z]) > 1) {
-              if (legend_side == 2) {
-                legend_text_x <- legend_border_x[2] -
-                  (0.2 + 0.065 * legend_text_size * (nchar(legend_text[z])))
-              } else if (legend_side == 4) {
-                legend_text_x <- legend_border_x[2] +
-                  (0.2 + 0.065 * legend_text_size * (nchar(legend_text[z])))
-              }
-            } else {
-              if (legend_side == 2) {
-                legend_text_x <- legend_border_x[2] - 
-                  (0.2 + 0.2 * 0.1 * legend_text_size)
-              } else if (legend_side == 4) {
-                legend_text_x <- legend_border_x[2] + 
-                  (0.2 + 0.2 * 0.1 * legend_text_size)
-              }
-            }
-            # LEGEND_TEXT_Y
-            legend_text_y <- legend_breaks_y[z]
-            # LEGEND TEXT
-            text(
-              legend_text_x,
-              legend_text_y,
-              labels = legend_text[z],
-              font = legend_text_font,
-              cex = legend_text_size,
-              col = legend_text_col,
-              xpd = TRUE
-            )
-          }
-        }
-      )
-    # HORIZONTAL
-    } else if (legend_side %in% c(1, 3)) {
-      # LEGEND_CENTER
-      legend_center <- xlim[1] + (xlim[2] - xlim[1]) / 2
-      # LEGEND BORDER
-      legend_border_y <- c(
-        legend_box_start,
-        legend_box_end
-      )
-      legend_border_x <- c(
-        legend_center - legend_box_height * ncol(x) / 2,
-        legend_center + legend_box_height * ncol(x) / 2
-      )
-      rect(
-        legend_border_x[1],
-        legend_border_y[1],
-        legend_border_x[2],
-        legend_border_y[2],
-        border = "black",
-        lwd = 1,
-        xpd = TRUE
-      )
-      # LEGEND_BREAKS
-      legend_breaks_x <- seq(
-        legend_border_x[1],
-        legend_border_x[2],
-        (legend_border_x[2] - legend_border_x[1]) /
-          legend_col_breaks
-      )
-      # LEGEND COLOURS
-      lapply(
-        seq_len(length(legend_breaks_x)), 
-        function(z) {
-          # BOX COLOUR
-          if (z != length(legend_breaks_x)) {
-            rect(
-              legend_breaks_x[z],
-              legend_border_y[1],
-              legend_breaks_x[z + 1],
-              legend_border_y[2],
-              col = legend_col[z],
-              border = NA,
-              xpd = TRUE
-            )
-          }
-          # BOX TEXT
-          if (z %in% legend_text_breaks) {
-            # LEGEND_TEXT_X
-            if (nchar(legend_text[z]) > 1) {
-              if (legend_side == 1) {
-                legend_text_y <- legend_border_y[2] -
-                  (0.6 + 0.065 * legend_text_size * (nchar(legend_text[z])))
-              } else if (legend_side == 3) {
-                legend_text_y <- legend_border_y[2] +
-                  (0.6 + 0.065 * legend_text_size * (nchar(legend_text[z])))
-              }
-            } else {
-              if (legend_side == 1) {
-                legend_text_y <- legend_border_y[2] - 
-                  (0.6 + 0.2 * 0.1 * legend_text_size)
-              } else if (legend_side == 3) {
-                legend_text_y <- legend_border_y[2] + 
-                  (0.6 + 0.2 * 0.1 * legend_text_size)
-              }
-            }
-            # LEGEND_TEXT_Y
-            legend_text_x <- legend_breaks_x[z]
-            # LEGEND TEXT
-            text(
-              legend_text_x,
-              legend_text_y,
-              labels = legend_text[z],
-              font = legend_text_font,
-              cex = legend_text_size,
-              col = legend_text_col,
-              xpd = TRUE
-            )
-          }
-        }
-      )
-    }
   }
 
+  # Y BAR GRAPH
+  if(!is.null(bar_values_y)) {
+    heat_map_bar(
+      bar_values_y,
+      xlim = bar_y_xlim,
+      ylim = bar_y_ylim,
+      centers_y = y_centers,
+      splits_y = y_splits,
+      label = bar_label_y,
+      label_text_font = bar_label_text_font_y,
+      label_text_size = bar_label_text_size_y,
+      label_text_col = bar_label_text_col_y,
+      label_text_col_alpha = bar_label_text_col_alpha_y,
+      fill = bar_fill_y,
+      fill_alpha = bar_fill_alpha_y,
+      line_type = bar_line_type_y,
+      line_width = bar_line_width_y,
+      line_col = bar_line_col_y,
+      line_col_alpha = bar_line_col_alpha_y,
+      axis_text_side_x = axis_text_side_x,
+      axis_text_font_x = axis_text_font_x,
+      axis_text_size_x = axis_text_size_x,
+      axis_text_col_x = axis_text_col_x,
+      axis_text_col_alpha_x = axis_text_col_alpha_x,
+      axis_text_angle_x = axis_text_angle_x,
+      axis_text_adjust_x = axis_text_adjust_x,
+      axis_ticks_length_x = axis_ticks_length_x
+    )
+  }
+  
+  # CLUSTER LABELS -------------------------------------------------------------
+  
+  # X AXIS CLUSTER LABELS
+  if(tree_label_x) {
+    heat_map_label(
+      x_splits = x_splits,
+      y_splits = tree_label_x_ylim,
+      label_col = tree_label_col_x,
+      label_col_alpha = tree_label_col_alpha_x,
+      label_text = tree_label_text_x,
+      label_text_font = tree_label_text_font_x,
+      label_text_size = tree_label_text_size_x,
+      label_text_col = tree_label_text_col_x,
+      label_text_col_alpha = tree_label_text_col_alpha_x
+    )
+  }
+  
+  # Y AXIS CLUSTER LABELS
+  if(tree_label_y) {
+    heat_map_label(
+      x_splits = tree_label_y_xlim,
+      y_splits = y_splits,
+      label_col = tree_label_col_y,
+      label_col_alpha = tree_label_col_alpha_y,
+      label_text = tree_label_text_y,
+      label_text_font = tree_label_text_font_y,
+      label_text_size = tree_label_text_size_y,
+      label_text_col = tree_label_text_col_y,
+      label_text_col_alpha = tree_label_text_col_alpha_y
+    )
+  }
+  
+  # TREES ----------------------------------------------------------------------  
+  
+  # X AXIS TREE
+  if(!is.null(tree_x)) {
+    heat_map_tree(
+      tree_x,
+      xlim = tree_x_xlim,
+      ylim = tree_x_ylim,
+      centers_x = x_centers
+    )
+  }
+  
+  # Y AXIS TREE
+  if(!is.null(tree_y)) {
+    heat_map_tree(
+      tree_y,
+      xlim = tree_y_xlim,
+      ylim = tree_y_ylim,
+      centers_y = y_centers
+    )
+  }
+  
+  # LEGENDS --------------------------------------------------------------------
+  
+  # LEGEND - LEFT OR RIGHT ONLY - OPPOSITE Y AXIS TEXT
+  if(!legend %in% FALSE) {
+    # LEGENDS - 
+    heat_map_legend(
+      col = if(grepl("^b|^c", legend, ignore.case = TRUE)) {
+        c(
+          cell_min,
+          cell_max
+        )
+      } else {
+        NULL
+      },
+      size = if(grepl("^b|^s", legend, ignore.case = TRUE)) {
+        c(
+          cell_size_min,
+          cell_size_max
+        )
+      } else {
+        NULL
+      },
+      xlim = legend_xlim,
+      ylim = ylim,
+      side = if(axis_text_side_y == 2) {
+        4
+      } else {
+        2
+      },
+      col_scale = cell_col_scale,
+      col_scale_size = legend_col_scale_size,
+      col_alpha = cell_col_alpha,
+      shape = cell_shape,
+      text_font = legend_text_font,
+      text_size = legend_text_size,
+      text_col = legend_text_col,
+      text_col_alpha = legend_text_col_alpha
+    )
+  }
+  
   # RECORD HEATMAP -------------------------------------------------------------
-
+  
   # RECORD HEATMAP
   heat_map <- heat_map_record()
-
+  
   # SAVE HEATMAP
-  if (!is.null(getOption("heat_map_save"))) {
-    if (!getOption("heat_map_custom")) {
-      heat_map_complete()
-    }
+  if(getOption("heat_map_save") & !getOption("heat_map_custom")) {
+    heat_map_complete()
   }
-
+  
   # RETURN RECORDED HEATMAP
   invisible(heat_map)
+
 }

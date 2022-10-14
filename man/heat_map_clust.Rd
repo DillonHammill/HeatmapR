@@ -2,13 +2,15 @@
 % Please edit documentation in R/heat_map_clust.R
 \name{heat_map_clust}
 \alias{heat_map_clust}
-\title{Perform hierarchical clustering for heat_map rows and columns}
+\title{Perform hierarchical clustering for heatmap}
 \usage{
 heat_map_clust(
   x,
-  cluster = "row",
-  dist_method = "euclidean",
-  clust_method = "complete",
+  tree = "row",
+  dist = "euclidean",
+  method = "complete",
+  scale = FALSE,
+  cut = NULL,
   ...
 )
 }
@@ -16,17 +18,23 @@ heat_map_clust(
 \item{x}{matrix-like object to cluster. The distance matrix will be computed
 using \code{dist} and passed to \code{hclust} for hierarchical clustering.}
 
-\item{cluster}{indicates whether hierarchical clustering should be performed
-by \code{"row"}, \code{"column"} or \code{"both"}. Optionally a list
-containing objects of class \code{hclust} defining custom clustering for
-rows and or columns.}
+\item{tree}{indicates whether hierarchical clustering should be performed by
+\code{"row"} or \code{"column"}. Optionally a custom object of class
+\code{"dist"} or \code{"hclust"} which will be updated with cluster labels
+as specified by \code{cut}.}
 
-\item{dist_method}{method passed to \code{\link{dist}} to compute distance
-matrix, set to \code{"euclidean"} by default. Alternatively, for
-compositional data users can compute the \code{"Aitchison"} distance.}
+\item{dist}{method passed to \code{\link{dist}} to compute distance matrix,
+set to \code{"euclidean"} by default.}
 
-\item{clust_method}{agglomeration method passed to \code{\link{hclust}} to
-perform hierarchical clustering, set to \code{"complete"} by default.}
+\item{method}{agglomeration method passed to \code{\link{hclust}} to perform
+hierarchical clustering, set to \code{"complete"} by default.}
+
+\item{scale}{logical indicating whether branch heights should be scaled for
+better visualisation, set to FALSE by default.}
+
+\item{cut}{value less one specifying the tree cutpoint as a proportion of the
+tree height or a value greater than 1 indicating the number of desired
+clusters.}
 
 \item{...}{additional arguments passed to \code{\link{dist}} or
 \code{\link{hclust}}.}
@@ -36,11 +44,11 @@ object of class \code{hclust} which describes the tree produced by
 the clustering process.
 }
 \description{
-Perform hierarchical clustering for heat_map rows and columns
+Perform hierarchical clustering for heatmap
 }
 \examples{
 # Hierarchical clustering
-heat_map_hclust <- heat_map_clust(mtcars)
+heat_map_hclust <- heat_map_clust(mtcars, cut = 5)
 
 }
 \author{
