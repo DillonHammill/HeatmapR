@@ -1336,7 +1336,7 @@ heat_map <- function(x,
             # AXIS_TEXT + AXIS_LABEL
             if(axis_text_side_x == 1) {
               # AXIS TEXT
-              m <- m + 0.4 * max(nchar(axis_text_x)) * max(axis_text_size_x)
+              m <- 2 + 0.52 * max(nchar(axis_text_x)) * max(axis_text_size_x)
               # AXIS LABEL
               if(nchar(axis_label_x) > 0) {
                 m <- m + 2
@@ -1350,7 +1350,7 @@ heat_map <- function(x,
             # AXIS_TEXT + AXIS_LABEL
             if(axis_text_side_y == 2) {
               # AXIS TEXT
-              m <- 2 + 0.4 * max(nchar(axis_text_y)) * max(axis_text_size_y)
+              m <- 2 + 0.45 * max(nchar(axis_text_y)) * max(axis_text_size_y)
               # AXIS LABEL
               if(nchar(axis_label_y) > 0) {
                 m <- m + 2
@@ -1368,7 +1368,7 @@ heat_map <- function(x,
             # AXIS_TEXT + AXIS_LABEL
             if(axis_text_side_x == 3) {
               # AXIS TEXT
-              m <- 2 + 0.4 * max(nchar(axis_text_x)) * max(axis_text_size_x)
+              m <- 2 + 0.45 * max(nchar(axis_text_x)) * max(axis_text_size_x)
               # AXIS LABEL
               if(nchar(axis_label_x) > 0) {
                 m <- m + 2
@@ -1386,7 +1386,7 @@ heat_map <- function(x,
             # AXIS_TEXT + AXIS_LABEL
             if(axis_text_side_y == 4) {
               # AXIS TEXT
-              m <- 2 + 0.4 * max(nchar(axis_text_y)) * max(axis_text_size_y)
+              m <- 2 + 0.45 * max(nchar(axis_text_y)) * max(axis_text_size_y)
               # AXIS LABEL
               if(nchar(axis_label_y) > 0) {
                 m <- m + 2
