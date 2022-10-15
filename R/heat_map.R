@@ -279,7 +279,19 @@
 #'   legend, set to 1 by default.
 #' @param legend_col_scale_size numeric to control the width of the legend
 #'   colour scale relative to the allocated space for the legend, set to 1 by
-#'   default.
+#'   default. legend_title = NULL,
+#' @param legend_title a vector of length two containing text to be displayed
+#'   above the cell colour and size legends respectively.
+#' @param legend_title_text_font integer to control the font face for the
+#'   heatmap legends, set to 2 by default for bold font. See \code{font} in
+#'   \code{?par} for alternatives.
+#' @param legend_title_text_size numeric to control the size of the text in the
+#'   heatmap legend titles, set to 1 by default.
+#' @param legend_title_text_col colour to use for text in heatmap legend titles,
+#'   set to \code{"black"} by default.
+#' @param legend_title_text_col_alpha numeric ranging from 0 to 1 to control the
+#'   transparency of text in heatmap legend titles, set to 1 by default for
+#'   solid colours.
 #' @param legend_text_font integer to control the font face for legend text, set
 #'   to 1 by default. See \code{font} in \code{?par} for alternatives.
 #' @param legend_text_size numeric to control the size of text in the legend,
@@ -438,6 +450,11 @@ heat_map <- function(x,
                      legend = TRUE,
                      legend_size = 1,
                      legend_col_scale_size = 1,
+                     legend_title = NULL,
+                     legend_title_text_font = 2,
+                     legend_title_text_size = 1,
+                     legend_title_text_col = "black",
+                     legend_title_text_col_alpha = 1,
                      legend_text_font = 1,
                      legend_text_size = 1,
                      legend_text_col = "black",
@@ -1816,7 +1833,12 @@ heat_map <- function(x,
       text_font = legend_text_font,
       text_size = legend_text_size,
       text_col = legend_text_col,
-      text_col_alpha = legend_text_col_alpha
+      text_col_alpha = legend_text_col_alpha,
+      title = legend_title,
+      title_text_size = legend_title_text_size,
+      title_text_font = legend_title_text_font,
+      title_text_col = legend_title_text_col,
+      title_text_col_alpha = legend_title_text_col_alpha
     )
   }
   

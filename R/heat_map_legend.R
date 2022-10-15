@@ -21,11 +21,28 @@ heat_map_legend <- function(col = NULL,
                             text_font = 1,
                             text_size = 1,
                             text_col = "black",
-                            text_col_alpha = 1) {
+                            text_col_alpha = 1,
+                            title = NA,
+                            title_text_size = 1,
+                            title_text_font = 2,
+                            title_text_col = "black",
+                            title_text_col_alpha = 1) {
   
   # TODO: ADD LEGEND TITLES
   
   # ONLY SUPPORT LEGEND ON Y AXIS OPPOSITE AXIS TEXT
+  
+  # LEGEND TITLES
+  if(length(title) == 0) {
+    title <- rep(NA, 2)
+  }
+  
+  # TITLE ARGUMENTS
+  title <- c(title, rep(NA, 2))[1:2]
+  title_text_size <- rep(title_text_size, 2)
+  title_text_font <- rep(title_text_font, 2)
+  title_text_col <- rep(title_text_col, 2)
+  title_text_col_alpha <- rep(title_text_col_alpha, 2)
   
   # COLOUR SCALE LEGEND
   if(!is.null(col)) {
@@ -46,8 +63,8 @@ heat_map_legend <- function(col = NULL,
             mean(xlim)
           )
           ycoords <- c(
-            min(ylim) + 0.55 * diff(ylim),
-            min(ylim) + 0.95 * diff(ylim)
+            min(ylim) + 0.6 * diff(ylim),
+            min(ylim) + 0.9 * diff(ylim)
           )
         # CENTRAL COLOUR LEGEND
         } else {
@@ -69,8 +86,8 @@ heat_map_legend <- function(col = NULL,
             mean(xlim)
           )
           ycoords <- c(
-            min(ylim) + 0.55 * diff(ylim),
-            min(ylim) + 0.95 * diff(ylim)
+            min(ylim) + 0.6 * diff(ylim),
+            min(ylim) + 0.9 * diff(ylim)
           )
         # CENTRAL COLOUR LEGEND
         } else {
@@ -181,6 +198,22 @@ heat_map_legend <- function(col = NULL,
         )
       }
     )
+    # TITLE
+    if(!is.na(title[1])) {
+      text(
+        x = max(xcoords),
+        y = max(ycoords) + 0.015 * diff(ycoords),
+        labels = title[1],
+        pos = 3,
+        font = title_text_font[1],
+        cex = title_text_size[1],
+        col = adjustcolor(
+          title_text_col[1],
+          title_text_col_alpha[1]
+        ),
+        xpd = TRUE
+      )
+    }
   }
   
   # SIZE LEGEND
@@ -344,6 +377,22 @@ heat_map_legend <- function(col = NULL,
         )
       }
     )
+    # TITLE
+    if(!is.na(title[2])) {
+      text(
+        x = max(xcoords),
+        y = max(ycoords) + 0.005 * diff(ycoords),
+        labels = title[2],
+        pos = 3,
+        font = title_text_font[2],
+        cex = title_text_size[2],
+        col = adjustcolor(
+          title_text_col[2],
+          title_text_col_alpha[2]
+        ),
+        xpd = TRUE
+      )
+    }
   }
   
 }
