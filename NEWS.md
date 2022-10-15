@@ -1,2 +1,3 @@
-HeatmapR 0.0.1
-* Create HeatmapR to easily construct high resolution heatmaps using base graphics.
+# HeatmapR 1.0.0
+
+* Create HeatmapR to easily construct high resolution complex heatmaps using base graphics.

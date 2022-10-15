@@ -21,7 +21,7 @@ Arrange multiple heatmaps
 # Save heatmap
 heat_map_save("Heatmap.png",
 height = 7, 
-width = 5)
+width = 15)
 
 # Custom layout
 heat_map_layout(layout = c(1,2))

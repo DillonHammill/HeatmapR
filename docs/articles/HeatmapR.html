@@ -26,6 +26,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -38,18 +40,12 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">HeatmapR</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">1.0.0</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
-<li>
-  <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
 <li>
   <a href="../articles/HeatmapR.html">Get started</a>
 </li>
@@ -62,8 +58,8 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/DillonHammill/HeatmapR/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+  <a href="https://github.com/DillonHammill/HeatmapR/" class="external-link">
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -77,266 +73,360 @@
 
       
 
-      </header><script src="HeatmapR_files/header-attrs-2.1/header-attrs.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>HeatmapR</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/DillonHammill/HeatmapR/blob/master/vignettes/HeatmapR.Rmd"><code>vignettes/HeatmapR.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/DillonHammill/HeatmapR/blob/HEAD/vignettes/HeatmapR.Rmd" class="external-link"><code>vignettes/HeatmapR.Rmd</code></a></small>
       <div class="hidden name"><code>HeatmapR.Rmd</code></div>
 
     </div>
 
     
     
-<div id="overview" class="section level2">
-<h2 class="hasAnchor">
-<a href="#overview" class="anchor"></a>Overview</h2>
-<p>The key functions in <strong>HeatmapR</strong> are summarised below:</p>
+<div class="section level2">
+<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+</h2>
+<p><strong>HeatmapR</strong> is a lightweight R package that uses base
+graphics to facilitate the creation of high quality complex heatmaps
+that can be easily arranged with other plots. In this vignette, we will
+explore the key features of <code>HeatmapR</code> and describe the usage
+of each of the key functions in <code>HeatmapR</code> as summarised
+below:</p>
 <ul>
 <li>
-<code><a href="../reference/heat_map.html">heat_map()</a></code> creates the heatmaps</li>
+<code><a href="../reference/heat_map.html">heat_map()</a></code> convenient wrapper around all
+<code>HeatmapR</code> functions providing an intuitive way to create
+complex heatmaps using base graphics.</li>
 <li>
-<code><a href="../reference/heat_map_clust.html">heat_map_clust()</a></code> is used inside <code><a href="../reference/heat_map.html">heat_map()</a></code> to perform hierarchical clustering on the dataset using <code><a href="https://rdrr.io/r/stats/hclust.html">stats::hclust()</a></code>
-</li>
+<code><a href="../reference/heat_map_clust.html">heat_map_clust()</a></code> is used inside <code><a href="../reference/heat_map.html">heat_map()</a></code>
+to perform hierarchical clustering on the dataset using
+<code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">stats::hclust()</a></code>.</li>
 <li>
-<code><a href="../reference/heat_map_scale.html">heat_map_scale()</a></code> is used inside <code><a href="../reference/heat_map.html">heat_map()</a></code> to apply column-wise mean, z-score or range scaling to the dataset prior to constructing the heatmap.</li>
+<code><a href="../reference/heat_map_scale.html">heat_map_scale()</a></code> is used inside <code><a href="../reference/heat_map.html">heat_map()</a></code>
+to apply column- or row-wise mean, z-score or range scaling to the
+dataset prior to constructing the heatmap.</li>
 <li>
-<code><a href="../reference/heat_map_layout.html">heat_map_layout()</a></code> allows you to create custom plot layouts to arrange multiple heatmaps.</li>
+<code><a href="../reference/heat_map_layout.html">heat_map_layout()</a></code> allows you to create custom plot
+layouts to arrange multiple heatmaps.</li>
 <li>
-<code><a href="../reference/heat_map_save.html">heat_map_save()</a></code> can be called prior to any <code><a href="../reference/heat_map.html">heat_map()</a></code> call to save a high resolution image.</li>
+<code><a href="../reference/heat_map_save.html">heat_map_save()</a></code> can be called prior to any
+<code><a href="../reference/heat_map.html">heat_map()</a></code> call to save a high resolution image.</li>
 <li>
-<code><a href="../reference/heat_map_record.html">heat_map_record()</a></code> can be called after any <code><a href="../reference/heat_map.html">heat_map()</a></code> calls to record the current plot for saving to an R object.</li>
+<code><a href="../reference/heat_map_record.html">heat_map_record()</a></code> can be called after any
+<code><a href="../reference/heat_map.html">heat_map()</a></code> calls to record the current plot for saving to
+an R object.</li>
 <li>
-<code><a href="../reference/heat_map_complete.html">heat_map_complete()</a></code> can be called when creating complex layouts to indicate when the resulting layout should be saved to file using <code><a href="../reference/heat_map_save.html">heat_map_save()</a></code>.</li>
+<code><a href="../reference/heat_map_complete.html">heat_map_complete()</a></code> can be called when creating complex
+layouts to indicate when the resulting layout should be saved to file
+using <code><a href="../reference/heat_map_save.html">heat_map_save()</a></code>.</li>
 <li>
-<code><a href="../reference/heat_map_reset.html">heat_map_reset()</a></code> resets all <strong>HeatmapR</strong> associated settings in case things are not working as they should.</li>
+<code><a href="../reference/heat_map_reset.html">heat_map_reset()</a></code> resets all <strong>HeatmapR</strong>
+associated settings in case things are not working as they should.</li>
 </ul>
 </div>
-<div id="construct-a-basic-heatmap" class="section level2">
-<h2 class="hasAnchor">
-<a href="#construct-a-basic-heatmap" class="anchor"></a>1. Construct a Basic Heatmap</h2>
-<p>Constructing a heatmap is as simple loading the <strong>HeatmapR</strong> package and supplying your dataset to the <code><a href="../reference/heat_map.html">heat_map()</a></code> function. This will create a heatmap using the raw data and a default red-green colour scale.</p>
-<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">HeatmapR</span>)
-<span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>)</pre></body></html></div>
+<div class="section level2">
+<h2 id="construct-a-basic-heatmap">1. Construct a Basic Heatmap<a class="anchor" aria-label="anchor" href="#construct-a-basic-heatmap"></a>
+</h2>
+<p>Constructing a heatmap is as simple loading the
+<strong>HeatmapR</strong> package and supplying your dataset to the
+<code><a href="../reference/heat_map.html">heat_map()</a></code> function. The constructed heatmap will be in the
+same orientation as the input data and each numeric cell in the heatmap
+will be coloured using the colour scale supplied to
+<code>cell_col_scale</code>. By default, <code><a href="../reference/heat_map.html">heat_map()</a></code> uses a
+hybrid colour blind friendly <code>viridis</code> palette to offer high
+visual contrast.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/DillonHammill/HeatmapR" class="external-link">HeatmapR</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span></span></code></pre></div>
 <p><img src="HeatmapR/HeatmapR-1.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
-<div id="column-wise-scaling" class="section level2">
-<h2 class="hasAnchor">
-<a href="#column-wise-scaling" class="anchor"></a>2. Column-Wise Scaling</h2>
-<p>The heatmap above is not very informative due to each of the column being on vastly different scales. <code><a href="../reference/heat_map.html">heat_map()</a></code> can perform column-wise range, mean or z-score scaling using <code><a href="../reference/heat_map_scale.html">heat_map_scale()</a></code> to help improve the visualisation of the data. The type of scaling to perform can be controlled through the <code>scale</code> argument.</p>
-</div>
-<div id="range-scaling" class="section level2">
-<h2 class="hasAnchor">
-<a href="#range-scaling" class="anchor"></a>2.1 Range Scaling</h2>
-<p>The <code>range</code> scaling method takes each value in a column, subtracts the minimum value in that column and divides the result by the range of that column. This results in the data being rescaled to have values between 0 and 1.</p>
-<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>)</pre></body></html></div>
-<p><img src="HeatmapR/HeatmapR-2.png" width="95%" style="display: block; margin: auto;"></p>
-</div>
-<div id="mean-scaling" class="section level2">
-<h2 class="hasAnchor">
-<a href="#mean-scaling" class="anchor"></a>2.2 Mean Scaling</h2>
-<p>The <code>mean</code> scaling method takes each value in a column, subtracts the mean value in that column and divides the result by the range of that column.</p>
-<div class="sourceCode" id="cb3"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"mean"</span>)</pre></body></html></div>
+<div class="section level2">
+<h2 id="cell-properties">2. Cell Properties<a class="anchor" aria-label="anchor" href="#cell-properties"></a>
+</h2>
+<p><code><a href="../reference/heat_map.html">heat_map()</a></code> contains a family of <code>cell_</code>
+arguments which allow for the customisation of the shape, size, colour,
+borders and text of cells within a heatmap. In the examples below, we
+will apply the same properties to every cell within the heatmap, but it
+is also possible to modify these properties per cell by supplying a
+matrix matching the dimensionality and orientation of the input
+matrix.</p>
+<div class="section level3">
+<h3 id="cell-shape">2.1 Cell Shape<a class="anchor" aria-label="anchor" href="#cell-shape"></a>
+</h3>
+<p><code><a href="../reference/heat_map.html">heat_map()</a></code> supports different cell shapes through the
+<code>cell_shape</code> argument which can be set to either
+<code>"rect"</code> (default), <code>"circle"</code> or
+<code>"diamond"</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  cell_shape <span class="op">=</span> <span class="st">"circle"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="HeatmapR/HeatmapR-3.png" width="95%" style="display: block; margin: auto;"></p>
-</div>
-<div id="z-score-scaling" class="section level2">
-<h2 class="hasAnchor">
-<a href="#z-score-scaling" class="anchor"></a>2.3 Z-Score Scaling</h2>
-<p>The <code>z-score</code> scaling method takes each value in a column, subtracts the mean value in that column and divides the result by the standard deviation of that column.</p>
-<div class="sourceCode" id="cb4"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"zscore"</span>)</pre></body></html></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  cell_shape <span class="op">=</span> <span class="st">"diamond"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="HeatmapR/HeatmapR-4.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
-<div id="hierarchical-clustering" class="section level2">
-<h2 class="hasAnchor">
-<a href="#hierarchical-clustering" class="anchor"></a>3. Hierarchical Clustering</h2>
-<p><code><a href="../reference/heat_map.html">heat_map()</a></code> can also perform hierarchical clustering using the <code><a href="../reference/heat_map_clust.html">heat_map_clust()</a></code> function. <code><a href="../reference/heat_map.html">heat_map()</a></code> supports performing hierarchical clustering on both rows and columns through the <code>cluster</code> argument. In <code><a href="../reference/heat_map.html">heat_map()</a></code> hierachical clustering is always performed post data scaling and the data is automatically reordered based on the clustering result.</p>
-</div>
-<div id="rows" class="section level2">
-<h2 class="hasAnchor">
-<a href="#rows" class="anchor"></a>3.1 Rows</h2>
-<div class="sourceCode" id="cb5"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">cluster</span> <span class="kw">=</span> <span class="st">"row"</span>)</pre></body></html></div>
+<div class="section level3">
+<h3 id="cell-size">2.2 Cell Size<a class="anchor" aria-label="anchor" href="#cell-size"></a>
+</h3>
+<p>The size of each cell is controlled through the
+<code>cell_size</code> argument. Setting <code>cell_size = TRUE</code>
+will scale the size of each cell based on its value in the input matrix.
+Alternatively, users can supply a separate matrix of the same
+dimensionality and orientation as the input matrix to control the size
+of the cells independently of their colour.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  cell_shape <span class="op">=</span> <span class="st">"circle"</span>,</span>
+<span>  cell_size <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="HeatmapR/HeatmapR-5.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
-<div id="columns" class="section level2">
-<h2 class="hasAnchor">
-<a href="#columns" class="anchor"></a>3.2 Columns</h2>
-<div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">cluster</span> <span class="kw">=</span> <span class="st">"column"</span>)</pre></body></html></div>
+<div class="section level3">
+<h3 id="cell-colours">2.3 Cell Colours<a class="anchor" aria-label="anchor" href="#cell-colours"></a>
+</h3>
+<p>The colour of each cell in the heatmap is dependent on the type of
+data in that cell. Cells containing numeric values will be assigned
+colours based on the continuous colour scale supplied to
+<code>cell_col_scale</code>, whilst cells containing non-numeric values
+will be assigned colours from the discrete colour palette supplied to
+<code>cell_col_palette</code>. Missing values of the form
+<code>NA</code> are also supported and the colour of cells containing
+missing values can be controlled through the <code>cell_col_empty</code>
+argument. The <code>cell_col_alpha</code> argument accepts values
+ranging from zero (transparent) to one (solid) to for fine control over
+the transparency of the colour in each cell of the heatmap. In the
+example below, we will demonstrate the handling of different data types
+within <code><a href="../reference/heat_map.html">heat_map()</a></code> using a modified subset of the
+<code>iris</code> dataset where additional missing values have been
+introduced:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Modified subset of iris dataset with missing values</span></span>
+<span><span class="va">iris_sub</span> <span class="op">&lt;-</span> <span class="va">iris</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">iris</span><span class="op">)</span>, <span class="fl">25</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="va">iris_sub</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">19</span>, <span class="fl">14</span>, <span class="fl">7</span><span class="op">)</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="va">iris_sub</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">9</span>, <span class="fl">17</span>, <span class="fl">25</span><span class="op">)</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span></span>
+<span><span class="co"># Build heatmap</span></span>
+<span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">iris_sub</span>,</span>
+<span>  cell_text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cell_col_empty <span class="op">=</span> <span class="st">"grey40"</span>,</span>
+<span>  cell_col_scale <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"yellow"</span>,</span>
+<span>    <span class="st">"orange"</span>,</span>
+<span>    <span class="st">"red"</span>,</span>
+<span>    <span class="st">"black"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  cell_col_palette <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"magenta"</span>,</span>
+<span>    <span class="st">"blue"</span>,</span>
+<span>    <span class="st">"green3"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  cell_col_alpha <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="HeatmapR/HeatmapR-2.png" width="95%" style="display: block; margin: auto;"></p>
+</div>
+<div class="section level3">
+<h3 id="cell-borders">2.4 Cell Borders<a class="anchor" aria-label="anchor" href="#cell-borders"></a>
+</h3>
+<p>The borders of every cell within the constructed heatmap can also be
+customised using the <code>cell_border_line_type</code>,
+<code>cell_border_line_width</code>, <code>cell_border_line_col</code>
+and <code>cell_border_line_col_alpha</code> arguments.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  cell_border_line_type <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  cell_border_line_width <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  cell_border_line_col <span class="op">=</span> <span class="st">"red"</span>,</span>
+<span>  cell_border_line_col_alpha <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="HeatmapR/HeatmapR-6.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
-<div id="rows-and-columns" class="section level2">
-<h2 class="hasAnchor">
-<a href="#rows-and-columns" class="anchor"></a>3.3 Rows and Columns</h2>
-<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">cluster</span> <span class="kw">=</span> <span class="st">"both"</span>)</pre></body></html></div>
+<div class="section level3">
+<h3 id="cell-text">2.5 Cell Text<a class="anchor" aria-label="anchor" href="#cell-text"></a>
+</h3>
+<p>The values of every cells within the constructed heatmap can be
+displayed by setting <code>cell_text = TRUE</code>. By default, numeric
+values are rounded to two decimal places but this can be changed through
+the <code>round</code> argument. The text displayed in each cell can
+easily be customised using the <code>cell_text_size</code>,
+<code>cell_text_font</code>, <code>cell_text_col</code> and
+<code>cell_text_col_alpha</code> arguments.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  cell_text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cell_text_size <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  cell_text_font <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  cell_text_col <span class="op">=</span> <span class="st">"black"</span>,</span>
+<span>  cell_text_col_alpha <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"mtcars"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="HeatmapR/HeatmapR-7.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
-<div id="dendrograms" class="section level2">
-<h2 class="hasAnchor">
-<a href="#dendrograms" class="anchor"></a>4. Dendrograms</h2>
-<p>In addition to reordering data post hierarchical clustering, <code><a href="../reference/heat_map.html">heat_map()</a></code> also has support for displaying dendrograms through its <code>dendrogram</code> argument. The <code>dendrogram_scale</code> argument can be used to scale the branch heights to be the same so that it is easier to see the relationships between the rows or columns.</p>
 </div>
-<div id="rows-1" class="section level2">
-<h2 class="hasAnchor">
-<a href="#rows-1" class="anchor"></a>4.1 Rows</h2>
-<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"row"</span>)</pre></body></html></div>
+<div class="section level2">
+<h2 id="data-scaling">3. Data Scaling<a class="anchor" aria-label="anchor" href="#data-scaling"></a>
+</h2>
+<p>In the above heatmap, it is very clear that each of the columns of
+the input matrix are on completely different scales, making it difficult
+to visualise differences in columns with very small values. In order to
+represent each column on the same scale, we can apply a form of data
+scaling through the <code>scale_method</code> argument either to each
+row or column as specified by the <code>scale</code> argument.
+Currently, <code><a href="../reference/heat_map.html">heat_map()</a></code> has internal support for
+<code>"mean"</code>, <code>"range"</code> and <code>"z-score"</code>
+scaling methods that can be applied to either the rows or columns of the
+input matrix.</p>
+<div class="section level3">
+<h3 id="scaling-columns">3.1 Scaling Columns<a class="anchor" aria-label="anchor" href="#scaling-columns"></a>
+</h3>
+<p>To scale the values in every column, simply set
+<code>scale = "column</code> and specify the scaling method through the
+<code>scale_method</code> argument. For example, to apply range scaling
+to every column in the <code>mtcars</code> dataset:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  scale <span class="op">=</span> <span class="st">"column"</span>,</span>
+<span>  scale_method <span class="op">=</span> <span class="st">"range"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"mtcars scaled columns"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="HeatmapR/HeatmapR-8.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
-<div id="columns-1" class="section level2">
-<h2 class="hasAnchor">
-<a href="#columns-1" class="anchor"></a>4.2 Columns</h2>
-<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"column"</span>)</pre></body></html></div>
+<div class="section level3">
+<h3 id="scaling-rows">3.2 Scaling Rows<a class="anchor" aria-label="anchor" href="#scaling-rows"></a>
+</h3>
+<p>Similarly, in instances where it is more appropriate to scale the
+values in each row, we can set <code>scale = "row"</code> and pass the
+required scaling method to <code>scale_method</code>. For example, to
+apply z-score scaling to every row in the <code>mtcars</code>
+dataset:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  scale <span class="op">=</span> <span class="st">"row"</span>,</span>
+<span>  scale_method <span class="op">=</span> <span class="st">"zscore"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"mtcars scaled rows"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="HeatmapR/HeatmapR-9.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
-<div id="rows-and-columns-1" class="section level2">
-<h2 class="hasAnchor">
-<a href="#rows-and-columns-1" class="anchor"></a>4.3 Rows and Columns</h2>
-<div class="sourceCode" id="cb10"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"both"</span>)</pre></body></html></div>
+</div>
+<div class="section level2">
+<h2 id="bar-plots">4. Bar Plots<a class="anchor" aria-label="anchor" href="#bar-plots"></a>
+</h2>
+<p>In addition to the cells of the heatmap, <code><a href="../reference/heat_map.html">heat_map()</a></code>
+supports the display of additional values in bar plots on either axis of
+the heatmap. To add bar plots to the heatmap, users should supply the
+(named) values to <code>bar_values_x</code> and/or
+<code>bar_values_y</code> in the same order as the original input
+matrix. The bar plots will be displayed on the opposite side to the axis
+text and size of the bar plot (i.e. height or width) can be controlled
+through the <code>bar_size_x</code> and <code>bar_size_y</code>
+arguments. The colours of the bars and borders can be customised using
+the <code>bar_fill_</code> and <code>bar_line_</code> family of
+arguments. In the example below, we demonstrate the addition of bar
+plots to the x and y axes of a heatmap constructed using the
+<code>mtcars</code> dataset:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  bar_values_x <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span>,</span>
+<span>  bar_size_x <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  bar_fill_x <span class="op">=</span> <span class="fu">rainbor</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  bar_line_col_x <span class="op">=</span> <span class="st">"black"</span>,</span>
+<span>  bar_values_y <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span>,</span>
+<span>  bar_size_y <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  bar_fill_y <span class="op">=</span> <span class="fu">rainbor</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  bar_line_col_y <span class="op">=</span> <span class="st">"black"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"heatmap with bar plots"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p><img src="HeatmapR/HeatmapR-10.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
-<div id="scaled-branch-heights" class="section level2">
-<h2 class="hasAnchor">
-<a href="#scaled-branch-heights" class="anchor"></a>4.4 Scaled Branch Heights</h2>
-<div class="sourceCode" id="cb11"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"both"</span>,
-         <span class="kw">dendrogram_scale</span> <span class="kw">=</span> <span class="fl">TRUE</span>)</pre></body></html></div>
-<p><img src="HeatmapR/HeatmapR-11.png" width="95%" style="display: block; margin: auto;"></p>
+<div class="section level2">
+<h2 id="hierarchical-clustering">5. Hierarchical Clustering<a class="anchor" aria-label="anchor" href="#hierarchical-clustering"></a>
+</h2>
+<div class="section level3">
+<h3 id="dendrograms">5.1 Dendrograms<a class="anchor" aria-label="anchor" href="#dendrograms"></a>
+</h3>
 </div>
-<div id="display-values" class="section level2">
-<h2 class="hasAnchor">
-<a href="#display-values" class="anchor"></a>7. Display Values</h2>
-<p>To display the values in the heatmap, simply set <code>box_text = TRUE</code> and customize the text using the <code>box_text_font</code>, <code>box_text_size</code> and <code>box_text_col</code> arguments.</p>
-<div class="sourceCode" id="cb12"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"both"</span>,
-         <span class="kw">dendrogram_scale</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-         <span class="kw">box_text</span> <span class="kw">=</span> <span class="fl">TRUE</span>)</pre></body></html></div>
-<p><img src="HeatmapR/HeatmapR-12.png" width="95%" style="display: block; margin: auto;"></p>
+<div class="section level3">
+<h3 id="dendrogram-scaling">5.2 Dendrogram Scaling<a class="anchor" aria-label="anchor" href="#dendrogram-scaling"></a>
+</h3>
 </div>
-<div id="categorical-variables" class="section level2">
-<h2 class="hasAnchor">
-<a href="#categorical-variables" class="anchor"></a>7. Categorical Variables</h2>
-<p><code><a href="../reference/heat_map.html">heat_map()</a></code> also has full support for datasets that contain non-numeric columns. These columns will be moved to the right of the heatmap and excluded from any scaling, heirarchical clustering or dendrograms. At release, <code><a href="../reference/heat_map.html">heat_map()</a></code> does not have support for adding legends for these columns, but it is possible to just add text for these non-numeric varaibles by setting <code>box_text = "character"</code>. The colours for non-numeric variables can be altered through the <code>box_col_palette</code> argument.</p>
-<div class="sourceCode" id="cb13"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">iris</span>[<span class="fu"><a href="https://rdrr.io/r/base/sample.html">sample</a></span>(<span class="fl">150</span>, <span class="fl">30</span>), ],
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"both"</span>,
-         <span class="kw">dendrogram_scale</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-         <span class="kw">box_text</span> <span class="kw">=</span> <span class="st">"character"</span>,
-         <span class="kw">box_col_palette</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"magenta"</span>,
-                             <span class="st">"blue"</span>,
-                             <span class="st">"orange"</span>))</pre></body></html></div>
-<p><img src="HeatmapR/HeatmapR-13.png" width="95%" style="display: block; margin: auto;"></p>
+<div class="section level3">
+<h3 id="tree-size">5.3 Tree size<a class="anchor" aria-label="anchor" href="#tree-size"></a>
+</h3>
 </div>
-<div id="customization" class="section level2">
-<h2 class="hasAnchor">
-<a href="#customization" class="anchor"></a>8. Customization</h2>
-<p>There are countless ways to customize the appearance of your heatmap using <code><a href="../reference/heat_map.html">heat_map()</a></code>. Below is an example where a number of features have been customized:</p>
-<div class="sourceCode" id="cb14"><html><body><pre class="r"><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"both"</span>,
-         <span class="kw">dendrogram_scale</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-         <span class="kw">box_text</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-         <span class="kw">box_text_font</span> <span class="kw">=</span> <span class="fl">3</span>,
-         <span class="kw">box_text_col</span> <span class="kw">=</span> <span class="st">"black"</span>,
-         <span class="kw">box_text_col_alpha</span> <span class="kw">=</span> <span class="fl">0.5</span>,
-         <span class="kw">box_border_line_col</span> <span class="kw">=</span> <span class="st">"white"</span>,
-         <span class="kw">box_col_scale</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"white"</span>,
-                           <span class="st">"yellow"</span>,
-                           <span class="st">"orange"</span>,
-                           <span class="st">"red"</span>),
-         <span class="kw">title</span> <span class="kw">=</span> <span class="st">"mtcars"</span>,
-         <span class="kw">title_text_font</span> <span class="kw">=</span> <span class="fl">2</span>,
-         <span class="kw">title_text_size</span> <span class="kw">=</span> <span class="fl">1.5</span>,
-         <span class="kw">title_text_col</span> <span class="kw">=</span> <span class="st">"red"</span>,
-         <span class="kw">legend_side</span> <span class="kw">=</span> <span class="fl">1</span>,
-         <span class="kw">axis_text_x_side</span> <span class="kw">=</span> <span class="fl">3</span>,
-         <span class="kw">axis_text_y_side</span> <span class="kw">=</span> <span class="fl">2</span>,
-         <span class="kw">axis_label_x</span> <span class="kw">=</span> <span class="st">"Parameter"</span>,
-         <span class="kw">axis_label_y</span> <span class="kw">=</span> <span class="st">"Model"</span>)</pre></body></html></div>
-<p><img src="HeatmapR/HeatmapR-14.png" width="95%" style="display: block; margin: auto;"></p>
+<div class="section level3">
+<h3 id="tree-cutting">5.4 Tree Cutting<a class="anchor" aria-label="anchor" href="#tree-cutting"></a>
+</h3>
 </div>
-<div id="save-high-resolution-images" class="section level2">
-<h2 class="hasAnchor">
-<a href="#save-high-resolution-images" class="anchor"></a>9. Save High Resolution Images</h2>
-<p>Saving high resolution heatmaps is as easy as calling <code><a href="../reference/heat_map_save.html">heat_map_save()</a></code> prior to calling <code><a href="../reference/heat_map.html">heat_map()</a></code>. Simply supply a name for the file with a png, jpeg, pdf, tiff or svg file extension and specify the dimensions of the image in inches. For example, the previous plot was exported to a png file using the following code:</p>
-<div class="sourceCode" id="cb15"><html><body><pre class="r"><span class="co"># HEAT_MAP_SAVE</span>
-<span class="fu"><a href="../reference/heat_map_save.html">heat_map_save</a></span>(<span class="st">"heat_map.png"</span>,
-              <span class="kw">width</span> <span class="kw">=</span> <span class="fl">10</span>,
-              <span class="kw">height</span> <span class="kw">=</span> <span class="fl">10</span>,
-              <span class="kw">res</span> <span class="kw">=</span> <span class="fl">500</span>)
-<span class="co"># HEAT_MAP</span>
-<span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"both"</span>,
-         <span class="kw">dendrogram_scale</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-         <span class="kw">box_text</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
-         <span class="kw">box_text_font</span> <span class="kw">=</span> <span class="fl">3</span>,
-         <span class="kw">box_text_col</span> <span class="kw">=</span> <span class="st">"black"</span>,
-         <span class="kw">box_text_col_alpha</span> <span class="kw">=</span> <span class="fl">0.5</span>,
-         <span class="kw">box_border_line_col</span> <span class="kw">=</span> <span class="st">"white"</span>,
-         <span class="kw">box_col_scale</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"white"</span>,
-                           <span class="st">"yellow"</span>,
-                           <span class="st">"orange"</span>,
-                           <span class="st">"red"</span>),
-         <span class="kw">title</span> <span class="kw">=</span> <span class="st">"mtcars"</span>,
-         <span class="kw">title_text_font</span> <span class="kw">=</span> <span class="fl">2</span>,
-         <span class="kw">title_text_size</span> <span class="kw">=</span> <span class="fl">1.5</span>,
-         <span class="kw">title_text_col</span> <span class="kw">=</span> <span class="st">"red"</span>,
-         <span class="kw">legend_side</span> <span class="kw">=</span> <span class="fl">1</span>,
-         <span class="kw">axis_text_x_side</span> <span class="kw">=</span> <span class="fl">3</span>,
-         <span class="kw">axis_text_y_side</span> <span class="kw">=</span> <span class="fl">2</span>,
-         <span class="kw">axis_label_x</span> <span class="kw">=</span> <span class="st">"Parameter"</span>,
-         <span class="kw">axis_label_y</span> <span class="kw">=</span> <span class="st">"Model"</span>)</pre></body></html></div>
+<div class="section level3">
+<h3 id="custom-distance-matrix">5.5 Custom Distance Matrix<a class="anchor" aria-label="anchor" href="#custom-distance-matrix"></a>
+</h3>
 </div>
-<div id="layouts" class="section level2">
-<h2 class="hasAnchor">
-<a href="#layouts" class="anchor"></a>10. Layouts</h2>
-<p><strong>HeatmapR</strong> has full support for custom plot layouts using <code><a href="../reference/heat_map_layout.html">heat_map_layout()</a></code>. It is also now possible to arrange your heatmaps with any other plot constructed using base graphics using <code><a href="https://rdrr.io/r/graphics/layout.html">layout()</a></code> or <code><a href="https://rdrr.io/r/graphics/par.html">par("mfrow")</a></code> or <code><a href="https://rdrr.io/r/graphics/par.html">par("mfcol")</a></code>. <code><a href="../reference/heat_map_layout.html">heat_map_layout()</a></code> is simply a conveient wrapper fro these tradional base graphics layout functions. You will need to call <code><a href="../reference/heat_map_save.html">heat_map_save()</a></code> prior to <code><a href="../reference/heat_map_layout.html">heat_map_layout()</a></code> to save high resolution images of custom layouts. You also need to let <code><a href="../reference/heat_map.html">heat_map()</a></code> know when the layout is ready from saving by running <code><a href="../reference/heat_map_complete.html">heat_map_complete()</a></code>.</p>
-<div class="sourceCode" id="cb16"><html><body><pre class="r"><span class="co"># Save to file</span>
-<span class="fu"><a href="../reference/heat_map_save.html">heat_map_save</a></span>(<span class="st">"heat_map_layout.png"</span>,
-              <span class="kw">height</span> <span class="kw">=</span> <span class="fl">14</span>,
-              <span class="kw">width</span> <span class="kw">=</span> <span class="fl">7</span>,
-              <span class="kw">res</span> <span class="kw">=</span> <span class="fl">500</span>)
-<span class="co"># Create layout</span>
-<span class="fu"><a href="../reference/heat_map_layout.html">heat_map_layout</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">2</span>,<span class="fl">1</span>))
-<span class="co"># mtcars</span>
-<span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">mtcars</span>,
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"range"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"both"</span>,
-         <span class="kw">box_col_scale</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"white"</span>,
-                           <span class="st">"yellow"</span>,
-                           <span class="st">"orange"</span>,
-                           <span class="st">"red"</span>))
-<span class="co"># iris</span>
-<span class="fu"><a href="../reference/heat_map.html">heat_map</a></span>(<span class="no">iris</span>[<span class="fu"><a href="https://rdrr.io/r/base/sample.html">sample</a></span>(<span class="fl">150</span>, <span class="fl">30</span>),],
-         <span class="kw">scale</span> <span class="kw">=</span> <span class="st">"mean"</span>,
-         <span class="kw">dendrogram</span> <span class="kw">=</span> <span class="st">"both"</span>,
-         <span class="kw">box_text</span> <span class="kw">=</span> <span class="st">"character"</span>,
-         <span class="kw">box_text_col</span> <span class="kw">=</span> <span class="st">"black"</span>)
-<span class="co"># LAYOUT COMPLETE</span>
-<span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span>()</pre></body></html></div>
-<p><img src="HeatmapR/HeatmapR-15.png" width="95%" style="display: block; margin: auto;"></p>
+<div class="section level3">
+<h3 id="cluster-labels">5.6 Cluster Labels<a class="anchor" aria-label="anchor" href="#cluster-labels"></a>
+</h3>
 </div>
-<div id="summary" class="section level2">
-<h2 class="hasAnchor">
-<a href="#summary" class="anchor"></a>Summary</h2>
-<p><strong>HeatmapR</strong> is a powerful package for constructing heatmaps that has support for data scaling, hierarchical clustering, dendrograms and categorical variables. Furthermore, <strong>HeatmapR</strong> is easy to use, fully customizable, exports high resolution images and has full support for multiplot layouts.</p>
+</div>
+<div class="section level2">
+<h2 id="titles-legends">6. Titles &amp; Legends<a class="anchor" aria-label="anchor" href="#titles-legends"></a>
+</h2>
+<div class="section level3">
+<h3 id="cell-size-legend">6.1 Cell Size Legend<a class="anchor" aria-label="anchor" href="#cell-size-legend"></a>
+</h3>
+</div>
+<div class="section level3">
+<h3 id="cell-colour-legend">6.2 Cell Colour Legend<a class="anchor" aria-label="anchor" href="#cell-colour-legend"></a>
+</h3>
+</div>
+<div class="section level3">
+<h3 id="legend-size-and-position">6.3 Legend Size and Position<a class="anchor" aria-label="anchor" href="#legend-size-and-position"></a>
+</h3>
+</div>
+</div>
+<div class="section level2">
+<h2 id="axes">Axes<a class="anchor" aria-label="anchor" href="#axes"></a>
+</h2>
+<div class="section level3">
+<h3 id="side">Side<a class="anchor" aria-label="anchor" href="#side"></a>
+</h3>
+</div>
+</div>
+<div class="section level2">
+<h2 id="customisation">Customisation<a class="anchor" aria-label="anchor" href="#customisation"></a>
+</h2>
+</div>
+<div class="section level2">
+<h2 id="layouts">7. Layouts<a class="anchor" aria-label="anchor" href="#layouts"></a>
+</h2>
+<div class="section level3">
+<h3 id="multiple-heatmaps">7.1 Multiple Heatmaps<a class="anchor" aria-label="anchor" href="#multiple-heatmaps"></a>
+</h3>
+</div>
+<div class="section level3">
+<h3 id="layouts-with-other-plots">7.2 Layouts with other plots<a class="anchor" aria-label="anchor" href="#layouts-with-other-plots"></a>
+</h3>
+</div>
+</div>
+<div class="section level2">
+<h2 id="export">8. Export<a class="anchor" aria-label="anchor" href="#export"></a>
+</h2>
+<div class="section level3">
+<h3 id="heat_map_save">8.1 <code>heat_map_save()</code><a class="anchor" aria-label="anchor" href="#heat_map_save"></a>
+</h3>
+</div>
 </div>
   </div>
 
@@ -351,11 +441,13 @@
 
 
       <footer><div class="copyright">
-  <p>Developed by Dillon Hammill.</p>
+  <p></p>
+<p>Developed by Dillon Hammill.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer>
@@ -363,6 +455,8 @@
 
   
 
+
+  
 
   </body>
 </html>

@@ -5,7 +5,7 @@ output:
     includes:
       in_header: logo.html
 vignette: >
-  %\VignetteIndexEntry{heat_map}
+  %\VignetteIndexEntry{HeatmapR}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -404,43 +404,43 @@ heat_map(
 knitr::include_graphics('HeatmapR/HeatmapR-10.png')
 ```
 
-# 5. Hierarchical Clustering
+## 5. Hierarchical Clustering
 
-## 5.1 Dendrograms
+### 5.1 Dendrograms
 
-## 5.2 Dendrogram Scaling
+### 5.2 Dendrogram Scaling
 
-## 5.3 Tree size
+### 5.3 Tree size
 
-## 5.4 Tree Cutting
+### 5.4 Tree Cutting
 
-## 5.5 Custom Distance Matrix
+### 5.5 Custom Distance Matrix
 
-## 5.6 Cluster Labels
-
-
-# 6. Titles & Legends
-
-## 6.1 Cell Size Legend
-
-## 6.2 Cell Colour Legend
-
-## 6.3 Legend Size and Position
+### 5.6 Cluster Labels
 
 
-# Axes
+## 6. Titles & Legends
 
-## Side
+### 6.1 Cell Size Legend
+
+### 6.2 Cell Colour Legend
+
+### 6.3 Legend Size and Position
+
+
+## Axes
+
+### Side
 
 ## Customisation
 
-# 7. Layouts
+## 7. Layouts
 
-## 7.1 Multiple Heatmaps
+### 7.1 Multiple Heatmaps
 
-## 7.2 Layouts with other plots
+### 7.2 Layouts with other plots
 
 
-# 8. Export
+## 8. Export
 
-## 8.1 `heat_map_save()`
+### 8.1 `heat_map_save()`
