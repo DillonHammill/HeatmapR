@@ -13,7 +13,7 @@ status](https://travis-ci.com/DillonHammill/HeatmapR.svg?branch=master)](https:/
 [![Codecov test
 coverage](https://codecov.io/gh/DillonHammill/HeatmapR/branch/master/graph/badge.svg)](https://codecov.io/gh/DillonHammill/HeatmapR?branch=master)
 [![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![Last-changedate](https://img.shields.io/badge/last%20change-2022--10--13-yellowgreen.svg)](/commits/master)
+[![Last-changedate](https://img.shields.io/badge/last%20change-2022--10--15-yellowgreen.svg)](/commits/master)
 <!-- badges: end -->
 
 **HeatmapR** it a lightweight R package that makes it easy to generate

@@ -430,7 +430,9 @@ knitr::include_graphics('HeatmapR/HeatmapR-10.png')
 
 # Axes
 
+## Side
 
+## Customisation
 
 # 7. Layouts
 

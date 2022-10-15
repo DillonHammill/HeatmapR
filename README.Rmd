@@ -82,6 +82,7 @@ heat_map(
   scale = "column",
   scale_method = "range",
   tree_x = TRUE,
+  tree_size_x = 0.4,
   tree_y = TRUE,
   tree_cut_x = 4,
   tree_cut_y = 12,
