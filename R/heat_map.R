@@ -477,11 +477,13 @@ heat_map <- function(x,
       }
     )
   )
+  # num_cols_n <- length(num_cols)
 
   # CHARACTER COLUMNS
   char_cols <- seq_len(
     ncol(x)
   )[-num_cols]
+  # char_cols_n <- length(char_cols)
   
   # COLUMN INDICES
   col_ind <- c(num_cols, char_cols)
@@ -499,7 +501,7 @@ heat_map <- function(x,
     }
     # SCALING
     x[, num_cols] <- heat_map_scale(
-      x[, num_cols],
+      x[, num_cols, drop = FALSE],
       scale = scale,
       method = scale_method
     )
@@ -544,7 +546,7 @@ heat_map <- function(x,
   if(!is.null(tree_x) & length(num_cols) > 0) {
     # COLUMN CLUSTERING
     tree_x <- heat_map_clust(
-      x[, num_cols],
+      x[, num_cols, drop = FALSE],
       tree = if(class(tree_x) %in% c("dist", "hclust")) {
         tree_x
       } else {
@@ -584,7 +586,7 @@ heat_map <- function(x,
   if(!is.null(tree_y) & length(num_cols) > 0) {
     # COLUMN CLUSTERING
     tree_y <- heat_map_clust(
-      x[, num_cols],
+      x[, num_cols, drop = FALSE],
       tree = if(class(tree_y) %in%  c("dist", "hclust")) {
         tree_y
       } else {
@@ -607,7 +609,7 @@ heat_map <- function(x,
   
   # NUMERIC COLUMNS INDICES
   num_cols_ind <- seq_along(num_cols)
-  
+
   # CHARACTER COLUMN INDICES
   if(length(char_cols) > 0) {
     char_cols_ind <- seq(
@@ -619,18 +621,20 @@ heat_map <- function(x,
     char_cols_ind <- integer(0)
   }
   
+  # COL_IND STORES CLUSTERED COLUMNN INDEX
+  
   # ROUNDING & VALUE RANGE
   if (length(num_cols) != 0) {
-    x[, num_cols_ind] <- round(
-      x[, num_cols_ind, drop = FALSE],
+    x[, num_cols] <- round(
+      x[, num_cols, drop = FALSE],
       round
     )
     cell_min <- min(
-      x[, num_cols_ind, drop = FALSE],
+      x[, num_cols, drop = FALSE],
       na.rm = TRUE
     )
     cell_max <- max(
-      x[, num_cols_ind, drop = FALSE],
+      x[, num_cols, drop = FALSE],
       na.rm = TRUE
     )
   }  
@@ -757,7 +761,7 @@ heat_map <- function(x,
   if (length(char_cols) != 0) {
     cell_levels <- c()
     lapply(
-      char_cols_ind, 
+      char_cols, 
       function(z) {
         levels <- unique(as.vector(x[, z]))
         levels <- levels[!is.na(levels)]
