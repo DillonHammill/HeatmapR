@@ -535,7 +535,7 @@ heat_map_new <- function(popup = FALSE,
               x11(
                 height = popup_size[1],
                 width = popup_size[2],
-                type = "cairo",
+                type = "nbcairo",
                 ...
               )
             )
@@ -544,7 +544,7 @@ heat_map_new <- function(popup = FALSE,
               x11(
                 height = popup_size[1],
                 width = popup_size[2],
-                type = "cairo",
+                type = "nbcairo",
                 ...
               )
             )
