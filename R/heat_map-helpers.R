@@ -398,7 +398,7 @@ heat_map_record <- function(){
 #' @param ... additional arguments passed to
 #'   \code{\link[grDevices:dev]{dev.new}}.
 #'
-#' @importFrom grDevices dev.new dev.cur
+#' @importFrom grDevices x11 dev.new dev.cur
 #' @importFrom graphics par
 #'
 #' @examples
@@ -519,9 +519,6 @@ heat_map_new <- function(popup = FALSE,
     if (dev_new != FALSE) {
       # POPUP DEVICE
       if (dev_new == "popup") {
-        # Below code restricts to RStudio device in non-interactive mode
-        # Removed to allow users to use popup window non-interactively
-        # if (interactive() & cyto_option("CytoExploreR_interactive")) {
         if (.Platform$OS.type == "windows") {
           suppressWarnings(
             dev.new(
@@ -534,27 +531,19 @@ heat_map_new <- function(popup = FALSE,
           )
         } else if (.Platform$OS.type == "unix") {
           if (Sys.info()["sysname"] == "Linux") {
-            # dev.new() opens slower xquarts
-            # x11 opens through R graphics - much faster rendering
-            # Cairo needed for semi-transparency
-            # nbcairo used for speed
             suppressWarnings(
-              dev.new(
+              x11(
                 height = popup_size[1],
                 width = popup_size[2],
-                unit = "in",
-                noRStudioGD = TRUE,
                 type = "cairo",
                 ...
               )
             )
           } else if (Sys.info()["sysname"] == "Darwin") {
             suppressWarnings(
-              dev.new(
+              x11(
                 height = popup_size[1],
                 width = popup_size[2],
-                unit = "in",
-                noRStudioGD = TRUE,
                 type = "cairo",
                 ...
               )
