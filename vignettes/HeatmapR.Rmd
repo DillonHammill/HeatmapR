@@ -501,7 +501,7 @@ heat_map(
 knitr::include_graphics('HeatmapR/HeatmapR-12.png')
 ```
 
-In addition to heatmap splitting, `heat_map()` also supports the labelling of clusters through the `tree_label_x`, `tree_text_x`, `tree
+In addition to heatmap splitting, `heat_map()` also supports the labelling of clusters through the `tree_label_x`, `tree_label_text_x`, `tree_label_y` and `tree_label_text_y` arguments.
 
 ```{r, eval = FALSE}
 heat_map(
@@ -590,19 +590,157 @@ knitr::include_graphics('HeatmapR/HeatmapR-13.png')
 ### 6.3 Legend Size and Position
 
 
-## Axes
+## 7. Complex Layouts
 
-### Side
+`HeatmapR` supports the arrangement of multiple heatmaps in complex layouts using `heat_map_custom()`. `heat_map_custom()` is called prior to plotting to open the appropriate graphics device and set the desired layout before adding the heatmaps. Once the layout is complete, a call is made to `heat_map_complete()` to reset all `heat_map()` associated settings. The `layout` argument can be either a vector indicating the desired number of rows and columns or a mtrix defining a more complex layout. For example, if we want to split different car brands into separate heatmaps and arrange them:
 
-## Customisation
+```{r, eval = FALSE}
+heat_map_custom(
+  popup = TRUE,
+  popup_size = c(10, 15),
+  layout = matrix(
+    c(1,1,2,2,1,1,3,3),
+    ncol = 4,
+    nrow = 2,
+    byrow = TRUE
+  )
+)
+heat_map(
+  mtcars[grepl("Merc", rownames(mtcars)),],
+  title = "Mercedes"
+)
+heat_map(
+  mtcars[grepl("Mazda|Toyota", rownames(mtcars)),],
+  title = "Mazda | Toyota"
+)
+heat_map(
+  mtcars[grepl("Hornet|Datsun|Volvo", rownames(mtcars)),],
+  title = "Hornet | Datsun | Volvo"
+)
+heat_map_complete()
+```
 
-## 7. Layouts
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-14.png",
+  height = 5,
+  width = 12,
+  res = 500,
+  layout = matrix(
+    c(1,1,2,2,1,1,3,3),
+    ncol = 4,
+    nrow = 2,
+    byrow = TRUE
+  )
+)
+heat_map(
+  mtcars[grepl("Merc", rownames(mtcars)),],
+  title = "Mercedes"
+)
+heat_map(
+  mtcars[grepl("Mazda|Toyota", rownames(mtcars)),],
+  title = "Mazda | Toyota"
+)
+heat_map(
+  mtcars[grepl("Hornet|Datsun|Volvo", rownames(mtcars)),],
+  title = "Hornet | Datsun | Volvo"
+)
+heat_map_complete()
+```
 
-### 7.1 Multiple Heatmaps
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('HeatmapR/HeatmapR-14.png')
+```
 
-### 7.2 Layouts with other plots
+`HeatmapR` also supports layouts with other plots generated using base graphics. For example, we could arrange a heatmap with a scatterplot and a boxplot. 
 
+```{r, eval = FALSE}
+heat_map_custom(
+  popup = TRUE,
+  popup_size = c(10, 15),
+  layout = matrix(
+    c(1,1,2,2,1,1,3,3),
+    ncol = 4,
+    nrow = 2,
+    byrow = TRUE
+  )
+)
+heat_map(
+  mtcars,
+  title = "mtcars"
+)
+plot(
+  mtcars[, c("disp", "hp")],
+  xlab = "Displacement",
+  ylab = "Horsepower",
+  main = "mtcars: Displacement vs Horsepower",
+  pch = 16,
+  col = "black"
+)
+boxplot(
+  mtcars[, "disp"],
+  main = "Displacement",
+  xlab = "Displacement (cu.in.)",
+  horizontal = TRUE
+)
+heat_map_complete()
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-15.png",
+  height = 8,
+  width = 10,
+  res = 500,
+  layout = matrix(
+    c(1,1,2,2,1,1,3, 3),
+    ncol = 4,
+    nrow = 2,
+    byrow = TRUE
+  )
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  cell_size = TRUE,
+  legend_size = 1.5,
+  title = "mtcars"
+)
+plot(
+  mtcars[, c("disp", "hp")],
+  xlab = "Displacement",
+  ylab = "Horsepower",
+  main = "mtcars: Displacement vs Horsepower",
+  pch = 16,
+  col = "black"
+)
+abline(
+  lm(hp ~ disp, data = mtcars),
+  col = "red",
+  lty = 2
+)
+boxplot(
+  mtcars[, "disp"],
+  main = "Displacement",
+  xlab = "Displacement (cu.in.)",
+  horizontal = TRUE
+)
+heat_map_complete()
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('HeatmapR/HeatmapR-15.png')
+```
 
 ## 8. Export
 
-### 8.1 `heat_map_save()`
+`HeatmapR` supports the export of high resolution images using `heat_map_save()` which allows control over the dimensions and resolution of the exported images.
+
+```{r, eval = FALSE}
+
+
+```
+
+## 10. Summary
+
+`HeatmapR` is a lightweight R package built on base graphics that allows for the creation of high resolution complex heatmaps that can be arranged in sophisticated layouts with other plot objects. 
