@@ -1197,8 +1197,8 @@ heat_map <- function(x,
     if(legend %in% TRUE) {
       legend <- "both"
     }
-    # COMPUTE LEGEND X DIMENSIONS - 15% of XLIM
-    legend_size <- legend_size * 0.15 * diff(
+    # COMPUTE LEGEND X DIMENSIONS - 20% of XLIM
+    legend_size <- legend_size * 0.20 * diff(
       range(
         c(
           heatmap_xlim,
