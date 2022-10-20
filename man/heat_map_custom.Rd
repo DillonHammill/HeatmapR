@@ -45,11 +45,11 @@ heat_map_complete()
 
 }
 \seealso{
-\code{\link{heat_map_save()}}
+\code{\link{heat_map_save}}
 
-\code{\link{heat_map_new()}}
+\code{\link{heat_map_new}}
 
-\code{\link{heat_map_complete()}}
+\code{\link{heat_map_complete}}
 }
 \author{
 Dillon Hammill (Dillon.Hammill@anu.edu.au)

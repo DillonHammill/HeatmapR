@@ -149,9 +149,9 @@ heat_map_save <- function(save_as,
 #'
 #' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
 #'
-#' @seealso \code{\link{heat_map_save()}}
-#' @seealso \code{\link{heat_map_new()}}
-#' @seealso \code{\link{heat_map_complete()}}
+#' @seealso \code{\link{heat_map_save}}
+#' @seealso \code{\link{heat_map_new}}
+#' @seealso \code{\link{heat_map_complete}}
 #'
 #' @examples
 #' heat_map_custom(
@@ -180,7 +180,7 @@ heat_map_custom <- function(popup = TRUE,
   if(!getOption("heat_map_save")) {
     heat_map_new(
       popup = popup,
-      popop_size = popup_size,
+      popup_size = popup_size,
       ...
     )
   }
@@ -398,7 +398,7 @@ heat_map_record <- function(){
 #' @param ... additional arguments passed to
 #'   \code{\link[grDevices:dev]{dev.new}}.
 #'
-#' @importFrom grDevices x11 dev.new dev.cur
+#' @importFrom grDevices dev.new dev.cur
 #' @importFrom graphics par
 #'
 #' @examples
@@ -539,19 +539,23 @@ heat_map_new <- function(popup = FALSE,
             # Cairo needed for semi-transparency
             # nbcairo used for speed
             suppressWarnings(
-              x11(
+              dev.new(
                 height = popup_size[1],
                 width = popup_size[2],
-                type = "nbcairo",
+                unit = "in",
+                noRStudioGD = TRUE,
+                type = "cairo",
                 ...
               )
             )
           } else if (Sys.info()["sysname"] == "Darwin") {
             suppressWarnings(
-              x11(
+              dev.new(
                 height = popup_size[1],
                 width = popup_size[2],
-                type = "nbcairo",
+                unit = "in",
+                noRStudioGD = TRUE,
+                type = "cairo",
                 ...
               )
             )

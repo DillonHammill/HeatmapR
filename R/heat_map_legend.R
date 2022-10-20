@@ -202,7 +202,7 @@ heat_map_legend <- function(col = NULL,
     if(!is.na(title[1])) {
       text(
         x = max(xcoords),
-        y = max(ycoords) + 0.015 * diff(ycoords),
+        y = max(ycoords) + 0.017 * diff(ycoords),
         labels = title[1],
         pos = 3,
         font = title_text_font[1],
@@ -289,7 +289,7 @@ heat_map_legend <- function(col = NULL,
       ]
     }
     # COMPUTE CENTERS
-    pad <- diff(ycoords) - ypad - 5 * (1+ ypad)
+    pad <- diff(ycoords) - ypad - 5 * (1 + ypad)
     ymin <- min(ycoords) + pad/2
     ycenters <- unlist(
       lapply(
@@ -381,7 +381,7 @@ heat_map_legend <- function(col = NULL,
     if(!is.na(title[2])) {
       text(
         x = max(xcoords),
-        y = max(ycoords) + 0.005 * diff(ycoords),
+        y = max(ycoords) - pad/2,
         labels = title[2],
         pos = 3,
         font = title_text_font[2],
