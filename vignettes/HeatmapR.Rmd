@@ -581,14 +581,52 @@ heat_map(
 knitr::include_graphics('HeatmapR/HeatmapR-13.png')
 ```
 
-## 6. Titles & Legends
+## 6. Legends
 
-### 6.1 Cell Size Legend
+`heat_map()` will automatically add legends for the colour scale and size of the cells in the heatmap. The `legend` argument controls the type(s) of legends to display including the `"colour"`, `"shape"` or `"both"`. The space available to the legend can be tweaked using the `legend_size` argument, and the size of the colour scale legend can be controlled through the `legend_col_scale_size` argument. The titles and text displayed in the legend(s) are also fully customisable using the the `legend_title_` and `legend_text_` family of arguments.
 
-### 6.2 Cell Colour Legend
+```{r, eval = FALSE}
+heat_map(
+  mtcars,
+  scale = TRUE,
+  tree_x = TRUE,
+  tree_y = TRUE,
+  cell_shape = "circle",
+  cell_size = TRUE,
+  legend = TRUE,
+  legend_size = 1.5,
+  legend_col_scale_size = 1.2,
+  legend_title = c("colour", "size"),
+  title = "Legends"
+)
+```
 
-### 6.3 Legend Size and Position
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-17.png",
+  height = 11,
+  width = 8,
+  res = 500
+)
+heat_map(
+  mtcars,
+  scale = TRUE,
+  tree_x = TRUE,
+  tree_size_x = 0.6,
+  tree_y = TRUE,
+  cell_shape = "circle",
+  cell_size = TRUE,
+  legend = TRUE,
+  legend_size = 1.5,
+  legend_col_scale_size = 1.2,
+  legend_title = c("colour", "size"),
+  title = "Legends"
+)
+```
 
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('HeatmapR/HeatmapR-17.png')
+```
 
 ## 7. Complex Layouts
 
@@ -734,11 +772,55 @@ knitr::include_graphics('HeatmapR/HeatmapR-15.png')
 
 ## 8. Export
 
-`HeatmapR` supports the export of high resolution images using `heat_map_save()` which allows control over the dimensions and resolution of the exported images.
+`HeatmapR` supports the export of high resolution images using `heat_map_save()` which allows control over the dimensions and resolution of the exported image. 
 
 ```{r, eval = FALSE}
+heat_map_save(
+  "mtcars.png",
+  height = 9.5,
+  width = 5.7,
+  res = 500
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  scale_method = "range",
+  tree_x = TRUE,
+  tree_y = TRUE,
+  tree_cut_x = 4,
+  tree_cut_y = 12,
+  cell_size = TRUE,
+  cell_shape = "circle",
+  title = "mtcars"
+)
+heat_map_complete()
+```
 
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-16.png",
+  height = 9.5,
+  width = 5.7,
+  res = 500
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  scale_method = "range",
+  tree_x = TRUE,
+  tree_y = TRUE,
+  tree_cut_x = 4,
+  tree_cut_y = 12,
+  tree_size_x = 0.6,
+  cell_size = TRUE,
+  cell_shape = "circle",
+  title = "mtcars"
+)
+heat_map_complete()
+```
 
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('HeatmapR/HeatmapR-16.png')
 ```
 
 ## 10. Summary

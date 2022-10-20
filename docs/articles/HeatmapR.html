@@ -355,78 +355,252 @@ plots to the x and y axes of a heatmap constructed using the
 <div class="section level2">
 <h2 id="hierarchical-clustering">5. Hierarchical Clustering<a class="anchor" aria-label="anchor" href="#hierarchical-clustering"></a>
 </h2>
+<p><code><a href="../reference/heat_map.html">heat_map()</a></code> also supports hierarchical clustering using
+the conventional <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">stats::hclust()</a></code> to construct dendrograms
+and <code><a href="https://rdrr.io/r/stats/cutree.html" class="external-link">stats::cutree()</a></code> to partition the dendrograms into
+distinct clusters. The <code>dist_method</code> and
+<code>clust_method</code> arguments allow for control over the distance
+metric to use for hierarchical clustering (any method supported by
+<code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">stats::dist()</a></code>) and the agglomeration method to use (any
+method supported by <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">stats::hclust()</a></code>).</p>
 <div class="section level3">
 <h3 id="dendrograms">5.1 Dendrograms<a class="anchor" aria-label="anchor" href="#dendrograms"></a>
 </h3>
+<p>Dendrograms can be added to the x and/or y axis using the
+<code>tree</code>, <code>tree_x</code> or <code>tree_y</code> arguments.
+The <code>tree</code> argument indicates whether dendrograms should be
+drawn for the <code>"x"</code>, <code>"y"</code> or <code>"both"</code>
+axes. Alternatively, the <code>tree_x</code> or <code>tree_y</code>
+arguments can be set to <code>TRUE</code> to include dendrograms on the
+x or y axes respectively. The <code>tree_x</code> and
+<code>tree_y</code> arguments also accept objects of class
+<code>dist</code> or <code>hclust</code> to allow for custom dendrograms
+using unsupported distance metrics or agglomeration methods. The
+<code>tree_size_x</code> and <code>tree_size_y</code> arguments are
+scalars to control the height or width of the dendrograms on the x and y
+axes respectively. The <code>tree_scale_x</code> and
+<code>tree_scale_y</code> arguments can be used to scale the branch
+heights of the dendrogram to be the same height at each level allowing
+for better visualisation of relationships in large heatmaps.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  scale <span class="op">=</span> <span class="st">"column"</span>,</span>
+<span>  dist_method <span class="op">=</span> <span class="st">"euclidean"</span>,</span>
+<span>  clust_method <span class="op">=</span> <span class="st">"complete"</span>,</span>
+<span>  tree_x <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_size_x <span class="op">=</span> <span class="fl">0.4</span>,</span>
+<span>  tree_y <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_size_y <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Dendrograms"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="HeatmapR/HeatmapR-11.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
-<h3 id="dendrogram-scaling">5.2 Dendrogram Scaling<a class="anchor" aria-label="anchor" href="#dendrogram-scaling"></a>
+<h3 id="clustering">5.2 Clustering<a class="anchor" aria-label="anchor" href="#clustering"></a>
 </h3>
-</div>
-<div class="section level3">
-<h3 id="tree-size">5.3 Tree size<a class="anchor" aria-label="anchor" href="#tree-size"></a>
-</h3>
-</div>
-<div class="section level3">
-<h3 id="tree-cutting">5.4 Tree Cutting<a class="anchor" aria-label="anchor" href="#tree-cutting"></a>
-</h3>
-</div>
-<div class="section level3">
-<h3 id="custom-distance-matrix">5.5 Custom Distance Matrix<a class="anchor" aria-label="anchor" href="#custom-distance-matrix"></a>
-</h3>
-</div>
-<div class="section level3">
-<h3 id="cluster-labels">5.6 Cluster Labels<a class="anchor" aria-label="anchor" href="#cluster-labels"></a>
-</h3>
+<p>The dendrograms on either axis can be optionally cut to reveal
+clusters in the data. Dendrogram cutting is performed via the
+<code>tree_cut_x</code> and <code>tree_cut_y</code> arguments which
+accept either a fixed number of clusters or a proportion of the total
+dendrogram height where the cut should be made. The clusters can be
+spatially separated by introducing splits in the heatmap using the
+<code>tree_split_x</code> and <code>tree_split_y</code> arguments which
+are scalars that control the height or width of the splits.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  scale <span class="op">=</span> <span class="st">"column"</span>,</span>
+<span>  dist_method <span class="op">=</span> <span class="st">"euclidean"</span>,</span>
+<span>  clust_method <span class="op">=</span> <span class="st">"complete"</span>,</span>
+<span>  tree_x <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_size_x <span class="op">=</span> <span class="fl">0.4</span>,</span>
+<span>  tree_cut_x <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  tree_split_x <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  tree_y <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_size_y <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  tree_cut_y <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  tree_split_y <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Hierarchical Clustering"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="HeatmapR/HeatmapR-12.png" width="95%" style="display: block; margin: auto;"></p>
+<p>In addition to heatmap splitting, <code><a href="../reference/heat_map.html">heat_map()</a></code> also
+supports the labelling of clusters through the
+<code>tree_label_x</code>, <code>tree_label_text_x</code>,
+<code>tree_label_y</code> and <code>tree_label_text_y</code>
+arguments.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  scale <span class="op">=</span> <span class="st">"column"</span>,</span>
+<span>  tree_size_x <span class="op">=</span> <span class="fl">0.4</span>,</span>
+<span>  tree_cut_x <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  tree_split_x <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  tree_label_x <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_label_size_x <span class="op">=</span> <span class="fl">1.4</span>,</span>
+<span>  tree_label_text_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span>,</span>
+<span>  tree_label_col_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"red"</span>,</span>
+<span>    <span class="st">"blue"</span>, </span>
+<span>    <span class="st">"green"</span>, </span>
+<span>    <span class="st">"magenta"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  tree_y <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_size_y <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  tree_cut_y <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  tree_split_y <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  tree_label_y <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_label_size_y <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  tree_label_text_y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">)</span>,</span>
+<span>  tree_label_col_y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>    <span class="st">"red"</span>,</span>
+<span>    <span class="st">"blue"</span>, </span>
+<span>    <span class="st">"green"</span>, </span>
+<span>    <span class="st">"magenta"</span>,</span>
+<span>    <span class="st">"orange"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Cluster Labels"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="HeatmapR/HeatmapR-13.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="titles-legends">6. Titles &amp; Legends<a class="anchor" aria-label="anchor" href="#titles-legends"></a>
+<h2 id="legends">6. Legends<a class="anchor" aria-label="anchor" href="#legends"></a>
 </h2>
-<div class="section level3">
-<h3 id="cell-size-legend">6.1 Cell Size Legend<a class="anchor" aria-label="anchor" href="#cell-size-legend"></a>
-</h3>
-</div>
-<div class="section level3">
-<h3 id="cell-colour-legend">6.2 Cell Colour Legend<a class="anchor" aria-label="anchor" href="#cell-colour-legend"></a>
-</h3>
-</div>
-<div class="section level3">
-<h3 id="legend-size-and-position">6.3 Legend Size and Position<a class="anchor" aria-label="anchor" href="#legend-size-and-position"></a>
-</h3>
-</div>
+<p><code><a href="../reference/heat_map.html">heat_map()</a></code> will automatically add legends for the colour
+scale and size of the cells in the heatmap. The <code>legend</code>
+argument controls the type(s) of legends to display including the
+<code>"colour"</code>, <code>"shape"</code> or <code>"both"</code>. The
+space available to the legend can be tweaked using the
+<code>legend_size</code> argument, and the size of the colour scale
+legend can be controlled through the <code>legend_col_scale_size</code>
+argument. The titles and text displayed in the legend(s) are also fully
+customisable using the the <code>legend_title_</code> and
+<code>legend_text_</code> family of arguments.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  scale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_x <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_y <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cell_shape <span class="op">=</span> <span class="st">"circle"</span>,</span>
+<span>  cell_size <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  legend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  legend_size <span class="op">=</span> <span class="fl">1.5</span>,</span>
+<span>  legend_col_scale_size <span class="op">=</span> <span class="fl">1.2</span>,</span>
+<span>  legend_title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"colour"</span>, <span class="st">"size"</span><span class="op">)</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Legends"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="HeatmapR/HeatmapR-17.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
-<h2 id="axes">Axes<a class="anchor" aria-label="anchor" href="#axes"></a>
+<h2 id="complex-layouts">7. Complex Layouts<a class="anchor" aria-label="anchor" href="#complex-layouts"></a>
 </h2>
-<div class="section level3">
-<h3 id="side">Side<a class="anchor" aria-label="anchor" href="#side"></a>
-</h3>
-</div>
-</div>
-<div class="section level2">
-<h2 id="customisation">Customisation<a class="anchor" aria-label="anchor" href="#customisation"></a>
-</h2>
-</div>
-<div class="section level2">
-<h2 id="layouts">7. Layouts<a class="anchor" aria-label="anchor" href="#layouts"></a>
-</h2>
-<div class="section level3">
-<h3 id="multiple-heatmaps">7.1 Multiple Heatmaps<a class="anchor" aria-label="anchor" href="#multiple-heatmaps"></a>
-</h3>
-</div>
-<div class="section level3">
-<h3 id="layouts-with-other-plots">7.2 Layouts with other plots<a class="anchor" aria-label="anchor" href="#layouts-with-other-plots"></a>
-</h3>
-</div>
+<p><code>HeatmapR</code> supports the arrangement of multiple heatmaps
+in complex layouts using <code><a href="../reference/heat_map_custom.html">heat_map_custom()</a></code>.
+<code><a href="../reference/heat_map_custom.html">heat_map_custom()</a></code> is called prior to plotting to open the
+appropriate graphics device and set the desired layout before adding the
+heatmaps. Once the layout is complete, a call is made to
+<code><a href="../reference/heat_map_complete.html">heat_map_complete()</a></code> to reset all <code><a href="../reference/heat_map.html">heat_map()</a></code>
+associated settings. The <code>layout</code> argument can be either a
+vector indicating the desired number of rows and columns or a mtrix
+defining a more complex layout. For example, if we want to split
+different car brands into separate heatmaps and arrange them:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_custom.html">heat_map_custom</a></span><span class="op">(</span></span>
+<span>  popup <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  popup_size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">15</span><span class="op">)</span>,</span>
+<span>  layout <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">3</span>,<span class="fl">3</span><span class="op">)</span>,</span>
+<span>    ncol <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>    nrow <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>    byrow <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Merc"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span>,<span class="op">]</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Mercedes"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Mazda|Toyota"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span>,<span class="op">]</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Mazda | Toyota"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Hornet|Datsun|Volvo"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span>,<span class="op">]</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Hornet | Datsun | Volvo"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="HeatmapR/HeatmapR-14.png" width="95%" style="display: block; margin: auto;"></p>
+<p><code>HeatmapR</code> also supports layouts with other plots
+generated using base graphics. For example, we could arrange a heatmap
+with a scatterplot and a boxplot.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_custom.html">heat_map_custom</a></span><span class="op">(</span></span>
+<span>  popup <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  popup_size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10</span>, <span class="fl">15</span><span class="op">)</span>,</span>
+<span>  layout <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">2</span>,<span class="fl">2</span>,<span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">3</span>,<span class="fl">3</span><span class="op">)</span>,</span>
+<span>    ncol <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>    nrow <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>    byrow <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"mtcars"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"disp"</span>, <span class="st">"hp"</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  xlab <span class="op">=</span> <span class="st">"Displacement"</span>,</span>
+<span>  ylab <span class="op">=</span> <span class="st">"Horsepower"</span>,</span>
+<span>  main <span class="op">=</span> <span class="st">"mtcars: Displacement vs Horsepower"</span>,</span>
+<span>  pch <span class="op">=</span> <span class="fl">16</span>,</span>
+<span>  col <span class="op">=</span> <span class="st">"black"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/boxplot.html" class="external-link">boxplot</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span><span class="op">[</span>, <span class="st">"disp"</span><span class="op">]</span>,</span>
+<span>  main <span class="op">=</span> <span class="st">"Displacement"</span>,</span>
+<span>  xlab <span class="op">=</span> <span class="st">"Displacement (cu.in.)"</span>,</span>
+<span>  horizontal <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="HeatmapR/HeatmapR-15.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="export">8. Export<a class="anchor" aria-label="anchor" href="#export"></a>
 </h2>
-<div class="section level3">
-<h3 id="heat_map_save">8.1 <code>heat_map_save()</code><a class="anchor" aria-label="anchor" href="#heat_map_save"></a>
-</h3>
+<p><code>HeatmapR</code> supports the export of high resolution images
+using <code><a href="../reference/heat_map_save.html">heat_map_save()</a></code> which allows control over the
+dimensions and resolution of the exported image.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_save.html">heat_map_save</a></span><span class="op">(</span></span>
+<span>  <span class="st">"mtcars.png"</span>,</span>
+<span>  height <span class="op">=</span> <span class="fl">9.5</span>,</span>
+<span>  width <span class="op">=</span> <span class="fl">5.7</span>,</span>
+<span>  res <span class="op">=</span> <span class="fl">500</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  scale <span class="op">=</span> <span class="st">"column"</span>,</span>
+<span>  scale_method <span class="op">=</span> <span class="st">"range"</span>,</span>
+<span>  tree_x <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_y <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  tree_cut_x <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  tree_cut_y <span class="op">=</span> <span class="fl">12</span>,</span>
+<span>  cell_size <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cell_shape <span class="op">=</span> <span class="st">"circle"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"mtcars"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><img src="HeatmapR/HeatmapR-16.png" width="95%" style="display: block; margin: auto;"></p>
 </div>
+<div class="section level2">
+<h2 id="summary">10. Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
+</h2>
+<p><code>HeatmapR</code> is a lightweight R package built on base
+graphics that allows for the creation of high resolution complex
+heatmaps that can be arranged in sophisticated layouts with other plot
+objects.</p>
 </div>
   </div>
 
