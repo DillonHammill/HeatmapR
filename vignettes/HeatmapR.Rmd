@@ -406,18 +406,180 @@ knitr::include_graphics('HeatmapR/HeatmapR-10.png')
 
 ## 5. Hierarchical Clustering
 
+`heat_map()` also supports hierarchical clustering using the conventional `stats::hclust()` to construct dendrograms and `stats::cutree()` to partition the dendrograms into distinct clusters. The `dist_method` and `clust_method` arguments allow for control over the distance metric to use for hierarchical clustering (any method supported by `stats::dist()`) and the agglomeration method to use (any method supported by `stats::hclust()`).
+
 ### 5.1 Dendrograms
 
-### 5.2 Dendrogram Scaling
+Dendrograms can be added to the x and/or y axis using the `tree`, `tree_x` or `tree_y` arguments. The `tree` argument indicates whether dendrograms should be drawn for the `"x"`, `"y"` or `"both"` axes. Alternatively, the `tree_x` or `tree_y` arguments can be set to `TRUE` to include dendrograms on the x or y axes respectively. The `tree_x` and `tree_y` arguments also accept objects of class `dist` or `hclust` to allow for custom dendrograms using unsupported distance metrics or agglomeration methods. The `tree_size_x` and `tree_size_y` arguments are scalars to control the height or width of the dendrograms on the x and y axes respectively. The `tree_scale_x` and `tree_scale_y` arguments can be used to scale the branch heights of the dendrogram to be the same height at each level allowing for better visualisation of relationships in large heatmaps.
 
-### 5.3 Tree size
+```{r, eval = FALSE}
+heat_map(
+  mtcars,
+  scale = "column",
+  dist_method = "euclidean",
+  clust_method = "complete",
+  tree_x = TRUE,
+  tree_size_x = 0.4,
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  title = "Dendrograms"
+)
+```
 
-### 5.4 Tree Cutting
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-11.png",
+  height = 11,
+  width = 8,
+  res = 500
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  dist_method = "euclidean",
+  clust_method = "complete",
+  tree_x = TRUE,
+  tree_size_x = 0.4,
+  tree_scale_x = TRUE,
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  title = "Dendrograms"
+)
+```
 
-### 5.5 Custom Distance Matrix
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('HeatmapR/HeatmapR-11.png')
+```
 
-### 5.6 Cluster Labels
+### 5.2 Clustering
 
+The dendrograms on either axis can be optionally cut to reveal clusters in the data. Dendrogram cutting is performed via the `tree_cut_x` and `tree_cut_y` arguments which accept either a fixed number of clusters or a proportion of the total dendrogram height where the cut should be made. The clusters can be spatially separated by introducing splits in the heatmap using the `tree_split_x` and `tree_split_y` arguments which are scalars that control the height or width of the splits.
+
+```{r, eval = FALSE}
+heat_map(
+  mtcars,
+  scale = "column",
+  dist_method = "euclidean",
+  clust_method = "complete",
+  tree_x = TRUE,
+  tree_size_x = 0.4,
+  tree_cut_x = 4,
+  tree_split_x = 1,
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  tree_cut_y = 5,
+  tree_split_y = 1,
+  title = "Hierarchical Clustering"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-12.png",
+  height = 11,
+  width = 8,
+  res = 500
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  dist_method = "euclidean",
+  clust_method = "complete",
+  tree_x = TRUE,
+  tree_size_x = 0.4,
+  tree_cut_x = 4,
+  tree_split_x = 1,
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  tree_cut_y = 5,
+  tree_split_y = 1,
+  title = "Hierarchical Clustering"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('HeatmapR/HeatmapR-12.png')
+```
+
+In addition to heatmap splitting, `heat_map()` also supports the labelling of clusters through the `tree_label_x`, `tree_text_x`, `tree
+
+```{r, eval = FALSE}
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_size_x = 0.4,
+  tree_cut_x = 4,
+  tree_split_x = 1,
+  tree_label_x = TRUE,
+  tree_label_size_x = 1.4,
+  tree_label_text_x = c(1:4),
+  tree_label_col_x = c(
+    "red",
+    "blue", 
+    "green", 
+    "magenta"
+  ),
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  tree_cut_y = 5,
+  tree_split_y = 1,
+  tree_label_y = TRUE,
+  tree_label_size_y = 1,
+  tree_label_text_y = c(1:5),
+  tree_label_col_y = c(
+    "red",
+    "blue", 
+    "green", 
+    "magenta",
+    "orange"
+  ),
+  title = "Cluster Labels"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-13.png",
+  height = 11,
+  width = 8,
+  res = 500
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_size_x = 0.4,
+  tree_cut_x = 4,
+  tree_split_x = 1,
+  tree_label_x = TRUE,
+  tree_label_size_x = 1.4,
+  tree_label_text_x = c(1:4),
+  tree_label_col_x = c(
+    "red",
+    "blue", 
+    "green", 
+    "magenta"
+  ),
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  tree_cut_y = 5,
+  tree_split_y = 1,
+  tree_label_y = TRUE,
+  tree_label_size_y = 1,
+  tree_label_text_y = c(1:5),
+  tree_label_col_y = c(
+    "red",
+    "blue", 
+    "green", 
+    "magenta",
+    "orange"
+  ),
+  title = "Cluster Labels"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('HeatmapR/HeatmapR-13.png')
+```
 
 ## 6. Titles & Legends
 

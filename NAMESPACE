@@ -3,6 +3,7 @@
 export(heat_map)
 export(heat_map_clust)
 export(heat_map_complete)
+export(heat_map_custom)
 export(heat_map_layout)
 export(heat_map_new)
 export(heat_map_record)

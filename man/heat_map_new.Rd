@@ -14,7 +14,7 @@ opened.}
 set to \code{c(8,8)} by default.}
 
 \item{...}{additional arguments passed to
-\code{\link[grDevices:dev]{dev.new}}:}
+\code{\link[grDevices:dev]{dev.new}}.}
 }
 \description{
 Open a pop-up graphics device for heatmaps

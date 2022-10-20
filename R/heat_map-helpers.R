@@ -1,7 +1,3 @@
-## HEAT_MAP HELPER FUNCTIONS ---------------------------------------------------
-
-# TODO: ADD HEAT_MAP_CUSTOM() & HEAT_MAP_LAYOUT()
-
 ## HEAT_MAP_SAVE ---------------------------------------------------------------
 
 #' Save high resolution images
@@ -129,6 +125,77 @@ heat_map_save <- function(save_as,
   
 }
 
+## HEAT_MAP_CUSTOM -------------------------------------------------------------
+
+#' Create a custom heatmap plot layout
+#'
+#' \code{heat_map_custom()} is similar to \code{cheat_map_save()} with the
+#' exception that it doesn't write the plot to a file. \code{heat_map_custom()}
+#' opens a new graphics device and sets the desired layout in preparation for
+#' the addition of heatmaps and other plot objects. Once the custom plot is full
+#' users MUST run \code{cyto_plot_complete()} to close the graphics device and
+#' reset any \code{heat_map()} related settings (see example).
+#'
+#' @param popup logical indicating whether a popup graphics device should be
+#'   opened.
+#' @param popup_size indicates the size of the popup graphics device in inches,
+#'   set to \code{c(8,8)} by default.
+#' @param layout either a vector of the form c(nrow, ncol) defining the
+#'   dimensions of the plot or a matrix defining a more sophisticated layout
+#'   (see \code{\link[graphics]{layout}}). Vectors can optionally contain a
+#'   third element to indicate whether plots should be placed in row (1) or
+#'   column (2) order, set to row order by default.
+#' @param ... additional arguments passed to \code{heat_map_new()}.
+#'
+#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#'
+#' @seealso \code{\link{heat_map_save()}}
+#' @seealso \code{\link{heat_map_new()}}
+#' @seealso \code{\link{heat_map_complete()}}
+#'
+#' @examples
+#' heat_map_custom(
+#'   popup = FALSE,
+#'   layout = c(1,2)
+#' )
+#' heat_map(
+#'   mtcars
+#' )
+#' plot(
+#'   mtcars[, 1:2],
+#'   pch = 16
+#' )
+#' heat_map_complete()
+#'
+#' @export
+heat_map_custom <- function(popup = TRUE,
+                            popup_size = c(8,8),
+                            layout = NULL,
+                            ...) {
+  
+  # GLOBAL OPTION
+  options("heat_map_custom" = TRUE)
+  
+  # NEW DEVICE
+  if(!getOption("heat_map_save")) {
+    heat_map_new(
+      popup = popup,
+      popop_size = popup_size,
+      ...
+    )
+  }
+  
+  # LAYOUT
+  if(!is.null(layout)) {
+    heat_map_layout(
+      layout = layout
+    )
+  }
+
+  invisible(NULL)
+  
+}
+
 ## HEAT_MAP_RESET --------------------------------------------------------------
 
 #' Reset all heatmap related settings
@@ -151,6 +218,8 @@ heat_map_reset <- function(){
   
   # TURN OFF GRAPHICS DEVICE
   heat_map_complete()
+  
+  invisible(NULL)
   
 }
 
@@ -194,17 +263,16 @@ heat_map_complete <- function(){
   
   # CLOSE DEVICE
   if(getOption("heat_map_save")) {
-    if(!dev.cur() == 1){
-      dev.off()
-    }
-  }else{
-    if(!dev.cur() == 1){
-      dev.off()
-    }
-  } 
+    dev.off()
+  }
   
   # RESET HEAT_MAP_SAVE
   options("heat_map_save" = FALSE)
+  
+  # RESET HEAT_MAP_CUSTOM
+  options("heat_map_custom" = FALSE)
+  
+  invisible(NULL)
 
 }
 
@@ -278,6 +346,8 @@ heat_map_layout <- function(layout = NULL){
     }
   }
   
+  invisible(NULL)
+  
 }
 
 ## HEAT_MAP_RECORD -------------------------------------------------------------
@@ -326,7 +396,7 @@ heat_map_record <- function(){
 #' @param popup_size indicates the size of the popup graphics device in inches,
 #'   set to \code{c(8,8)} by default.
 #' @param ... additional arguments passed to
-#'   \code{\link[grDevices:dev]{dev.new}}:
+#'   \code{\link[grDevices:dev]{dev.new}}.
 #'
 #' @importFrom grDevices x11 dev.new dev.cur
 #' @importFrom graphics par
@@ -458,7 +528,8 @@ heat_map_new <- function(popup = FALSE,
               height = popup_size[1],
               width = popup_size[2],
               unit = "in",
-              noRStudioGD = TRUE
+              noRStudioGD = TRUE,
+              ...
             )
           )
         } else if (.Platform$OS.type == "unix") {
@@ -471,7 +542,8 @@ heat_map_new <- function(popup = FALSE,
               x11(
                 height = popup_size[1],
                 width = popup_size[2],
-                type = "nbcairo"
+                type = "nbcairo",
+                ...
               )
             )
           } else if (Sys.info()["sysname"] == "Darwin") {
@@ -479,7 +551,8 @@ heat_map_new <- function(popup = FALSE,
               x11(
                 height = popup_size[1],
                 width = popup_size[2],
-                type = "nbcairo"
+                type = "nbcairo",
+                ...
               )
             )
           }
@@ -504,6 +577,8 @@ heat_map_new <- function(popup = FALSE,
       }
     }
   }
+  
+  invisible(NULL)
   
 }
 

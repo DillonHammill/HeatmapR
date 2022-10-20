@@ -65,7 +65,7 @@ heat_map_label <- function(x_splits,
             label_col,
             label_col_alpha
           ),
-          border = "black",
+          border = NA,
           lty = 1,
           lwd = 2
         )
