@@ -34,6 +34,8 @@
 #' @param tree_cut_x either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for x axis dendrogram or an integer indicating the desired
 #'   number of clusters to obtain by cutting the x axis dendrogram.
+#'   Alternatively, clusters can be manually defined by specifying the number of
+#'   columns to include in each cluster (i.e. c(3,4,5)).
 #' @param tree_split_x a numeric to control the spacing between x axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove a axis
 #'   tree splits.
@@ -68,6 +70,8 @@
 #' @param tree_cut_y either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for y axis dendrogram or an integer indicating the desired
 #'   number of clusters to obtain by cutting the y axis dendrogram.
+#'   Alternatively, clusters can be manually defined by specifying the number of
+#'   rows to include in each cluster (i.e. c(3,4,5)).
 #' @param tree_split_y a numeric to control the spacing between y axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove a axis
 #'   tree splits.
@@ -545,15 +549,23 @@ heat_map <- function(x,
   
   # TREE_CUT_X 
   if(!is.null(tree_cut_x)) {
-    if(!tree_cut_x %in% c(0,1)) {
+    # HIERACHICAL CLUSTERING
+    if(length(tree_cut_x) == 1) {
       tree_x <- TRUE
+    # MANUAL CLUSTERING
+    } else {
+      tree_x <- NULL
     }
   }
   
   # TREE_CUT_Y
   if(!is.null(tree_cut_y)) {
-    if(!tree_cut_y %in% c(0,1)) {
+    # HIERARCHICAL CLUSTERING
+    if(length(tree_cut_y) == 1) {
       tree_y <- TRUE
+    # MANUAL CLUSTERING
+    } else {
+      tree_y <- NULL
     }
   }
   
@@ -599,7 +611,22 @@ heat_map <- function(x,
     col_ind[1:length(num_cols)] <- col_ind[1:length(num_cols)][tree_x$order[1:length(num_cols)]]
   }
   
-  # Y CLUSTERING REQUIRED
+  # X MANUAL CLUSTERING
+  if(length(tree_cut_x) > 1) {
+    if(sum(tree_cut_x) != ncol(x)) {
+      stop(
+        "The sum of 'tree_cut_x' must be equal to the number of columns in x!"
+      )
+    }
+    tree_x <- list(
+      cut = rep(
+        1:length(tree_cut_x),
+        times = tree_cut_x
+      )
+    )
+  }
+  
+  # Y HIERARCHICAL CLUSTERING REQUIRED
   if(!is.null(tree_y) & length(num_cols) > 0) {
     # COLUMN CLUSTERING
     tree_y <- heat_map_clust(
@@ -617,6 +644,21 @@ heat_map <- function(x,
     )
     # UPDATE ROW INDICES
     row_ind <- row_ind[tree_y$order]
+  }
+  
+  # Y MANUAL CLUSTERING
+  if(length(tree_cut_y) > 1) {
+    if(sum(tree_cut_y) != nrow(x)) {
+      stop(
+        "The sum of 'tree_cut_y' must be equal to the number of rows in x!"
+      )
+    }
+    tree_y <- list(
+      cut = rep(
+        1:length(tree_cut_y),
+        times = tree_cut_y
+      )
+    )
   }
   
   # REVERSE ROW INDICES
@@ -1132,7 +1174,7 @@ heat_map <- function(x,
   }
   
   # X AXIS TREE
-  if(!is.null(tree_x)) {
+  if("hclust" %in% class(tree_x)) {
     # TREE ABOVE HEATMAP
     if(axis_text_side_x == 1) {
       tree_x_xlim <- tree_label_x_xlim
@@ -1162,7 +1204,7 @@ heat_map <- function(x,
   }
 
   # Y AXIS TREE
-  if(!is.null(tree_y)) {
+  if("hclust" %in% class(tree_y)) {
     # TREE RIGHT OF HEATMAP
     if(axis_text_side_y == 2) {
       tree_y_xlim <- c(
@@ -1778,7 +1820,7 @@ heat_map <- function(x,
   # TREES ----------------------------------------------------------------------  
   
   # X AXIS TREE
-  if(!is.null(tree_x)) {
+  if("hclust" %in% class(tree_x)) {
     heat_map_tree(
       tree_x,
       xlim = tree_x_xlim,
@@ -1788,7 +1830,7 @@ heat_map <- function(x,
   }
   
   # Y AXIS TREE
-  if(!is.null(tree_y)) {
+  if("hclust" %in% class(tree_y)) {
     heat_map_tree(
       tree_y,
       xlim = tree_y_xlim,

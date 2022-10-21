@@ -2,7 +2,7 @@ Package: HeatmapR
 Type: Package
 Title: Create Heatmaps using Base Graphics
 Version: 1.0.0
-Date: 2022-10-14
+Date: 2022-10-21
 Authors@R: 
     person(given = "Dillon",
            family = "Hammill",

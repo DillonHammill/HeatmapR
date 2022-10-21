@@ -369,11 +369,11 @@ heat_map(
   mtcars,
   bar_values_x = 1:ncol(mtcars),
   bar_size_x = 0.5,
-  bar_fill_x = rainbor(ncol(mtcars)),
+  bar_fill_x = rainbow(ncol(mtcars)),
   bar_line_col_x = "black",
   bar_values_y = 1:nrow(mtcars),
   bar_size_y = 0.8,
-  bar_fill_y = rainbor(ncol(mtcars)),
+  bar_fill_y = rainbow(ncol(mtcars)),
   bar_line_col_y = "black",
   title = "heatmap with bar plots"
 )

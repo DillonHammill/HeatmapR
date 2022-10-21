@@ -174,7 +174,9 @@ default.}
 
 \item{tree_cut_x}{either a numeric ranging from 0 to 1 indicating the branch
 cut height for x axis dendrogram or an integer indicating the desired
-number of clusters to obtain by cutting the x axis dendrogram.}
+number of clusters to obtain by cutting the x axis dendrogram.
+Alternatively, clusters can be manually defined by specifying the number of
+columns to include in each cluster (i.e. c(3,4,5)).}
 
 \item{tree_split_x}{a numeric to control the spacing between x axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove a axis
@@ -222,7 +224,9 @@ default.}
 
 \item{tree_cut_y}{either a numeric ranging from 0 to 1 indicating the branch
 cut height for y axis dendrogram or an integer indicating the desired
-number of clusters to obtain by cutting the y axis dendrogram.}
+number of clusters to obtain by cutting the y axis dendrogram.
+Alternatively, clusters can be manually defined by specifying the number of
+rows to include in each cluster (i.e. c(3,4,5)).}
 
 \item{tree_split_y}{a numeric to control the spacing between y axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove a axis
