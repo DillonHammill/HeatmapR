@@ -278,7 +278,7 @@ heat_map_legend <- function(col = NULL,
     }
     # AXIS LABELS
     labels <- axisTicks(
-      col,
+      size,
       log = FALSE,
       nint = 5
     )
