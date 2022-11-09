@@ -81,7 +81,7 @@ heat_map_clust <- function(x,
     }
     
     # PREPARE DATA
-    if(is.numeric(args$tree)) {
+    if(is.vector(args$tree)) {
       if(args$tree == 2) {
         args[["x"]] <- t(x)
       }
