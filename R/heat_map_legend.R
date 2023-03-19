@@ -29,6 +29,7 @@ heat_map_legend <- function(col = NULL,
                             title_text_col_alpha = 1) {
   
   # TODO: ADD LEGEND TITLES
+  # TODO: MOVE LEGENDS NEXT TO EACH OTHER IF NOT ENOUGH VERTICAL SPACE
   
   # ONLY SUPPORT LEGEND ON Y AXIS OPPOSITE AXIS TEXT
   

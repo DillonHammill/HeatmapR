@@ -520,33 +520,49 @@ heat_map_new <- function(popup = FALSE,
       # POPUP DEVICE
       if (dev_new == "popup") {
         if (.Platform$OS.type == "windows") {
-          suppressWarnings(
-            dev.new(
-              height = popup_size[1],
-              width = popup_size[2],
-              unit = "in",
-              noRStudioGD = TRUE,
-              ...
-            )
+          tryCatch(
+            suppressWarnings(
+              dev.new(
+                height = popup_size[1],
+                width = popup_size[2],
+                unit = "in",
+                noRStudioGD = TRUE,
+                ...
+              )
+            ),
+            error = function(e) {
+              NULL
+            }
           )
+
         } else if (.Platform$OS.type == "unix") {
           if (Sys.info()["sysname"] == "Linux") {
-            suppressWarnings(
-              x11(
-                height = popup_size[1],
-                width = popup_size[2],
-                type = "nbcairo",
-                ...
-              )
+            tryCatch(
+              suppressWarnings(
+                x11(
+                  height = popup_size[1],
+                  width = popup_size[2],
+                  type = getOption("HeatmapR_X11"),
+                  ...
+                )
+              ),
+              function(e) {
+                NULL
+              }
             )
           } else if (Sys.info()["sysname"] == "Darwin") {
-            suppressWarnings(
-              x11(
-                height = popup_size[1],
-                width = popup_size[2],
-                type = "nbcairo",
-                ...
-              )
+            tryCatch(
+              suppressWarnings(
+                x11(
+                  height = popup_size[1],
+                  width = popup_size[2],
+                  type = getOption("HeatmapR_X11"),
+                  ...
+                )
+              ),
+              function(e) {
+                NULL
+              }
             )
           }
         }
