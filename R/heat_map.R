@@ -756,7 +756,7 @@ heat_map <- function(x,
     }
   }
   
-  # REORDER NAMED X BAR PROPERTIES
+  # REORDER NAMED Y BAR PROPERTIES
   for(arg in paste0(args, "y")) {
     if(!is.null(rownames(x))) {
       nms <- names(get(arg))
@@ -764,7 +764,7 @@ heat_map <- function(x,
         if(all(nms %in% rownames(x))) {
           assign(
             arg,
-            value = get(arg)[match(nms, rownames(x))][row_ind]
+            value = get(arg)[match(nms, rownames(x))][rev(row_ind)]
           )
         }
       }
