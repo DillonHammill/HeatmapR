@@ -56,7 +56,7 @@ heat_map_bar <- function(x,
     )
     # RESCALE VALUES TO YLIM - 5%
     x <- .rescale(
-      x,
+      c(min(rng), x),
       scale = if(max(ylim) > 0) {
         c(
           min(ylim) + 0.05 * diff(range(ylim)),
@@ -68,7 +68,7 @@ heat_map_bar <- function(x,
           max(ylim) - 0.05 * diff(range(ylim))
         )
       }
-    )
+    )[-1]
     # AXIS LABELS
     axis_labels <- axisTicks(
       rng,
@@ -225,7 +225,7 @@ heat_map_bar <- function(x,
     )
     # RESCALE VALUES TO XLIM - 5%
     x <- .rescale(
-      x,
+      c(min(rng), x),
       scale = if(max(xlim) > 0) {
         c(
           min(xlim) + 0.05 * diff(range(xlim)),
@@ -237,7 +237,7 @@ heat_map_bar <- function(x,
           min(xlim) + 0.05 * diff(range(xlim))
         )
       }
-    )
+    )[-1]
     # AXIS LABELS
     axis_labels <- axisTicks(
       rng,
