@@ -138,14 +138,16 @@
 #'   with the column names of \code{x}. The values supplied to
 #'   \code{bar_values_x} will be internally reordered to match the order of
 #'   columns as determined by hierarchical clustering.
-#' @param bar_label_x axis label to use for the x axis bar plot.
-#' @param bar_label_text_font_x font to use for the axis label of the x axis bar
-#'   plot, set to 1 by default. See \code{font} in \code{?par} for alternatives.
-#' @param bar_label_text_size_x numeric to control the size of the axis text in
+#' @param bar_axis_label_x axis label to use for the x axis bar plot.
+#' @param bar_axis_label_adj_x scalar [-1, 1] to adjust the position of the x
+#'   axis bar graph label relative to the x axis, set to 0 by default.
+#' @param bar_axis_label_font_x font to use for the axis label of the x axis bar
+#'   plot, set to 2 by default. See \code{font} in \code{?par} for alternatives.
+#' @param bar_axis_label_size_x numeric to control the size of the axis text in
 #'   x axis bar plots, set to 1 by default.
-#' @param bar_label_text_col_x colour to use for the axis text in x axis bar
+#' @param bar_axis_label_col_x colour to use for the axis text in x axis bar
 #'   plot, set to \code{"black"} by default.
-#' @param bar_label_text_col_alpha_x numeric ranging from 0 to 1 to control the
+#' @param bar_axis_label_col_alpha_x numeric ranging from 0 to 1 to control the
 #'   transparency of axis text in x axis bar plot, set to 1 by default to use
 #'   solid colours.
 #' @param bar_fill_x a vector of colours to use for the bars in the x axis bar
@@ -169,14 +171,16 @@
 #'   with the row names of \code{x}. The values supplied to \code{bar_values_y}
 #'   will be internally reordered to match the order of rows as determined by
 #'   hierarchical clustering.
-#' @param bar_label_y axis label to use for the y axis bar plot.
-#' @param bar_label_text_font_y font to use for the axis label of the y axis bar
-#'   plot, set to 1 by default. See \code{font} in \code{?par} for alternatives.
-#' @param bar_label_text_size_y numeric to control the size of the axis text in
+#' @param bar_axis_label_y axis label to use for the y axis bar plot.
+#' @param bar_axis_label_adj_y scalar [-1, 1] to adjust the position of the y
+#'   axis bar graph label relative to the y axis, set to 0 by default.
+#' @param bar_axis_label_font_y font to use for the axis label of the y axis bar
+#'   plot, set to 2 by default. See \code{font} in \code{?par} for alternatives.
+#' @param bar_axis_label_size_y numeric to control the size of the axis text in
 #'   y axis bar plots, set to 1 by default.
-#' @param bar_label_text_col_y colour to use for the axis text in y axis bar
+#' @param bar_axis_label_col_y colour to use for the axis text in y axis bar
 #'   plot, set to \code{"black"} by default.
-#' @param bar_label_text_col_alpha_y numeric ranging from 0 to 1 to control the
+#' @param bar_axis_label_col_alpha_y numeric ranging from 0 to 1 to control the
 #'   transparency of axis text in y axis bar plot, set to 1 by default to use
 #'   solid colours.
 #' @param bar_fill_y a vector of colours to use for the bars in the y axis bar
@@ -393,11 +397,12 @@ heat_map <- function(x,
                      cell_text_col_alpha = 1,
                      bar_size_x = 1,
                      bar_values_x = NULL,
-                     bar_label_x = NULL,
-                     bar_label_text_font_x = 1,
-                     bar_label_text_size_x = 1,
-                     bar_label_text_col_x = "black",
-                     bar_label_text_col_alpha_x = 1,
+                     bar_axis_label_x = NULL,
+                     bar_axis_label_adj_x = 0,
+                     bar_axis_label_font_x = 1,
+                     bar_axis_label_size_x = 1,
+                     bar_axis_label_col_x = "black",
+                     bar_axis_label_col_alpha_x = 1,
                      bar_fill_x = "grey40",
                      bar_fill_alpha_x = 1,
                      bar_line_type_x = 1,
@@ -406,11 +411,12 @@ heat_map <- function(x,
                      bar_line_col_alpha_x = 1,
                      bar_size_y = 1,
                      bar_values_y = NULL,
-                     bar_label_y = NULL,
-                     bar_label_text_font_y = 1,
-                     bar_label_text_size_y = 1,
-                     bar_label_text_col_y = "black",
-                     bar_label_text_col_alpha_y = 1,
+                     bar_axis_label_y = NULL,
+                     bar_axis_label_adj_y = 0,
+                     bar_axis_label_font_y = 1,
+                     bar_axis_label_size_y = 1,
+                     bar_axis_label_col_y = "black",
+                     bar_axis_label_col_alpha_y = 1,
                      bar_fill_y = "grey40",
                      bar_fill_alpha_y = 1,
                      bar_line_type_y = 1,
@@ -608,7 +614,9 @@ heat_map <- function(x,
       )
     }
     # UPDATE COLUMN INDICES
-    col_ind[1:length(num_cols)] <- col_ind[1:length(num_cols)][tree_x$order[1:length(num_cols)]]
+    col_ind[1:length(num_cols)] <- col_ind[
+      1:length(num_cols)][tree_x$order[1:length(num_cols)]
+    ]
   }
   
   # X MANUAL CLUSTERING
@@ -1733,11 +1741,12 @@ heat_map <- function(x,
       ylim = bar_x_ylim,
       centers_x = x_centers,
       splits_x = x_splits,
-      label = bar_label_x,
-      label_text_font = bar_label_text_font_x,
-      label_text_size = bar_label_text_size_x,
-      label_text_col = bar_label_text_col_x,
-      label_text_col_alpha = bar_label_text_col_alpha_x,
+      axis_label = bar_axis_label_x,
+      axis_label_text_adj = bar_axis_label_adj_x,
+      axis_label_text_font = bar_axis_label_font_x,
+      axis_label_text_size = bar_axis_label_size_x,
+      axis_label_text_col = bar_axis_label_col_x,
+      axis_label_text_col_alpha = bar_axis_label_col_alpha_x,
       fill = bar_fill_x,
       fill_alpha = bar_fill_alpha_x,
       line_type = bar_line_type_x,
@@ -1763,11 +1772,12 @@ heat_map <- function(x,
       ylim = bar_y_ylim,
       centers_y = y_centers,
       splits_y = y_splits,
-      label = bar_label_y,
-      label_text_font = bar_label_text_font_y,
-      label_text_size = bar_label_text_size_y,
-      label_text_col = bar_label_text_col_y,
-      label_text_col_alpha = bar_label_text_col_alpha_y,
+      axis_label = bar_axis_label_y,
+      axis_label_text_adj = bar_axis_label_adj_y,
+      axis_label_text_font = bar_axis_label_font_y,
+      axis_label_text_size = bar_axis_label_size_y,
+      axis_label_text_col = bar_axis_label_col_y,
+      axis_label_text_col_alpha = bar_axis_label_col_alpha_y,
       fill = bar_fill_y,
       fill_alpha = bar_fill_alpha_y,
       line_type = bar_line_type_y,

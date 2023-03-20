@@ -15,11 +15,12 @@ heat_map_bar <- function(x,
                          centers_y = NULL,
                          splits_x = NULL,
                          splits_y = NULL,
-                         label = NULL,
-                         label_text_font = 1,
-                         label_text_size = 1,
-                         label_text_col = "black",
-                         label_text_col_alpha = 1,
+                         axis_label = NULL,
+                         axis_label_text_adj = 0,
+                         axis_label_text_font = 1,
+                         axis_label_text_size = 1,
+                         axis_label_text_col = "black",
+                         axis_label_text_col_alpha = 1,
                          fill = "grey40",
                          fill_alpha = 1,
                          line_type = 1,
@@ -197,6 +198,25 @@ heat_map_bar <- function(x,
       line_col,
       line_col_alpha
     )
+    # AXIS LABEL
+    if(!is.null(axis_label)) {
+      text(
+        x = if(axis_text_side_y %in% 2) {
+          min(xlim) - (0.15 + axis_label_text_adj * 0.15) * (diff(xlim))
+        } else {
+          max(xlim) + (0.15 + axis_label_text_adj * 0.15) * (diff(xlim))
+        },
+        y = mean(ylim),
+        labels = axis_label,
+        font = axis_label_text_font,
+        cex = axis_label_text_size,
+        col = adjustcolor(
+          axis_label_text_col,
+          axis_label_text_col_alpha
+        ),
+        xpd = TRUE
+      )
+    }
   # HORIZONTAL BARS
   } else if(!is.null(splits_y)) {
     # VALUE RANGE
@@ -346,5 +366,24 @@ heat_map_bar <- function(x,
       line_col,
       line_col_alpha
     )
+    # AXIS LABEL
+    if(!is.null(axis_label)) {
+      text(
+        x = mean(xlim),
+        y = if(axis_text_side_x %in% 1) {
+          min(ylim) - (0.15 + axis_label_text_adj * 0.15) * (diff(ylim))
+        } else {
+          max(ylim) + (0.15 + axis_label_text_adj * 0.15) * (diff(ylim))
+        },
+        labels = axis_label,
+        font = axis_label_text_font,
+        cex = axis_label_text_size,
+        col = adjustcolor(
+          axis_label_text_col,
+          axis_label_text_col_alpha
+        ),
+        xpd = TRUE
+      )
+    }
   }
 }

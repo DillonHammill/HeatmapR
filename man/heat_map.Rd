@@ -57,11 +57,12 @@ heat_map(
   cell_text_col_alpha = 1,
   bar_size_x = 1,
   bar_values_x = NULL,
-  bar_label_x = NULL,
-  bar_label_text_font_x = 1,
-  bar_label_text_size_x = 1,
-  bar_label_text_col_x = "black",
-  bar_label_text_col_alpha_x = 1,
+  bar_axis_label_x = NULL,
+  bar_axis_label_adj_x = 0,
+  bar_axis_label_font_x = 1,
+  bar_axis_label_size_x = 1,
+  bar_axis_label_col_x = "black",
+  bar_axis_label_col_alpha_x = 1,
   bar_fill_x = "grey40",
   bar_fill_alpha_x = 1,
   bar_line_type_x = 1,
@@ -70,11 +71,12 @@ heat_map(
   bar_line_col_alpha_x = 1,
   bar_size_y = 1,
   bar_values_y = NULL,
-  bar_label_y = NULL,
-  bar_label_text_font_y = 1,
-  bar_label_text_size_y = 1,
-  bar_label_text_col_y = "black",
-  bar_label_text_col_alpha_y = 1,
+  bar_axis_label_y = NULL,
+  bar_axis_label_adj_y = 0,
+  bar_axis_label_font_y = 1,
+  bar_axis_label_size_y = 1,
+  bar_axis_label_col_y = "black",
+  bar_axis_label_col_alpha_y = 1,
   bar_fill_y = "grey40",
   bar_fill_alpha_y = 1,
   bar_line_type_y = 1,
@@ -321,18 +323,21 @@ with the column names of \code{x}. The values supplied to
 \code{bar_values_x} will be internally reordered to match the order of
 columns as determined by hierarchical clustering.}
 
-\item{bar_label_x}{axis label to use for the x axis bar plot.}
+\item{bar_axis_label_x}{axis label to use for the x axis bar plot.}
 
-\item{bar_label_text_font_x}{font to use for the axis label of the x axis bar
-plot, set to 1 by default. See \code{font} in \code{?par} for alternatives.}
+\item{bar_axis_label_adj_x}{scalar \link{-1, 1} to adjust the position of the x
+axis bar graph label relative to the x axis, set to 0 by default.}
 
-\item{bar_label_text_size_x}{numeric to control the size of the axis text in
+\item{bar_axis_label_font_x}{font to use for the axis label of the x axis bar
+plot, set to 2 by default. See \code{font} in \code{?par} for alternatives.}
+
+\item{bar_axis_label_size_x}{numeric to control the size of the axis text in
 x axis bar plots, set to 1 by default.}
 
-\item{bar_label_text_col_x}{colour to use for the axis text in x axis bar
+\item{bar_axis_label_col_x}{colour to use for the axis text in x axis bar
 plot, set to \code{"black"} by default.}
 
-\item{bar_label_text_col_alpha_x}{numeric ranging from 0 to 1 to control the
+\item{bar_axis_label_col_alpha_x}{numeric ranging from 0 to 1 to control the
 transparency of axis text in x axis bar plot, set to 1 by default to use
 solid colours.}
 
@@ -365,18 +370,21 @@ with the row names of \code{x}. The values supplied to \code{bar_values_y}
 will be internally reordered to match the order of rows as determined by
 hierarchical clustering.}
 
-\item{bar_label_y}{axis label to use for the y axis bar plot.}
+\item{bar_axis_label_y}{axis label to use for the y axis bar plot.}
 
-\item{bar_label_text_font_y}{font to use for the axis label of the y axis bar
-plot, set to 1 by default. See \code{font} in \code{?par} for alternatives.}
+\item{bar_axis_label_adj_y}{scalar \link{-1, 1} to adjust the position of the y
+axis bar graph label relative to the y axis, set to 0 by default.}
 
-\item{bar_label_text_size_y}{numeric to control the size of the axis text in
+\item{bar_axis_label_font_y}{font to use for the axis label of the y axis bar
+plot, set to 2 by default. See \code{font} in \code{?par} for alternatives.}
+
+\item{bar_axis_label_size_y}{numeric to control the size of the axis text in
 y axis bar plots, set to 1 by default.}
 
-\item{bar_label_text_col_y}{colour to use for the axis text in y axis bar
+\item{bar_axis_label_col_y}{colour to use for the axis text in y axis bar
 plot, set to \code{"black"} by default.}
 
-\item{bar_label_text_col_alpha_y}{numeric ranging from 0 to 1 to control the
+\item{bar_axis_label_col_alpha_y}{numeric ranging from 0 to 1 to control the
 transparency of axis text in y axis bar plot, set to 1 by default to use
 solid colours.}
 
