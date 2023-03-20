@@ -475,7 +475,6 @@ heat_map <- function(x,
   
   # TODO: REFINE TITLE & AXES LABEL POSITION
   # TODO: ADD TITLES TO LEGENDS
-  # TODO: ADD AXIS TEXT & LABELS TO BARS
   # TODO: SCALING OF TERMINAL TREE NODES WITH SAME DEPTH
   
   # GRAPHICAL PARAMETERS -------------------------------------------------------
@@ -708,6 +707,16 @@ heat_map <- function(x,
   
   # BAR VALUES -----------------------------------------------------------------
   
+  # BAR PROPERTY ARGUMENTS
+  args <- c(
+    "bar_fill_",
+    "bar_fill_alpha_",
+    "bar_line_type_",
+    "bar_line_width_",
+    "bar_line_col_",
+    "bar_line_col_alpha_"
+  )
+  
   # BAR_VALUES_X
   if(!is.null(bar_values_x)) {
     if(!is.null(names(bar_values_x))) {
@@ -721,6 +730,19 @@ heat_map <- function(x,
     }
   }
   
+  # REORDER NAMED X BAR PROPERTIES
+  for(arg in paste0(args, "x")) {
+    nms <- names(get(arg))
+    if(!is.null(nms)) {
+      if(all(nms %in% colnames(x))) {
+        assign(
+          arg,
+          value = get(arg)[match(nms, colnames(x))][col_ind]
+        )
+      }
+    }
+  }
+  
   # BAR_VALUES_Y
   if(!is.null(bar_values_y)) {
     if(!is.null(names(bar_values_y))) {
@@ -731,6 +753,21 @@ heat_map <- function(x,
       }
     } else {
       bar_values_y <- bar_values_y[rev(row_ind)]
+    }
+  }
+  
+  # REORDER NAMED X BAR PROPERTIES
+  for(arg in paste0(args, "y")) {
+    if(!is.null(rownames(x))) {
+      nms <- names(get(arg))
+      if(!is.null(nms)) {
+        if(all(nms %in% rownames(x))) {
+          assign(
+            arg,
+            value = get(arg)[match(nms, rownames(x))][row_ind]
+          )
+        }
+      }
     }
   }
   
