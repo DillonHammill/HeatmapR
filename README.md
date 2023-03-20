@@ -13,7 +13,7 @@ status](https://travis-ci.com/DillonHammill/HeatmapR.svg?branch=master)](https:/
 [![Codecov test
 coverage](https://codecov.io/gh/DillonHammill/HeatmapR/branch/master/graph/badge.svg)](https://codecov.io/gh/DillonHammill/HeatmapR?branch=master)
 [![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![Last-changedate](https://img.shields.io/badge/last%20change-2022--10--15-yellowgreen.svg)](/commits/master)
+[![Last-changedate](https://img.shields.io/badge/last%20change-2023--03--20-yellowgreen.svg)](/commits/master)
 <!-- badges: end -->
 
 **HeatmapR** it a lightweight R package that makes it easy to generate
@@ -119,7 +119,7 @@ citation("HeatmapR")
 #> To cite package 'HeatmapR' in publications use:
 #> 
 #>   Dillon Hammill (2022). HeatmapR: Create Heatmaps using Base Graphics.
-#>   R package version 1.0.0. https://github.com/DillonHammill/HeatmapR
+#>   R package version 1.0.1. https://github.com/DillonHammill/HeatmapR
 #> 
 #> A BibTeX entry for LaTeX users is
 #> 
@@ -127,7 +127,7 @@ citation("HeatmapR")
 #>     title = {HeatmapR: Create Heatmaps using Base Graphics},
 #>     author = {Dillon Hammill},
 #>     year = {2022},
-#>     note = {R package version 1.0.0},
+#>     note = {R package version 1.0.1},
 #>     url = {https://github.com/DillonHammill/HeatmapR},
 #>   }
 ```
