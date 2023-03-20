@@ -1,7 +1,7 @@
 Package: HeatmapR
 Type: Package
 Title: Create Heatmaps using Base Graphics
-Version: 1.0.0
+Version: 1.0.1
 Date: 2022-10-21
 Authors@R: 
     person(given = "Dillon",
@@ -23,7 +23,7 @@ License: GPL-2
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.3
 Language: en-GB
 Suggests: 
     covr,
