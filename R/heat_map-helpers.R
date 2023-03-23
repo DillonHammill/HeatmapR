@@ -546,7 +546,7 @@ heat_map_new <- function(popup = FALSE,
                   ...
                 )
               ),
-              function(e) {
+              error = function(e) {
                 NULL
               }
             )
@@ -560,7 +560,7 @@ heat_map_new <- function(popup = FALSE,
                   ...
                 )
               ),
-              function(e) {
+              error = function(e) {
                 NULL
               }
             )
