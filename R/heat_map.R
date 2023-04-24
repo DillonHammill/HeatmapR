@@ -281,7 +281,7 @@
 #'   transparency of text in heatmap title, set to 1 by default for solid
 #'   colours.
 #' @param legend logical indicating whether to include a legend in the heatmap,
-#'   set to TRUE by default. Alternatively, \code{"size"}, \code{"shape"} or
+#'   set to TRUE by default. Alternatively, \code{"size"}, \code{"colour"} or
 #'   \code{"both"} to indicate the type(s) of legends to include in the heatmap.
 #' @param legend_size numeric to control the amount of space allocated to the
 #'   legend, set to 1 by default.
