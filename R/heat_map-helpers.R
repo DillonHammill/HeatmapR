@@ -398,7 +398,7 @@ heat_map_record <- function(){
 #' @param ... additional arguments passed to
 #'   \code{\link[grDevices:dev]{dev.new}}.
 #'
-#' @importFrom grDevices x11 dev.new dev.cur
+#' @importFrom grDevices dev.new dev.cur
 #' @importFrom graphics par
 #'
 #' @examples
@@ -519,55 +519,18 @@ heat_map_new <- function(popup = FALSE,
     if (dev_new != FALSE) {
       # POPUP DEVICE
       if (dev_new == "popup") {
-        if (.Platform$OS.type == "windows") {
-          tryCatch(
-            suppressWarnings(
-              dev.new(
-                height = popup_size[1],
-                width = popup_size[2],
-                unit = "in",
-                noRStudioGD = TRUE,
-                ...
-              )
-            ),
-            error = function(e) {
-              NULL
-            }
+        tryCatch(
+          suppressWarnings(
+            dev.new(
+              height = popup_size[1],
+              width = popup_size[2],
+              unit = "in",
+              noRStudioGD = TRUE,
+              ...
+            )
           )
-
-        } else if (.Platform$OS.type == "unix") {
-          if (Sys.info()["sysname"] == "Linux") {
-            tryCatch(
-              suppressWarnings(
-                x11(
-                  height = popup_size[1],
-                  width = popup_size[2],
-                  type = getOption("HeatmapR_X11"),
-                  ...
-                )
-              ),
-              error = function(e) {
-                NULL
-              }
-            )
-          } else if (Sys.info()["sysname"] == "Darwin") {
-            tryCatch(
-              suppressWarnings(
-                x11(
-                  height = popup_size[1],
-                  width = popup_size[2],
-                  type = getOption("HeatmapR_X11"),
-                  ...
-                )
-              ),
-              error = function(e) {
-                NULL
-              }
-            )
-          }
-        }
-        # }
-        # NON-POPUP DEVICE - RSTUDIO | SHINY (CAIRO)
+        )
+      # NON-POPUP DEVICE - RSTUDIO | SHINY (CAIRO)
       } else if(dev_new == "rstudio") {
         # dev_ind <- which(
         #   grepl(
