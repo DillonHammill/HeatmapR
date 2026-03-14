@@ -3,3 +3,8 @@
 .RData
 .Ruserdata
 inst/doc
+*.tar.gz
+HeatmapR.Rcheck/
+tests/testthat/Rplots*.pdf
+*.pdf
+docs

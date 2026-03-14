@@ -2,8 +2,7 @@
 title: "HeatmapR"
 output: 
   rmarkdown::html_vignette:
-    includes:
-      in_header: logo.html
+    self_contained: false
 vignette: >
   %\VignetteIndexEntry{HeatmapR}
   %\VignetteEngine{knitr::rmarkdown}
@@ -15,14 +14,6 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-```
-
-```{r, echo = FALSE, eval = FALSE}
-img <- htmltools::img(src = knitr::image_uri("logo.png"), 
-                      alt = 'logo', 
-                      style = 'float:right; width:150px')
-html <- htmltools::doRenderTags(img)
-readr::write_lines(html, path = "logo.html")
 ```
 
 ## Overview
@@ -62,7 +53,7 @@ heat_map(mtcars)
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-1.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-1.png')
 ```
 
 ## 2. Cell Properties
@@ -94,7 +85,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-3.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-3.png')
 ```
 
 ```{r, eval = FALSE}
@@ -118,7 +109,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-4.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-4.png')
 ```
 
 ### 2.2 Cell Size
@@ -149,7 +140,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-5.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-5.png')
 ```
 
 ### 2.3 Cell Colours
@@ -216,7 +207,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-2.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-2.png')
 ```
 
 ### 2.4 Cell Borders
@@ -250,7 +241,48 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-6.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-6.png')
+```
+
+#### 2.4.1 Border Masking
+
+The `cell_border_mask` argument allows you to selectively apply colored borders to specific cells by supplying a logical matrix of the same dimensions as the input data. Cells with `TRUE` values will display colored borders, while cells with `FALSE` values will have transparent borders. This is particularly useful for highlighting specific patterns or regions of interest within a heatmap.
+
+```{r, eval = FALSE}
+# Create a mask to highlight high values
+border_mask <- mtcars > median(unlist(mtcars))
+
+heat_map(
+  mtcars,
+  cell_border_line_width = 2,
+  cell_border_line_col = "red",
+  cell_border_mask = border_mask,
+  title = "Border Masking Example"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-6b.png",
+  height = 11,
+  width = 7,
+  res = 500
+)
+# Create a mask to highlight high values
+border_mask <- mtcars > median(unlist(mtcars))
+
+heat_map(
+  mtcars,
+  cell_border_line_width = 2,
+  cell_border_line_col = "red",
+  cell_border_mask = border_mask,
+  title = "Border Masking Example",
+  cell_text = TRUE
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-6b.png')
 ```
 
 ### 2.5 Cell Text
@@ -289,7 +321,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-7.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-7.png')
 ```
 
 ## 3. Data Scaling
@@ -325,7 +357,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-8.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-8.png')
 ```
 
 ### 3.2 Scaling Rows
@@ -357,7 +389,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-9.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-9.png')
 ```
 
 ## 4. Bar Plots
@@ -401,12 +433,12 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-10.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-10.png')
 ```
 
 ## 5. Hierarchical Clustering
 
-`heat_map()` also supports hierarchical clustering using the conventional `stats::hclust()` to construct dendrograms and `stats::cutree()` to partition the dendrograms into distinct clusters. The `dist_method` and `clust_method` arguments allow for control over the distance metric to use for hierarchical clustering (any method supported by `stats::dist()`) and the agglomeration method to use (any method supported by `stats::hclust()`).
+`heat_map()` also supports hierarchical clustering using the conventional `stats::hclust()` to construct dendrograms and `stats::cutree()` to partition the dendrograms into distinct clusters. The `dist_method` and `clust_method` arguments allow for control over the distance metric to use for hierarchical clustering (any method supported by `stats::dist()` or `"cosine"` for cosine distance) and the agglomeration method to use (any method supported by `stats::hclust()`).
 
 ### 5.1 Dendrograms
 
@@ -448,7 +480,65 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-11.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-11.png')
+```
+
+#### 5.1.1 Cosine Distance
+
+In addition to the standard distance metrics supported by `stats::dist()`, **HeatmapR** also supports cosine distance for hierarchical clustering. Cosine distance (1 - cosine similarity) measures the angle between vectors and is particularly useful for high-dimensional data where the magnitude of the vectors is less important than their direction. This is especially valuable when analyzing gene expression data or other normalized datasets.
+
+```{r, eval = FALSE}
+heat_map(
+  mtcars,
+  scale = "column",
+  dist_method = "cosine",
+  clust_method = "complete",
+  tree_x = TRUE,
+  tree_size_x = 0.4,
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  title = "Cosine Distance Clustering"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-11b.png",
+  height = 11,
+  width = 8,
+  res = 500
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  dist_method = "cosine",
+  clust_method = "complete",
+  tree_x = TRUE,
+  tree_size_x = 0.4,
+  tree_scale_x = TRUE,
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  title = "Cosine Distance Clustering"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-11b.png')
+```
+
+**Absolute Distance Thresholds**: When using cosine distance, `tree_cut` values between 0 and 1 are interpreted as absolute cosine distance thresholds rather than proportional tree heights. For example, `tree_cut_x = 0.5` means cluster at cosine distance of 0.5, not at 50% of the tree height. This provides more intuitive control over clustering based on actual distance values.
+
+```{r, eval = FALSE}
+# Cut at absolute cosine distance of 0.5
+heat_map(
+  mtcars,
+  scale = "column",
+  dist_method = "cosine",
+  tree_x = TRUE,
+  tree_cut_x = 0.5,
+  tree_split_x = 1,
+  title = "Cosine Distance with Absolute Threshold"
+)
 ```
 
 ### 5.2 Clustering
@@ -498,7 +588,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-12.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-12.png')
 ```
 
 In addition to heatmap splitting, `heat_map()` also supports the labelling of clusters through the `tree_label_x`, `tree_label_text_x`, `tree_label_y` and `tree_label_text_y` arguments.
@@ -578,8 +668,100 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-13.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13.png')
 ```
+
+#### 5.2.1 Manual Clustering
+
+In addition to automatic hierarchical clustering, **HeatmapR** allows you to manually define clusters in two ways: by specifying the number of elements in each cluster, or by providing a vector of cluster indices. This is particularly useful when you want to group data based on domain knowledge or external factors rather than hierarchical relationships.
+
+**Method 1: Specify cluster sizes** - Provide a vector indicating the number of rows/columns in each cluster:
+
+```{r, eval = FALSE}
+# Manual clustering by specifying cluster sizes
+# Create 3 clusters: 4 columns, 3 columns, 4 columns
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_cut_x = c(4, 3, 4),
+  tree_split_x = 1,
+  tree_label_x = TRUE,
+  tree_label_text_x = c("Group A", "Group B", "Group C"),
+  title = "Manual Clustering by Size"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-13b.png",
+  height = 11,
+  width = 8,
+  res = 500
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_cut_x = c(4, 3, 4),
+  tree_split_x = 1,
+  tree_label_x = TRUE,
+  tree_label_text_x = c("Group A", "Group B", "Group C"),
+  tree_label_size_x = 1.2,
+  tree_label_col_x = "white",
+  title = "Manual Clustering by Size"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13b.png')
+```
+
+**Method 2: Specify cluster indices** - Provide a vector where each element indicates which cluster that row/column belongs to:
+
+```{r, eval = FALSE}
+# Manual clustering by assigning cluster indices
+# Assign each of the 11 columns to specific clusters
+cluster_indices <- c(1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3)
+
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_cut_x = cluster_indices,
+  tree_split_x = 1,
+  tree_label_x = TRUE,
+  tree_label_text_x = c("Low", "Medium", "High"),
+  tree_label_col_x = c("blue", "yellow", "red"),
+  title = "Manual Clustering by Index"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-13c.png",
+  height = 11,
+  width = 8,
+  res = 500
+)
+# Manual clustering by assigning cluster indices
+cluster_indices <- c(1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3)
+
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_cut_x = cluster_indices,
+  tree_split_x = 1,
+  tree_label_x = TRUE,
+  tree_label_text_x = c("Low", "Medium", "High"),
+  tree_label_size_x = 1.2,
+  tree_label_col_x = c("blue", "yellow", "red"),
+  title = "Manual Clustering by Index"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13c.png')
+```
+
+Manual clustering can be combined with dendrograms by setting `tree_x = TRUE` or `tree_y = TRUE`, allowing you to display the hierarchical relationships while still using your custom cluster definitions.
 
 ## 6. Legends
 
@@ -625,7 +807,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-17.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-17.png')
 ```
 
 ## 7. Complex Layouts
@@ -687,7 +869,7 @@ heat_map_complete()
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-14.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-14.png')
 ```
 
 `HeatmapR` also supports layouts with other plots generated using base graphics. For example, we could arrange a heatmap with a scatterplot and a boxplot. 
@@ -767,7 +949,7 @@ heat_map_complete()
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-15.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-15.png')
 ```
 
 ## 8. Export
@@ -820,7 +1002,7 @@ heat_map_complete()
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
-knitr::include_graphics('HeatmapR/HeatmapR-16.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-16.png')
 ```
 
 ## 10. Summary

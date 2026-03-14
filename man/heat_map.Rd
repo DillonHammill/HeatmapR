@@ -44,12 +44,15 @@ heat_map(
   cell_size = FALSE,
   cell_col_palette = c("red", "blue", "green", "orange", "magenta", "purple"),
   cell_col_scale,
+  cell_col_scale_limits = NULL,
+  cell_size_scale_limits = NULL,
   cell_col_alpha = 1,
   cell_col_empty = "white",
   cell_border_line_type = 1,
   cell_border_line_width = 1,
   cell_border_line_col = "black",
   cell_border_line_col_alpha = 1,
+  cell_border_mask = NULL,
   cell_text = FALSE,
   cell_text_font = 1,
   cell_text_size = 1,
@@ -149,7 +152,8 @@ default.}
 
 \item{dist_method}{indicates the type of distance metric to use when
 constructing dendrograms, set to \code{"euclidean"} distance by default.
-See \code{?dist} for alternatives.}
+See \code{?dist} for alternatives. Also supports \code{"cosine"} for
+cosine distance (1 - cosine similarity).}
 
 \item{clust_method}{indicates the type of agglomeration method to use when
 constructing performing hierarchical clustering, set to \code{"complete"}
@@ -175,13 +179,18 @@ axis dendrogram should be scaled for better visualisation, set to FALSE by
 default.}
 
 \item{tree_cut_x}{either a numeric ranging from 0 to 1 indicating the branch
-cut height for x axis dendrogram or an integer indicating the desired
-number of clusters to obtain by cutting the x axis dendrogram.
+cut height for x axis dendrogram (proportional for non-cosine distances,
+or absolute cosine distance threshold when \code{dist_method = "cosine"})
+or an integer indicating the desired number of clusters to obtain by
+cutting the x axis dendrogram.
 Alternatively, clusters can be manually defined by specifying the number of
-columns to include in each cluster (i.e. c(3,4,5)).}
+columns to include in each cluster (e.g., c(3,4,5)), or a vector of cluster
+indices can be supplied to assign each column to a specific cluster (e.g.,
+c(1,1,1,2,2,2,2,3,3,3) for 10 columns in 3 clusters). When a vector of
+indices is supplied, its length must equal the number of columns in \code{x}.}
 
 \item{tree_split_x}{a numeric to control the spacing between x axis tree
-splits, set to 1 by default. Setting the argument to 0 will remove a axis
+splits, set to 1 by default. Setting the argument to 0 will remove axis
 tree splits.}
 
 \item{tree_label_x}{logical indicating whether a label should be added for
@@ -225,13 +234,18 @@ axis dendrogram should be scaled for better visualisation, set to FALSE by
 default.}
 
 \item{tree_cut_y}{either a numeric ranging from 0 to 1 indicating the branch
-cut height for y axis dendrogram or an integer indicating the desired
-number of clusters to obtain by cutting the y axis dendrogram.
+cut height for y axis dendrogram (proportional for non-cosine distances,
+or absolute cosine distance threshold when \code{dist_method = "cosine"})
+or an integer indicating the desired number of clusters to obtain by
+cutting the y axis dendrogram.
 Alternatively, clusters can be manually defined by specifying the number of
-rows to include in each cluster (i.e. c(3,4,5)).}
+rows to include in each cluster (e.g., c(3,4,5)), or a vector of cluster
+indices can be supplied to assign each row to a specific cluster (e.g.,
+c(1,1,1,2,2,2) for 6 rows in 2 clusters). When a vector of indices is
+supplied, its length must equal the number of rows in \code{x}.}
 
 \item{tree_split_y}{a numeric to control the spacing between y axis tree
-splits, set to 1 by default. Setting the argument to 0 will remove a axis
+splits, set to 1 by default. Setting the argument to 0 will remove axis
 tree splits.}
 
 \item{tree_label_y}{logical indicating whether a label should be added for
@@ -279,6 +293,16 @@ for columns containing non-numeric data.}
 numeric values, set to a hybrid colour-blind friendly viridis colour
 palette by default.}
 
+\item{cell_col_scale_limits}{a numeric vector of length 2 specifying custom
+limits for the colour scale as \code{c(min, max)}. If NULL (default), limits
+are computed from the data before rounding. Custom limits allow you to set
+consistent colour scales across multiple heatmaps or override automatic scaling.}
+
+\item{cell_size_scale_limits}{a numeric vector of length 2 specifying custom
+limits for the size scale as \code{c(min, max)}. If NULL (default), limits
+are computed from the data before rounding. Only used when \code{cell_size}
+is not FALSE. Custom limits allow consistent size scales across multiple heatmaps.}
+
 \item{cell_col_alpha}{a numeric to control the fill transparency of cells
 within the heatmap, set to 1 by default to use solid colours.}
 
@@ -297,6 +321,11 @@ to \code{"black"} by default.}
 
 \item{cell_border_line_col_alpha}{numeric to control the transparency of cell
 borders, set to 1 by default to use solid colours.}
+
+\item{cell_border_mask}{a matrix of the same dimensions as \code{x} containing
+TRUE/FALSE values indicating whether each cell should have a colored border
+(TRUE) or a transparent border (FALSE), set to NULL by default to apply
+border color to all cells.}
 
 \item{cell_text}{logical indicating whether the values in \code{x} should be
 displayed in each cell of the heatmap, set to FALSE by default.}
@@ -325,7 +354,7 @@ columns as determined by hierarchical clustering.}
 
 \item{bar_axis_label_x}{axis label to use for the x axis bar plot.}
 
-\item{bar_axis_label_adj_x}{scalar \link{-1, 1} to adjust the position of the x
+\item{bar_axis_label_adj_x}{scalar [-1, 1] to adjust the position of the x
 axis bar graph label relative to the x axis, set to 0 by default.}
 
 \item{bar_axis_label_font_x}{font to use for the axis label of the x axis bar
@@ -372,7 +401,7 @@ hierarchical clustering.}
 
 \item{bar_axis_label_y}{axis label to use for the y axis bar plot.}
 
-\item{bar_axis_label_adj_y}{scalar \link{-1, 1} to adjust the position of the y
+\item{bar_axis_label_adj_y}{scalar [-1, 1] to adjust the position of the y
 axis bar graph label relative to the y axis, set to 0 by default.}
 
 \item{bar_axis_label_font_y}{font to use for the axis label of the y axis bar
@@ -597,5 +626,5 @@ heat_map(
 
 }
 \author{
-Dillon Hammill (Dillon.Hammill@anu.edu.au)
+Dillon Hammill (dillon.hammill21@gmail.com)
 }

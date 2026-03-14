@@ -45,6 +45,12 @@ heat_map_legend <- function(col = NULL,
   title_text_col <- rep(title_text_col, 2)
   title_text_col_alpha <- rep(title_text_col_alpha, 2)
   
+  # PRE-COMPUTE REUSED VALUES
+  xlim_diff <- diff(xlim)
+  ylim_diff <- diff(ylim)
+  xlim_mean <- mean(xlim)
+  ylim_min <- min(ylim)
+  
   # COLOUR SCALE LEGEND
   if(!is.null(col)) {
     # COLOUR_SCALE
@@ -53,54 +59,24 @@ heat_map_legend <- function(col = NULL,
         col_scale
       )
     }
-    # LEGEND ON LEFT OR RIGHT
+    # LEGEND ON LEFT OR RIGHT - COORDINATES ARE SIDE-INDEPENDENT
     if(side %in% c(2,4)) {
-      # LEFT
-      if(side %in% 2) {
-        # COLOUR LEGEND ABOVE
-        if(!is.null(size)) {
-          xcoords <- c(
-            mean(xlim) - col_scale_size * 0.20 * diff(xlim),
-            mean(xlim)
-          )
-          ycoords <- c(
-            min(ylim) + 0.6 * diff(ylim),
-            min(ylim) + 0.9 * diff(ylim)
-          )
-        # CENTRAL COLOUR LEGEND
-        } else {
-          xcoords <- c(
-            mean(xlim) - col_scale_size * 0.20 * diff(xlim),
-            mean(xlim)
-          )
-          ycoords <- c(
-            min(ylim) + 0.25 * diff(ylim),
-            min(ylim) + 0.75 * diff(ylim)
-          )
-        }
-      # RIGHT
+      xcoords <- c(
+        xlim_mean - col_scale_size * 0.20 * xlim_diff,
+        xlim_mean
+      )
+      # COLOUR LEGEND ABOVE (WHEN SIZE LEGEND ALSO PRESENT)
+      if(!is.null(size)) {
+        ycoords <- c(
+          ylim_min + 0.6 * ylim_diff,
+          ylim_min + 0.9 * ylim_diff
+        )
+      # CENTRAL COLOUR LEGEND (SOLE LEGEND)
       } else {
-        # COLOUR LEGEND ABOVE
-        if(!is.null(size)) {
-          xcoords <- c(
-            mean(xlim) - col_scale_size * 0.20 * diff(xlim),
-            mean(xlim)
-          )
-          ycoords <- c(
-            min(ylim) + 0.6 * diff(ylim),
-            min(ylim) + 0.9 * diff(ylim)
-          )
-        # CENTRAL COLOUR LEGEND
-        } else {
-          xcoords <- c(
-            mean(xlim) - col_scale_size * 0.20 * diff(xlim),
-            mean(xlim)
-          )
-          ycoords <- c(
-            min(ylim) + 0.25 * diff(ylim),
-            min(ylim) + 0.75 * diff(ylim)
-          )
-        }
+        ycoords <- c(
+          ylim_min + 0.25 * ylim_diff,
+          ylim_min + 0.75 * ylim_diff
+        )
       }
     }
     # LEGEND BORDER
@@ -129,9 +105,9 @@ heat_map_legend <- function(col = NULL,
         # TICKS
         lines(
           x = if(side %in% 2) {
-            c(min(xcoords), min(xcoords) - 0.017 * diff(xlim))
+            c(min(xcoords), min(xcoords) - 0.017 * xlim_diff)
           } else if(side %in% 4) {
-            c(max(xcoords), max(xcoords) + 0.017 * diff(xlim))
+            c(max(xcoords), max(xcoords) + 0.017 * xlim_diff)
           },
           y = c(ticks[z], ticks[z]),
           lwd = 1,
@@ -142,9 +118,9 @@ heat_map_legend <- function(col = NULL,
         # TEXT
         text(
           x = if(side %in% 2) {
-            min(xcoords) - 0.045 * diff(xlim)
+            min(xcoords) - 0.045 * xlim_diff
           } else {
-            max(xcoords) + 0.045 * diff(xlim)
+            max(xcoords) + 0.045 * xlim_diff
           },
           y = ticks[z],
           pos = side,
@@ -167,37 +143,29 @@ heat_map_legend <- function(col = NULL,
       max(ycoords),
       diff(range(ycoords))/box_n
     )
-    box_m <- unlist(
-      lapply(
-        seq(1, length(box_y) - 1),
-        function(z) {
-          box_y[z] + 0.5 * (box_y[z + 1] - box_y[z])
-        }
-      )
-    )
+    # Vectorized calculation of box midpoints
+    box_m <- box_y[-length(box_y)] + 0.5 * diff(box_y)
     box_cols <- rgb(
       col_scale(
         (box_m - min(box_y))/diff(range(box_y))
       ),
       maxColorValue = 255
     )
-    # COLOURS
-    lapply(
-      seq_len(box_n),
-      function(z) {
-        rect(
-          xleft = min(xcoords),
-          ybottom = box_y[z],
-          xright = max(xcoords),
-          ytop = box_y[z+1],
-          border = NA,
-          col = adjustcolor(
-            box_cols[z],
-            col_alpha
-          ),
-          xpd = TRUE
-        )
-      }
+    # COLOURS - vectorized rect() call
+    rect(
+      xleft = rep(min(xcoords), box_n),
+      ybottom = box_y[-length(box_y)],
+      xright = rep(max(xcoords), box_n),
+      ytop = box_y[-1],
+      border = adjustcolor(
+        box_cols,
+        col_alpha
+      ),
+      col = adjustcolor(
+        box_cols,
+        col_alpha
+      ),
+      xpd = TRUE
     )
     # TITLE
     if(!is.na(title[1])) {
@@ -219,54 +187,24 @@ heat_map_legend <- function(col = NULL,
   
   # SIZE LEGEND
   if(!is.null(size)) {
-    # LEGEND ON LEFT OR RIGHT
+    # LEGEND ON LEFT OR RIGHT - COORDINATES ARE SIDE-INDEPENDENT
     if(side %in% c(2,4)) {
-      # LEFT
-      if(side %in% 2) {
-        # SIZE LEGEND BELOW
-        if(!is.null(col)) {
-          xcoords <- c(
-            mean(xlim) - 1,
-            mean(xlim)
-          )
-          ycoords <- c(
-            min(ylim) + 0.1 * diff(ylim),
-            min(ylim) + 0.4 * diff(ylim)
-          )
-        # CENTRAL COLOUR LEGEND
-        } else {
-          xcoords <- c(
-            mean(xlim) - 1,
-            mean(xlim)
-          )
-          ycoords <- c(
-            min(ylim) + 0.3 * diff(ylim),
-            min(ylim) + 0.6 * diff(ylim)
-          )
-        }
-      # RIGHT
+      xcoords <- c(
+        xlim_mean - 1,
+        xlim_mean
+      )
+      # SIZE LEGEND BELOW (WHEN COLOUR LEGEND ALSO PRESENT)
+      if(!is.null(col)) {
+        ycoords <- c(
+          ylim_min + 0.1 * ylim_diff,
+          ylim_min + 0.4 * ylim_diff
+        )
+      # CENTRAL SIZE LEGEND (SOLE LEGEND)
       } else {
-        # SIZE LEGEND BELOW
-        if(!is.null(size)) {
-          xcoords <- c(
-            mean(xlim) - 1,
-            mean(xlim)
-          )
-          ycoords <- c(
-            min(ylim) + 0.1 * diff(ylim),
-            min(ylim) + 0.4 * diff(ylim)
-          )
-        # CENTRAL COLOUR LEGEND
-        } else {
-          xcoords <- c(
-            mean(xlim) - 1,
-            mean(xlim)
-          )
-          ycoords <- c(
-            min(ylim) + 0.3 * diff(ylim),
-            min(ylim) + 0.6 * diff(ylim)
-          )
-        }
+        ycoords <- c(
+          ylim_min + 0.3 * ylim_diff,
+          ylim_min + 0.6 * ylim_diff
+        )
       }
     }
     # SPACE ERROR
@@ -289,17 +227,10 @@ heat_map_legend <- function(col = NULL,
         seq(length(labels) - 4, length(labels), 1)
       ]
     }
-    # COMPUTE CENTERS
+    # COMPUTE CENTERS - VECTORIZED
     pad <- diff(ycoords) - ypad - 5 * (1 + ypad)
     ymin <- min(ycoords) + pad/2
-    ycenters <- unlist(
-      lapply(
-        seq_along(labels),
-        function(z) {
-          ymin + (z - 1) * (1 + ypad) + 0.5 + ypad
-        }
-      )
-    )
+    ycenters <- ymin + (seq_along(labels) - 1) * (1 + ypad) + 0.5 + ypad
     # SHAPES & ANNOTATIONS
     lapply(
       seq_along(labels),

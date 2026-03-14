@@ -9,12 +9,12 @@
 #' @param scale indicates whether the data should be scaled by \code{"row"} or
 #'   \code{"column"}, set to \code{"column"} by default.
 #' @param method type of scaling to perform, can be either \code{'range'},
-#'   \code{'mean'} or {'zscore'}. Range scaling normalizes the data to have
+#'   \code{'mean'} or \code{'zscore'}. Range scaling normalizes the data to have
 #'   limits between 0 and 1. Mean scaling subtracts the mean (calculated
 #'   excluding missing values) from each value. Z-score scaling subtracts the
 #'   mean from each value and then divides the result by the standard deviation.
 #'
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
 #' @examples
 #' # Range scaling
@@ -35,8 +35,24 @@ heat_map_scale <- function(x,
                            method = "range") {
   
   # SCALE NUMERIC COLUMNS ONLY
-  num_cols <- which(apply(x, 2, is.numeric))
-  num_data <- x[, num_cols]
+  if (is.matrix(x)) {
+    # For matrices, check the mode of the matrix
+    if (is.numeric(x)) {
+      num_cols <- seq_len(ncol(x))
+    } else {
+      num_cols <- integer(0)
+    }
+  } else {
+    # For data.frames, check each column
+    num_cols <- which(sapply(x, is.numeric))
+  }
+  
+  # Check if there are numeric columns to scale
+  if (length(num_cols) == 0) {
+    stop("'x' must contain at least one numeric column for scaling!")
+  }
+  
+  num_data <- x[, num_cols, drop = FALSE]
   
   # SCALING
   if(grepl("^c", scale, ignore.case = TRUE)){
@@ -85,28 +101,18 @@ heat_map_scale <- function(x,
 ## INTERNAL SCALING FUNCTIONS --------------------------------------------------
 
 #' Scale a vector based on its range
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' @noRd
 .scale_range <- function(x) {
   # LIMITS
   x_min <- min(x, na.rm = TRUE)
   x_max <- max(x, na.rm = TRUE)
-  # RANGE SCALING
-  lapply(
-    seq_along(x), 
-    function(z) {
-      if (is.na(x[z])) {
-        return(NA)
-      } else {
-        x[z] <<- (x[z] - x_min) / (x_max - x_min)
-      }
-    }
-  )
-  return(x)
+  # RANGE SCALING - VECTORIZED
+  (x - x_min) / (x_max - x_min)
 }
 
 #' Subtract mean from each value in a vector and divide by range
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' @noRd
 .scale_mean <- function(x) {
   # LIMITS
@@ -114,39 +120,19 @@ heat_map_scale <- function(x,
   x_max <- max(x, na.rm = TRUE)
   # MEAN
   x_mean <- mean(x, na.rm = TRUE)
-  # MEAN SCALING
-  lapply(
-    seq_along(x), 
-    function(z) {
-      if (is.na(x[z])) {
-        return(NA)
-      } else {
-        x[z] <<- (x[z] - x_mean)/ (x_max - x_min)
-      }
-    }
-  )
-  return(x)
+  # MEAN SCALING - VECTORIZED
+  (x - x_mean) / (x_max - x_min)
 }
 
 #' Apply z-score scaling to a vector
 #' @importFrom stats sd
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' @noRd
 .scale_zscore <- function(x) {
   # MEAN
   x_mean <- mean(x, na.rm = TRUE)
   # SD
   x_sd <- sd(x, na.rm = TRUE)
-  # Z-SCORE SCALING
-  lapply(
-    seq_along(x), 
-    function(z) {
-      if (is.na(x[z])) {
-        return(NA)
-      } else {
-        x[z] <<- (x[z] - x_mean) / x_sd
-      }
-    }
-  )
-  return(x)
+  # Z-SCORE SCALING - VECTORIZED
+  (x - x_mean) / x_sd
 }

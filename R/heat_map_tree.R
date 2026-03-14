@@ -5,7 +5,7 @@
 #' @importFrom graphics lines
 #' @importFrom stats as.dendrogram
 #' 
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @noRd
 heat_map_tree <- function(x,

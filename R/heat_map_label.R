@@ -17,7 +17,7 @@ heat_map_label <- function(x_splits,
                            label_text_col_alpha = 1) {
   
   # X AXIS CLUSTER LABELS
-  if(class(x_splits) == "list") {
+  if(inherits(x_splits, "list")) {
     # TEXT ANGLE
     label_text_angle <- 0
     # COMPUTE LABEL BOUNDARIES

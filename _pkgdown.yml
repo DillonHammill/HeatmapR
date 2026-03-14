@@ -1,1 +1,4 @@
-destination: docs
+url: https://dillonhammill.github.io/HeatmapR/
+template:
+  bootstrap: 5
+

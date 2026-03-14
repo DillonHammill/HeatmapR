@@ -13,7 +13,7 @@ heat_map_scale(x, scale = "column", method = "range")
 \code{"column"}, set to \code{"column"} by default.}
 
 \item{method}{type of scaling to perform, can be either \code{'range'},
-\code{'mean'} or {'zscore'}. Range scaling normalizes the data to have
+\code{'mean'} or \code{'zscore'}. Range scaling normalizes the data to have
 limits between 0 and 1. Mean scaling subtracts the mean (calculated
 excluding missing values) from each value. Z-score scaling subtracts the
 mean from each value and then divides the result by the standard deviation.}
@@ -37,5 +37,5 @@ method = "zscore")
 
 }
 \author{
-Dillon Hammill (Dillon.Hammill@anu.edu.au)
+Dillon Hammill (dillon.hammill21@gmail.com)
 }

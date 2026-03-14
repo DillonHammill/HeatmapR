@@ -2,7 +2,7 @@
 
 #' Internal function to add bar graph to heatmap
 #' 
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @importFrom graphics rect axis segments
 #' @importFrom grDevices axisTicks adjustcolor

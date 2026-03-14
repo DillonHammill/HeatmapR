@@ -1,9 +1,15 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^README\.Rmd$
-^\.travis\.yml$
 ^codecov\.yml$
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
 ^CODE_OF_CONDUCT\.md$
+^\.github$
+^doc$
+^Meta$
+vignettes/HeatmapR/
+man/figures/HeatmapR/
+^\.github$
+^_pkgdown\.yml$

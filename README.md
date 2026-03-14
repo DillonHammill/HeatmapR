@@ -8,12 +8,11 @@
 [![Project Status: Active – The project has reached a stable, usable
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![Travis build
-status](https://travis-ci.com/DillonHammill/HeatmapR.svg?branch=master)](https://travis-ci.com/DillonHammill/HeatmapR)
+[![R-CMD-check](https://github.com/DillonHammill/HeatmapR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/DillonHammill/HeatmapR/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/DillonHammill/HeatmapR/branch/master/graph/badge.svg)](https://codecov.io/gh/DillonHammill/HeatmapR?branch=master)
 [![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![Last-changedate](https://img.shields.io/badge/last%20change-2023--03--20-yellowgreen.svg)](/commits/master)
+[![Last-changedate](https://img.shields.io/badge/last%20change-2026--03--14-yellowgreen.svg)](/commits/master)
 <!-- badges: end -->
 
 **HeatmapR** it a lightweight R package that makes it easy to generate
@@ -42,24 +41,24 @@ graphics approach.
 
 **HeatmapR** has a number of benefits over other heatmap packages:
 
--   **HeatmapR** is built using base graphics to remove the need for
-    familiarity with `ggplot2` or `plotly`.
--   **HeatmapR** is extremely lighweight and therefore there are no
-    external dependencies that need to be installed.
--   **HeatmapR** is designed under ROpenSci naming guidelines for a
-    consistent and intuitive user experience.
--   Unlike other heatmap packages that use base graphics, **HeatmapR**
-    actually returns the plot object instead of an image. This makes it
-    easy to arrange multiple plots in complex layouts without
-    sacrificing resolution.
--   **HeatmapR** is fully customizable and comes with useful saving API
-    (`heat_map_save()`) to export high resolution images.
--   **HeatmapR** handles datasets that contain non-numeric or missing
-    data, which means you don’t have to spend ages formatting and
-    pre-processing the data beforehand.
--   **HeatmapR** generates publication ready images with minimal manual
-    customization, making it ideal for users that have limited coding
-    experience.
+- **HeatmapR** is built using base graphics to remove the need for
+  familiarity with `ggplot2` or `plotly`.
+- **HeatmapR** is extremely lighweight and therefore there are no
+  external dependencies that need to be installed.
+- **HeatmapR** is designed under ROpenSci naming guidelines for a
+  consistent and intuitive user experience.
+- Unlike other heatmap packages that use base graphics, **HeatmapR**
+  actually returns the plot object instead of an image. This makes it
+  easy to arrange multiple plots in complex layouts without sacrificing
+  resolution.
+- **HeatmapR** is fully customizable and comes with useful saving API
+  (`heat_map_save()`) to export high resolution images.
+- **HeatmapR** handles datasets that contain non-numeric or missing
+  data, which means you don’t have to spend ages formatting and
+  pre-processing the data beforehand.
+- **HeatmapR** generates publication ready images with minimal manual
+  customization, making it ideal for users that have limited coding
+  experience.
 
 ## Installation
 
@@ -91,7 +90,7 @@ heat_map(
 )
 ```
 
-<img src="man/figures/README-HeatmapR-1.png" width="95%" style="display: block; margin: auto;" />
+<img src="man/figures/README-HeatmapR-1.png" alt="" width="95%" style="display: block; margin: auto;" />
 
 ## Acknowledgements
 
@@ -115,19 +114,18 @@ follows:
 
 ``` r
 citation("HeatmapR")
-#> 
 #> To cite package 'HeatmapR' in publications use:
 #> 
-#>   Dillon Hammill (2022). HeatmapR: Create Heatmaps using Base Graphics.
-#>   R package version 1.0.1. https://github.com/DillonHammill/HeatmapR
+#>   Hammill D (2026). _HeatmapR: Create Heatmaps Using Base Graphics_. R
+#>   package version 1.1.0, <https://dillonhammill.github.io/HeatmapR/>.
 #> 
 #> A BibTeX entry for LaTeX users is
 #> 
 #>   @Manual{,
-#>     title = {HeatmapR: Create Heatmaps using Base Graphics},
+#>     title = {HeatmapR: Create Heatmaps Using Base Graphics},
 #>     author = {Dillon Hammill},
-#>     year = {2022},
-#>     note = {R package version 1.0.1},
-#>     url = {https://github.com/DillonHammill/HeatmapR},
+#>     year = {2026},
+#>     note = {R package version 1.1.0},
+#>     url = {https://dillonhammill.github.io/HeatmapR/},
 #>   }
 ```

@@ -24,7 +24,8 @@ using \code{dist} and passed to \code{hclust} for hierarchical clustering.}
 as specified by \code{cut}.}
 
 \item{dist}{method passed to \code{\link{dist}} to compute distance matrix,
-set to \code{"euclidean"} by default.}
+set to \code{"euclidean"} by default. Also supports \code{"cosine"} for
+cosine distance (1 - cosine similarity).}
 
 \item{method}{agglomeration method passed to \code{\link{hclust}} to perform
 hierarchical clustering, set to \code{"complete"} by default.}
@@ -32,9 +33,10 @@ hierarchical clustering, set to \code{"complete"} by default.}
 \item{scale}{logical indicating whether branch heights should be scaled for
 better visualisation, set to FALSE by default.}
 
-\item{cut}{value less one specifying the tree cutpoint as a proportion of the
-tree height or a value greater than 1 indicating the number of desired
-clusters.}
+\item{cut}{value less than 1 specifying the tree cutpoint as a proportion of the
+tree height (for non-cosine distances) or as an absolute cosine distance
+threshold (when \code{dist = "cosine"}), or a value greater than or equal
+to 1 indicating the number of desired clusters.}
 
 \item{...}{additional arguments passed to \code{\link{dist}} or
 \code{\link{hclust}}.}
@@ -52,5 +54,5 @@ heat_map_hclust <- heat_map_clust(mtcars, cut = 5)
 
 }
 \author{
-Dillon Hammill (Dillon.Hammill@anu.edu.au)
+Dillon Hammill (dillon.hammill21@gmail.com)
 }

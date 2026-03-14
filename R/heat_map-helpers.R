@@ -24,7 +24,7 @@
 #' @importFrom tools file_ext file_path_sans_ext
 #' @importFrom grDevices png tiff jpeg pdf svg
 #' 
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @examples 
 #' \dontrun{
@@ -147,7 +147,7 @@ heat_map_save <- function(save_as,
 #'   column (2) order, set to row order by default.
 #' @param ... additional arguments passed to \code{heat_map_new()}.
 #'
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
 #' @seealso \code{\link{heat_map_save}}
 #' @seealso \code{\link{heat_map_new}}
@@ -200,7 +200,7 @@ heat_map_custom <- function(popup = TRUE,
 
 #' Reset all heatmap related settings
 #' 
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @examples 
 #' \dontrun{
@@ -229,7 +229,7 @@ heat_map_reset <- function(){
 #' 
 #' @importFrom grDevices dev.off dev.cur
 #' 
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @examples 
 #' \dontrun{
@@ -288,7 +288,7 @@ heat_map_complete <- function(){
 #' 
 #' @importFrom graphics par layout
 #' 
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @examples
 #' \dontrun{
@@ -359,7 +359,7 @@ heat_map_layout <- function(layout = NULL){
 #'
 #' @importFrom grDevices recordPlot
 #'
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
 #' @examples
 #' # Heatmap layout
@@ -407,7 +407,7 @@ heat_map_record <- function(){
 #' heat_map_new(popup = TRUE)
 #' }
 #'
-#' @author Dillon Hammill, \email{Dillon.Hammill@anu.edu.au}
+#' @author Dillon Hammill, \email{dillon.hammill21@gmail.com}
 #'
 #' @export
 heat_map_new <- function(popup = FALSE,

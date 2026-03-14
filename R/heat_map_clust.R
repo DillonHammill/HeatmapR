@@ -9,14 +9,16 @@
 #'   \code{"dist"} or \code{"hclust"} which will be updated with cluster labels
 #'   as specified by \code{cut}.
 #' @param dist method passed to \code{\link{dist}} to compute distance matrix,
-#'   set to \code{"euclidean"} by default.
+#'   set to \code{"euclidean"} by default. Also supports \code{"cosine"} for
+#'   cosine distance (1 - cosine similarity).
 #' @param method agglomeration method passed to \code{\link{hclust}} to perform
 #'   hierarchical clustering, set to \code{"complete"} by default.
 #' @param scale logical indicating whether branch heights should be scaled for
 #'   better visualisation, set to FALSE by default.
-#' @param cut value less one specifying the tree cutpoint as a proportion of the
-#'   tree height or a value greater than 1 indicating the number of desired
-#'   clusters.
+#' @param cut value less than 1 specifying the tree cutpoint as a proportion of the
+#'   tree height (for non-cosine distances) or as an absolute cosine distance 
+#'   threshold (when \code{dist = "cosine"}), or a value greater than or equal 
+#'   to 1 indicating the number of desired clusters.
 #' @param ... additional arguments passed to \code{\link{dist}} or
 #'   \code{\link{hclust}}.
 #'
@@ -26,7 +28,7 @@
 #' @importFrom stats dist hclust as.dist cutree
 #' @importFrom methods formalArgs is
 #'
-#' @author Dillon Hammill (Dillon.Hammill@anu.edu.au)
+#' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
 #' @examples
 #' # Hierarchical clustering
@@ -58,13 +60,7 @@ heat_map_clust <- function(x,
   # CLUSTERING REQUIRED
   if(!class(args$tree) %in% "hclust") {
     # NUMERIC COLUMNS
-    num_cols <- which(
-      apply(
-        x,
-        2,
-        "is.numeric"
-      )
-    )
+    num_cols <- which(sapply(x, is.numeric))
     # NUMERIC COLUMNS REQUIRED FOR CLUSTERING
     if(length(num_cols) == 0) {
       stop(
@@ -90,50 +86,17 @@ heat_map_clust <- function(x,
     # PREPARE ARGUMENTS
     args[["method"]] <- args$dist
     
-    # AITCHISON DISTANCE MATRIX
-    # ADIST - ROBCOMPOSITIONS
-    # if(!requireNamespace("robCompositions")) {
-    #   stop(
-    #     "Computation of Aitchison distance matrix requires the ",
-    #     "robCompositions package from CRAN."
-    #   )
-    # }
-    # # NON-ZERO VALUES REQUIRED
-    # if(any(x == 0)) {
-    #   stop(
-    #     "Computation of Aitchison distance requires non-zero values, ",
-    #     "please add a value lower than the detection limit to all values."
-    #   )
-    # }
-    # # COMPUTE AITCHISON DISTANCE MATRIX
-    # d <- matrix(
-    #   0,
-    #   ncol = nrow(x),
-    #   nrow = nrow(x),
-    #   dimnames = list(
-    #     rownames(x),
-    #     rownames(x)
-    #   )
-    # )
-    # for(i in 1:nrow(x)) {
-    #   for(j in i:nrow(x)) {
-    #     d[i, j] <- d[j, i] <- do.call(
-    #       "aDist",
-    #       list(
-    #         x = x[i, ],
-    #         y = x[j, ]
-    #       )
-    #     )
-    #   }
-    # }
-    # d <- as.dist(d)
-      
+    # COSINE DISTANCE MATRIX
+    if(tolower(args$dist) == "cosine") {
+      d <- .cosine_dist(args$x)
     # STATS DISTANCE MATRIX
-    dist_args <- formalArgs(stats::dist)
-    d <- do.call(
-      "dist", 
-      args[names(args) %in% dist_args]
-    )
+    } else {
+      dist_args <- formalArgs(stats::dist)
+      d <- do.call(
+        "dist", 
+        args[names(args) %in% dist_args]
+      )
+    }
     
     # UPDATE ARGUMENTS
     args[["d"]] <- d
@@ -149,6 +112,9 @@ heat_map_clust <- function(x,
     
   }
 
+  # Store original heights for cosine distance cutting
+  original_heights <- tree$height
+  
   # BRANCH SCALING -> [0, 1] -> EVEN HEIGHTS
   if(scale) {
     tree$height <- seq_along(tree$height) * 1 / length(tree$height)
@@ -159,8 +125,22 @@ heat_map_clust <- function(x,
   
   # CUTTING
   if(!is.null(cut) & is.null(tree$cut)) {
-    # HEIGHT
-    if(cut < 1) {
+    # COSINE DISTANCE WITH CUT < 1 - use as actual distance threshold
+    if(cut < 1 & tolower(dist) == "cosine") {
+      # Temporarily restore original heights for cutting
+      tree$height <- original_heights
+      tree$cut <- cutree(
+        tree,
+        h = cut
+      )
+      # Restore scaled heights
+      if(scale) {
+        tree$height <- seq_along(original_heights) * 1 / length(original_heights)
+      } else {
+        tree$height <- (original_heights - min(original_heights))/(diff(range(original_heights)))
+      }
+    # HEIGHT - proportional cut (0 to 1) for non-cosine distances
+    } else if(cut < 1) {
       tree$cut <- cutree(
         tree,
         h = min(tree$height) + cut * diff(range(tree$height))

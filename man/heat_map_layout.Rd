@@ -45,5 +45,5 @@ heat_map_complete()
 }
 }
 \author{
-Dillon Hammill (Dillon.Hammill@anu.edu.au)
+Dillon Hammill (dillon.hammill21@gmail.com)
 }

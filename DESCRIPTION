@@ -1,16 +1,21 @@
 Package: HeatmapR
 Type: Package
-Title: Create Heatmaps using Base Graphics
-Version: 1.0.1
-Date: 2022-10-21
+Title: Create Heatmaps Using Base Graphics
+Version: 1.1.0
+Date: 2026-03-13
 Authors@R: 
     person(given = "Dillon",
            family = "Hammill",
            role = c("aut", "cre"),
-           email = "Dillon.Hammill@anu.edu.au",
+           email = "dillon.hammill21@gmail.com",
            comment = c(ORCID = "0000-0002-1407-7223"))
-Description: Create heatmaps using base graphics.
-URL: https://github.com/DillonHammill/HeatmapR
+Description: Provides a lightweight framework for creating high quality, complex 
+    heatmaps using base graphics. Supports hierarchical clustering with 
+    dendrograms, column and row scaling, cluster sub-divisions, customisable 
+    cell colours, shapes and sizes, legends, and flexible layouts for arranging 
+    multiple heatmaps. Designed to return plot objects that can be easily 
+    arranged with other plots without sacrificing resolution.
+URL: https://dillonhammill.github.io/HeatmapR/
 BugReports: https://github.com/DillonHammill/HeatmapR/issues
 Depends:
   R (>= 3.5)
@@ -18,17 +23,16 @@ Imports:
   methods,
   stats,
   graphics,
-  grDevices
+  grDevices,
+  tools
 License: GPL-2
 Encoding: UTF-8
-LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.3
 Language: en-GB
 Suggests: 
     covr,
     testthat,
-    vdiffr,
     knitr,
     rmarkdown
 VignetteBuilder: knitr

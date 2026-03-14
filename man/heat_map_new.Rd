@@ -27,5 +27,5 @@ heat_map_new(popup = TRUE)
 
 }
 \author{
-Dillon Hammill, \email{Dillon.Hammill@anu.edu.au}
+Dillon Hammill, \email{dillon.hammill21@gmail.com}
 }
