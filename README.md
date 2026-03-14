@@ -10,9 +10,9 @@ state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![R-CMD-check](https://github.com/DillonHammill/HeatmapR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/DillonHammill/HeatmapR/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
-coverage](https://codecov.io/gh/DillonHammill/HeatmapR/branch/master/graph/badge.svg)](https://codecov.io/gh/DillonHammill/HeatmapR?branch=master)
-[![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
-[![Last-changedate](https://img.shields.io/badge/last%20change-2026--03--14-yellowgreen.svg)](/commits/master)
+coverage](https://codecov.io/gh/DillonHammill/HeatmapR/branch/master/graph/badge.svg)](https://app.codecov.io/gh/DillonHammill/HeatmapR?branch=master)
+[![Lifecycle:
+stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 <!-- badges: end -->
 
 **HeatmapR** it a lightweight R package that makes it easy to generate
@@ -29,9 +29,9 @@ of challenges as they are composed multiple graphical elements, such as
 a coloured matrix, dendrograms, cluster sub-divisions, axes, titles and
 legends. The first base graphics implementation of heatmaps included
 `heatmap()` in the `stats` package and `heatmap.2()` in the
-[gplots](https://cran.r-project.org/web/packages/gplots/index.html). The
-packages attempt to solve these graphical challenges by treating each
-graphical component as a separate plot element and arranging them using
+[gplots](https://CRAN.R-project.org/package=gplots). The packages
+attempt to solve these graphical challenges by treating each graphical
+component as a separate plot element and arranging them using
 `layout()`. This approach can generate complex heatmaps but it rendered
 users unable to arrange the heatmap with additional plot elements.
 **HeatmapR** aims to address these layout issues using solely a base
