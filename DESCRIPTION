@@ -11,7 +11,7 @@ Authors@R:
            comment = c(ORCID = "0000-0002-1407-7223"))
 Description: Provides a lightweight framework for creating high quality, complex 
     heatmaps using base graphics. Supports hierarchical clustering with 
-    dendrograms, column and row scaling, cluster sub-divisions, customisable 
+    dendrograms, column and row scaling, cluster sub-divisions, customizable 
     cell colours, shapes and sizes, legends, and flexible layouts for arranging 
     multiple heatmaps. Designed to return plot objects that can be easily 
     arranged with other plots without sacrificing resolution.
