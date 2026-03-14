@@ -15,9 +15,9 @@ a coloured matrix, dendrograms, cluster sub-divisions, axes, titles and
 legends. The first base graphics implementation of heatmaps included
 [`heatmap()`](https://rdrr.io/r/stats/heatmap.html) in the `stats`
 package and `heatmap.2()` in the
-[gplots](https://cran.r-project.org/web/packages/gplots/index.html). The
-packages attempt to solve these graphical challenges by treating each
-graphical component as a separate plot element and arranging them using
+[gplots](https://CRAN.R-project.org/package=gplots). The packages
+attempt to solve these graphical challenges by treating each graphical
+component as a separate plot element and arranging them using
 [`layout()`](https://rdrr.io/r/graphics/layout.html). This approach can
 generate complex heatmaps but it rendered users unable to arrange the
 heatmap with additional plot elements. **HeatmapR** aims to address
