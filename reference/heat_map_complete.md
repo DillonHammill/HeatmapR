@@ -8,6 +8,10 @@ Indicate when a heatmap is complete and ready for saving
 heat_map_complete()
 ```
 
+## Value
+
+No return value, called for side effects.
+
 ## Author
 
 Dillon Hammill (dillon.hammill21@gmail.com)
@@ -15,9 +19,9 @@ Dillon Hammill (dillon.hammill21@gmail.com)
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 # Save heatmap
-heat_map_save("Heatmap.png",
+heat_map_save(file.path(tempdir(), "Heatmap.png"),
 height = 7, 
 width = 15)
 
@@ -37,8 +41,9 @@ scale = "range",
 title = "Iris Scaled Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
+#> Applying range scaling to each row...
 
 # Signal completion
 heat_map_complete()
-} # }
+# }
 ```

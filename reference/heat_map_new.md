@@ -23,6 +23,10 @@ heat_map_new(popup = FALSE, popup_size = c(8, 8), ...)
 
   additional arguments passed to `dev.new`.
 
+## Value
+
+No return value, called for side effects.
+
 ## Author
 
 Dillon Hammill, <dillon.hammill21@gmail.com>
@@ -30,8 +34,8 @@ Dillon Hammill, <dillon.hammill21@gmail.com>
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 # Open platform-specific graphics device
 heat_map_new(popup = TRUE)
-} # }
+# }
 ```

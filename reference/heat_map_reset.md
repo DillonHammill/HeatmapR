@@ -8,6 +8,10 @@ Reset all heatmap related settings
 heat_map_reset()
 ```
 
+## Value
+
+No return value, called for side effects.
+
 ## Author
 
 Dillon Hammill (dillon.hammill21@gmail.com)
@@ -15,8 +19,8 @@ Dillon Hammill (dillon.hammill21@gmail.com)
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 # Reset HeatmapR settings
 heat_map_reset()
-} # }
+# }
 ```

@@ -39,6 +39,10 @@ heat_map_custom(popup = TRUE, popup_size = c(8, 8), layout = NULL, ...)
   additional arguments passed to
   [`heat_map_new()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_new.md).
 
+## Value
+
+No return value, called for side effects.
+
 ## See also
 
 [`heat_map_save`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md)
@@ -54,6 +58,7 @@ Dillon Hammill (dillon.hammill21@gmail.com)
 ## Examples
 
 ``` r
+# \donttest{
 heat_map_custom(
   popup = FALSE,
   layout = c(1,2)
@@ -67,4 +72,5 @@ plot(
 )
 
 heat_map_complete()
+# }
 ```

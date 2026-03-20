@@ -9,6 +9,10 @@ object for future use.
 heat_map_record()
 ```
 
+## Value
+
+an object of class `recordedplot`.
+
 ## Author
 
 Dillon Hammill (dillon.hammill21@gmail.com)
@@ -16,6 +20,7 @@ Dillon Hammill (dillon.hammill21@gmail.com)
 ## Examples
 
 ``` r
+# \donttest{
 # Heatmap layout
 heat_map_layout(c(1,2))
 
@@ -36,5 +41,6 @@ axis_label_y = "Row ID")
 
 
 # Record heatmap layout
-heat_map <- heat_map_record()
+heat_map_plot <- heat_map_record()
+# }
 ```

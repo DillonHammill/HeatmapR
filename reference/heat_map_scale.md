@@ -28,6 +28,10 @@ heat_map_scale(x, scale = "column", method = "range")
   values) from each value. Z-score scaling subtracts the mean from each
   value and then divides the result by the standard deviation.
 
+## Value
+
+a matrix or data.frame containing the scaled data.
+
 ## Author
 
 Dillon Hammill (dillon.hammill21@gmail.com)

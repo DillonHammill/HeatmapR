@@ -64,6 +64,10 @@ heat_map_save(
   [`svg()`](https://rdrr.io/r/grDevices/cairo.html) or `pdf` graphics
   devices.
 
+## Value
+
+No return value, called for side effects.
+
 ## Author
 
 Dillon Hammill (dillon.hammill21@gmail.com)
@@ -71,9 +75,9 @@ Dillon Hammill (dillon.hammill21@gmail.com)
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 # Save Heatmap
-heat_map_save("Heatmap.png",
+heat_map_save(file.path(tempdir(), "Heatmap.png"),
 height = 7, 
 width = 5)
 
@@ -83,5 +87,6 @@ scale = "range",
 title = "Iris Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
-} # }
+#> Applying range scaling to each row...
+# }
 ```

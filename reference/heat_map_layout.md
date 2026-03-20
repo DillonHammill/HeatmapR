@@ -18,6 +18,10 @@ heat_map_layout(layout = NULL)
   optionally contain a third element to indicate whether plots should be
   placed in row (1) or column (2) order, set to row order by default.
 
+## Value
+
+No return value, called for side effects.
+
 ## Author
 
 Dillon Hammill (dillon.hammill21@gmail.com)
@@ -25,9 +29,9 @@ Dillon Hammill (dillon.hammill21@gmail.com)
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 # Save heatmap
-heat_map_save("Heatmap.png",
+heat_map_save(file.path(tempdir(), "Heatmap.png"),
 height = 7, 
 width = 15)
 
@@ -47,8 +51,9 @@ scale = "range",
 title = "Iris Scaled Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
+#> Applying range scaling to each row...
 
 # Signal completion
 heat_map_complete()
-} # }
+# }
 ```

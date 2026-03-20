@@ -43,15 +43,19 @@
     </div>
 
     <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    <p>No return value, called for side effects.</p>
+    </div>
+    <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
     <p>Dillon Hammill (dillon.hammill21@gmail.com)</p>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="co"># Save heatmap</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="heat_map_save.html">heat_map_save</a></span><span class="op">(</span><span class="st">"Heatmap.png"</span>,</span></span>
+<span class="r-in"><span><span class="fu"><a href="heat_map_save.html">heat_map_save</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"Heatmap.png"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>height <span class="op">=</span> <span class="fl">7</span>, </span></span>
 <span class="r-in"><span>width <span class="op">=</span> <span class="fl">15</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
@@ -71,10 +75,11 @@
 <span class="r-in"><span>title <span class="op">=</span> <span class="st">"Iris Scaled Heatmap"</span>,</span></span>
 <span class="r-in"><span>axis_label_x <span class="op">=</span> <span class="st">"Plant Parameter"</span>,</span></span>
 <span class="r-in"><span>axis_label_y <span class="op">=</span> <span class="st">"Row ID"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Applying range scaling to each row...</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Signal completion</span></span></span>
 <span class="r-in"><span><span class="fu">heat_map_complete</span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
