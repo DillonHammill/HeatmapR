@@ -21,6 +21,9 @@ column (2) order, set to row order by default.}
 
 \item{...}{additional arguments passed to \code{heat_map_new()}.}
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 \code{heat_map_custom()} is similar to \code{cheat_map_save()} with the
 exception that it doesn't write the plot to a file. \code{heat_map_custom()}
@@ -30,6 +33,7 @@ users MUST run \code{cyto_plot_complete()} to close the graphics device and
 reset any \code{heat_map()} related settings (see example).
 }
 \examples{
+\donttest{
 heat_map_custom(
   popup = FALSE,
   layout = c(1,2)
@@ -42,6 +46,7 @@ plot(
   pch = 16
 )
 heat_map_complete()
+}
 
 }
 \seealso{

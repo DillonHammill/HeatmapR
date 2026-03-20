@@ -2,7 +2,7 @@ Package: HeatmapR
 Type: Package
 Title: Create Heatmaps Using Base Graphics
 Version: 1.1.0
-Date: 2026-03-13
+Date: 2026-03-19
 Authors@R: 
     person(given = "Dillon",
            family = "Hammill",
@@ -14,7 +14,11 @@ Description: Provides a lightweight framework for creating high quality, complex
     dendrograms, column and row scaling, cluster sub-divisions, customizable 
     cell colours, shapes and sizes, legends, and flexible layouts for arranging 
     multiple heatmaps. Designed to return plot objects that can be easily 
-    arranged with other plots without sacrificing resolution.
+    arranged with other plots without sacrificing resolution. Methods for 
+    hierarchical clustering and distance computations are described in 
+    Murtagh and Contreras (2012) <doi:10.1002/wics.53>. Dendrogram 
+    visualisation methods are based on the 'ggdendro' package by 
+    de Vries and Ripley (2020) <https://CRAN.R-project.org/package=ggdendro>.
 URL: https://dillonhammill.github.io/HeatmapR/
 BugReports: https://github.com/DillonHammill/HeatmapR/issues
 Depends:

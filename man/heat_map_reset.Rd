@@ -6,11 +6,14 @@
 \usage{
 heat_map_reset()
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 Reset all heatmap related settings
 }
 \examples{
-\dontrun{
+\donttest{
 # Reset HeatmapR settings
 heat_map_reset()
 }

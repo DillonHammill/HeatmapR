@@ -6,13 +6,16 @@
 \usage{
 heat_map_complete()
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 Indicate when a heatmap is complete and ready for saving
 }
 \examples{
-\dontrun{
+\donttest{
 # Save heatmap
-heat_map_save("Heatmap.png",
+heat_map_save(file.path(tempdir(), "Heatmap.png"),
 height = 7, 
 width = 15)
 

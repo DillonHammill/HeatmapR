@@ -42,13 +42,16 @@ created using \code{heat_map_layout}, set to NULL by default.}
 \item{...}{additional arguments for the appropriate \code{png()},
 \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.}
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 Save high resolution images
 }
 \examples{
-\dontrun{
+\donttest{
 # Save Heatmap
-heat_map_save("Heatmap.png",
+heat_map_save(file.path(tempdir(), "Heatmap.png"),
 height = 7, 
 width = 5)
 

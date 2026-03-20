@@ -21,15 +21,17 @@
 #' @param ... additional arguments for the appropriate \code{png()},
 #'   \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.
 #'
+#' @return No return value, called for side effects.
+#' 
 #' @importFrom tools file_ext file_path_sans_ext
 #' @importFrom grDevices png tiff jpeg pdf svg
 #' 
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @examples 
-#' \dontrun{
+#' \donttest{
 #' # Save Heatmap
-#' heat_map_save("Heatmap.png",
+#' heat_map_save(file.path(tempdir(), "Heatmap.png"),
 #' height = 7, 
 #' width = 5)
 #' 
@@ -147,6 +149,8 @@ heat_map_save <- function(save_as,
 #'   column (2) order, set to row order by default.
 #' @param ... additional arguments passed to \code{heat_map_new()}.
 #'
+#' @return No return value, called for side effects.
+#'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
 #' @seealso \code{\link{heat_map_save}}
@@ -154,6 +158,7 @@ heat_map_save <- function(save_as,
 #' @seealso \code{\link{heat_map_complete}}
 #'
 #' @examples
+#' \donttest{
 #' heat_map_custom(
 #'   popup = FALSE,
 #'   layout = c(1,2)
@@ -166,6 +171,7 @@ heat_map_save <- function(save_as,
 #'   pch = 16
 #' )
 #' heat_map_complete()
+#' }
 #'
 #' @export
 heat_map_custom <- function(popup = TRUE,
@@ -200,10 +206,12 @@ heat_map_custom <- function(popup = TRUE,
 
 #' Reset all heatmap related settings
 #' 
+#' @return No return value, called for side effects.
+#' 
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @examples 
-#' \dontrun{
+#' \donttest{
 #' # Reset HeatmapR settings
 #' heat_map_reset()
 #' }
@@ -227,14 +235,16 @@ heat_map_reset <- function(){
 
 #' Indicate when a heatmap is complete and ready for saving
 #' 
+#' @return No return value, called for side effects.
+#' 
 #' @importFrom grDevices dev.off dev.cur
 #' 
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @examples 
-#' \dontrun{
+#' \donttest{
 #' # Save heatmap
-#' heat_map_save("Heatmap.png",
+#' heat_map_save(file.path(tempdir(), "Heatmap.png"),
 #' height = 7, 
 #' width = 15)
 #' 
@@ -286,14 +296,16 @@ heat_map_complete <- function(){
 #'   third element to indicate whether plots should be placed in row (1) or
 #'   column (2) order, set to row order by default.
 #' 
+#' @return No return value, called for side effects.
+#' 
 #' @importFrom graphics par layout
 #' 
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' 
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Save heatmap
-#' heat_map_save("Heatmap.png",
+#' heat_map_save(file.path(tempdir(), "Heatmap.png"),
 #' height = 7, 
 #' width = 15)
 #' 
@@ -339,10 +351,16 @@ heat_map_layout <- function(layout = NULL){
     }
     # ROWS
     if (layout[3] == 1) {
-      par(mfrow = c(layout[1], layout[2]))
+      layout(matrix(seq_len(layout[1] * layout[2]), 
+                    nrow = layout[1], 
+                    ncol = layout[2], 
+                    byrow = TRUE))
       # COLUMNS
     } else if (layout[3] == 2) {
-      par(mfcol = c(layout[1], layout[2]))
+      layout(matrix(seq_len(layout[1] * layout[2]), 
+                    nrow = layout[1], 
+                    ncol = layout[2], 
+                    byrow = FALSE))
     }
   }
   
@@ -357,11 +375,14 @@ heat_map_layout <- function(layout = NULL){
 #' Record custom heatmap layout on current graphics device and save to an R
 #' object for future use.
 #'
+#' @return an object of class \code{recordedplot}.
+#'
 #' @importFrom grDevices recordPlot
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
 #' @examples
+#' \donttest{
 #' # Heatmap layout
 #' heat_map_layout(c(1,2))
 #'
@@ -380,8 +401,8 @@ heat_map_layout <- function(layout = NULL){
 #' axis_label_y = "Row ID")
 #'
 #' # Record heatmap layout
-#' heat_map <- heat_map_record()
-#'
+#' heat_map_plot <- heat_map_record()
+#' }
 #' @export
 heat_map_record <- function(){
   recordPlot()
@@ -398,11 +419,13 @@ heat_map_record <- function(){
 #' @param ... additional arguments passed to
 #'   \code{\link[grDevices:dev]{dev.new}}.
 #'
+#' @return No return value, called for side effects.
+#'
 #' @importFrom grDevices dev.new dev.cur
 #' @importFrom graphics par
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Open platform-specific graphics device
 #' heat_map_new(popup = TRUE)
 #' }
@@ -562,10 +585,9 @@ heat_map_new <- function(popup = FALSE,
 dev_empty <- function() {
   # DEVICE EMPTY - NEW CAN ONLY BE CALLED IF PLOT EXISTS
   old_par <- .par("new")
+  on.exit(par(old_par))
   dev_empty <- tryCatch(
     par(new = TRUE)[["new"]],
-    warning = function(w){TRUE},
-    finally = function(f){FALSE})
-  par(old_par)
+    warning = function(w){TRUE})
   return(dev_empty)
 }

@@ -14,6 +14,8 @@
 #'   excluding missing values) from each value. Z-score scaling subtracts the
 #'   mean from each value and then divides the result by the standard deviation.
 #'
+#' @return a matrix or data.frame containing the scaled data.
+#'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
 #' @examples

@@ -13,13 +13,16 @@ dimensions of the plot or a matrix defining a more sophisticated layout
 third element to indicate whether plots should be placed in row (1) or
 column (2) order, set to row order by default.}
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 Arrange multiple heatmaps
 }
 \examples{
-\dontrun{
+\donttest{
 # Save heatmap
-heat_map_save("Heatmap.png",
+heat_map_save(file.path(tempdir(), "Heatmap.png"),
 height = 7, 
 width = 15)
 

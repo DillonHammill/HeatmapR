@@ -16,11 +16,14 @@ set to \code{c(8,8)} by default.}
 \item{...}{additional arguments passed to
 \code{\link[grDevices:dev]{dev.new}}.}
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 Open a pop-up graphics device for heatmaps
 }
 \examples{
-\dontrun{
+\donttest{
 # Open platform-specific graphics device
 heat_map_new(popup = TRUE)
 }

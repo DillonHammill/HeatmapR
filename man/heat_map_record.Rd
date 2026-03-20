@@ -6,11 +6,15 @@
 \usage{
 heat_map_record()
 }
+\value{
+an object of class \code{recordedplot}.
+}
 \description{
 Record custom heatmap layout on current graphics device and save to an R
 object for future use.
 }
 \examples{
+\donttest{
 # Heatmap layout
 heat_map_layout(c(1,2))
 
@@ -29,8 +33,8 @@ axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
 
 # Record heatmap layout
-heat_map <- heat_map_record()
-
+heat_map_plot <- heat_map_record()
+}
 }
 \author{
 Dillon Hammill (dillon.hammill21@gmail.com)
