@@ -7,4 +7,3 @@ inst/doc
 HeatmapR.Rcheck/
 tests/testthat/Rplots*.pdf
 *.pdf
-docs
