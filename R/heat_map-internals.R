@@ -1378,3 +1378,99 @@ print.heat_map <- function(x, ...) {
 
   invisible(TRUE)
 }
+
+## COLOUR SCALE OPTIONS --------------------------------------------------------
+
+#' Colour scale limits that ignore outliers - the 2nd and 98th percentiles
+#' @importFrom stats quantile
+#' @noRd
+.robust_range <- function(x) {
+  x <- x[is.finite(x)]
+  if(length(x) == 0) {
+    return(c(0, 1))
+  }
+  unname(quantile(x, c(0.02, 0.98), names = FALSE))
+}
+
+#' Validate colour scale breaks
+#' @noRd
+.check_breaks <- function(breaks,
+                          arg = "cell_col_scale_breaks") {
+  if(is.null(breaks)) {
+    return(NULL)
+  }
+  if(!is.numeric(breaks) || length(breaks) < 2 || any(!is.finite(breaks)) ||
+     anyDuplicated(breaks)) {
+    stop(
+      "'", arg, "' must contain at least two different finite numbers.",
+      call. = FALSE
+    )
+  }
+  sort(as.numeric(breaks))
+}
+
+#' Position of values on the colour scale (0 to 1)
+#'
+#' Values are rescaled to the limits and clamped, or - with breaks - binned
+#' between the breaks, each bin taking the colour at its middle so that the
+#' bins have evenly spaced colours.
+#'
+#' @noRd
+.col_k <- function(v,
+                   limits,
+                   breaks = NULL) {
+  if(!is.null(breaks)) {
+    n <- length(breaks) - 1
+    b <- findInterval(v, breaks, rightmost.closed = TRUE, all.inside = TRUE)
+    return((b - 0.5) / n)
+  }
+  if(limits[2] == limits[1]) {
+    return(rep(0.5, length(v)))
+  }
+  k <- (v - limits[1]) / (limits[2] - limits[1])
+  k[k < 0] <- 0
+  k[k > 1] <- 1
+  k
+}
+
+#' Tick positions and labels of the colour legend
+#'
+#' @param ticks \code{legend_col_breaks} - tick values, named to set their
+#'   labels, or NULL.
+#' @param breaks colour scale breaks (or NULL).
+#' @param limits colour scale limits.
+#'
+#' @return list with the tick values (\code{at}) and their \code{labels}.
+#'
+#' @noRd
+.legend_col_ticks <- function(ticks,
+                              breaks,
+                              limits) {
+  if(length(limits) < 2) {
+    return(NULL)
+  }
+  if(!is.null(ticks)) {
+    if(!is.numeric(ticks) || any(!is.finite(ticks))) {
+      stop("'legend_col_breaks' must be finite numbers.", call. = FALSE)
+    }
+    keep <- ticks >= min(limits) & ticks <= max(limits)
+    if(!any(keep)) {
+      stop(
+        "'legend_col_breaks' must lie within the limits of the colour scale.",
+        call. = FALSE
+      )
+    }
+    labels <- if(is.null(names(ticks))) {
+      as.character(ticks)
+    } else {
+      ifelse(nzchar(names(ticks)), names(ticks), as.character(ticks))
+    }
+    return(list(at = unname(ticks[keep]), labels = labels[keep]))
+  }
+  at <- if(!is.null(breaks) && length(breaks) <= 11) {
+    breaks
+  } else {
+    .legend_col_labels(limits)
+  }
+  list(at = at, labels = as.character(at))
+}

@@ -190,13 +190,23 @@
 #'   limits for the colour scale as \code{c(min, max)}. If NULL (default),
 #'   limits are computed from the data before rounding. Custom limits allow you
 #'   to set consistent colour scales across multiple heatmaps or override
-#'   automatic scaling.
+#'   automatic scaling. Set to \code{"robust"} to use the 2nd and 98th
+#'   percentiles of the data, so that a few outliers don't wash out the colour
+#'   scale; values beyond the limits take the colours at the ends of the
+#'   scale.
 #' @param cell_col_scale_center optional numeric value at which to centre the
 #'   colour scale, set to NULL by default. When supplied, the colour scale
 #'   limits are made symmetric around this value so that it maps to the middle
 #'   colour of \code{cell_col_scale}. Useful with diverging palettes such as
 #'   \code{"Blue-Red 3"} and \code{scale_method = "zscore"} (\code{center =
 #'   0}).
+#' @param cell_col_scale_breaks a numeric vector of at least two breaks that
+#'   bin the values into a stepped colour scale, set to NULL by default for a
+#'   continuous scale. Each bin between consecutive breaks takes one colour,
+#'   evenly spaced along \code{cell_col_scale} whatever the widths of the bins,
+#'   and values beyond the outer breaks take the colours of the outer bins.
+#'   The breaks set the limits of the colour scale and label the colour
+#'   legend.
 #' @param cell_size_scale_limits a numeric vector of length 2 specifying custom
 #'   limits for the size scale as \code{c(min, max)}. If NULL (default), limits
 #'   are computed from the data before rounding. Only used when \code{cell_size}
@@ -473,6 +483,15 @@
 #' @param legend_col_scale_size numeric to control the width of the legend
 #'   colour scale relative to the allocated space for the legend, set to 1 by
 #'   default.
+#' @param legend_col_breaks values at which to label the colour legend, set to
+#'   NULL by default to choose them automatically (or use
+#'   \code{cell_col_scale_breaks}). Names, when supplied, are used as the
+#'   labels, e.g. \code{c(low = -2, 0, high = 2)}.
+#' @param legend_side where to draw the legend, either \code{"auto"} (the
+#'   default) beside the heatmap, opposite the y axis text, or
+#'   \code{"bottom"} below the heatmap with horizontal colour bars and the
+#'   legends side by side (wrapping into rows when they don't fit across the
+#'   figure). \code{"bottom"} requires \code{layout = "fit"}.
 #' @param legend_title a vector of up to three elements containing text to be
 #'   displayed above the cell colour, size and levels legends respectively.
 #' @param legend_title_text_font integer to control the font face for the
@@ -601,6 +620,7 @@ heat_map <- function(x,
                      cell_col_scale,
                      cell_col_scale_limits = NULL,
                      cell_col_scale_center = NULL,
+                     cell_col_scale_breaks = NULL,
                      cell_size_scale_limits = NULL,
                      cell_size_scale_method = "linear",
                      cell_size_scale_range = c(0, 1),
@@ -688,8 +708,10 @@ heat_map <- function(x,
                      annotation_text_col = "black",
                      annotation_legend = TRUE,
                      legend = TRUE,
+                     legend_side = "auto",
                      legend_size = 1,
                      legend_col_scale_size = 1,
+                     legend_col_breaks = NULL,
                      legend_title = NULL,
                      legend_title_text_font = 2,
                      legend_title_text_size = 1,
@@ -747,6 +769,24 @@ heat_map <- function(x,
       call. = FALSE
     )
   }
+
+  # LEGEND SIDE
+  if(!is.character(legend_side) || length(legend_side) != 1 ||
+     !legend_side %in% c("auto", "bottom")) {
+    stop(
+      "'legend_side' must be either \"auto\" or \"bottom\".",
+      call. = FALSE
+    )
+  }
+  if(legend_side == "bottom" && identical(layout, "classic")) {
+    warning(
+      "legend_side = \"bottom\" requires layout = \"fit\" - the legend is ",
+      "drawn beside the heatmap.",
+      call. = FALSE
+    )
+    legend_side <- "auto"
+  }
+  legend_bottom <- legend_side == "bottom"
 
   # LAYOUT
   if(!is.character(layout) || length(layout) != 1 ||
@@ -1036,16 +1076,23 @@ heat_map <- function(x,
 
   cell_min <- NULL
   cell_max <- NULL
+  col_breaks <- .check_breaks(cell_col_scale_breaks)
   if(length(num_cols) > 0) {
+    # LIMITS THAT IGNORE OUTLIERS
+    if(identical(cell_col_scale_limits, "robust")) {
+      lims <- .robust_range(num_mat[, num_cols])
     # CUSTOM LIMITS
-    if(!is.null(cell_col_scale_limits)) {
+    } else if(!is.null(cell_col_scale_limits)) {
       lims <- .check_limits(cell_col_scale_limits, "cell_col_scale_limits")
     # DATA LIMITS
     } else {
       lims <- .finite_range(num_mat[, num_cols])
     }
+    # BREAKS DEFINE THE LIMITS
+    if(!is.null(col_breaks)) {
+      lims <- range(col_breaks)
     # CENTRED COLOUR SCALE
-    if(!is.null(cell_col_scale_center)) {
+    } else if(!is.null(cell_col_scale_center)) {
       if(!is.numeric(cell_col_scale_center) ||
          length(cell_col_scale_center) != 1 ||
          !is.finite(cell_col_scale_center)) {
@@ -1282,7 +1329,10 @@ heat_map <- function(x,
   cell_fill <- rep(NA_character_, length(cell_row))
   ind <- cell_num & !cell_missing
   if(any(ind)) {
-    if(cell_max == cell_min) {
+    if(!is.null(col_breaks)) {
+      # BINNED BETWEEN THE BREAKS
+      k <- .col_k(cell_num_val[ind], c(cell_min, cell_max), col_breaks)
+    } else if(cell_max == cell_min) {
       # ALL VALUES THE SAME - MIDDLE OF THE SCALE
       k <- rep(0.5, sum(ind))
     } else {
@@ -1477,11 +1527,16 @@ heat_map <- function(x,
       if(length(cell_levels) > 0) "levels"
     )
   )
+  legend_ticks <- .legend_col_ticks(
+    legend_col_breaks,
+    col_breaks,
+    c(cell_min, cell_max)
+  )
   legend_spec <- list(
     types = legend_drawn,
     side = legend_side,
     col_labels = if("colour" %in% legend_types) {
-      .legend_col_labels(c(cell_min, cell_max))
+      legend_ticks$labels
     },
     size_labels = if("size" %in% legend_types) {
       .legend_size_labels(c(cell_size_min, cell_size_max))
@@ -1530,6 +1585,8 @@ heat_map <- function(x,
     col_scale_size = legend_col_scale_size,
     blocks = .legend_blocks(
       col = if("colour" %in% legend_drawn) c(cell_min, cell_max),
+      col_ticks = legend_ticks,
+      col_breaks = col_breaks,
       size = if("size" %in% legend_drawn) c(cell_size_min, cell_size_max),
       levels = if("levels" %in% legend_drawn) {
         list(labels = unique(unname(cell_levels)))
@@ -1659,6 +1716,7 @@ heat_map <- function(x,
       legend = length(legend_types) > 0 ||
         (annotation_legend && length(c(annot_x$legends, annot_y$legends)) > 0),
       legend_size = legend_size,
+      legend_bottom = legend_bottom,
       legend_spec = legend_spec,
       fit = fit_text,
       mode = layout,
@@ -2203,6 +2261,8 @@ heat_map <- function(x,
         2
       },
       col_scale = cell_col_scale,
+      col_ticks = legend_ticks,
+      col_breaks = col_breaks,
       col_scale_size = legend_col_scale_size,
       col_alpha = legend_alpha,
       shape = .main_shape(cell_shapes),

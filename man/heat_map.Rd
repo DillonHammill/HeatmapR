@@ -48,6 +48,7 @@ heat_map(
   cell_col_scale,
   cell_col_scale_limits = NULL,
   cell_col_scale_center = NULL,
+  cell_col_scale_breaks = NULL,
   cell_size_scale_limits = NULL,
   cell_size_scale_method = "linear",
   cell_size_scale_range = c(0, 1),
@@ -135,8 +136,10 @@ heat_map(
   annotation_text_col = "black",
   annotation_legend = TRUE,
   legend = TRUE,
+  legend_side = "auto",
   legend_size = 1,
   legend_col_scale_size = 1,
+  legend_col_breaks = NULL,
   legend_title = NULL,
   legend_title_text_font = 2,
   legend_title_text_size = 1,
@@ -389,7 +392,10 @@ palette by default. Alternatively, the name of a palette listed in
 limits for the colour scale as \code{c(min, max)}. If NULL (default),
 limits are computed from the data before rounding. Custom limits allow you
 to set consistent colour scales across multiple heatmaps or override
-automatic scaling.}
+automatic scaling. Set to \code{"robust"} to use the 2nd and 98th
+percentiles of the data, so that a few outliers don't wash out the colour
+scale; values beyond the limits take the colours at the ends of the
+scale.}
 
 \item{cell_col_scale_center}{optional numeric value at which to centre the
 colour scale, set to NULL by default. When supplied, the colour scale
@@ -397,6 +403,14 @@ limits are made symmetric around this value so that it maps to the middle
 colour of \code{cell_col_scale}. Useful with diverging palettes such as
 \code{"Blue-Red 3"} and \code{scale_method = "zscore"} (\code{center =
   0}).}
+
+\item{cell_col_scale_breaks}{a numeric vector of at least two breaks that
+bin the values into a stepped colour scale, set to NULL by default for a
+continuous scale. Each bin between consecutive breaks takes one colour,
+evenly spaced along \code{cell_col_scale} whatever the widths of the bins,
+and values beyond the outer breaks take the colours of the outer bins.
+The breaks set the limits of the colour scale and label the colour
+legend.}
 
 \item{cell_size_scale_limits}{a numeric vector of length 2 specifying custom
 limits for the size scale as \code{c(min, max)}. If NULL (default), limits
@@ -714,6 +728,12 @@ indicate the type(s) of legends to include in the heatmap. The
 non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
 \code{FALSE}, \code{NA} or \code{"none"} to remove the legend.}
 
+\item{legend_side}{where to draw the legend, either \code{"auto"} (the
+default) beside the heatmap, opposite the y axis text, or
+\code{"bottom"} below the heatmap with horizontal colour bars and the
+legends side by side (wrapping into rows when they don't fit across the
+figure). \code{"bottom"} requires \code{layout = "fit"}.}
+
 \item{legend_size}{numeric to control the amount of space allocated to the
 legend, set to 1 by default. In the fit layout (the default) the legend is
 sized from its contents and \code{legend_size} scales the legend keys
@@ -722,6 +742,11 @@ instead.}
 \item{legend_col_scale_size}{numeric to control the width of the legend
 colour scale relative to the allocated space for the legend, set to 1 by
 default.}
+
+\item{legend_col_breaks}{values at which to label the colour legend, set to
+NULL by default to choose them automatically (or use
+\code{cell_col_scale_breaks}). Names, when supplied, are used as the
+labels, e.g. \code{c(low = -2, 0, high = 2)}.}
 
 \item{legend_title}{a vector of up to three elements containing text to be
 displayed above the cell colour, size and levels legends respectively.}
