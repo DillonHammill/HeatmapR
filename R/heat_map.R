@@ -17,7 +17,11 @@
 #' @param dist_method indicates the type of distance metric to use when
 #'   constructing dendrograms, set to \code{"euclidean"} distance by default.
 #'   See \code{?dist} for alternatives. Also supports \code{"cosine"} for
-#'   cosine distance (1 - cosine similarity).
+#'   cosine distance (1 - cosine similarity), \code{"pearson"},
+#'   \code{"spearman"} or \code{"kendall"} for one minus the correlation
+#'   (common for gene expression), or a function that takes the matrix being
+#'   clustered (one row per row or column of the heatmap) and returns a
+#'   \code{dist} object or a square matrix of distances.
 #' @param clust_method indicates the type of agglomeration method to use when
 #'   constructing performing hierarchical clustering, set to \code{"complete"}
 #'   by default. See \code{?hclust} for alternatives.
@@ -39,6 +43,13 @@
 #' @param tree_scale_x logical indicating whether the branch heights of the x
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
+#' @param tree_order_x how the branches of the x axis dendrogram are ordered,
+#'   either \code{"default"} (the order from \code{hclust}), \code{"olo"}
+#'   (optimal leaf ordering, which flips branches so that neighbouring columns
+#'   are as similar as possible) or \code{"mean"} (branches ordered by their
+#'   mean values, as in \code{\link[stats]{heatmap}}). Optimal leaf ordering
+#'   takes a few seconds for 1000 columns and grows with the cube of the
+#'   number of columns.
 #' @param tree_cut_x either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for x axis dendrogram (proportional for non-cosine distances,
 #'   or absolute cosine distance threshold when \code{dist_method = "cosine"})
@@ -102,6 +113,9 @@
 #' @param tree_scale_y logical indicating whether the branch heights of the y
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
+#' @param tree_order_y how the branches of the y axis dendrogram are ordered,
+#'   either \code{"default"}, \code{"olo"} or \code{"mean"}, as for
+#'   \code{tree_order_x}.
 #' @param tree_cut_y either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for y axis dendrogram (proportional for non-cosine distances,
 #'   or absolute cosine distance threshold when \code{dist_method = "cosine"})
@@ -547,6 +561,7 @@ heat_map <- function(x,
                      tree_x = NULL,
                      tree_size_x = 1,
                      tree_scale_x = FALSE,
+                     tree_order_x = "default",
                      tree_cut_x = NULL,
                      tree_split_x = 1,
                      tree_label_x = FALSE,
@@ -561,6 +576,7 @@ heat_map <- function(x,
                      tree_y = NULL,
                      tree_size_y = 1,
                      tree_scale_y = FALSE,
+                     tree_order_y = "default",
                      tree_cut_y = NULL,
                      tree_split_y = 1,
                      tree_label_y = FALSE,
@@ -823,6 +839,10 @@ heat_map <- function(x,
     tree_y <- TRUE
   }
 
+  # LEAF ORDER
+  .check_order(tree_order_x, "tree_order_x")
+  .check_order(tree_order_y, "tree_order_y")
+
   # GROUPS SUPPLIED TO tree_cut_* (ONE PER ROW OR COLUMN) WITH A DENDROGRAM -
   # CLUSTER WITHIN EACH GROUP RATHER THAN ACROSS ALL ROWS OR COLUMNS
   group_x <- !is.null(tree_x) && !inherits(tree_x, c("dist", "hclust")) &&
@@ -852,6 +872,7 @@ heat_map <- function(x,
         dist = dist_method,
         method = clust_method,
         scale = tree_scale_x,
+        order = tree_order_x,
         cut = if(length(tree_cut_x) == 1) tree_cut_x else NULL,
         ...
       )
@@ -899,6 +920,7 @@ heat_map <- function(x,
         dist = dist_method,
         method = clust_method,
         scale = tree_scale_x,
+        order = tree_order_x,
         ...
       )
       manual$ind <- num_cols[tree_x$order]
@@ -941,6 +963,7 @@ heat_map <- function(x,
         dist = dist_method,
         method = clust_method,
         scale = tree_scale_y,
+        order = tree_order_y,
         cut = if(length(tree_cut_y) == 1) tree_cut_y else NULL,
         ...
       )
@@ -975,6 +998,7 @@ heat_map <- function(x,
         dist = dist_method,
         method = clust_method,
         scale = tree_scale_y,
+        order = tree_order_y,
         ...
       )
       manual$ind <- tree_y$order
