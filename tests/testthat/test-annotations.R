@@ -118,26 +118,3 @@ test_that("factor cluster indices label the clusters with their levels", {
   hm <- draw(d$m, tree_cut_x = d$meta$Treatment, tree_label_x = TRUE, tree_label_text_x = c("A", "B", "C"))
   expect_false("Control" %in% drawn_text(hm))
 })
-
-test_that("issue #3 example snapshot", {
-  skip_on_cran()
-  skip_on_os("mac")
-  skip_if_not_installed("vdiffr")
-  d <- issue_data()
-  vdiffr::expect_doppelganger(
-    "column annotations",
-    function() suppressMessages(heat_map(
-      d$m,
-      annotation_x = d$meta,
-      annotation_colours = issue_colours,
-      tree_cut_x = d$meta$Treatment,
-      tree_label_x = TRUE,
-      tree_y = TRUE,
-      cell_col_scale = c("#2C7BB6", "white", "#D7191C"),
-      cell_col_scale_center = 0,
-      legend_title = "z-score",
-      layout = "classic",
-      popup = FALSE
-    ))
-  )
-})

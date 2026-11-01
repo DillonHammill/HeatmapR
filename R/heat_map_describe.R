@@ -493,7 +493,7 @@ as.character.heat_map_description <- function(x,
       paste0(
         Whats, " are split into ", k,
         if(kmeans) " k-means clusters" else " groups",
-        ", numbered from the ", if(axis == "y") "bottom" else "left",
+        ", numbered from the ", if(axis == "y") "top" else "left",
         if(k > max_groups) {
           paste0(
             ", of ", min(sizes), " to ", max(sizes), " ", what, "s each."
@@ -509,7 +509,9 @@ as.character.heat_map_description <- function(x,
       groups <- vapply(
         seq_len(k),
         function(g) {
-          members <- which(cl == g)
+          # MEMBERS IN DISPLAY ORDER - ROWS FROM THE TOP, COLUMNS FROM THE LEFT
+          shown <- if(axis == "y") info$row_order else info$col_order
+          members <- shown[cl[shown] == g]
           means <- if(axis == "y") {
             colMeans(values[members, , drop = FALSE], na.rm = TRUE)
           } else {
@@ -643,7 +645,8 @@ as.character.heat_map_description <- function(x,
         if(axis == "y") rownames(data) else colnames(data),
         length(names),
         arg(paste0("mark_labels_", axis)),
-        paste0("mark_", axis)
+        paste0("mark_", axis),
+        shown = if(axis == "y") info$row_order else info$col_order
       )
       if(!is.null(mk)) {
         out <- c(out, paste0("Labelled ", what, "s: ",

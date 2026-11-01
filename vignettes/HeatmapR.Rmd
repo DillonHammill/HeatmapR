@@ -27,6 +27,7 @@ knitr::opts_chunk$set(
 -   `heat_map_summarise()` reduces groups of rows or columns to one summary each (e.g. the mean expression of each cell type), or keeps the values of each group for distributions inside the cells.
 -   `heat_map_info()` returns the data, row and column order, clusters, colours and layout of a heatmap for downstream analyses.
 -   `heat_map_describe()` writes a plain-language description of a heatmap to use as alternative text for screen readers.
+-   `heat_map_data()` returns the cells, rows, columns and dendrograms of a heatmap as tidy tables, and `heat_map_grob()` places heatmaps beside `ggplot2` plots.
 -   `heat_map_layout()` allows you to create custom plot layouts to arrange multiple heatmaps.
 -   `heat_map_save()` can be called prior to any `heat_map()` call to save a high resolution image.
 -   `heat_map_record()` can be called after any `heat_map()` calls to record the current plot for saving to an R object.
@@ -520,7 +521,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 ### 2.7 Labelling Chosen Rows and Columns
 
-When a heatmap has too many rows to label them all, `mark_y` (and `mark_x` for columns) labels just the rows you choose, given as names, indices in the original order of the data or a logical vector. The labels replace the axis text: they are spread out beside the heatmap so that they don't overlap, and leader lines connect each label to its row. `mark_labels_y` supplies other text for the labels (e.g. gene symbols), and `mark_line_col` sets the colour of the leader lines.
+When a heatmap has too many rows to label them all, `mark_y` (and `mark_x` for columns) labels just the rows you choose, given as names, positions in the heatmap (rows from the top) or a logical vector in the order of the data. The labels replace the axis text: they are spread out beside the heatmap so that they don't overlap, and leader lines connect each label to its row. `mark_labels_y` supplies other text for the labels (e.g. gene symbols), and `mark_line_col` sets the colour of the leader lines.
 
 ```{r, eval = FALSE}
 set.seed(2)
@@ -1293,7 +1294,7 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13b.png')
 ```
 
-**Method 2: Specify cluster indices** - Provide a vector where each element indicates which cluster that row/column belongs to. Cluster indices are supplied in the original order of the rows/columns of the data (in the same way as `bar_values_x` and `bar_values_y`), and can be numbers, characters or a factor. The rows/columns are regrouped so that each cluster is contiguous in the heatmap:
+**Method 2: Specify cluster indices** - Provide a vector where each element indicates which cluster that row/column belongs to. Numeric indices are given as the heatmap is displayed - columns from the left, rows from the top, in the dendrogram order when a dendrogram is drawn - so you can draw a heatmap, read it, and assign clusters to what you see. Labels given as characters or a factor (e.g. treatments from sample metadata) follow the original order of the data, and named vectors are matched by name. The rows/columns are regrouped so that each cluster is contiguous in the heatmap:
 
 ```{r, eval = FALSE}
 # Manual clustering by assigning cluster indices
@@ -1769,7 +1770,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 ### 6.1 Layout
 
-By default `heat_map()` uses the `"fit"` layout, which sizes everything around the heatmap in inches from its contents: dendrograms and bar graphs keep the same size whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are multiples of 0.6 inches), the legend is as wide as its text, the margins are as wide as the axis text, axis labels and title, and the heatmap body takes the remaining space. Legends are stacked from the top of the heatmap and shrunk if they don't fit. Setting `layout = "classic"` restores the layout of earlier versions, in which dendrograms, bar graphs and the legend are sized as fractions of the heatmap, so they grow and shrink with the number of rows and columns.
+`heat_map()` sizes everything around the heatmap in inches from its contents: dendrograms and bar graphs keep the same size whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are multiples of 0.6 inches), the legend is as wide as its text, the margins are as wide as the axis text, axis labels and title, and the heatmap body takes the remaining space. Legends are stacked from the top of the heatmap and shrunk if they don't fit, and text is shrunk (or thinned) only when it would otherwise overlap. Below, the dendrograms, annotation track and legend are the same size for 60 genes as for 12.
 
 ```{r, eval = FALSE}
 set.seed(3)
@@ -1791,20 +1792,63 @@ heat_map_custom(
   popup_size = c(11, 6.5),
   layout = c(1, 2)
 )
-for(layout in c("classic", "fit")) {
-  heat_map(
-    mat,
-    tree = "both",
-    annotation_x = group,
-    legend_title = "Expression",
-    title = paste0("layout = \"", layout, "\""),
-    layout = layout
-  )
-}
+heat_map(
+  mat,
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "60 genes"
+)
+heat_map(
+  mat[1:12, ],
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "12 genes"
+)
 heat_map_complete()
 ```
 
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
+```{r, eval = FALSE, echo = FALSE}
+set.seed(3)
+mat <- matrix(
+  rnorm(60 * 8),
+  nrow = 60,
+  dimnames = list(
+    paste0("Gene_", 1:60),
+    paste0("Sample_", 1:8)
+  )
+)
+mat[1:20, 1:4] <- mat[1:20, 1:4] + 2
+group <- data.frame(
+  Group = rep(c("Control", "Treated"), each = 4),
+  row.names = colnames(mat)
+)
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-layout.png",
+  height = 6.5,
+  width = 11,
+  res = 300,
+  layout = c(1, 2)
+)
+heat_map(
+  mat,
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "60 genes"
+)
+heat_map(
+  mat[1:12, ],
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "12 genes"
+)
+heat_map_complete()
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Two clustered heatmaps side by side, of 60 and 12 genes, with dendrograms, annotation tracks and legends of the same size"}
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-layout.png')
 ```
 
@@ -1950,6 +1994,66 @@ heat_map_complete()
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-15.png')
 ```
 
+### 7.1 Heatmaps Beside ggplot2 Plots
+
+`heat_map_grob()` turns a heatmap into a `grid` graphical object (a grob), so it can sit beside `ggplot2` plots in `patchwork`, `cowplot` or `gridExtra` layouts. The grob draws the heatmap again whenever its space changes, so the dendrograms, legends and text are sized for the space the heatmap is given. Arguments passed to `heat_map_grob()` replace those the heatmap was drawn with, e.g. `heat_map_grob(hm, title = NULL)`. It needs the `gridGraphics` package.
+
+```{r, eval = FALSE}
+library(ggplot2)
+library(patchwork)
+hm <- heat_map(
+  mtcars,
+  scale = "column",
+  tree = "both",
+  tree_cut_y = 3,
+  title = "mtcars"
+)
+p <- ggplot(mtcars, aes(wt, mpg, colour = factor(cyl))) +
+  geom_point(size = 2) +
+  labs(x = "Weight (1000 lbs)", y = "Miles per gallon", colour = "Cylinders") +
+  theme_bw()
+p + heat_map_grob(hm) + plot_layout(widths = c(1, 1.5))
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "A scatter plot of miles per gallon against weight for the mtcars data, coloured by the number of cylinders, beside a clustered heatmap of the same cars"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-ggplot.png')
+```
+
+### 7.2 Heatmap Data for ggplot2 and Other Tools
+
+`heat_map_data()` returns what a heatmap shows as tidy tables: one row per cell (the default), row, column or dendrogram segment. Rows and columns are listed in the order they are displayed, and `x` and `y` are the centres of the cells in the heatmap's plot co-ordinates, including the gaps between clusters, so the cells can be rebuilt or restyled with `ggplot2`, exported, or used to draw on the heatmap with base graphics.
+
+```{r, eval = FALSE}
+cells <- heat_map_data(hm)
+rows <- heat_map_data(hm, "rows")
+cols <- heat_map_data(hm, "columns")
+tree <- heat_map_data(hm, "tree_y")
+# Dendrogram to the right of the cells, its heights scaled to 3 cells
+edge <- max(cells$x) + 0.5
+grow <- function(h) edge + 3 * h / max(tree$x)
+ggplot(cells) +
+  geom_tile(aes(x, y, fill = value), colour = "white") +
+  geom_segment(
+    data = tree,
+    aes(x = grow(x), y = y, xend = grow(xend), yend = yend)
+  ) +
+  scale_fill_distiller(palette = "RdBu", name = "Scaled\nvalue") +
+  scale_x_continuous(breaks = cols$x, labels = cols$column) +
+  scale_y_continuous(breaks = rows$y, labels = rows$row) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
+  )
+```
+
+```{r echo = FALSE, out.width = '75%', fig.align="center", fig.alt = "The mtcars heatmap rebuilt with ggplot2 from heat_map_data(), with a red-blue fill scale, the same row clusters and gaps, and the row dendrogram on the right"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-ggplot-data.png')
+```
+
+Drawn straight after `heat_map()`, base graphics land on the cells: `points(cells$x, cells$y)` marks the centre of every cell.
+
 ## 8. Export
 
 `HeatmapR` supports the export of high resolution images using `heat_map_save()` which allows control over the dimensions and resolution of the exported image. 
@@ -2024,12 +2128,12 @@ each column. Colours show z-score, from dark purple (-1.87) through yellow
 green to dark red (3.21). The highest value is 3.21 (Maserati Bora, carb) and
 the lowest is -1.87 (Ford Pantera L, qsec). Rows are ordered by hierarchical
 clustering (euclidean distance, complete linkage). Rows are split into 3
-groups, numbered from the bottom: group 1 (15 rows, e.g. Datsun 710 and Hornet
-4 Drive) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows,
-e.g. Hornet Sportabout and Duster 360) is highest in disp and cyl and lowest in
-gear and drat; group 3 (5 rows, e.g. Mazda RX4 and Mazda RX4 Wag) is highest in
-carb and gear and lowest in qsec and vs. Columns are ordered by hierarchical
-clustering (euclidean distance, complete linkage).
+groups, numbered from the top: group 1 (5 rows, e.g. Maserati Bora and Ford
+Pantera L) is highest in carb and gear and lowest in qsec and vs; group 2 (12
+rows, e.g. AMC Javelin and Dodge Challenger) is highest in disp and cyl and
+lowest in gear and drat; group 3 (15 rows, e.g. Toyota Corolla and Fiat 128) is
+highest in vs and mpg and lowest in cyl and hp. Columns are ordered by
+hierarchical clustering (euclidean distance, complete linkage).
 ```
 
 In a chunk that draws the heatmap, compute the description in an earlier chunk and refer to it, e.g. `fig.alt = as.character(heat_map_describe(hm))`. Clusters are described by the columns in which their mean is highest and lowest (rows, for clusters of columns), and `max_groups` limits how many clusters are described one by one.

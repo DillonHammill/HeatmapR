@@ -145,6 +145,36 @@
   invisible(TRUE)
 }
 
+#' Whether cluster indices are read in the displayed order - unnamed numeric
+#' indices with one value per row or column
+#' @noRd
+.display_indices <- function(cut,
+                             n,
+                             labels = NULL) {
+  is.numeric(cut) && length(cut) == n && n > 1 &&
+    !(!is.null(names(cut)) && !is.null(labels) && !anyDuplicated(names(cut)) &&
+        setequal(names(cut), labels))
+}
+
+#' Cluster indices given as the heatmap is displayed, in the original order
+#'
+#' Unnamed numeric cluster indices with one value per row (column) are read
+#' in the order the heatmap is displayed - rows from the top, columns from the
+#' left (see \code{.display_indices()}). Named indices (matched by name),
+#' labels (factors and text, which usually come from metadata in the original
+#' order) and cluster sizes are not converted.
+#'
+#' @param shown indices of the rows (from the top) or columns (from the left)
+#'   in display order.
+#'
+#' @noRd
+.display_cut <- function(cut,
+                         shown) {
+  out <- unname(cut)
+  out[shown] <- unname(cut)
+  out
+}
+
 #' Resolve manually defined clusters
 #'
 #' @param cut either a vector of cluster sizes (in the displayed order) or a
@@ -158,10 +188,13 @@
 #'   preserve a dendrogram order).
 #' @param labels row/column names of the data, used to match named cluster
 #'   indices.
+#' @param reverse TRUE when \code{ind} runs against the reading order (rows
+#'   are drawn from the bottom but read from the top): the first cluster and
+#'   the first cluster size are then placed at the end of \code{ind}.
 #'
 #' @return list containing the updated display order (\code{ind}) and the
 #'   cluster of each position in the display order (\code{cut}), numbered
-#'   consecutively from 1.
+#'   consecutively from 1 along \code{ind}.
 #'
 #' @noRd
 .manual_clusters <- function(cut,
@@ -170,7 +203,8 @@
                              arg,
                              margin,
                              keep_order = FALSE,
-                             labels = NULL) {
+                             labels = NULL,
+                             reverse = FALSE) {
 
   # MISSING VALUES
   if(anyNA(cut)) {
@@ -200,10 +234,12 @@
     }
     # CLUSTER CODES - FACTOR LEVELS OR SORTED VALUES
     if(is.factor(cut)) {
-      groups <- as.integer(droplevels(cut))
+      codes <- as.integer(droplevels(cut))
     } else {
-      groups <- as.integer(factor(cut))
+      codes <- as.integer(factor(cut))
     }
+    # THE FIRST CLUSTER IS PLACED FIRST IN READING ORDER
+    groups <- if(reverse) max(codes) + 1L - codes else codes
     # CLUSTERS ALREADY CONTIGUOUS IN A DENDROGRAM ORDER - KEEP THE DENDROGRAM
     if(keep_order && !anyDuplicated(rle(groups[ind])$values)) {
       new_ind <- ind
@@ -219,7 +255,7 @@
       } else {
         levels(factor(cut))
       }
-      cluster_labels <- lev[unique(new_cut)]
+      cluster_labels <- lev[unique(codes[new_ind])]
     }
     new_cut <- match(new_cut, unique(new_cut))
   # CLUSTER SIZES - DISPLAY ORDER
@@ -227,8 +263,11 @@
             all(cut %% 1 == 0) &&
             all(cut >= 0) &&
             sum(cut) == n) {
-    # EMPTY CLUSTERS ARE DROPPED
+    # EMPTY CLUSTERS ARE DROPPED - SIZES IN READING ORDER
     cut <- cut[cut > 0]
+    if(reverse) {
+      cut <- rev(cut)
+    }
     new_ind <- ind
     new_cut <- rep(
       seq_along(cut),
@@ -794,7 +833,7 @@
 #'   \item{\code{row_clusters}, \code{col_clusters}: the cluster assigned to
 #'   each row/column in their original order (or \code{NULL} when no clusters
 #'   were defined). Clusters are numbered in the order they are displayed:
-#'   from left to right for columns and from bottom to top for rows.}
+#'   from left to right for columns and from top to bottom for rows.}
 #'   \item{\code{tree_x}, \code{tree_y}: \code{hclust} objects for the x and
 #'   y axis dendrograms (or \code{NULL}). Branch heights are rescaled for
 #'   display.}
@@ -809,6 +848,10 @@
 #'   right and from top to bottom respectively.}
 #'   \item{\code{colours}, \code{sizes}: the fill colour and relative size of
 #'   each cell, in the orientation of the original data.}
+#'   \item{\code{centers}: lists \code{x} and \code{y} with the centre of
+#'   each column and row in the original order, in the heatmap's plot
+#'   co-ordinates (one unit per cell, plus any gaps between clusters), for
+#'   drawing on top of a heatmap.}
 #'   \item{\code{split_colours}, \code{split_data}: the fill colour and
 #'   value (after scaling) of the lower right half of each cell
 #'   (\code{cell_split}) in the orientation of the original data, or

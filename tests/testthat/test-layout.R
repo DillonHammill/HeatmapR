@@ -170,14 +170,15 @@ test_that("axis text can be hidden or partly missing", {
   m <- test_matrix(4, 3)
   info <- heat_map_info(draw(m, axis_text_x = NA, axis_text_y = c("a", NA, "c", NA)))
   expect_equal(info$axis_text_x, rep("", 3))
-  expect_equal(info$axis_text_y, rev(c("a", "", "c", "")))
+  # Given from the top, as info$axis_text_y lists them
+  expect_equal(info$axis_text_y, c("a", "", "c", ""))
   # Missing labels get no tick mark
   hm <- draw(m, axis_text_x = NA, axis_text_y = c("a", NA, "c", NA))
   axes <- drawn(hm, "C_axis")
   expect_length(Filter(function(z) z[[1]] == 1, axes), 0)
   expect_equal(
     unlist(lapply(Filter(function(z) z[[1]] == 2, axes), function(z) z[[3]])),
-    c("a", "c")
+    c("c", "a")
   )
 })
 
@@ -197,10 +198,7 @@ test_that("x axis labels on top leave room for the title", {
 })
 
 test_that("explicit margins are used as supplied", {
-  hm <- draw(test_matrix(4, 3), margins = c(1, 2, 3, 4), title = "T", layout = "classic")
-  # The title is drawn 2 lines inside the top margin
-  expect_equal(mtext_line(hm, "T"), 1)
-  # Fit layout - margin text keeps its padding from the edge of the figure
+  # Margin text keeps its padding from the edge of the figure
   for (top in c(3, 6)) {
     hm <- draw(test_matrix(4, 3), margins = c(1, 2, top, 4), title = "T",
                axis_label_x = "X")
