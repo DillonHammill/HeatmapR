@@ -868,6 +868,47 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-17.png')
 ```
 
+### 6.1 Layout
+
+By default `heat_map()` uses the `"classic"` layout, in which dendrograms, bar graphs and the legend are sized as fractions of the heatmap, so they grow and shrink with the number of rows and columns. Setting `layout = "fit"` sizes everything around the heatmap in inches from its contents instead: dendrograms and bar graphs keep the same size whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are multiples of 0.6 inches), the legend is as wide as its text, the margins are as wide as the axis text, axis labels and title, and the heatmap body takes the remaining space. Legends are stacked from the top of the heatmap and shrunk if they don't fit.
+
+```{r, eval = FALSE}
+set.seed(3)
+mat <- matrix(
+  rnorm(60 * 8),
+  nrow = 60,
+  dimnames = list(
+    paste0("Gene_", 1:60),
+    paste0("Sample_", 1:8)
+  )
+)
+mat[1:20, 1:4] <- mat[1:20, 1:4] + 2
+group <- data.frame(
+  Group = rep(c("Control", "Treated"), each = 4),
+  row.names = colnames(mat)
+)
+heat_map_custom(
+  popup = TRUE,
+  popup_size = c(11, 6.5),
+  layout = c(1, 2)
+)
+for(layout in c("classic", "fit")) {
+  heat_map(
+    mat,
+    tree = "both",
+    annotation_x = group,
+    legend_title = "Expression",
+    title = paste0("layout = \"", layout, "\""),
+    layout = layout
+  )
+}
+heat_map_complete()
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-layout.png')
+```
+
 ## 7. Complex Layouts
 
 `HeatmapR` supports the arrangement of multiple heatmaps in complex layouts using `heat_map_custom()`. `heat_map_custom()` is called prior to plotting to open the appropriate graphics device and set the desired layout before adding the heatmaps. Once the layout is complete, a call is made to `heat_map_complete()` to reset all `heat_map()` associated settings. The `layout` argument can be either a vector indicating the desired number of rows and columns or a mtrix defining a more complex layout. For example, if we want to split different car brands into separate heatmaps and arrange them:

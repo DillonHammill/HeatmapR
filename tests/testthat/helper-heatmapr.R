@@ -53,3 +53,20 @@ drawn_text <- function(hm) {
     )
   )
 }
+
+# Data and metadata from GitHub issue #3
+issue_data <- function() {
+  m <- test_matrix(20, 24)
+  colnames(m) <- paste0("S", sprintf("%02d", 1:24))
+  meta <- data.frame(
+    Treatment = factor(rep(c("Control", "Drug_A", "Drug_B"), each = 8)),
+    Sex = factor(rep(c("Male", "Female"), times = 12), levels = c("Male", "Female")),
+    row.names = colnames(m)
+  )
+  list(m = m, meta = meta)
+}
+
+issue_colours <- list(
+  Treatment = c(Control = "#4E9FD1", Drug_A = "#E07B54", Drug_B = "#6DBF7E"),
+  Sex = c(Male = "#7B5EA7", Female = "#E8A0BF")
+)

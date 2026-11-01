@@ -13,6 +13,11 @@
 #'   the cells of the heatmap so that the legend matches the cells.
 #' @param upi plot units per inch along x and y, computed from the current plot
 #'   when NULL.
+#' @param geom legend geometry of the fit layout, or NULL for the classic
+#'   legend.
+#'
+#' @return NULL for the classic legend, or the bounding box of the legend
+#'   (plot units) for the fit layout, invisibly.
 #'
 #' @importFrom grDevices axisTicks colorRamp rgb adjustcolor
 #' @importFrom graphics lines text polygon rect par strwidth
@@ -42,7 +47,8 @@ heat_map_legend <- function(col = NULL,
                             title_text_size = 1,
                             title_text_font = 2,
                             title_text_col = "black",
-                            title_text_col_alpha = 1) {
+                            title_text_col_alpha = 1,
+                            geom = NULL) {
 
   # ONLY SUPPORT LEGEND ON Y AXIS OPPOSITE AXIS TEXT
 
@@ -71,6 +77,45 @@ heat_map_legend <- function(col = NULL,
     upi <- c(
       x = diff(usr[1:2]) / pin[1],
       y = diff(usr[3:4]) / pin[2]
+    )
+  }
+
+  # FIT LAYOUT - LEGENDS SIZED FROM THEIR CONTENTS
+  if(!is.null(geom)) {
+    if(!is.function(col_scale)) {
+      col_scale <- colorRamp(col_scale)
+    }
+    return(
+      .heat_map_legend_fit(
+        blocks = .legend_blocks(
+          col = col,
+          size = size,
+          levels = levels,
+          annotations = annotations,
+          title = title,
+          title_size = title_text_size,
+          title_font = title_text_font,
+          title_col = mapply(
+            adjustcolor,
+            rep_len(title_text_col, 3),
+            rep_len(title_text_col_alpha, 3),
+            USE.NAMES = FALSE
+          ),
+          col_ramp = col_scale,
+          col_alpha = col_alpha
+        ),
+        size_fun = size_fun,
+        xlim = xlim,
+        ylim = ylim,
+        upi = upi,
+        side = side,
+        geom = geom,
+        col_scale_size = col_scale_size,
+        shape = shape,
+        text_font = text_font,
+        text_size = text_size,
+        text_col = adjustcolor(text_col, text_col_alpha)
+      )
     )
   }
 
@@ -654,4 +699,373 @@ heat_map_legend <- function(col = NULL,
     }
   }
   regions
+}
+
+## FIT LEGEND ------------------------------------------------------------------
+
+# In the fit layout the legends are sized in inches from their contents and
+# stacked from the top of the heatmap, with the keys (colour bars, shapes and
+# swatches) beside the heatmap and the text beyond them.
+
+#' Legend blocks in the order they are drawn
+#'
+#' @param col limits of the colour scale or NULL.
+#' @param size limits of the size scale or NULL.
+#' @param levels list with the \code{labels} (and \code{colours}) of the levels
+#'   legend or NULL.
+#' @param annotations annotation legends as returned by
+#'   \code{.annotation_tracks()}.
+#' @param col_ramp colour ramp of the colour scale.
+#'
+#' @return list of blocks, each with a \code{kind} ("bar", "shape" or
+#'   "swatch"), \code{labels} and a title.
+#'
+#' @noRd
+.legend_blocks <- function(col = NULL,
+                           size = NULL,
+                           levels = NULL,
+                           annotations = NULL,
+                           title = NA,
+                           title_size = 1,
+                           title_font = 2,
+                           title_col = "black",
+                           col_ramp = NULL,
+                           col_alpha = 1) {
+  if(length(title) == 0) {
+    title <- NA
+  }
+  title <- c(title, rep(NA, 3))[1:3]
+  title_size <- rep_len(title_size, 3)
+  title_font <- rep_len(title_font, 3)
+  title_col <- rep_len(title_col, 3)
+  block <- function(kind, labels, z, ...) {
+    c(
+      list(
+        kind = kind,
+        labels = labels,
+        title = title[z],
+        title_size = title_size[z],
+        title_font = title_font[z],
+        title_col = title_col[z]
+      ),
+      list(...)
+    )
+  }
+  blocks <- list()
+  if(length(col) >= 2) {
+    blocks[[length(blocks) + 1]] <- block(
+      "bar",
+      .legend_col_labels(col),
+      1,
+      limits = col,
+      ramp = col_ramp,
+      alpha = col_alpha,
+      min_in = 1
+    )
+  }
+  if(length(size) >= 2) {
+    blocks[[length(blocks) + 1]] <- block(
+      "shape",
+      .legend_size_labels(size),
+      2
+    )
+  }
+  if(length(levels$labels) > 0) {
+    blocks[[length(blocks) + 1]] <- block(
+      "swatch",
+      levels$labels,
+      3,
+      colours = levels$colours
+    )
+  }
+  for(a in annotations) {
+    if(is.null(a$ramp)) {
+      b <- block("swatch", a$labels, 3, colours = a$colours)
+    } else {
+      b <- block(
+        "bar",
+        .legend_col_labels(a$limits),
+        3,
+        limits = a$limits,
+        ramp = a$ramp,
+        alpha = 1,
+        min_in = 0.7
+      )
+    }
+    b$title <- a$title
+    blocks[[length(blocks) + 1]] <- b
+  }
+  blocks
+}
+
+#' Measure the legend blocks of the fit layout (inches)
+#'
+#' @param shape_in size of the size legend shapes (inches).
+#' @param key scaling of the legend keys (colour bar length, swatches and
+#'   shapes) - \code{legend_size} in \code{heat_map()}.
+#' @param scale scaling of everything, used to shrink a legend that doesn't
+#'   fit.
+#'
+#' @return list with the \code{width} and \code{height} of the legend, the
+#'   geometry of each block and the shared geometry.
+#'
+#' @noRd
+.legend_fit_measure <- function(blocks,
+                                text_size = 1,
+                                text_font = 1,
+                                col_scale_size = 1,
+                                shape_in = 0.25,
+                                key = 1,
+                                scale = 1) {
+  text_size <- max(text_size) * scale
+  geom <- list(
+    bar = 0.18 * col_scale_size * scale,
+    tick = 0.05 * scale,
+    gap = 0.06 * scale,
+    shape = shape_in * key * scale,
+    swatch = 0.16 * key * scale,
+    block_gap = 0.2 * scale,
+    text_size = text_size,
+    text_h = .text_in("Mg", text_size, text_font, "height")
+  )
+  geom$line <- 1.4 * geom$text_h
+  if(length(blocks) == 0) {
+    return(list(width = 0, height = 0, blocks = list(), geom = geom))
+  }
+  for(z in seq_along(blocks)) {
+    b <- blocks[[z]]
+    b$title_size <- b$title_size * scale
+    has_title <- !is.null(b$title) && !is.na(b$title) && nzchar(b$title)
+    b$title_h <- if(has_title) {
+      1.5 * .text_in("Mg", b$title_size, b$title_font, "height")
+    } else {
+      0
+    }
+    b$title_w <- if(has_title) {
+      .text_in(b$title, b$title_size, b$title_font, "width")
+    } else {
+      0
+    }
+    n <- length(b$labels)
+    if(b$kind == "bar") {
+      b$key_w <- geom$bar
+      b$label_x <- geom$bar + geom$tick + 0.5 * geom$gap
+      b$row_h <- geom$line
+      b$body_h <- max(b$min_in * key * scale, (n + 1) * geom$line)
+    } else if(b$kind == "shape") {
+      b$key_w <- geom$shape
+      b$label_x <- geom$shape + geom$gap
+      b$row_h <- max(1.15 * geom$shape, geom$line)
+      b$body_h <- n * b$row_h
+    } else {
+      b$key_w <- geom$swatch
+      b$label_x <- geom$swatch + geom$gap
+      b$row_h <- max(geom$line, 1.2 * geom$swatch)
+      b$body_h <- n * b$row_h
+    }
+    b$width <- max(
+      b$title_w,
+      b$label_x + .text_in(b$labels, text_size, text_font, "width")
+    )
+    b$height <- b$title_h + b$body_h
+    blocks[[z]] <- b
+  }
+  list(
+    width = max(vapply(blocks, function(b) b$width, numeric(1))),
+    height = sum(vapply(blocks, function(b) b$height, numeric(1))) +
+      geom$block_gap * (length(blocks) - 1),
+    blocks = blocks,
+    geom = geom
+  )
+}
+
+#' Draw the legends of the fit layout
+#'
+#' @param xlim limits of the legend region (plot units) - the keys are drawn
+#'   at the edge nearest the heatmap.
+#' @param ylim limits of the plot region (plot units).
+#' @param geom legend geometry from the layout: the size of the size legend
+#'   shapes (\code{shape_in}), the scaling of the keys (\code{key}) and the
+#'   limits of the heatmap body (\code{body}).
+#'
+#' @return bounding box of the legend (plot units), invisibly.
+#'
+#' @importFrom grDevices rgb adjustcolor
+#' @importFrom graphics rect segments text polygon
+#' @noRd
+.heat_map_legend_fit <- function(blocks,
+                                 size_fun,
+                                 xlim,
+                                 ylim,
+                                 upi,
+                                 side,
+                                 geom,
+                                 col_scale_size = 1,
+                                 shape = "rect",
+                                 text_font = 1,
+                                 text_size = 1,
+                                 text_col = "black") {
+
+  if(length(blocks) == 0) {
+    return(invisible(NULL))
+  }
+
+  # SHRINK EVERYTHING IF THE LEGEND DOESN'T FIT THE SPACE AVAILABLE
+  measure <- function(scale) {
+    .legend_fit_measure(
+      blocks,
+      text_size = text_size,
+      text_font = text_font,
+      col_scale_size = col_scale_size,
+      shape_in = geom$shape_in,
+      key = geom$key,
+      scale = scale
+    )
+  }
+  m <- measure(1)
+  scale <- min(
+    1,
+    (diff(range(xlim)) / upi[["x"]]) / m$width,
+    (diff(range(ylim)) / upi[["y"]]) / m$height
+  )
+  if(scale < 1 - 1e-6) {
+    m <- measure(scale)
+  }
+  g <- m$geom
+
+  # CO-ORDINATES - INCHES FROM THE INNER EDGE & THE TOP OF THE LEGEND
+  dir <- if(side == 4) 1 else -1
+  x0 <- if(side == 4) min(xlim) else max(xlim)
+  hadj <- if(side == 4) 0 else 1
+  top <- max(geom$body)
+  if(top - m$height * upi[["y"]] < min(ylim)) {
+    top <- min(ylim) + m$height * upi[["y"]]
+  }
+  top <- min(top, max(ylim))
+  X <- function(v) x0 + dir * v * upi[["x"]]
+  Y <- function(v) top - v * upi[["y"]]
+  # LEFT & RIGHT EDGES OF A KEY
+  key_x <- function(from, to) sort(c(X(from), X(to)))
+
+  t <- 0
+  for(b in m$blocks) {
+    # TITLE - ALIGNED WITH THE KEYS
+    if(b$title_h > 0) {
+      text(
+        x = X(0),
+        y = Y(t),
+        labels = b$title,
+        adj = c(hadj, 1),
+        cex = b$title_size,
+        font = b$title_font,
+        col = b$title_col,
+        xpd = TRUE
+      )
+    }
+    t <- t + b$title_h
+    n <- length(b$labels)
+    if(b$kind == "bar") {
+      # COLOUR BAR - INSET BY HALF A LINE OF TEXT SO END LABELS FIT
+      y_bar <- c(Y(t + b$body_h - 0.5 * g$text_h), Y(t + 0.5 * g$text_h))
+      kx <- key_x(0, b$key_w)
+      box_n <- 75
+      box_y <- seq(y_bar[1], y_bar[2], length.out = box_n + 1)
+      box_m <- (box_y[-1] + box_y[-length(box_y)]) / 2
+      cols <- b$ramp((box_m - y_bar[1]) / diff(y_bar))
+      cols <- adjustcolor(
+        rgb(cols[, 1], cols[, 2], cols[, 3], maxColorValue = 255),
+        b$alpha
+      )
+      rect(
+        xleft = kx[1],
+        ybottom = box_y[-length(box_y)],
+        xright = kx[2],
+        ytop = box_y[-1],
+        col = cols,
+        border = cols,
+        xpd = TRUE
+      )
+      rect(kx[1], y_bar[1], kx[2], y_bar[2], xpd = TRUE)
+      at <- if(diff(range(b$limits)) == 0) {
+        mean(y_bar)
+      } else {
+        .rescale(b$labels, limits = range(b$limits), scale = y_bar)
+      }
+      segments(
+        x0 = X(b$key_w),
+        y0 = at,
+        x1 = X(b$key_w + g$tick),
+        y1 = at,
+        col = "black",
+        xpd = TRUE
+      )
+      text(
+        x = X(b$label_x),
+        y = at,
+        labels = b$labels,
+        adj = c(hadj, 0.5),
+        cex = .fit_legend_text(at, g$text_size, text_font, upi),
+        font = text_font,
+        col = text_col,
+        xpd = TRUE
+      )
+    } else {
+      # ROWS - SIZE LEGEND INCREASING UPWARDS, OTHERS IN ORDER DOWNWARDS
+      rows <- if(b$kind == "shape") rev(seq_len(n)) else seq_len(n)
+      yc <- Y(t + (rows - 0.5) * b$row_h)
+      xc <- X(0.5 * b$key_w)
+      if(b$kind == "shape") {
+        r <- 0.5 * size_fun(b$labels) * b$key_w
+        rx <- r * upi[["x"]]
+        ry <- r * upi[["y"]]
+        if(grepl("^r", shape, ignore.case = TRUE)) {
+          rect(xc - rx, yc - ry, xc + rx, yc + ry, col = "black", xpd = TRUE)
+        } else {
+          if(grepl("^d", shape, ignore.case = TRUE)) {
+            dx <- c(-1, 0, 1, 0)
+            dy <- c(0, 1, 0, -1)
+          } else {
+            angles <- seq(0, 2, 1/25) * pi
+            dx <- sin(angles)
+            dy <- cos(angles)
+          }
+          polygon(
+            x = as.vector(rbind(outer(dx, rx) + xc, NA)),
+            y = as.vector(rbind(outer(dy, ry) + rep(yc, each = length(dy)), NA)),
+            col = "black",
+            xpd = TRUE
+          )
+        }
+      } else {
+        h <- 0.5 * b$key_w
+        rect(
+          xleft = xc - h * upi[["x"]],
+          ybottom = yc - h * upi[["y"]],
+          xright = xc + h * upi[["x"]],
+          ytop = yc + h * upi[["y"]],
+          col = b$colours,
+          border = "black",
+          xpd = TRUE
+        )
+      }
+      text(
+        x = X(b$label_x),
+        y = yc,
+        labels = b$labels,
+        adj = c(hadj, 0.5),
+        cex = g$text_size,
+        font = text_font,
+        col = text_col,
+        xpd = TRUE
+      )
+    }
+    t <- t + b$body_h + g$block_gap
+  }
+
+  invisible(
+    list(
+      x = sort(c(X(0), X(m$width))),
+      y = c(Y(m$height), Y(0))
+    )
+  )
 }

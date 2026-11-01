@@ -145,6 +145,7 @@ heat_map(
   legend_text_col = "black",
   legend_text_col_alpha = 1,
   fit_text = TRUE,
+  layout = "classic",
   popup = TRUE,
   popup_size = c(7, 7),
   ...
@@ -674,7 +675,8 @@ non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
 \code{FALSE}, \code{NA} or \code{"none"} to remove the legend.}
 
 \item{legend_size}{numeric to control the amount of space allocated to the
-legend, set to 1 by default.}
+legend, set to 1 by default. In the fit layout the legend is sized from its
+contents and \code{legend_size} scales the legend keys instead.}
 
 \item{legend_col_scale_size}{numeric to control the width of the legend
 colour scale relative to the allocated space for the legend, set to 1 by
@@ -713,6 +715,18 @@ the legend, set to 1 by default to use solid colours.}
 label text should be shrunk to fit the available space when it would
 otherwise overlap, set to TRUE by default. Axis labels that still don't
 fit at half their size are thinned to every second, third, ... label.}
+
+\item{layout}{how space is shared between the heatmap and everything around
+it, either \code{"classic"} (the default) or \code{"fit"}. The classic
+layout sizes dendrograms, bar graphs and the legend as fractions of the
+heatmap, so they grow and shrink with the number of rows and columns. The
+fit layout sizes them in inches from their contents - dendrograms and bar
+graphs keep the same size whatever the shape of the data, the legend is
+as wide as its text, the margins are as wide as the axis text, labels and
+title, and the heatmap body takes the remaining space. In the fit layout
+\code{tree_size_x}, \code{tree_size_y}, \code{bar_size_x} and
+\code{bar_size_y} are multiples of 0.6 inches and \code{legend_size}
+scales the legend keys (colour bars, swatches and size legend shapes).}
 
 \item{popup}{logical indicating whether the heatmap should be constructed in
 a popup window, set to TRUE by default.}
