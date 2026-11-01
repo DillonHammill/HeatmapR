@@ -6,8 +6,10 @@
 #'   using \code{dist} and passed to \code{hclust} for hierarchical clustering.
 #' @param tree indicates whether hierarchical clustering should be performed by
 #'   \code{"row"} or \code{"column"}. Optionally a custom object of class
-#'   \code{"dist"} or \code{"hclust"} which will be updated with cluster labels
-#'   as specified by \code{cut}.
+#'   \code{"dist"} (clustered using \code{method}) or \code{"hclust"} which will
+#'   be updated with cluster labels as specified by \code{cut}. Any clusters
+#'   already stored in a supplied \code{hclust} object are replaced when
+#'   \code{cut} is supplied.
 #' @param dist method passed to \code{\link{dist}} to compute distance matrix,
 #'   set to \code{"euclidean"} by default. Also supports \code{"cosine"} for
 #'   cosine distance (1 - cosine similarity).
@@ -15,10 +17,10 @@
 #'   hierarchical clustering, set to \code{"complete"} by default.
 #' @param scale logical indicating whether branch heights should be scaled for
 #'   better visualisation, set to FALSE by default.
-#' @param cut value less than 1 specifying the tree cutpoint as a proportion of
-#'   the tree height (for non-cosine distances) or as an absolute cosine
-#'   distance threshold (when \code{dist = "cosine"}), or a value greater than
-#'   or equal to 1 indicating the number of desired clusters.
+#' @param cut value from 0 to less than 1 specifying the tree cutpoint as a
+#'   proportion of the tree height (for non-cosine distances) or as an absolute
+#'   cosine distance threshold (when \code{dist = "cosine"}), or a value
+#'   greater than or equal to 1 indicating the number of desired clusters.
 #' @param ... additional arguments passed to \code{\link{dist}} or
 #'   \code{\link{hclust}}.
 #'
@@ -49,16 +51,21 @@ heat_map_clust <- function(x,
   # ARGUMENTS
   args <- .args_list(...)
 
-  # DISTANCE MATRIX -> HCLUST
-  if(!is.character(args$tree) && !is.numeric(args$tree)) {
-    if(!inherits(args$tree, "hclust")) {
-      args$tree <- hclust(
-        as.dist(
-          args$tree
-        ),
-        method = method
-      )
-    }
+  # DISTANCE MATRIX -> HCLUST (DIST OBJECTS ARE NUMERIC SO CHECK THEM FIRST)
+  if(inherits(args$tree, "dist")) {
+    args$tree <- hclust(
+      args$tree,
+      method = method
+    )
+  } else if(!is.character(args$tree) &&
+            !is.numeric(args$tree) &&
+            !inherits(args$tree, "hclust")) {
+    args$tree <- hclust(
+      as.dist(
+        args$tree
+      ),
+      method = method
+    )
   }
 
   # CLUSTERING REQUIRED
@@ -129,13 +136,24 @@ heat_map_clust <- function(x,
   # SCALED HEIGHTS -> [0, 1]
   tree$height <- .tree_heights(original_heights, scale = scale)
 
+  # EXISTING CLUSTERS (E.G. A TREE FROM heat_map_info()) - A NEW CUT REPLACES
+  # THEM, OTHERWISE KEEP ONE CLUSTER PER LEAF (DROPS ANY CLUSTER APPENDED FOR
+  # NON-NUMERIC COLUMNS)
+  if(!is.null(tree$cut)) {
+    if(!is.null(cut)) {
+      tree$cut <- NULL
+    } else {
+      tree$cut <- tree$cut[seq_along(tree$order)]
+    }
+  }
+
   # CUTTING
-  if(!is.null(cut) && is.null(tree$cut)) {
+  if(!is.null(cut)) {
     # NUMBER OF LEAVES
     n_leaves <- length(tree$order)
     # VALIDATE CUT
-    if(!is.numeric(cut) || length(cut) != 1 || is.na(cut) || cut <= 0) {
-      stop("'cut' must be a single positive number!")
+    if(!is.numeric(cut) || length(cut) != 1 || is.na(cut) || cut < 0) {
+      stop("'cut' must be a single non-negative number!")
     }
     # COSINE DISTANCE WITH CUT < 1 - use as actual distance threshold
     if(cut < 1 && tolower(dist) == "cosine") {

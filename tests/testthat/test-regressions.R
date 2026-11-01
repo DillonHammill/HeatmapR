@@ -282,6 +282,162 @@ test_that("a failed heat_map() closes the heat_map_save() device", {
   unlink(f)
 })
 
+# REVIEW FOLLOW-UPS ------------------------------------------------------------
+
+test_that("scaling margins are matched strictly", {
+  sc <- function(...) suppressMessages(heat_map_scale(mtcars, ...))
+  expect_equal(sc(scale = "col"), sc(scale = "column"))
+  expect_equal(sc(scale = "x"), sc(scale = "column"))
+  expect_equal(sc(scale = "y"), sc(scale = "row"))
+  expect_equal(sc(scale = "rows"), sc(scale = "row"))
+  expect_error(sc(scale = "range"), "must be either")
+  expect_error(sc(scale = "random"), "must be either")
+})
+
+test_that("dist objects are clustered", {
+  sm <- scale(mtcars)
+  hm <- draw(sm, tree_y = dist(sm), tree_cut_y = 3)
+  expect_equal(heat_map_info(hm)$tree_y$order, hclust(dist(sm))$order)
+  expect_length(unique(heat_map_info(hm)$row_clusters), 3)
+  hm <- draw(sm, tree_x = dist(t(sm)))
+  expect_equal(heat_map_info(hm)$tree_x$order, hclust(dist(t(sm)))$order)
+  tr <- heat_map_clust(sm, tree = dist(sm), method = "average")
+  expect_equal(tr$order, hclust(dist(sm), "average")$order)
+  expect_error(draw(sm, tree_y = dist(sm[1:5, ])), "must describe the 32 rows")
+})
+
+test_that("trees from heat_map_info() can be reused and re-cut", {
+  sm <- scale(mtcars)
+  ty <- heat_map_info(draw(sm, tree_cut_y = 3))$tree_y
+  expect_length(unique(heat_map_info(draw(sm, tree_y = ty))$row_clusters), 3)
+  expect_length(
+    unique(heat_map_info(draw(sm, tree_y = ty, tree_cut_y = 6))$row_clusters),
+    6
+  )
+  expect_equal(
+    max(heat_map_clust(sm, tree = heat_map_clust(sm, cut = 3), cut = 5)$cut),
+    5
+  )
+  # Clusters stored for non-numeric columns are not part of the tree
+  tx <- heat_map_info(draw(iris[1:20, ], tree_cut_x = 2))$tree_x
+  expect_length(tx$cut, 4)
+  expect_no_error(draw(iris[1:20, ], tree_x = tx))
+})
+
+test_that("named cluster indices are matched to row and column names", {
+  m <- matrix(1:12, 4, dimnames = list(paste0("r", 1:4), paste0("c", 1:3)))
+  cl <- heat_map_info(draw(m, tree_cut_y = c(r3 = 2, r1 = 1, r4 = 2, r2 = 1)))$row_clusters
+  expect_equal(cl[["r1"]], cl[["r2"]])
+  expect_equal(cl[["r3"]], cl[["r4"]])
+  expect_false(cl[["r1"]] == cl[["r3"]])
+  cl <- heat_map_info(draw(m, tree_cut_x = c(c3 = "b", c1 = "a", c2 = "b")))$col_clusters
+  expect_equal(unname(cl), c(1L, 2L, 2L))
+})
+
+test_that("zero cluster sizes and a zero cut height are accepted", {
+  sm <- scale(mtcars)
+  hm <- draw(sm, tree_cut_x = c(5, 0, 6))
+  expect_equal(as.vector(table(heat_map_info(hm)$col_clusters)), c(5, 6))
+  expect_no_error(draw(sm, tree_cut_x = 0))
+  expect_error(heat_map_clust(sm, cut = -1), "non-negative")
+})
+
+test_that("cell_col_alpha can vary by cell in data order", {
+  m <- matrix(1:6, 2)
+  a <- c(0.2, 0.4, 0.6, 0.8, 1, 0.5)
+  hm <- draw(m, cell_col_alpha = a)
+  got <- grDevices::col2rgb(heat_map_info(hm)$colours, alpha = TRUE)[4, ] / 255
+  expect_equal(got, a, tolerance = 0.01)
+  expect_no_error(draw(mtcars, cell_col_alpha = c(0.3, 1)))
+  expect_no_error(
+    draw(iris[1:20, ], cell_col_alpha = matrix(0.5, 20, 5), legend = c("both", "levels"))
+  )
+  expect_error(draw(m, cell_col_alpha = matrix(1, 3, 3)), "same dimensions")
+})
+
+test_that("expression axis labels are kept", {
+  expect_no_warning(
+    hm <- draw(mtcars[1:3, 1:3], axis_text_x = expression(alpha, beta^2, gamma[i]))
+  )
+  expect_true(is.expression(heat_map_info(hm)$axis_text_x))
+})
+
+test_that("legend = 'none' or NA removes the legend", {
+  expect_no_warning(draw(mtcars, legend = "none"))
+  expect_no_warning(draw(mtcars, legend = NA))
+  expect_warning(draw(mtcars, legend = "foo"), "not a supported legend type")
+})
+
+test_that("R colour names are not treated as hcl palettes", {
+  hm <- draw(mtcars[1:4, 1:3], cell_col_scale = "magenta", legend = FALSE)
+  expect_true(all(heat_map_info(hm)$colours == "#FF00FFFF"))
+  expect_true(HeatmapR:::.is_hcl_palette("viridis"))
+  expect_true(HeatmapR:::.is_hcl_palette("blue-red 3"))
+  expect_false(HeatmapR:::.is_hcl_palette("magenta"))
+  expect_false(HeatmapR:::.is_hcl_palette("greenyellow"))
+})
+
+test_that("tree = TRUE draws both dendrograms", {
+  info <- heat_map_info(draw(scale(mtcars), tree = TRUE))
+  expect_s3_class(info$tree_x, "hclust")
+  expect_s3_class(info$tree_y, "hclust")
+})
+
+test_that("an error in the arguments closes the heat_map_save() device", {
+  skip_on_cran()
+  n_dev <- length(grDevices::dev.list())
+  f <- tempfile(fileext = ".png")
+  heat_map_save(f)
+  expect_warning(
+    expect_error(heat_map(object_that_does_not_exist, popup = FALSE)),
+    "has been closed"
+  )
+  expect_false(getOption("heat_map_save"))
+  expect_equal(length(grDevices::dev.list()), n_dev)
+  unlink(f)
+})
+
+test_that("heat_map_save(x = ) keeps an active custom layout", {
+  skip_on_cran()
+  hm <- draw(mtcars)
+  grDevices::pdf(NULL)
+  scr <- grDevices::dev.cur()
+  heat_map_custom(popup = FALSE, layout = c(1, 2))
+  suppressMessages(heat_map(mtcars, popup = FALSE))
+  f <- tempfile(fileext = ".png")
+  heat_map_save(f, x = hm)
+  expect_true(getOption("heat_map_custom"))
+  expect_false(getOption("heat_map_save"))
+  expect_equal(grDevices::dev.cur(), scr)
+  heat_map_complete()
+  grDevices::dev.off(scr)
+  unlink(f)
+})
+
+test_that("several heatmaps without a layout are saved on separate pages", {
+  skip_on_cran()
+  hm <- draw(mtcars)
+  f <- tempfile(fileext = ".png")
+  expect_warning(heat_map_save(f, x = list(hm, hm)), "Only the last heatmap")
+  f2 <- tempfile(fileext = ".pdf")
+  expect_no_warning(heat_map_save(f2, x = list(hm, hm)))
+  expect_true(file.exists(f2))
+  unlink(c(f, f2))
+})
+
+test_that("plot() accepts new data and print() replays custom layouts", {
+  hm <- draw(mtcars)
+  expect_false(attr(hm, "heat_map_custom"))
+  grDevices::pdf(NULL)
+  expect_no_error(suppressMessages(plot(hm, data = mtcars[1:5, ])))
+  heat_map_custom(popup = FALSE, layout = c(1, 2))
+  hm2 <- suppressMessages(heat_map(mtcars, popup = FALSE))
+  heat_map_complete()
+  expect_true(attr(hm2, "heat_map_custom"))
+  expect_no_error(print(hm2))
+  grDevices::dev.off()
+})
+
 # SNAPSHOTS --------------------------------------------------------------------
 
 test_that("heatmap snapshots", {
@@ -310,6 +466,13 @@ test_that("heatmap snapshots", {
       bar_fill_x = c(B = "red", C = "green", A = "blue"),
       legend = FALSE, popup = FALSE
     )
+  )
+  # Size legend layout matches v1.1.0 on medium height heatmaps
+  vdiffr::expect_doppelganger(
+    "size legend medium height",
+    function() suppressMessages(heat_map(
+      mtcars[1:16, ], scale = "column", cell_size = TRUE, popup = FALSE
+    ))
   )
   vdiffr::expect_doppelganger(
     "levels legend",

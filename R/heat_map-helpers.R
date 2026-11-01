@@ -22,14 +22,17 @@
 #'   (or a list of \code{heat_map} objects to fill a \code{layout}) to draw and
 #'   save immediately. When supplied, the graphics device is closed once the
 #'   heatmap(s) have been drawn and there is no need to call
-#'   \code{heat_map_complete()}.
+#'   \code{heat_map_complete()}. Any active \code{heat_map_custom()} layout
+#'   and the current graphics device are left unchanged. Without a
+#'   \code{layout}, each heatmap is drawn on a separate page, so several
+#'   heatmaps require a pdf file or \code{multiple = TRUE}.
 #' @param ... additional arguments for the appropriate \code{png()},
 #'   \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.
 #'
 #' @return No return value, called for side effects.
 #'
 #' @importFrom tools file_ext file_path_sans_ext
-#' @importFrom grDevices png tiff jpeg pdf svg
+#' @importFrom grDevices png tiff jpeg pdf svg dev.cur dev.off dev.list dev.set
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
@@ -92,6 +95,26 @@ heat_map_save <- function(save_as,
     stop(paste("Can't save file to", file_ext(save_as), "format."))
   )
 
+  # SEVERAL HEATMAPS WITHOUT A LAYOUT - ONE PAGE EACH
+  if(length(x) > 1 && is.null(layout) && !isTRUE(multiple)) {
+    if(format == "pdf") {
+      multiple <- TRUE
+    } else {
+      warning(
+        "Only the last heatmap will be saved to '", save_as, "' - supply a ",
+        "'layout' or set multiple = TRUE to save each heatmap to a separate ",
+        "file.",
+        call. = FALSE
+      )
+    }
+  }
+
+  # STATE TO RESTORE WHEN DRAWING SUPPLIED HEATMAPS
+  if(!is.null(x)) {
+    old_opts <- options("heat_map_save", "heat_map_custom")
+    old_dev <- dev.cur()
+  }
+
   # Save separate pages to separate number files
   if (isTRUE(multiple) && format != "pdf") {
     save_as <- paste0(
@@ -149,6 +172,21 @@ heat_map_save <- function(save_as,
     )
   }
 
+  # CLOSE THE FILE DEVICE & RESTORE THE PREVIOUS STATE ON EXIT - EVEN IF
+  # DRAWING FAILS
+  if(!is.null(x)) {
+    save_dev <- dev.cur()
+    on.exit({
+      if(save_dev %in% dev.list()) {
+        dev.off(save_dev)
+      }
+      options(old_opts)
+      if(old_dev != 1 && old_dev %in% dev.list()) {
+        dev.set(old_dev)
+      }
+    }, add = TRUE)
+  }
+
   # CUSTOM LAYOUT
   if(!is.null(layout)){
     heat_map_layout(layout = layout)
@@ -159,9 +197,7 @@ heat_map_save <- function(save_as,
 
   # DRAW & SAVE SUPPLIED HEATMAPS
   if(!is.null(x)) {
-    # CLOSE DEVICE ON EXIT - EVEN IF DRAWING FAILS
     options("heat_map_custom" = TRUE)
-    on.exit(heat_map_complete(), add = TRUE)
     for(hm in x) {
       plot(hm)
     }

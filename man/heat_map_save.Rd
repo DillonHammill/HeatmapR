@@ -44,7 +44,10 @@ created using \code{heat_map_layout}, set to NULL by default.}
 (or a list of \code{heat_map} objects to fill a \code{layout}) to draw and
 save immediately. When supplied, the graphics device is closed once the
 heatmap(s) have been drawn and there is no need to call
-\code{heat_map_complete()}.}
+\code{heat_map_complete()}. Any active \code{heat_map_custom()} layout
+and the current graphics device are left unchanged. Without a
+\code{layout}, each heatmap is drawn on a separate page, so several
+heatmaps require a pdf file or \code{multiple = TRUE}.}
 
 \item{...}{additional arguments for the appropriate \code{png()},
 \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.}

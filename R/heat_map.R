@@ -25,13 +25,15 @@
 #'   \code{cell_text = TRUE} and values are displayed in the heatmap, set to 2
 #'   decimal places by default
 #' @param tree options include \code{"row"}, \code{"y"}, \code{"column"},
-#'   \code{"x"} or \code{"both"} to indicate the axes for which dendrograms
-#'   should be constructed, set to FALSE by default. This argument overrides the
-#'   \code{tree_x} and \code{tree_y} arguments.
+#'   \code{"x"} or \code{"both"} (or \code{TRUE}) to indicate the axes for
+#'   which dendrograms should be constructed, set to FALSE by default. This
+#'   argument overrides the \code{tree_x} and \code{tree_y} arguments.
 #' @param tree_x logical indicating whether dendrograms should be constructed
 #'   for the x axis (columns), set to NULL by default. Alternatively, a
 #'   pre-computed \code{hclust} or \code{dist} object describing the columns of
-#'   \code{x}.
+#'   \code{x}, such as \code{heat_map_info(hm)$tree_x} from a previous
+#'   heatmap. Clusters stored in the \code{hclust} object are kept unless
+#'   \code{tree_cut_x} is supplied.
 #' @param tree_size_x numeric to control the height of the dendrogram for the x
 #'   axis, set to 1 by default.
 #' @param tree_scale_x logical indicating whether the branch heights of the x
@@ -52,8 +54,12 @@
 #'   ordered from left to right. When a vector of indices is supplied, its
 #'   length must equal the number of columns in \code{x}; if its length also
 #'   matches a valid set of cluster sizes, it is treated as cluster indices.
-#'   If a dendrogram is requested, clusters that are contiguous in the
-#'   dendrogram order keep that order; otherwise the dendrogram is not drawn.
+#'   Named indices are matched to the column names of \code{x}. If a
+#'   dendrogram is requested, clusters that are contiguous in the dendrogram
+#'   order keep that order; otherwise the dendrogram is not drawn. Clusters
+#'   are always numbered, and labelled by \code{tree_label_text_x}, in the
+#'   displayed order from left to right, which may differ from the supplied
+#'   indices when the dendrogram order is kept.
 #' @param tree_split_x a numeric to control the spacing between x axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove axis
 #'   tree splits.
@@ -67,7 +73,7 @@
 #' @param tree_label_col_alpha_x numeric to control the transparency of the x
 #'   axis tree cluster labels, set to 1 by default to use solid colours.
 #' @param tree_label_text_x a vector of text to include in the x axis tree
-#'   cluster labels, set to NA by default.
+#'   cluster labels from left to right, set to NA by default.
 #' @param tree_label_text_font_x a vector of font types to use for text in x
 #'   axis cluster labels, set to 1 by default for plain text. See \code{font} in
 #'   \code{?par} for alternatives.
@@ -81,7 +87,9 @@
 #' @param tree_y logical indicating whether dendrograms should be constructed
 #'   for the y axis (rows), set to NULL by default. Alternatively, a
 #'   pre-computed \code{hclust} or \code{dist} object describing the rows of
-#'   \code{x}.
+#'   \code{x}, such as \code{heat_map_info(hm)$tree_y} from a previous
+#'   heatmap. Clusters stored in the \code{hclust} object are kept unless
+#'   \code{tree_cut_y} is supplied.
 #' @param tree_size_y numeric to control the width of the dendrogram for the y
 #'   axis, set to 1 by default.
 #' @param tree_scale_y logical indicating whether the branch heights of the y
@@ -101,9 +109,12 @@
 #'   character or factor, and rows are regrouped so that each cluster is
 #'   contiguous, ordered from the bottom of the heatmap to the top. When a
 #'   vector of indices is supplied, its length must equal the number of rows in
-#'   \code{x}. If a dendrogram is requested, clusters that are contiguous in
-#'   the dendrogram order keep that order; otherwise the dendrogram is not
-#'   drawn.
+#'   \code{x}, and named indices are matched to the row names of \code{x}. If
+#'   a dendrogram is requested, clusters that are contiguous in the dendrogram
+#'   order keep that order; otherwise the dendrogram is not drawn. Clusters are
+#'   always numbered, and labelled by \code{tree_label_text_y}, in the
+#'   displayed order from the bottom of the heatmap to the top, which may
+#'   differ from the supplied indices when the dendrogram order is kept.
 #' @param tree_split_y a numeric to control the spacing between y axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove axis
 #'   tree splits.
@@ -117,7 +128,8 @@
 #' @param tree_label_col_alpha_y numeric to control the transparency of the y
 #'   axis tree cluster labels, set to 1 by default to use solid colours.
 #' @param tree_label_text_y a vector of text to include in the y axis tree
-#'   cluster labels, set to NA by default.
+#'   cluster labels from the bottom of the heatmap to the top, set to NA by
+#'   default.
 #' @param tree_label_text_font_y a vector of font types to use for text in y
 #'   axis cluster labels, set to 1 by default for plain text. See \code{font} in
 #'   \code{?par} for alternatives.
@@ -171,7 +183,11 @@
 #'   width), set to \code{c(0, 1)} by default. Increasing the lower limit (e.g.
 #'   \code{c(0.1, 1)}) ensures cells with the smallest values remain visible.
 #' @param cell_col_alpha a numeric to control the fill transparency of cells
-#'   within the heatmap, set to 1 by default to use solid colours.
+#'   within the heatmap, set to 1 by default to use solid colours. A different
+#'   transparency can be used for each cell by supplying a matrix with the same
+#'   dimensions as \code{x}, or a vector that is recycled down the columns of
+#'   \code{x} (as in \code{matrix()}). Legends use solid colours unless all
+#'   cells share the same transparency.
 #' @param cell_col_empty a colour to use for missing values in \code{x}, set to
 #'   \code{"white"} by default.
 #' @param cell_border_line_type a integer to indicate the type of line to use
@@ -267,7 +283,8 @@
 #' @param axis_text_x vector of text to use for x axis labels supplied in the
 #'   order matching the constructed heatmap, set to NULL by default to use the
 #'   column names of \code{x}. Missing values (\code{NA}) are drawn as empty
-#'   labels.
+#'   labels. An \code{expression} can be supplied for mathematical
+#'   annotation (see \code{?plotmath}).
 #' @param axis_text_side_x indicates whether the x axis text should be on the
 #'   \code{1 - "bottom"} or \code{3 - "top"} of the heatmap, set to
 #'   \code{"bottom"} by default. All other heatmap components, including the
@@ -303,7 +320,8 @@
 #'   order matching the constructed heatmap (from bottom to top), set to NULL
 #'   by default to use the row names of \code{x}, or the row indices when
 #'   \code{x} has no row names. Missing values (\code{NA}) are drawn as empty
-#'   labels.
+#'   labels. An \code{expression} can be supplied for mathematical
+#'   annotation (see \code{?plotmath}).
 #' @param axis_text_side_y indicates whether the y axis text should be on the
 #'   \code{2 - "left"} or \code{4 - "right"} of the heatmap, set to
 #'   \code{"left"} by default. All other heatmap components, including the tree,
@@ -356,7 +374,8 @@
 #'   \code{"size"}, \code{"both"} (colour and size) or \code{"levels"} to
 #'   indicate the type(s) of legends to include in the heatmap. The
 #'   \code{"levels"} legend shows the colours assigned to values in
-#'   non-numeric columns, e.g. \code{legend = c("both", "levels")}.
+#'   non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
+#'   \code{FALSE}, \code{NA} or \code{"none"} to remove the legend.
 #' @param legend_size numeric to control the amount of space allocated to the
 #'   legend, set to 1 by default.
 #' @param legend_col_scale_size numeric to control the width of the legend
@@ -579,13 +598,8 @@ heat_map <- function(x,
 
   # ARGUMENTS ------------------------------------------------------------------
 
-  # CAPTURE SUPPLIED ARGUMENTS - USED TO REDRAW THE HEATMAP
-  hm_args <- .capture_args(
-    environment(),
-    setdiff(names(formals(sys.function())), "...")
-  )
-
-  # CLOSE heat_map_save() DEVICE IF CONSTRUCTION FAILS
+  # CLOSE heat_map_save() DEVICE IF CONSTRUCTION FAILS - REGISTERED BEFORE ANY
+  # ARGUMENTS ARE EVALUATED SO THAT ERRORS IN THE ARGUMENTS ARE ALSO CAUGHT
   hm_complete <- FALSE
   on.exit({
     if(!hm_complete && isTRUE(getOption("heat_map_save"))) {
@@ -597,6 +611,15 @@ heat_map <- function(x,
       )
     }
   }, add = TRUE)
+
+  # DRAWN WITHIN A CUSTOM LAYOUT
+  hm_custom <- isTRUE(getOption("heat_map_custom"))
+
+  # CAPTURE SUPPLIED ARGUMENTS - USED TO REDRAW THE HEATMAP
+  hm_args <- .capture_args(
+    environment(),
+    setdiff(names(formals(sys.function())), "...")
+  )
 
   # DATA -----------------------------------------------------------------------
 
@@ -730,7 +753,8 @@ heat_map <- function(x,
       n = ncol(x),
       arg = "tree_cut_x",
       margin = "columns",
-      keep_order = inherits(tree_x, "hclust")
+      keep_order = inherits(tree_x, "hclust"),
+      labels = colnames(x)
     )
     # DENDROGRAM REQUIRES UNCHANGED ORDER OF NUMERIC COLUMNS
     if(inherits(tree_x, "hclust")) {
@@ -788,7 +812,8 @@ heat_map <- function(x,
       n = nrow(x),
       arg = "tree_cut_y",
       margin = "rows",
-      keep_order = inherits(tree_y, "hclust")
+      keep_order = inherits(tree_y, "hclust"),
+      labels = rownames(x)
     )
     # DENDROGRAM REQUIRES UNCHANGED ROW ORDER
     if(inherits(tree_y, "hclust")) {
@@ -1092,10 +1117,35 @@ heat_map <- function(x,
     ]
   }
   cell_fill[cell_missing] <- cell_col_empty
+
+  # TRANSPARENCY - SINGLE VALUE OR ONE VALUE PER CELL IN THE ORIGINAL DATA
+  # (VECTORS ARE RECYCLED DOWN THE COLUMNS OF x LIKE matrix())
+  if(length(cell_col_alpha) > 1) {
+    if(is.null(dim(cell_col_alpha))) {
+      alpha_mat <- matrix(
+        rep_len(as.numeric(cell_col_alpha), n_row * n_col),
+        nrow = n_row,
+        ncol = n_col
+      )
+    } else {
+      .check_dims(cell_col_alpha, x, "cell_col_alpha")
+      alpha_mat <- as.matrix(cell_col_alpha)
+    }
+    cell_alpha <- alpha_mat[cell_ind]
+  } else {
+    cell_alpha <- cell_col_alpha
+  }
   cell_fill <- rep_len(
-    .alpha_col(cell_fill, cell_col_alpha),
+    .alpha_col(cell_fill, cell_alpha),
     length(cell_fill)
   )
+
+  # LEGEND TRANSPARENCY - SOLID UNLESS ALL CELLS SHARE THE SAME VALUE
+  legend_alpha <- if(length(unique(as.vector(cell_alpha))) == 1) {
+    cell_alpha[1]
+  } else {
+    1
+  }
 
   # SIZES
   cell_sizes <- rep(1, length(cell_row))
@@ -1429,7 +1479,7 @@ heat_map <- function(x,
     } else {
       axis_text_x <- colnames(x)[col_ind]
     }
-  } else {
+  } else if (!is.expression(axis_text_x)) {
     if (.all_na(axis_text_x)) {
       axis_text_x <- rep("", ncol(x))
     } else if (any(is.na(axis_text_x))) {
@@ -1449,7 +1499,7 @@ heat_map <- function(x,
     } else {
       axis_text_y <- rownames(x)[row_ind]
     }
-  } else {
+  } else if (!is.expression(axis_text_y)) {
     if (.all_na(axis_text_y)) {
       axis_text_y <- rep("", nrow(x))
     } else if (any(is.na(axis_text_y))) {
@@ -1785,7 +1835,7 @@ heat_map <- function(x,
       labels = unname(cell_levels[keep]),
       colours = adjustcolor(
         names(cell_levels)[keep],
-        cell_col_alpha
+        legend_alpha
       )
     )
   }
@@ -1820,7 +1870,7 @@ heat_map <- function(x,
       },
       col_scale = cell_col_scale,
       col_scale_size = legend_col_scale_size,
-      col_alpha = cell_col_alpha,
+      col_alpha = legend_alpha,
       shape = .main_shape(cell_shapes),
       text_font = legend_text_font,
       text_size = legend_text_size,
@@ -1857,8 +1907,8 @@ heat_map <- function(x,
     } else {
       NULL
     },
-    tree_x = if(inherits(tree_x, "hclust")) tree_x else NULL,
-    tree_y = if(inherits(tree_y, "hclust")) tree_y else NULL,
+    tree_x = .info_tree(tree_x),
+    tree_y = .info_tree(tree_y),
     axis_text_x = axis_text_x,
     axis_text_y = rev(axis_text_y),
     colours = .cell_matrix(cell_fill, cell_ind, x),
@@ -1871,7 +1921,8 @@ heat_map <- function(x,
   heat_map <- .as_heat_map(
     heat_map_record(),
     info = hm_info,
-    args = hm_args
+    args = hm_args,
+    custom = hm_custom
   )
 
   # SAVE HEATMAP

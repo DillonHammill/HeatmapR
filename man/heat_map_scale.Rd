@@ -10,8 +10,9 @@ heat_map_scale(x, scale = "column", method = "range")
 \item{x}{matrix-like object to be scaled.}
 
 \item{scale}{indicates whether the data should be scaled by \code{"row"} or
-\code{"column"}, set to \code{"column"} by default. \code{"x"} and
-\code{"y"} are accepted as aliases for \code{"column"} and \code{"row"}.}
+\code{"column"}, set to \code{"column"} by default. Abbreviations such as
+\code{"col"} are accepted, as are \code{"x"} and \code{"y"} as aliases for
+\code{"column"} and \code{"row"}.}
 
 \item{method}{type of scaling to perform, can be either \code{'range'},
 \code{'mean'} or \code{'zscore'} (unique abbreviations such as \code{"z"}

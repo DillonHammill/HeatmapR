@@ -225,32 +225,39 @@ heat_map_legend <- function(col = NULL,
         ]
       }
     }
-    # SPACE AVAILABLE - REDUCE PADDING & NUMBER OF LABELS TO FIT
+    # SPACE AVAILABLE - NUMBER OF SHAPES THAT FIT WITH PADDING
     n_fit <- function(pad) {
-      floor((diff(ycoords) - pad) / (1 + pad))
+      (diff(ycoords) - pad) / (1 + pad)
     }
-    n_min <- min(2, length(labels))
     ypad <- 0.6
-    if(n_fit(ypad) < n_min) {
-      ypad <- 0.2
-    }
-    if(n_fit(ypad) < n_min) {
-      warning(
-        "Insufficient space to add a cell size legend - increase the ",
-        "number of rows in the heatmap or set legend = \"colour\".",
-        call. = FALSE
-      )
-    } else {
-      # THIN LABELS
-      if(length(labels) > n_fit(ypad)) {
+    draw <- TRUE
+    # ORIGINAL LAYOUT (ALL LABELS) WHENEVER THERE IS ROOM FOR TWO SHAPES -
+    # OTHERWISE REDUCE PADDING & NUMBER OF LABELS TO FIT
+    if(n_fit(ypad) < 2) {
+      n_min <- min(2, length(labels))
+      if(floor(n_fit(ypad)) < n_min) {
+        ypad <- 0.2
+      }
+      n_max <- floor(n_fit(ypad))
+      if(n_max < n_min) {
+        warning(
+          "Insufficient space to add a cell size legend - increase the ",
+          "number of rows in the heatmap or set legend = \"colour\".",
+          call. = FALSE
+        )
+        draw <- FALSE
+      } else if(length(labels) > n_max) {
+        # THIN LABELS
         labels <- labels[
           unique(
             round(
-              seq(1, length(labels), length.out = n_fit(ypad))
+              seq(1, length(labels), length.out = n_max)
             )
           )
         ]
       }
+    }
+    if(draw) {
       # COMPUTE CENTERS - VECTORIZED
       n <- length(labels)
       pad <- diff(ycoords) - ypad - n * (1 + ypad)

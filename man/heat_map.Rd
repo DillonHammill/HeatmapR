@@ -170,14 +170,16 @@ by default. See \code{?hclust} for alternatives.}
 decimal places by default}
 
 \item{tree}{options include \code{"row"}, \code{"y"}, \code{"column"},
-\code{"x"} or \code{"both"} to indicate the axes for which dendrograms
-should be constructed, set to FALSE by default. This argument overrides the
-\code{tree_x} and \code{tree_y} arguments.}
+\code{"x"} or \code{"both"} (or \code{TRUE}) to indicate the axes for
+which dendrograms should be constructed, set to FALSE by default. This
+argument overrides the \code{tree_x} and \code{tree_y} arguments.}
 
 \item{tree_x}{logical indicating whether dendrograms should be constructed
 for the x axis (columns), set to NULL by default. Alternatively, a
 pre-computed \code{hclust} or \code{dist} object describing the columns of
-\code{x}.}
+\code{x}, such as \code{heat_map_info(hm)$tree_x} from a previous
+heatmap. Clusters stored in the \code{hclust} object are kept unless
+\code{tree_cut_x} is supplied.}
 
 \item{tree_size_x}{numeric to control the height of the dendrogram for the x
 axis, set to 1 by default.}
@@ -201,8 +203,12 @@ factor, and columns are regrouped so that each cluster is contiguous,
 ordered from left to right. When a vector of indices is supplied, its
 length must equal the number of columns in \code{x}; if its length also
 matches a valid set of cluster sizes, it is treated as cluster indices.
-If a dendrogram is requested, clusters that are contiguous in the
-dendrogram order keep that order; otherwise the dendrogram is not drawn.}
+Named indices are matched to the column names of \code{x}. If a
+dendrogram is requested, clusters that are contiguous in the dendrogram
+order keep that order; otherwise the dendrogram is not drawn. Clusters
+are always numbered, and labelled by \code{tree_label_text_x}, in the
+displayed order from left to right, which may differ from the supplied
+indices when the dendrogram order is kept.}
 
 \item{tree_split_x}{a numeric to control the spacing between x axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
@@ -222,7 +228,7 @@ labels, set to "grey40" by default.}
 axis tree cluster labels, set to 1 by default to use solid colours.}
 
 \item{tree_label_text_x}{a vector of text to include in the x axis tree
-cluster labels, set to NA by default.}
+cluster labels from left to right, set to NA by default.}
 
 \item{tree_label_text_font_x}{a vector of font types to use for text in x
 axis cluster labels, set to 1 by default for plain text. See \code{font} in
@@ -241,7 +247,9 @@ solid colours.}
 \item{tree_y}{logical indicating whether dendrograms should be constructed
 for the y axis (rows), set to NULL by default. Alternatively, a
 pre-computed \code{hclust} or \code{dist} object describing the rows of
-\code{x}.}
+\code{x}, such as \code{heat_map_info(hm)$tree_y} from a previous
+heatmap. Clusters stored in the \code{hclust} object are kept unless
+\code{tree_cut_y} is supplied.}
 
 \item{tree_size_y}{numeric to control the width of the dendrogram for the y
 axis, set to 1 by default.}
@@ -264,9 +272,12 @@ row order of \code{x} (like \code{bar_values_y}), may be numeric,
 character or factor, and rows are regrouped so that each cluster is
 contiguous, ordered from the bottom of the heatmap to the top. When a
 vector of indices is supplied, its length must equal the number of rows in
-\code{x}. If a dendrogram is requested, clusters that are contiguous in
-the dendrogram order keep that order; otherwise the dendrogram is not
-drawn.}
+\code{x}, and named indices are matched to the row names of \code{x}. If
+a dendrogram is requested, clusters that are contiguous in the dendrogram
+order keep that order; otherwise the dendrogram is not drawn. Clusters are
+always numbered, and labelled by \code{tree_label_text_y}, in the
+displayed order from the bottom of the heatmap to the top, which may
+differ from the supplied indices when the dendrogram order is kept.}
 
 \item{tree_split_y}{a numeric to control the spacing between y axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
@@ -286,7 +297,8 @@ labels, set to "grey40" by default.}
 axis tree cluster labels, set to 1 by default to use solid colours.}
 
 \item{tree_label_text_y}{a vector of text to include in the y axis tree
-cluster labels, set to NA by default.}
+cluster labels from the bottom of the heatmap to the top, set to NA by
+default.}
 
 \item{tree_label_text_font_y}{a vector of font types to use for text in y
 axis cluster labels, set to 1 by default for plain text. See \code{font} in
@@ -354,7 +366,11 @@ width), set to \code{c(0, 1)} by default. Increasing the lower limit (e.g.
 \code{c(0.1, 1)}) ensures cells with the smallest values remain visible.}
 
 \item{cell_col_alpha}{a numeric to control the fill transparency of cells
-within the heatmap, set to 1 by default to use solid colours.}
+within the heatmap, set to 1 by default to use solid colours. A different
+transparency can be used for each cell by supplying a matrix with the same
+dimensions as \code{x}, or a vector that is recycled down the columns of
+\code{x} (as in \code{matrix()}). Legends use solid colours unless all
+cells share the same transparency.}
 
 \item{cell_col_empty}{a colour to use for missing values in \code{x}, set to
 \code{"white"} by default.}
@@ -490,7 +506,8 @@ transparency of bar borders in y axis bar plot, set to 1 by default.}
 \item{axis_text_x}{vector of text to use for x axis labels supplied in the
 order matching the constructed heatmap, set to NULL by default to use the
 column names of \code{x}. Missing values (\code{NA}) are drawn as empty
-labels.}
+labels. An \code{expression} can be supplied for mathematical
+annotation (see \code{?plotmath}).}
 
 \item{axis_text_side_x}{indicates whether the x axis text should be on the
 \code{1 - "bottom"} or \code{3 - "top"} of the heatmap, set to
@@ -540,7 +557,8 @@ set to 1 by default.}
 order matching the constructed heatmap (from bottom to top), set to NULL
 by default to use the row names of \code{x}, or the row indices when
 \code{x} has no row names. Missing values (\code{NA}) are drawn as empty
-labels.}
+labels. An \code{expression} can be supplied for mathematical
+annotation (see \code{?plotmath}).}
 
 \item{axis_text_side_y}{indicates whether the y axis text should be on the
 \code{2 - "left"} or \code{4 - "right"} of the heatmap, set to
@@ -613,7 +631,8 @@ Alternatively, a character vector containing any of \code{"colour"},
 \code{"size"}, \code{"both"} (colour and size) or \code{"levels"} to
 indicate the type(s) of legends to include in the heatmap. The
 \code{"levels"} legend shows the colours assigned to values in
-non-numeric columns, e.g. \code{legend = c("both", "levels")}.}
+non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
+\code{FALSE}, \code{NA} or \code{"none"} to remove the legend.}
 
 \item{legend_size}{numeric to control the amount of space allocated to the
 legend, set to 1 by default.}

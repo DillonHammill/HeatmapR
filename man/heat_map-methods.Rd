@@ -19,13 +19,20 @@
 \code{x}, invisibly.
 }
 \description{
-Redraws a heatmap on the current graphics device using the arguments
-originally supplied to \code{\link{heat_map}}. Any arguments supplied
-through \code{...} override the original arguments, for example
-\code{plot(hm, title = "New title")}.
+\code{plot()} redraws a heatmap on the current graphics device using the
+arguments originally supplied to \code{\link{heat_map}}. Any arguments
+supplied through \code{...} override the original arguments, for example
+\code{plot(hm, title = "New title")}. Use \code{data} to redraw the heatmap
+with new data, as \code{x} refers to the \code{heat_map} object itself.
+}
+\details{
+\code{print()} also redraws the heatmap, unless it was drawn within a custom
+layout (see \code{\link{heat_map_custom}}), in which case the recorded page
+is replayed as is.
 }
 \examples{
 hm <- heat_map(mtcars, scale = "column", popup = FALSE)
 plot(hm, title = "mtcars")
+plot(hm, data = mtcars[1:10, ])
 
 }

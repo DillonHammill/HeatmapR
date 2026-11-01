@@ -20,8 +20,10 @@ using \code{dist} and passed to \code{hclust} for hierarchical clustering.}
 
 \item{tree}{indicates whether hierarchical clustering should be performed by
 \code{"row"} or \code{"column"}. Optionally a custom object of class
-\code{"dist"} or \code{"hclust"} which will be updated with cluster labels
-as specified by \code{cut}.}
+\code{"dist"} (clustered using \code{method}) or \code{"hclust"} which will
+be updated with cluster labels as specified by \code{cut}. Any clusters
+already stored in a supplied \code{hclust} object are replaced when
+\code{cut} is supplied.}
 
 \item{dist}{method passed to \code{\link{dist}} to compute distance matrix,
 set to \code{"euclidean"} by default. Also supports \code{"cosine"} for
@@ -33,10 +35,10 @@ hierarchical clustering, set to \code{"complete"} by default.}
 \item{scale}{logical indicating whether branch heights should be scaled for
 better visualisation, set to FALSE by default.}
 
-\item{cut}{value less than 1 specifying the tree cutpoint as a proportion of
-the tree height (for non-cosine distances) or as an absolute cosine
-distance threshold (when \code{dist = "cosine"}), or a value greater than
-or equal to 1 indicating the number of desired clusters.}
+\item{cut}{value from 0 to less than 1 specifying the tree cutpoint as a
+proportion of the tree height (for non-cosine distances) or as an absolute
+cosine distance threshold (when \code{dist = "cosine"}), or a value
+greater than or equal to 1 indicating the number of desired clusters.}
 
 \item{...}{additional arguments passed to \code{\link{dist}} or
 \code{\link{hclust}}.}

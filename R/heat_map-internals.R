@@ -156,6 +156,8 @@
 #' @param keep_order logical indicating whether the current order should be
 #'   kept when the cluster indices are already contiguous in it (used to
 #'   preserve a dendrogram order).
+#' @param labels row/column names of the data, used to match named cluster
+#'   indices.
 #'
 #' @return list containing the updated display order (\code{ind}) and the
 #'   cluster of each position in the display order (\code{cut}), numbered
@@ -167,7 +169,8 @@
                              n,
                              arg,
                              margin,
-                             keep_order = FALSE) {
+                             keep_order = FALSE,
+                             labels = NULL) {
 
   # MISSING VALUES
   if(anyNA(cut)) {
@@ -178,6 +181,13 @@
 
   # CLUSTER INDICES - ORIGINAL ORDER
   if(length(cut) == n) {
+    # NAMED INDICES - MATCH TO ROW/COLUMN NAMES
+    if(!is.null(names(cut)) &&
+       !is.null(labels) &&
+       !anyDuplicated(names(cut)) &&
+       setequal(names(cut), labels)) {
+      cut <- cut[as.character(labels)]
+    }
     # INTEGER-LIKE NUMERIC INDICES
     if(is.numeric(cut) && !all(cut %% 1 == 0)) {
       stop(
@@ -205,8 +215,10 @@
   # CLUSTER SIZES - DISPLAY ORDER
   } else if(is.numeric(cut) &&
             all(cut %% 1 == 0) &&
-            all(cut > 0) &&
+            all(cut >= 0) &&
             sum(cut) == n) {
+    # EMPTY CLUSTERS ARE DROPPED
+    cut <- cut[cut > 0]
     new_ind <- ind
     new_cut <- rep(
       seq_along(cut),
@@ -285,7 +297,10 @@
 #' @noRd
 .legend_types <- function(legend) {
   # NO LEGEND
-  if(is.null(legend) || length(legend) == 0 || isFALSE(legend)) {
+  if(is.null(legend) ||
+     length(legend) == 0 ||
+     isFALSE(legend) ||
+     all(is.na(legend))) {
     return(character(0))
   }
   # DEFAULT - COLOUR & SIZE
@@ -300,9 +315,11 @@
   }
   types <- unlist(
     lapply(
-      legend,
+      legend[!is.na(legend)],
       function(z) {
-        if(grepl("^b", z, ignore.case = TRUE)) {
+        if(tolower(z) == "none") {
+          NULL
+        } else if(grepl("^b", z, ignore.case = TRUE)) {
           c("colour", "size")
         } else if(grepl("^c", z, ignore.case = TRUE)) {
           "colour"
@@ -330,12 +347,19 @@
 }
 
 #' Check whether a string names an hcl palette
-#' @importFrom grDevices hcl.pals
+#'
+#' Names of R colours (e.g. \code{"magenta"}) and hex codes are treated as
+#' colours. Otherwise palette names are matched ignoring case, spaces and
+#' punctuation, so \code{"blue-red 3"} matches \code{"Blue-Red 3"}.
+#'
+#' @importFrom grDevices hcl.pals colors
 #' @noRd
 .is_hcl_palette <- function(x) {
   is.character(x) &&
     length(x) == 1 &&
     !is.na(x) &&
+    !tolower(x) %in% colors() &&
+    !grepl("^#", x) &&
     .palette_key(x) %in% .palette_key(hcl.pals())
 }
 
@@ -487,7 +511,12 @@
   if(n == 0) {
     return(invisible(NULL))
   }
-  labels <- rep_len(as.character(labels), n)
+  # PLOTMATH EXPRESSIONS ARE KEPT AS EXPRESSIONS
+  labels <- if(is.expression(labels)) {
+    rep_len(labels, n)
+  } else {
+    rep_len(as.character(labels), n)
+  }
   font <- rep_len(font, n)
   size <- rep_len(size, n)
   cols <- rep_len(
@@ -620,13 +649,28 @@
   invisible(NULL)
 }
 
+#' Dendrogram returned by heat_map_info() - one cluster per leaf so that it can
+#' be supplied back to heat_map()
+#' @noRd
+.info_tree <- function(tree) {
+  if(!inherits(tree, "hclust")) {
+    return(NULL)
+  }
+  if(!is.null(tree$cut)) {
+    tree$cut <- tree$cut[seq_along(tree$order)]
+  }
+  tree
+}
+
 #' Convert a recorded plot into a heat_map object
 #' @noRd
 .as_heat_map <- function(x,
                          info,
-                         args) {
+                         args,
+                         custom = FALSE) {
   attr(x, "heat_map_info") <- info
   attr(x, "heat_map_args") <- args
+  attr(x, "heat_map_custom") <- custom
   class(x) <- unique(c("heat_map", class(x)))
   x
 }
@@ -689,10 +733,15 @@ heat_map_info <- function(x) {
 
 #' Draw a heat_map object
 #'
-#' Redraws a heatmap on the current graphics device using the arguments
-#' originally supplied to \code{\link{heat_map}}. Any arguments supplied
-#' through \code{...} override the original arguments, for example
-#' \code{plot(hm, title = "New title")}.
+#' \code{plot()} redraws a heatmap on the current graphics device using the
+#' arguments originally supplied to \code{\link{heat_map}}. Any arguments
+#' supplied through \code{...} override the original arguments, for example
+#' \code{plot(hm, title = "New title")}. Use \code{data} to redraw the heatmap
+#' with new data, as \code{x} refers to the \code{heat_map} object itself.
+#'
+#' \code{print()} also redraws the heatmap, unless it was drawn within a custom
+#' layout (see \code{\link{heat_map_custom}}), in which case the recorded page
+#' is replayed as is.
 #'
 #' @param x object of class \code{heat_map}.
 #' @param ... additional arguments passed to \code{\link{heat_map}}.
@@ -704,6 +753,7 @@ heat_map_info <- function(x) {
 #' @examples
 #' hm <- heat_map(mtcars, scale = "column", popup = FALSE)
 #' plot(hm, title = "mtcars")
+#' plot(hm, data = mtcars[1:10, ])
 #'
 #' @name heat_map-methods
 #' @export
@@ -714,8 +764,12 @@ plot.heat_map <- function(x, ...) {
     replayPlot(x)
     return(invisible(x))
   }
-  # OVERRIDE ARGUMENTS
+  # OVERRIDE ARGUMENTS - DATA SUPPLIED AS 'data'
   dots <- list(...)
+  if("data" %in% names(dots)) {
+    dots[["x"]] <- dots[["data"]]
+    dots[["data"]] <- NULL
+  }
   if(length(dots) > 0) {
     args[names(dots)] <- dots
   }
@@ -735,6 +789,11 @@ plot.heat_map <- function(x, ...) {
 #' @rdname heat_map-methods
 #' @export
 print.heat_map <- function(x, ...) {
+  # DRAWN IN A CUSTOM LAYOUT - REPLAY THE WHOLE RECORDED PAGE
+  if(isTRUE(attr(x, "heat_map_custom")) && length(list(...)) == 0) {
+    replayPlot(x)
+    return(invisible(x))
+  }
   plot(x, ...)
   invisible(x)
 }

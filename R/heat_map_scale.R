@@ -7,8 +7,9 @@
 #'
 #' @param x matrix-like object to be scaled.
 #' @param scale indicates whether the data should be scaled by \code{"row"} or
-#'   \code{"column"}, set to \code{"column"} by default. \code{"x"} and
-#'   \code{"y"} are accepted as aliases for \code{"column"} and \code{"row"}.
+#'   \code{"column"}, set to \code{"column"} by default. Abbreviations such as
+#'   \code{"col"} are accepted, as are \code{"x"} and \code{"y"} as aliases for
+#'   \code{"column"} and \code{"row"}.
 #' @param method type of scaling to perform, can be either \code{'range'},
 #'   \code{'mean'} or \code{'zscore'} (unique abbreviations such as \code{"z"}
 #'   are accepted). Range scaling normalizes the data to have limits between 0
@@ -116,17 +117,24 @@ heat_map_scale <- function(x,
   if(!is.character(scale) || length(scale) != 1 || is.na(scale)) {
     stop("'scale' must be either \"column\" or \"row\"!")
   }
-  if(grepl("^c|^x", scale, ignore.case = TRUE)) {
-    "column"
-  } else if(grepl("^r|^y", scale, ignore.case = TRUE)) {
-    "row"
-  } else {
+  key <- tolower(scale)
+  # AXIS ALIASES
+  if(key == "x") {
+    return("column")
+  }
+  if(key == "y") {
+    return("row")
+  }
+  # UNIQUE ABBREVIATIONS OF "columns" OR "rows"
+  ind <- pmatch(key, c("columns", "rows"))
+  if(is.na(ind)) {
     stop(
       paste0(
         "'scale' must be either \"column\" or \"row\", not \"", scale, "\"!"
       )
     )
   }
+  c("column", "row")[ind]
 }
 
 #' Resolve the scaling method
