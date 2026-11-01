@@ -43,6 +43,12 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      # R-devel on macOS has no binary packages, so vdiffr is built from source
+      # and needs the libpng headers and library in /opt/R/arm64
+      - name: Install libpng (macOS R-devel)
+        if: runner.os == 'macOS' && matrix.config.r == 'devel'
+        run: sudo Rscript -e 'source("https://mac.R-project.org/bin/install.R"); install.libs("libpng")'
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
