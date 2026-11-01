@@ -599,7 +599,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 ## 5. Hierarchical Clustering
 
-`heat_map()` also supports hierarchical clustering using the conventional `stats::hclust()` to construct dendrograms and `stats::cutree()` to partition the dendrograms into distinct clusters. The `dist_method` and `clust_method` arguments allow for control over the distance metric to use for hierarchical clustering (any method supported by `stats::dist()` or `"cosine"` for cosine distance) and the agglomeration method to use (any method supported by `stats::hclust()`).
+`heat_map()` also supports hierarchical clustering using the conventional `stats::hclust()` to construct dendrograms and `stats::cutree()` to partition the dendrograms into distinct clusters. The `dist_method` and `clust_method` arguments allow for control over the distance metric to use for hierarchical clustering (any method supported by `stats::dist()`, `"cosine"` for cosine distance, `"pearson"`, `"spearman"` or `"kendall"` for correlation distances, or a function) and the agglomeration method to use (any method supported by `stats::hclust()`).
 
 ### 5.1 Dendrograms
 
@@ -696,6 +696,68 @@ heat_map(
   tree_split_x = 1,
   title = "Cosine Distance with Absolute Threshold"
 )
+```
+
+**Correlation distances and leaf order**: `dist_method` also accepts `"pearson"`, `"spearman"` and `"kendall"` for one minus the correlation, which groups rows that rise and fall together whatever their level (common for gene expression), or a function that takes the matrix being clustered and returns a `dist` object. A dendrogram can be drawn in many orders, as every branch can be flipped; `tree_order_x` and `tree_order_y` choose the order. `"olo"` (optimal leaf ordering) flips branches so that neighbouring rows are as similar as possible, giving smoother gradients, and `"mean"` orders branches by their mean values as `stats::heatmap()` does.
+
+```{r, eval = FALSE}
+set.seed(5)
+mat <- matrix(
+  rnorm(60 * 12),
+  nrow = 60,
+  dimnames = list(
+    paste0("Gene_", 1:60),
+    paste0("S", 1:12)
+  )
+)
+# 20 genes that rise and fall together at different levels
+profile <- rnorm(12)
+mat[1:20, ] <- t(replicate(20, 3 * profile + rnorm(12, sd = 0.5))) +
+  rnorm(20, sd = 4)
+heat_map(
+  mat,
+  tree = "both",
+  dist_method = "pearson",
+  tree_order_x = "olo",
+  tree_order_y = "olo",
+  axis_text_y = NA,
+  title = "Pearson distance, optimal leaf order"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+set.seed(5)
+mat <- matrix(
+  rnorm(60 * 12),
+  nrow = 60,
+  dimnames = list(
+    paste0("Gene_", 1:60),
+    paste0("S", 1:12)
+  )
+)
+# 20 genes that rise and fall together at different levels
+profile <- rnorm(12)
+mat[1:20, ] <- t(replicate(20, 3 * profile + rnorm(12, sd = 0.5))) +
+  rnorm(20, sd = 4)
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-dist-order.png",
+  height = 8,
+  width = 7,
+  res = 300
+)
+heat_map(
+  mat,
+  tree = "both",
+  dist_method = "pearson",
+  tree_order_x = "olo",
+  tree_order_y = "olo",
+  axis_text_y = NA,
+  title = "Pearson distance, optimal leaf order"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-dist-order.png')
 ```
 
 ### 5.2 Clustering

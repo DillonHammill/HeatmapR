@@ -15,6 +15,7 @@ heat_map(
   tree_x = NULL,
   tree_size_x = 1,
   tree_scale_x = FALSE,
+  tree_order_x = "default",
   tree_cut_x = NULL,
   tree_split_x = 1,
   tree_label_x = FALSE,
@@ -29,6 +30,7 @@ heat_map(
   tree_y = NULL,
   tree_size_y = 1,
   tree_scale_y = FALSE,
+  tree_order_y = "default",
   tree_cut_y = NULL,
   tree_split_y = 1,
   tree_label_y = FALSE,
@@ -176,7 +178,11 @@ default.}
 \item{dist_method}{indicates the type of distance metric to use when
 constructing dendrograms, set to \code{"euclidean"} distance by default.
 See \code{?dist} for alternatives. Also supports \code{"cosine"} for
-cosine distance (1 - cosine similarity).}
+cosine distance (1 - cosine similarity), \code{"pearson"},
+\code{"spearman"} or \code{"kendall"} for one minus the correlation
+(common for gene expression), or a function that takes the matrix being
+clustered (one row per row or column of the heatmap) and returns a
+\code{dist} object or a square matrix of distances.}
 
 \item{clust_method}{indicates the type of agglomeration method to use when
 constructing performing hierarchical clustering, set to \code{"complete"}
@@ -204,6 +210,14 @@ axis, set to 1 by default (0.6 inches in the default fit layout).}
 \item{tree_scale_x}{logical indicating whether the branch heights of the x
 axis dendrogram should be scaled for better visualisation, set to FALSE by
 default.}
+
+\item{tree_order_x}{how the branches of the x axis dendrogram are ordered,
+either \code{"default"} (the order from \code{hclust}), \code{"olo"}
+(optimal leaf ordering, which flips branches so that neighbouring columns
+are as similar as possible) or \code{"mean"} (branches ordered by their
+mean values, as in \code{\link[stats]{heatmap}}). Optimal leaf ordering
+takes a few seconds for 1000 columns and grows with the cube of the
+number of columns.}
 
 \item{tree_cut_x}{either a numeric ranging from 0 to 1 indicating the branch
 cut height for x axis dendrogram (proportional for non-cosine distances,
@@ -281,6 +295,10 @@ axis, set to 1 by default (0.6 inches in the default fit layout).}
 \item{tree_scale_y}{logical indicating whether the branch heights of the y
 axis dendrogram should be scaled for better visualisation, set to FALSE by
 default.}
+
+\item{tree_order_y}{how the branches of the y axis dendrogram are ordered,
+either \code{"default"}, \code{"olo"} or \code{"mean"}, as for
+\code{tree_order_x}.}
 
 \item{tree_cut_y}{either a numeric ranging from 0 to 1 indicating the branch
 cut height for y axis dendrogram (proportional for non-cosine distances,

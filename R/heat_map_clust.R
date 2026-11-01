@@ -12,7 +12,11 @@
 #'   \code{cut} is supplied.
 #' @param dist method passed to \code{\link{dist}} to compute distance matrix,
 #'   set to \code{"euclidean"} by default. Also supports \code{"cosine"} for
-#'   cosine distance (1 - cosine similarity).
+#'   cosine distance (1 - cosine similarity), \code{"pearson"},
+#'   \code{"spearman"} or \code{"kendall"} for one minus the correlation
+#'   (rows without variation are treated as uncorrelated), or a function that
+#'   takes the matrix being clustered (one row per leaf) and returns a
+#'   \code{dist} object or a square matrix of distances.
 #' @param method agglomeration method passed to \code{\link{hclust}} to perform
 #'   hierarchical clustering, set to \code{"complete"} by default.
 #' @param scale logical indicating whether branch heights should be scaled for
@@ -21,6 +25,12 @@
 #'   proportion of the tree height (for non-cosine distances) or as an absolute
 #'   cosine distance threshold (when \code{dist = "cosine"}), or a value
 #'   greater than or equal to 1 indicating the number of desired clusters.
+#' @param order how the branches of the dendrogram are ordered:
+#'   \code{"default"} keeps the order from \code{hclust}, \code{"olo"} flips
+#'   branches to minimise the distances between neighbouring leaves (optimal
+#'   leaf ordering; this takes a few seconds for 1000 leaves and grows with the
+#'   cube of the number of leaves) and \code{"mean"} orders branches by their
+#'   mean values as in \code{\link[stats]{heatmap}}.
 #' @param ... additional arguments passed to \code{\link{dist}} or
 #'   \code{\link{hclust}}.
 #'
@@ -46,9 +56,11 @@ heat_map_clust <- function(x,
                            method = "complete",
                            scale = FALSE,
                            cut = NULL,
+                           order = "default",
                            ...) {
 
   # ARGUMENTS
+  .check_order(order)
   args <- .args_list(...)
 
   # DISTANCE MATRIX -> HCLUST (DIST OBJECTS ARE NUMERIC SO CHECK THEM FIRST)
@@ -99,35 +111,37 @@ heat_map_clust <- function(x,
       )
     }
 
-    # PREPARE ARGUMENTS
-    args[["method"]] <- args$dist
-
-    # COSINE DISTANCE MATRIX
-    if(tolower(args$dist) == "cosine") {
-      d <- .cosine_dist(args$x)
-    # STATS DISTANCE MATRIX
-    } else {
-      dist_args <- formalArgs(stats::dist)
-      d <- do.call(
-        "dist",
-        args[names(args) %in% dist_args]
-      )
-    }
-
-    # UPDATE ARGUMENTS
-    args[["d"]] <- d
-    args[["method"]] <- method
+    # DISTANCE MATRIX
+    d <- .dist_matrix(args[["x"]], dist, ...)
 
     # CLUSTERING
-    clust_args <- formalArgs(stats::hclust)
+    dots <- list(...)
     tree <- do.call(
       "hclust",
-      args[names(args) %in% clust_args]
+      c(list(d = d, method = method), dots[names(dots) %in% "members"])
     )
+
+    # LEAF ORDER
+    tree <- .tree_order(tree, args[["x"]], order = order, dist = dist, d = d)
     rm(list = "args")
 
   } else {
     tree <- args$tree
+    # LEAF ORDER - DISTANCES FROM THE DATA WHEN IT MATCHES THE TREE
+    if(!identical(order, "default")) {
+      rows <- if(nrow(as.matrix(x)) == length(tree$order)) {
+        as.matrix(x)
+      } else {
+        t(as.matrix(x))
+      }
+      if(nrow(rows) != length(tree$order)) {
+        stop(
+          "'x' must match the leaves of 'tree' to reorder them.",
+          call. = FALSE
+        )
+      }
+      tree <- .tree_order(tree, rows, order = order, dist = dist, ...)
+    }
   }
 
   # Store original heights for cosine distance cutting
@@ -156,7 +170,7 @@ heat_map_clust <- function(x,
       stop("'cut' must be a single non-negative number!")
     }
     # COSINE DISTANCE WITH CUT < 1 - use as actual distance threshold
-    if(cut < 1 && tolower(dist) == "cosine") {
+    if(cut < 1 && is.character(dist) && tolower(dist) == "cosine") {
       # CUT USING ORIGINAL (UNSCALED) HEIGHTS
       tmp <- tree
       tmp$height <- original_heights
@@ -234,21 +248,11 @@ heat_map_clust <- function(x,
 .hclust_raw <- function(x,
                         dist = "euclidean",
                         method = "complete",
+                        order = "default",
                         ...) {
-  x <- as.matrix(x)
-  dots <- list(...)
-  d <- if(tolower(dist) == "cosine") {
-    .cosine_dist(x)
-  } else {
-    do.call(
-      stats::dist,
-      c(
-        list(x = x, method = dist),
-        dots[names(dots) %in% c("diag", "upper", "p")]
-      )
-    )
-  }
-  hclust(d, method = method)
+  d <- .dist_matrix(x, dist, ...)
+  tree <- hclust(d, method = method)
+  .tree_order(tree, x, order = order, dist = dist, d = d)
 }
 
 #' Cluster within groups and join the groups at the top of the dendrogram
@@ -271,6 +275,7 @@ heat_map_clust <- function(x,
                         dist = "euclidean",
                         method = "complete",
                         scale = FALSE,
+                        order = "default",
                         ...) {
   x <- as.matrix(x)
   n_groups <- max(groups)
@@ -285,7 +290,13 @@ heat_map_clust <- function(x,
       ord <- c(ord, idx)
       next
     }
-    h <- .hclust_raw(x[idx, , drop = FALSE], dist = dist, method = method, ...)
+    h <- .hclust_raw(
+      x[idx, , drop = FALSE],
+      dist = dist,
+      method = method,
+      order = order,
+      ...
+    )
     m <- h$merge
     offset <- nrow(merge)
     leaf <- m < 0
@@ -330,4 +341,290 @@ heat_map_clust <- function(x,
     names = rownames(x)[ord]
   )
   tree
+}
+
+## DISTANCES -------------------------------------------------------------------
+
+#' Distances between the rows of a matrix
+#'
+#' @param dist a method for \code{dist()} (e.g. "euclidean"), "cosine",
+#'   "pearson", "spearman" or "kendall" (one minus the correlation), or a
+#'   function taking the matrix and returning a \code{dist} object or a square
+#'   matrix of distances between its rows.
+#' @param ... arguments passed to \code{dist()} (e.g. \code{p}).
+#'
+#' @importFrom stats dist as.dist cor
+#' @noRd
+.dist_matrix <- function(x,
+                         dist = "euclidean",
+                         ...) {
+  x <- as.matrix(x)
+  if(is.function(dist)) {
+    d <- dist(x)
+    if(!inherits(d, "dist")) {
+      d <- as.dist(as.matrix(d))
+    }
+    if(attr(d, "Size") != nrow(x)) {
+      stop(
+        "The distance function must return distances between the ",
+        nrow(x), " rows or columns being clustered.",
+        call. = FALSE
+      )
+    }
+    return(d)
+  }
+  method <- tolower(dist)
+  if(method == "cosine") {
+    return(.cosine_dist(x))
+  }
+  if(method %in% c("pearson", "spearman", "kendall")) {
+    # ONE MINUS THE CORRELATION - ROWS WITHOUT VARIATION ARE UNCORRELATED
+    r <- suppressWarnings(
+      cor(t(x), method = method, use = "pairwise.complete.obs")
+    )
+    r[is.na(r)] <- 0
+    diag(r) <- 1
+    d <- as.dist(1 - r)
+    attr(d, "method") <- method
+    return(d)
+  }
+  dots <- list(...)
+  do.call(
+    stats::dist,
+    c(
+      list(x = x, method = dist),
+      dots[names(dots) %in% c("diag", "upper", "p")]
+    )
+  )
+}
+
+## LEAF ORDER ------------------------------------------------------------------
+
+#' Leaf order of an hclust merge matrix (left branches first)
+#' @noRd
+.merge_order <- function(merge) {
+  m <- nrow(merge)
+  if(m == 0) {
+    return(1L)
+  }
+  out <- integer(0)
+  stack <- m
+  while(length(stack) > 0) {
+    node <- stack[length(stack)]
+    stack <- stack[-length(stack)]
+    if(node < 0) {
+      out <- c(out, -node)
+    } else {
+      # RIGHT PUSHED FIRST SO THAT THE LEFT BRANCH IS VISITED FIRST
+      stack <- c(stack, merge[node, 2], merge[node, 1])
+    }
+  }
+  out
+}
+
+#' Flip the branches of a tree to give a leaf order
+#'
+#' @param ord leaf order that the tree can produce by flipping branches.
+#'
+#' @noRd
+.apply_order <- function(tree,
+                         ord) {
+  merge <- tree$merge
+  pos <- integer(length(ord))
+  pos[ord] <- seq_along(ord)
+  first <- integer(nrow(merge))
+  first_of <- function(z) if(z < 0) pos[-z] else first[z]
+  for(s in seq_len(nrow(merge))) {
+    a <- first_of(merge[s, 1])
+    b <- first_of(merge[s, 2])
+    if(a > b) {
+      merge[s, ] <- merge[s, 2:1]
+    }
+    first[s] <- min(a, b)
+  }
+  tree$merge <- merge
+  tree$order <- .merge_order(merge)
+  tree
+}
+
+#' Reorder the branches of a tree by the mean of each branch (as in
+#' stats::heatmap)
+#'
+#' @param w a value for each leaf.
+#'
+#' @noRd
+.mean_order <- function(tree,
+                        w) {
+  merge <- tree$merge
+  value <- numeric(nrow(merge))
+  value_of <- function(z) if(z < 0) w[-z] else value[z]
+  for(s in seq_len(nrow(merge))) {
+    a <- value_of(merge[s, 1])
+    b <- value_of(merge[s, 2])
+    if(a > b) {
+      merge[s, ] <- merge[s, 2:1]
+    }
+    value[s] <- mean(c(a, b))
+  }
+  tree$merge <- merge
+  tree$order <- .merge_order(merge)
+  tree
+}
+
+#' Min-plus matrix product: out[i, j] = min over k of a[i, k] + b[k, j]
+#' @noRd
+.min_plus <- function(a,
+                      b) {
+  out <- matrix(Inf, nrow(a), ncol(b))
+  for(k in seq_len(ncol(a))) {
+    out <- pmin(out, outer(a[, k], b[k, ], "+"))
+  }
+  out
+}
+
+#' Optimal leaf ordering of a tree
+#'
+#' Finds the orientation of every branch that minimises the sum of the
+#' distances between adjacent leaves (Bar-Joseph et al. 2001). For each node,
+#' the cost of every ordering that starts at a leaf of its left branch and ends
+#' at a leaf of its right branch is built from its branches with min-plus
+#' matrix products, and the best ordering is traced back from the root.
+#'
+#' @param merge merge matrix of an hclust object.
+#' @param d distances between the leaves (\code{dist} object or matrix).
+#'
+#' @return the optimal leaf order.
+#'
+#' @noRd
+.olo_order <- function(merge,
+                       d) {
+  D <- as.matrix(d)
+  m <- nrow(merge)
+  if(m < 2) {
+    return(.merge_order(merge))
+  }
+  leaves <- vector("list", m)
+  cost <- vector("list", m)
+  leaves_of <- function(z) if(z < 0) -z else leaves[[z]]
+  # COST OF THE BEST ORDERINGS OF BRANCH z FROM LEAF i TO EVERY LEAF OF z
+  # (INFINITE FOR LEAVES ON THE SAME SIDE AS i)
+  cost_from <- function(z, i) {
+    if(z < 0) {
+      return(0)
+    }
+    l1 <- leaves_of(merge[z, 1])
+    l2 <- leaves_of(merge[z, 2])
+    k <- match(i, l1)
+    if(!is.na(k)) {
+      c(rep(Inf, length(l1)), cost[[z]][k, ])
+    } else {
+      c(cost[[z]][, match(i, l2)], rep(Inf, length(l2)))
+    }
+  }
+  # FROM EVERY LEAF OF BRANCH z TO THE LEAVES lb - BEST ORDERING OF z FOLLOWED
+  # BY A STEP TO EACH LEAF OF lb
+  to_leaves <- function(z, lb) {
+    if(z < 0) {
+      return(D[-z, lb, drop = FALSE])
+    }
+    l1 <- leaves_of(merge[z, 1])
+    l2 <- leaves_of(merge[z, 2])
+    rbind(
+      .min_plus(cost[[z]], D[l2, lb, drop = FALSE]),
+      .min_plus(t(cost[[z]]), D[l1, lb, drop = FALSE])
+    )
+  }
+  for(s in seq_len(m)) {
+    a <- merge[s, 1]
+    b <- merge[s, 2]
+    la <- leaves_of(a)
+    lb <- leaves_of(b)
+    leaves[[s]] <- c(la, lb)
+    # FIRST BRANCH THEN A STEP INTO THE SECOND, THEN THE SECOND BRANCH
+    x <- to_leaves(a, lb)
+    cost[[s]] <- if(b < 0) {
+      x
+    } else {
+      l1 <- leaves_of(merge[b, 1])
+      l2 <- leaves_of(merge[b, 2])
+      n1 <- length(l1)
+      cbind(
+        .min_plus(x[, n1 + seq_along(l2), drop = FALSE], t(cost[[b]])),
+        .min_plus(x[, seq_len(n1), drop = FALSE], cost[[b]])
+      )
+    }
+  }
+  # TRACE BACK FROM THE BEST PAIR OF END LEAVES OF THE ROOT
+  best <- which(cost[[m]] == min(cost[[m]]), arr.ind = TRUE)[1, ]
+  root_a <- leaves_of(merge[m, 1])
+  root_b <- leaves_of(merge[m, 2])
+  out <- integer(0)
+  # TASKS - EMIT THE LEAVES OF A NODE FROM LEAF i TO LEAF j
+  stack <- list(c(m, root_a[best[1]], root_b[best[2]]))
+  while(length(stack) > 0) {
+    task <- stack[[length(stack)]]
+    stack[[length(stack)]] <- NULL
+    node <- task[1]
+    i <- task[2]
+    j <- task[3]
+    if(node < 0) {
+      out <- c(out, -node)
+      next
+    }
+    # BRANCH HOLDING i FIRST
+    kids <- merge[node, ]
+    if(!(i %in% leaves_of(kids[1]))) {
+      kids <- rev(kids)
+    }
+    li <- leaves_of(kids[1])
+    lj <- leaves_of(kids[2])
+    total <- outer(cost_from(kids[1], i), cost_from(kids[2], j), "+") +
+      D[li, lj, drop = FALSE]
+    km <- which(total == min(total), arr.ind = TRUE)[1, ]
+    stack[[length(stack) + 1]] <- c(kids[2], lj[km[2]], j)
+    stack[[length(stack) + 1]] <- c(kids[1], i, li[km[1]])
+  }
+  out
+}
+
+#' Reorder the leaves of a tree
+#'
+#' @param tree hclust object (unscaled).
+#' @param x the matrix that was clustered (rows are leaves).
+#' @param order "default" (hclust order), "olo" (optimal leaf ordering) or
+#'   "mean" (branches ordered by their mean, as in \code{stats::heatmap()}).
+#' @param d distances between the leaves, computed from \code{x} with
+#'   \code{dist} when NULL.
+#'
+#' @noRd
+.tree_order <- function(tree,
+                        x,
+                        order = "default",
+                        dist = "euclidean",
+                        d = NULL,
+                        ...) {
+  if(identical(order, "default") || nrow(tree$merge) < 2) {
+    return(tree)
+  }
+  if(order == "mean") {
+    return(.mean_order(tree, rowMeans(as.matrix(x), na.rm = TRUE)))
+  }
+  if(is.null(d)) {
+    d <- .dist_matrix(x, dist, ...)
+  }
+  .apply_order(tree, .olo_order(tree$merge, d))
+}
+
+#' Check a leaf ordering method
+#' @noRd
+.check_order <- function(order,
+                         arg = "order") {
+  if(!is.character(order) || length(order) != 1 ||
+     !order %in% c("default", "olo", "mean")) {
+    stop(
+      "'", arg, "' must be \"default\", \"olo\" or \"mean\".",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
 }

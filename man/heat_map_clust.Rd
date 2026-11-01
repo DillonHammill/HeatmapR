@@ -11,6 +11,7 @@ heat_map_clust(
   method = "complete",
   scale = FALSE,
   cut = NULL,
+  order = "default",
   ...
 )
 }
@@ -27,7 +28,11 @@ already stored in a supplied \code{hclust} object are replaced when
 
 \item{dist}{method passed to \code{\link{dist}} to compute distance matrix,
 set to \code{"euclidean"} by default. Also supports \code{"cosine"} for
-cosine distance (1 - cosine similarity).}
+cosine distance (1 - cosine similarity), \code{"pearson"},
+\code{"spearman"} or \code{"kendall"} for one minus the correlation
+(rows without variation are treated as uncorrelated), or a function that
+takes the matrix being clustered (one row per leaf) and returns a
+\code{dist} object or a square matrix of distances.}
 
 \item{method}{agglomeration method passed to \code{\link{hclust}} to perform
 hierarchical clustering, set to \code{"complete"} by default.}
@@ -39,6 +44,13 @@ better visualisation, set to FALSE by default.}
 proportion of the tree height (for non-cosine distances) or as an absolute
 cosine distance threshold (when \code{dist = "cosine"}), or a value
 greater than or equal to 1 indicating the number of desired clusters.}
+
+\item{order}{how the branches of the dendrogram are ordered:
+\code{"default"} keeps the order from \code{hclust}, \code{"olo"} flips
+branches to minimise the distances between neighbouring leaves (optimal
+leaf ordering; this takes a few seconds for 1000 leaves and grows with the
+cube of the number of leaves) and \code{"mean"} orders branches by their
+mean values as in \code{\link[stats]{heatmap}}.}
 
 \item{...}{additional arguments passed to \code{\link{dist}} or
 \code{\link{hclust}}.}
