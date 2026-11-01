@@ -102,8 +102,8 @@ test_that("Full workflow: save and create heatmap", {
   
   expect_no_error({
     heat_map_save(temp_file, width = 6, height = 5)
+    # heat_map() closes the device opened by heat_map_save()
     heat_map(test_data, scale = "column")
-    dev.off()
   })
   
   expect_true(file.exists(temp_file))

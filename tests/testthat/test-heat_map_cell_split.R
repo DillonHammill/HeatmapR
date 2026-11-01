@@ -200,8 +200,8 @@ test_that("tree_x and tree_y work with manual tree_cut_x and tree_cut_y", {
   colnames(test_data) <- paste0("Col", 1:10)
   
   # Define custom splits
-  custom_split_x <- c(1, 1, 1, 2, 2, 2, 2, 3, 3, 3)
-  custom_split_y <- c(1, 1, 1, 2, 2, 2)
+  custom_split_x <- c(3, 4, 3)  # cluster sizes in dendrogram order
+  custom_split_y <- c(3, 3)  # cluster sizes in dendrogram order
   
   # Should work with tree_x and tree_y enabled
   expect_no_error(
@@ -223,7 +223,7 @@ test_that("manual splits use custom cuts while dendrograms are drawn", {
   colnames(test_data) <- paste0("Col", 1:10)
   
   # Define custom splits that differ from hierarchical clustering
-  custom_split_x <- c(1, 1, 1, 2, 2, 2, 2, 3, 3, 3)
+  custom_split_x <- c(3, 4, 3)  # cluster sizes in dendrogram order
   
   # Should create a heatmap with dendrogram but use custom splits
   expect_no_error(

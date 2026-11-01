@@ -43,8 +43,8 @@ test_that("cosine distance works with manual splits", {
   colnames(test_data) <- paste0("Col", 1:10)
   
   # Define custom splits
-  custom_split_x <- c(1, 1, 1, 2, 2, 2, 2, 3, 3, 3)
-  custom_split_y <- c(1, 1, 1, 2, 2, 2)
+  custom_split_x <- c(3, 4, 3)  # cluster sizes in dendrogram order
+  custom_split_y <- c(3, 3)  # cluster sizes in dendrogram order
   
   # Should work with manual splits and cosine distance
   expect_no_error(
