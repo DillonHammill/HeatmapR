@@ -28,6 +28,9 @@ display.}
 of \code{tree_x} and \code{tree_y} (\code{tree_support_x},
 \code{tree_support_y}), \code{NA} for the root and merges fixed by
 groups, or \code{NULL}.}
+\item{\code{zoom_x}, \code{zoom_y}: indices of the columns (from left
+to right) and rows (from top to bottom) enlarged in a zoom panel
+(\code{zoom_x}, \code{zoom_y}), or \code{NULL}.}
 \item{\code{axis_text_x}, \code{axis_text_y}: axis labels from left to
 right and from top to bottom respectively.}
 \item{\code{colours}, \code{sizes}: the fill colour and relative size of

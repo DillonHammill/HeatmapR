@@ -251,7 +251,8 @@ test_that("heat_map() returns a heat_map object that can be redrawn", {
   expect_named(
     info,
     c("data", "row_order", "col_order", "row_clusters", "col_clusters",
-      "tree_x", "tree_y", "support_x", "support_y", "axis_text_x",
+      "tree_x", "tree_y", "support_x", "support_y", "zoom_x",
+      "zoom_y", "axis_text_x",
       "axis_text_y", "colours", "sizes",
       "annotations", "layout", "raster", "col_limits", "size_limits")
   )

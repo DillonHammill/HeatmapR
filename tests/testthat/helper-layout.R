@@ -117,6 +117,19 @@ random_layout_case <- function(seed) {
   if (runif(1) < 0.2) {
     args$cell_uncertainty <- abs(m) * runif(1, 0.1, 2)
   }
+  # Zoom lens - a panel of enlarged rows or columns instead of the axis text
+  zoom_y <- runif(1) < 0.25
+  zoom_x <- runif(1) < 0.15
+  first <- sample(nr, 1)
+  if (zoom_y && is.null(args$mark_y)) {
+    args$zoom_y <- c(first, min(nr, first + sample(c(0, 3, 15), 1)))
+    args$zoom_size_y <- sample(c(0.5, 1, 1.5), 1)
+  }
+  first <- sample(nc, 1)
+  if (zoom_x && is.null(args$mark_x)) {
+    args$zoom_x <- c(first, min(nc, first + sample(c(0, 2, 6), 1)))
+    args$zoom_size_x <- sample(c(0.5, 1), 1)
+  }
   list(
     args = args,
     din = din

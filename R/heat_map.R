@@ -517,6 +517,21 @@
 #'   to use the column or row names.
 #' @param mark_line_col colour of the leader lines connecting mark labels to
 #'   their rows or columns, set to \code{"grey40"} by default.
+#' @param zoom_x,zoom_y columns or rows to enlarge, as names, indices in the
+#'   original order of \code{x}, or a logical vector with one value per column
+#'   or row. Every row from the first to the last of these in the displayed
+#'   order is enlarged, so giving the first and last rows of a band is enough
+#'   (e.g. a cluster from \code{tree_cut_y}). The band is outlined on the
+#'   heatmap and drawn again in a larger panel on the axis text side, joined to
+#'   the band by a wedge, and the enlarged rows are named beside the panel in
+#'   place of the axis text. This shows the detail of a few rows of a large
+#'   heatmap together with the whole. Requires \code{layout = "fit"}; can't be
+#'   combined with \code{mark_x} or \code{mark_y} on the same axis.
+#' @param zoom_size_x,zoom_size_y size of the zoom panel relative to the
+#'   heatmap - its height for \code{zoom_x} and its width for \code{zoom_y} -
+#'   between 0.2 and 5, set to 1 by default. Along the band the panel is as long
+#'   as the heatmap, or shorter when that would make the enlarged cells larger
+#'   than 0.3 inches.
 #' @param cell_raster whether to draw the cells as raster images, which is much
 #'   faster and gives smaller files for large heatmaps. Set to \code{"auto"} by
 #'   default to use raster images for heatmaps with more than 50,000 cells.
@@ -838,6 +853,10 @@ heat_map <- function(x,
                      mark_labels_x = NULL,
                      mark_labels_y = NULL,
                      mark_line_col = "grey40",
+                     zoom_x = NULL,
+                     zoom_y = NULL,
+                     zoom_size_x = 1,
+                     zoom_size_y = 1,
                      cell_raster = "auto",
                      cell_values = NULL,
                      cell_glyph = "density",
@@ -1732,6 +1751,35 @@ heat_map <- function(x,
   # HEATMAP YLIM
   heatmap_ylim <- c(min(y_centers) - 0.5, max(y_centers) + 0.5)
 
+  # ZOOM LENS - A BAND OF COLUMNS/ROWS ENLARGED IN A PANEL ON THE AXIS TEXT
+  # SIDE, LABELLED WITH THE AXIS TEXT (OR THEIR NAMES WHEN IT IS HIDDEN)
+  .check_zoom_size(zoom_size_x, "zoom_size_x")
+  .check_zoom_size(zoom_size_y, "zoom_size_y")
+  zoom_x <- .zoom_index(zoom_x, colnames(x), ncol(x), col_ind, axis_text_x,
+                        "zoom_x")
+  zoom_y <- .zoom_index(zoom_y, rownames(x), nrow(x), row_ind, axis_text_y,
+                        "zoom_y")
+  for(ax in c("x", "y")) {
+    if(!is.null(get(paste0("zoom_", ax))) &&
+       length(get(paste0("mark_", ax))) > 0) {
+      stop(
+        "'zoom_", ax, "' and 'mark_", ax, "' can't be used together - both ",
+        "replace the ", ax, " axis text.",
+        call. = FALSE
+      )
+    }
+  }
+  if((!is.null(zoom_x) || !is.null(zoom_y)) && identical(layout, "classic")) {
+    warning(
+      "The zoom lens requires layout = \"fit\" - nothing is enlarged.",
+      call. = FALSE
+    )
+    zoom_x <- NULL
+    zoom_y <- NULL
+  }
+  zoom_x <- .zoom_geom(zoom_x, x_centers)
+  zoom_y <- .zoom_geom(zoom_y, y_centers)
+
   # LEGEND TYPES
   legend_types <- .legend_types(legend)
   legend_side <- if(axis_text_side_y == 2) 4 else 2
@@ -1927,16 +1975,39 @@ heat_map <- function(x,
       fin = par("fin"),
       heatmap_xlim = heatmap_xlim,
       heatmap_ylim = heatmap_ylim,
-      # MARK LABELS REPLACE THE AXIS TEXT - SPREAD OUT RATHER THAN FITTED
-      x_centers = if(is.null(marks_x)) x_centers,
-      y_centers = if(is.null(marks_y)) y_centers,
+      # MARK LABELS REPLACE THE AXIS TEXT - SPREAD OUT RATHER THAN FITTED;
+      # ZOOM PANELS ARE LABELLED WITH THE AXIS TEXT OF THE ENLARGED CELLS
+      x_centers = if(!is.null(zoom_x)) {
+        zoom_x$centers
+      } else if(is.null(marks_x)) {
+        x_centers
+      },
+      y_centers = if(!is.null(zoom_y)) {
+        zoom_y$centers
+      } else if(is.null(marks_y)) {
+        y_centers
+      },
+      zoom_x = if(!is.null(zoom_x)) list(lim = zoom_x$lim, size = zoom_size_x),
+      zoom_y = if(!is.null(zoom_y)) list(lim = zoom_y$lim, size = zoom_size_y),
       side_x = axis_text_side_x,
       side_y = axis_text_side_y,
       las_x = if(is.null(marks_x)) axis_text_angle_x else 2,
       las_y = if(is.null(marks_y)) axis_text_angle_y else 1,
       rot_x = if(is.null(marks_x)) rot_x,
-      axis_text_x = if(is.null(marks_x)) axis_text_x else marks_x$labels,
-      axis_text_y = if(is.null(marks_y)) axis_text_y else marks_y$labels,
+      axis_text_x = if(!is.null(zoom_x)) {
+        zoom_x$labels
+      } else if(is.null(marks_x)) {
+        axis_text_x
+      } else {
+        marks_x$labels
+      },
+      axis_text_y = if(!is.null(zoom_y)) {
+        zoom_y$labels
+      } else if(is.null(marks_y)) {
+        axis_text_y
+      } else {
+        marks_y$labels
+      },
       mark_in_x = if(is.null(marks_x)) 0 else .mark_depth(),
       mark_in_y = if(is.null(marks_y)) 0 else .mark_depth(),
       axis_text_size_x = axis_text_size_x,
@@ -2035,6 +2106,8 @@ heat_map <- function(x,
       if(!is.null(marks_y)) {
         marks_y$at <- y_centers[match(marks_y$ind, row_ind)]
       }
+      zoom_x <- .zoom_geom(zoom_x, x_centers)
+      zoom_y <- .zoom_geom(zoom_y, y_centers)
       lay <- .heat_map_layout(layout_inputs())
     }
   }
@@ -2069,8 +2142,27 @@ heat_map <- function(x,
     yaxs = "i"
   )
 
-  # X AXIS - AXIS TEXT OR MARK LABELS
-  if(is.null(marks_x)) {
+  # X AXIS - AXIS TEXT, MARK LABELS OR THE NAMES OF THE ENLARGED COLUMNS
+  zoom_at_x <- NULL
+  zoom_at_y <- NULL
+  if(!is.null(zoom_x)) {
+    zoom_at_x <- .zoom_map(zoom_x$centers, zoom_x$lim, lay$zoom_x$along)
+    .draw_axis_text(
+      side = axis_text_side_x,
+      at = zoom_at_x,
+      labels = zoom_x$labels,
+      las = axis_text_angle_x,
+      padj = axis_text_adjust_x,
+      tck = -0.02 * axis_ticks_length_x,
+      font = .zoom_pick(axis_text_font_x, zoom_x$pos, n_col),
+      size = .zoom_pick(lay$axis_text_size_x, zoom_x$pos, n_col),
+      keep = seq(1, length(zoom_at_x), by = lay$step_x),
+      col = .zoom_pick(axis_text_col_x, zoom_x$pos, n_col),
+      col_alpha = .zoom_pick(axis_text_col_alpha_x, zoom_x$pos, n_col),
+      rotate = rot_x,
+      slant = axis_text_side_y
+    )
+  } else if(is.null(marks_x)) {
     .draw_axis_text(
       side = axis_text_side_x,
       at = x_centers,
@@ -2115,8 +2207,23 @@ heat_map <- function(x,
     )
   }
 
-  # Y AXIS - AXIS TEXT OR MARK LABELS
-  if(is.null(marks_y)) {
+  # Y AXIS - AXIS TEXT, MARK LABELS OR THE NAMES OF THE ENLARGED ROWS
+  if(!is.null(zoom_y)) {
+    zoom_at_y <- .zoom_map(zoom_y$centers, zoom_y$lim, lay$zoom_y$along)
+    .draw_axis_text(
+      side = axis_text_side_y,
+      at = zoom_at_y,
+      labels = zoom_y$labels,
+      las = axis_text_angle_y,
+      padj = axis_text_adjust_y,
+      tck = -0.02 * axis_ticks_length_y,
+      font = .zoom_pick(axis_text_font_y, zoom_y$pos, n_row),
+      size = .zoom_pick(lay$axis_text_size_y, zoom_y$pos, n_row),
+      keep = seq(1, length(zoom_at_y), by = lay$step_y),
+      col = .zoom_pick(axis_text_col_y, zoom_y$pos, n_row),
+      col_alpha = .zoom_pick(axis_text_col_alpha_y, zoom_y$pos, n_row)
+    )
+  } else if(is.null(marks_y)) {
     .draw_axis_text(
       side = axis_text_side_y,
       at = y_centers,
@@ -2251,6 +2358,8 @@ heat_map <- function(x,
   # THEY WOULD HIDE THE CELLS (LINE WIDTH 1 IS 1/96 INCH); BORDERS FROM A
   # cell_border_mask ARE ALWAYS DRAWN
   border_min_in <- 3 * max(cell_border_line_width) / 96
+  cell_borders_all <- cell_borders
+  cell_text_size_all <- cell_text_size
   border_hidden_x <- lay$cell_in[1] < border_min_in
   border_hidden_y <- lay$cell_in[2] < border_min_in
   if((border_hidden_x || border_hidden_y) && is.null(mask_mat)) {
@@ -2325,6 +2434,77 @@ heat_map <- function(x,
         cell_text_col_alpha
       )
     )
+  }
+
+  # ZOOM LENS - THE BAND, THE WEDGE AND THE ENLARGED CELLS, DRAWN WITH USER
+  # CO-ORDINATES THAT PUT THE CELLS OF THE BAND IN THE PANEL
+  for(ax in c("x", "y")) {
+    z <- lay[[paste0("zoom_", ax)]]
+    if(is.null(z)) {
+      next
+    }
+    .draw_zoom_band(z, ax, heatmap_xlim, heatmap_ylim)
+    panel <- if(ax == "x") {
+      cell_col %in% zoom_x$ind
+    } else {
+      cell_row %in% zoom_y$ind
+    }
+    panel_in <- .zoom_cell_in(z, ax, heatmap_xlim, heatmap_ylim, lay$upi)
+    old_par <- par(
+      usr = .zoom_usr(z, ax, heatmap_xlim, heatmap_ylim),
+      xpd = NA
+    )
+    .draw_cells(
+      x = cell_x[panel],
+      y = cell_y[panel],
+      size = cell_sizes[panel],
+      shape = cell_shapes[panel],
+      fill = cell_fill[panel],
+      border = if(min(panel_in) < border_min_in && is.null(mask_mat)) {
+        rep(NA_character_, sum(panel))
+      } else {
+        cell_borders_all[panel]
+      },
+      line_type = cell_border_line_type,
+      line_width = cell_border_line_width
+    )
+    if(!is.null(cell_values)) {
+      .draw_cell_glyphs(
+        values = cell_values[cell_ind[panel, , drop = FALSE]],
+        x = cell_x[panel],
+        y = cell_y[panel],
+        lo = glyph_range$lo[cell_ind[panel, , drop = FALSE]],
+        hi = glyph_range$hi[cell_ind[panel, , drop = FALSE]],
+        glyph = cell_glyph,
+        col = cell_glyph_col,
+        fill = cell_glyph_fill
+      )
+    }
+    ind <- panel & !is.na(cell_texts)
+    if(any(ind)) {
+      text(
+        x = cell_x[ind],
+        y = cell_y[ind],
+        labels = cell_texts[ind],
+        font = cell_text_font,
+        cex = if(fit_text) {
+          .fit_cell_text(cell_texts[ind], cell_text_size_all, cell_text_font,
+                         panel_in)
+        } else {
+          cell_text_size_all
+        },
+        col = adjustcolor(
+          cell_text_col,
+          cell_text_col_alpha
+        )
+      )
+    }
+    if(ax == "x") {
+      heat_map_border(.zoom_splits(x_splits, z$lim), y_splits)
+    } else {
+      heat_map_border(x_splits, .zoom_splits(y_splits, z$lim))
+    }
+    par(old_par)
   }
 
   # ANNOTATIONS ----------------------------------------------------------------
@@ -2577,24 +2757,32 @@ heat_map <- function(x,
 
   # COMPONENT BOUNDING BOXES (INCHES) ------------------------------------------
 
-  keep_x <- seq(1, length(x_centers), by = lay$step_x)
-  keep_y <- seq(1, length(y_centers), by = lay$step_y)
+  keep_x <- seq(1, length(if(is.null(zoom_x)) x_centers else zoom_at_x),
+                by = lay$step_x)
+  keep_y <- seq(1, length(if(is.null(zoom_y)) y_centers else zoom_at_y),
+                by = lay$step_y)
   hm_layout <- .layout_boxes(
     list(
       heatmap_xlim = heatmap_xlim,
       heatmap_ylim = heatmap_ylim,
-      x_centers = x_centers[keep_x],
-      y_centers = y_centers[keep_y],
-      axis_text_x = if(is.null(marks_x)) {
+      x_centers = if(is.null(zoom_x)) x_centers[keep_x] else zoom_at_x[keep_x],
+      y_centers = if(is.null(zoom_y)) y_centers[keep_y] else zoom_at_y[keep_y],
+      axis_text_x = if(!is.null(zoom_x)) {
+        zoom_x$labels[keep_x]
+      } else if(is.null(marks_x)) {
         rep_len(axis_text_x, length(x_centers))[keep_x]
       } else {
         ""
       },
-      axis_text_y = if(is.null(marks_y)) {
+      axis_text_y = if(!is.null(zoom_y)) {
+        zoom_y$labels[keep_y]
+      } else if(is.null(marks_y)) {
         rep_len(axis_text_y, length(y_centers))[keep_y]
       } else {
         ""
       },
+      zoom_x = lay$zoom_x,
+      zoom_y = lay$zoom_y,
       marks_x = marks_x,
       marks_y = marks_y,
       side_x = axis_text_side_x,
@@ -2693,6 +2881,8 @@ heat_map <- function(x,
     tree_y = .info_tree(tree_y),
     support_x = support_x,
     support_y = support_y,
+    zoom_x = zoom_x$ind,
+    zoom_y = rev(zoom_y$ind),
     axis_text_x = axis_text_x,
     axis_text_y = rev(axis_text_y),
     colours = .cell_matrix(cell_fill, cell_ind, x),
