@@ -63,6 +63,153 @@
   }
 }
 
+#' Rotation of the x axis text
+#'
+#' @param angle the whole numbers 0 to 3 are \code{las} codes, other angles
+#'   are in degrees.
+#'
+#' @return list with the \code{las} code used for the axis and the angle of
+#'   rotated text (\code{NULL} unless the text is rotated by an angle).
+#'
+#' @noRd
+.axis_rotation <- function(angle) {
+  if(!is.numeric(angle) || length(angle) != 1 || !is.finite(angle) ||
+     angle < 0 || angle > 90) {
+    stop(
+      "'axis_text_angle_x' must be 0, 1, 2 or 3 (see 'las' in ?par) or an ",
+      "angle in degrees between 0 and 90.",
+      call. = FALSE
+    )
+  }
+  if(angle %in% 0:3) {
+    return(list(las = angle, angle = NULL))
+  }
+  # PERPENDICULAR TEXT
+  if(angle == 90) {
+    return(list(las = 2, angle = NULL))
+  }
+  list(las = 2, angle = angle)
+}
+
+#' Widths of each label in inches (zero for missing or empty labels)
+#' @importFrom graphics strwidth
+#' @noRd
+.text_widths <- function(labels,
+                         cex = 1,
+                         font = 1) {
+  n <- length(labels)
+  if(n == 0) {
+    return(numeric(0))
+  }
+  if(is.expression(labels)) {
+    return(
+      strwidth(labels, units = "inches", cex = max(cex), font = font[1])
+    )
+  }
+  labels <- as.character(labels)
+  w <- numeric(n)
+  ok <- !is.na(labels) & nzchar(labels)
+  if(any(ok)) {
+    w[ok] <- strwidth(
+      labels[ok],
+      units = "inches",
+      cex = max(cex),
+      font = font[1]
+    )
+  }
+  w
+}
+
+#' Extent of x axis text rotated by an angle (inches)
+#'
+#' Each label ends one line beyond its tick and slants towards the y axis
+#' text. Text extends a quarter of its height below the baseline, so each
+#' label is taken to extend 0.75 of its height either side of its centre line.
+#'
+#' @param w widths of the labels.
+#' @param h height of the labels.
+#' @param angle angle between the labels and the axis in degrees.
+#'
+#' @return list with the space each label needs along the axis (\code{along},
+#'   parallel labels clear each other when they are separated across their
+#'   baselines or along them - \code{what} is the text dimension that sets
+#'   it), the depth of the text beyond the end of the labels (\code{out}) and
+#'   the extent of each label from its tick towards the y axis text
+#'   (\code{over}).
+#'
+#' @noRd
+.rotated_text <- function(w,
+                          h,
+                          angle) {
+  if(length(w) == 0 || max(w) == 0) {
+    return(list(along = 0, what = "height", out = 0, over = rep(0, length(w))))
+  }
+  a <- angle * pi / 180
+  across <- h / sin(a)
+  lengthwise <- max(w) / cos(a)
+  list(
+    along = min(across, lengthwise),
+    what = if(across <= lengthwise) "height" else "width",
+    out = max(w) * sin(a) + 0.75 * h * cos(a),
+    over = w * cos(a) + 0.75 * h * sin(a)
+  )
+}
+
+#' Extent of rotated x axis text beyond the plot region (inches)
+#' @noRd
+.rotated_extent <- function(rx,
+                            scale) {
+  if(rx$out == 0) {
+    return(0)
+  }
+  1.05 * .line_in() + rx$out * scale
+}
+
+#' Extent of rotated x axis text beyond the side of the heatmap it slants
+#' towards (inches)
+#'
+#' @param at positions of the labels (cell units).
+#' @param lim limits of the heatmap along x (cell units).
+#' @param upi cell units per inch along x.
+#' @param slant side the labels slant towards (2 or 4).
+#' @param scale text scaling factor.
+#'
+#' @noRd
+.rotated_over <- function(rx,
+                          at,
+                          lim,
+                          upi,
+                          slant,
+                          scale) {
+  if(is.null(rx) || length(at) == 0) {
+    return(0)
+  }
+  dist <- if(slant == 2) {
+    (at - min(lim)) / upi
+  } else {
+    (max(lim) - at) / upi
+  }
+  max(0, rx$over * scale - dist)
+}
+
+#' Rotated x axis text for a layout (\code{NULL} unless rotated)
+#' @noRd
+.layout_rotation <- function(p,
+                             h) {
+  if(is.null(p$rot_x) || length(p$x_centers) == 0) {
+    return(NULL)
+  }
+  .rotated_text(
+    .text_widths(
+      rep_len(p$axis_text_x, length(p$x_centers)),
+      p$axis_text_size_x,
+      p$axis_text_font_x
+    ),
+    h,
+    p$rot_x
+  )
+}
+
 #' Scale text to fit the space available to each label
 #'
 #' @param space_in space available to each label along its axis in inches.
@@ -332,6 +479,17 @@
     width = .text_in(p$axis_text_y, p$axis_text_size_y, p$axis_text_font_y, "width"),
     height = .text_in(p$axis_text_y, p$axis_text_size_y, p$axis_text_font_y, "height")
   )
+  # ROTATED X AXIS TEXT - ALONG THE AXIS, THE TEXT NEAREST THE LAST TICK
+  # EXTENDS ITS CORNER BEYOND IT
+  rx <- .layout_rotation(p, ext_x[["height"]])
+  along_x <- if(is.null(rx)) dims_x[["along"]] else rx$what
+  along_ext_x <- if(is.null(rx)) ext_x[[dims_x[["along"]]]] else rx$along
+  near_ext_x <- if(is.null(rx)) {
+    ext_x[[dims_x[["along"]]]]
+  } else {
+    1.5 * ext_x[["height"]] * sin(p$rot_x * pi / 180)
+  }
+  over_x <- 0
   legend_side <- if(p$side_y == 2) 4 else 2
 
   # ITERATE - MARGINS DEPEND ON TEXT SIZES & SPILLS, WHICH DEPEND ON THE
@@ -359,7 +517,7 @@
           side = z,
           axis_text_x = p$axis_text_x,
           axis_text_y = p$axis_text_y,
-          axis_text_size_x = cex_x,
+          axis_text_size_x = cex_x * if(is.null(rx)) 1 else sin(p$rot_x * pi / 180),
           axis_text_size_y = cex_y,
           axis_text_side_x = p$side_x,
           axis_text_side_y = p$side_y,
@@ -375,7 +533,8 @@
     # MEASURED SPACE FOR AXIS TEXT, ANNOTATION NAMES, BARS & LEGENDS
     need <- rep(0, 4)
     need[p$side_x] <- 1.5 +
-      ext_x[[dims_x[["out"]]]] * min(fit_x$scale, shrink) / line_in +
+      (if(is.null(rx)) ext_x[[dims_x[["out"]]]] else rx$out) *
+      min(fit_x$scale, shrink) / line_in +
       (if(isTRUE(p$mark_in_x > 0)) p$mark_in_x / line_in else 0) +
       (if(nzchar(p$axis_label_x)) 2 else 0) +
       (if(p$side_x == 3 && !is.null(p$title)) 2 else 0)
@@ -389,6 +548,8 @@
       .text_in(p$annot_names_y, p$annot_text_size, p$annot_text_font) /
         line_in + 1.5
     )
+    # ROTATED X AXIS TEXT BENEATH (OR ABOVE) THE Y AXIS TEXT
+    need[p$side_y] <- max(need[p$side_y], over_x / line_in + 0.5 * (over_x > 0))
     # SPACE BEYOND THE PLOT REGION (LEGENDS, BAR AXES) PLUS THE OUTER LINES
     # USED BY THE TITLE AND AXIS LABELS ON THAT SIDE
     outer_lines <- rep(0, 4)
@@ -485,9 +646,9 @@
         p$axis_text_x,
         p$axis_text_size_x,
         p$axis_text_font_x,
-        dims_x[["along"]],
+        along_x,
         .min_spacing(p$x_centers) / upi_x,
-        ext = ext_x[[dims_x[["along"]]]]
+        ext = along_ext_x
       )
       fit_y <- .fit_text(
         p$axis_text_y,
@@ -575,13 +736,22 @@
       over <- tick + inner_over(
         p$n_annot_y,
         p$annot_size_y,
-        ext_x[[dims_x[["along"]]]] * min(fit_x$scale, shrink),
+        near_ext_x * min(fit_x$scale, shrink),
         1 / upi_x
       )
       new_gap_y <- if(over > 0) over + 0.02 else 0
     }
     # CONVERGED WHEN THE TEXT SIZES, SPILLS & GAPS USED ARE THOSE NEEDED
-    converged <- all(abs(new_spill - spill) < 1e-6) &&
+    new_over_x <- .rotated_over(
+      rx,
+      p$x_centers,
+      hx,
+      upi_x,
+      p$side_y,
+      min(fit_x$scale, shrink)
+    )
+    converged <- all(abs(new_over_x - over_x) < 1e-4) &&
+      all(abs(new_spill - spill) < 1e-6) &&
       abs(new_gap_x - gap_x_in) < 1e-6 &&
       abs(new_gap_y - gap_y_in) < 1e-6 &&
       abs(min(fit_x$scale, shrink) - sc_x) < 1e-6 &&
@@ -589,6 +759,7 @@
     gap_x_in <- new_gap_x
     gap_y_in <- new_gap_y
     spill <- new_spill
+    over_x <- new_over_x
     if(converged && iter > 1) {
       break
     }
@@ -788,6 +959,26 @@
     dims <- .axis_text_dims(side, g[[paste0("las_", ax)]])
     cex <- g[[paste0("cex_", ax)]]
     font <- g[[paste0("font_", ax)]]
+    # ROTATED TEXT - FROM THE NEAREST CORNER TO THE FURTHEST
+    if(ax == "x" && !is.null(g$rot_x)) {
+      h <- .text_in(labels, cex, font, "height")
+      rx <- .rotated_text(
+        .text_widths(rep_len(labels, length(at)), cex, font),
+        h,
+        g$rot_x
+      )
+      a <- g$rot_x * pi / 180
+      pos <- ux(at)
+      near <- 0.75 * h * sin(a)
+      span <- if(g$side_y == 2) {
+        c(min(pos - rx$over), max(pos) + near)
+      } else {
+        c(min(pos) - near, max(pos + rx$over))
+      }
+      depth <- outward(side, max(0, line_in - 0.75 * h * cos(a)), line_in + rx$out)
+      add("axis_text_x", span, depth)
+      next
+    }
     along <- .text_in(labels, cex, font, dims[["along"]]) / 2
     out <- .text_in(labels, cex, font, dims[["out"]])
     pos <- if(ax == "x") ux(at) else uy(at)
@@ -1142,6 +1333,17 @@
     width = .text_in(p$axis_text_y, p$axis_text_size_y, p$axis_text_font_y, "width"),
     height = .text_in(p$axis_text_y, p$axis_text_size_y, p$axis_text_font_y, "height")
   )
+  # ROTATED X AXIS TEXT - ALONG THE AXIS, THE TEXT NEAREST THE LAST TICK
+  # EXTENDS ITS CORNER BEYOND IT
+  rx <- .layout_rotation(p, ext_x[["height"]])
+  along_x <- if(is.null(rx)) dims_x[["along"]] else rx$what
+  along_ext_x <- if(is.null(rx)) ext_x[[dims_x[["along"]]]] else rx$along
+  near_ext_x <- if(is.null(rx)) {
+    ext_x[[dims_x[["along"]]]]
+  } else {
+    1.5 * ext_x[["height"]] * sin(p$rot_x * pi / 180)
+  }
+  over_x <- 0
   title_cex <- max(p$title_size)
   label_cex_x <- max(p$axis_label_size_x)
   label_cex_y <- max(p$axis_label_size_y)
@@ -1192,12 +1394,16 @@
     # AXIS TEXT, ANNOTATION NAMES & BAR AXES BESIDE THE PLOT REGION (INCHES)
     near <- rep(0, 4)
     near[p$side_x] <- max(
-      .axis_extent(
-        p$side_x,
-        dims_x[["out"]],
-        ext_x[[dims_x[["out"]]]] * sc_x,
-        p$mark_in_x
-      ),
+      if(is.null(rx)) {
+        .axis_extent(
+          p$side_x,
+          dims_x[["out"]],
+          ext_x[[dims_x[["out"]]]] * sc_x,
+          p$mark_in_x
+        )
+      } else {
+        .rotated_extent(rx, sc_x)
+      },
       spill[p$side_x],
       if(p$n_annot_y > 0) {
         0.1 + .text_in(
@@ -1244,6 +1450,8 @@
       title_inner <- margins_in[3] + gap
       margins_in[3] <- title_inner + 0.75 * title_cex * line_in
     }
+    # ROTATED X AXIS TEXT BENEATH (OR ABOVE) THE Y AXIS TEXT
+    margins_in[p$side_y] <- max(margins_in[p$side_y], over_x)
     # LEGEND BELOW EVERYTHING ELSE - AT MOST 35% OF THE FIGURE HEIGHT
     if(bottom && legend$height > 0) {
       band_in <- min(legend$height, 0.35 * fin[2])
@@ -1318,9 +1526,9 @@
         p$axis_text_x,
         p$axis_text_size_x,
         p$axis_text_font_x,
-        dims_x[["along"]],
+        along_x,
         .min_spacing(p$x_centers) / upi_x,
-        ext = ext_x[[dims_x[["along"]]]]
+        ext = along_ext_x
       )
       fit_y <- .fit_text(
         p$axis_text_y,
@@ -1406,14 +1614,23 @@
       over <- tick + inner_over(
         p$n_annot_y,
         p$annot_size_y,
-        ext_x[[dims_x[["along"]]]] * min(fit_x$scale, shrink),
+        near_ext_x * min(fit_x$scale, shrink),
         1 / upi_x
       )
       new_gap_y <- if(over > 0) over + 0.02 else 0
     }
 
     # CONVERGED WHEN THE TEXT SIZES, SPILLS & GAPS USED ARE THOSE NEEDED
-    converged <- all(abs(new_spill - spill) < 1e-6) &&
+    new_over_x <- .rotated_over(
+      rx,
+      p$x_centers,
+      hx,
+      upi_x,
+      p$side_y,
+      min(fit_x$scale, shrink)
+    )
+    converged <- all(abs(new_over_x - over_x) < 1e-4) &&
+      all(abs(new_spill - spill) < 1e-6) &&
       abs(new_gap_x - gap_x_in) < 1e-6 &&
       abs(new_gap_y - gap_y_in) < 1e-6 &&
       abs(min(fit_x$scale, shrink) - sc_x) < 1e-6 &&
@@ -1424,6 +1641,7 @@
     spill <- new_spill
     gap_x_in <- new_gap_x
     gap_y_in <- new_gap_y
+    over_x <- new_over_x
     if(converged && iter > 1) {
       break
     }

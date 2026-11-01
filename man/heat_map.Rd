@@ -593,9 +593,15 @@ by default.}
 transparency of x axis text labels, set to 1 by default to use solid text
 colours.}
 
-\item{axis_text_angle_x}{integer to control the angle of x axis text labels
-relative to the x axis, set to 3 by default. See \code{las} in \code{?par}
-for alternatives.}
+\item{axis_text_angle_x}{controls the angle of x axis text labels relative
+to the x axis, set to 3 by default. The whole numbers 0 to 3 are
+\code{las} codes (see \code{las} in \code{?par}), any other angle between
+0 and 90 is in degrees. Labels rotated by an angle (e.g. 45) end at their
+ticks and slant towards the y axis text, so that the longest labels extend
+beneath (or above) the y axis text rather than the dendrograms and
+legends. Rotated labels are spaced along the axis by their height across
+their baselines, and \code{axis_text_adjust_x} is not used. The angle is
+not used for mark labels (\code{mark_x}).}
 
 \item{axis_text_adjust_x}{numeric to adjust position x axis text relative to
 x axis ticks, set to 0.45 by default.}
