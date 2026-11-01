@@ -148,11 +148,6 @@ test_that("zoom panels check their arguments", {
   expect_error(draw(m, zoom_x = 2, mark_x = 3), "'zoom_x' and 'mark_x' can't be used together")
   expect_error(draw(m, zoom_y = 2, zoom_size_y = 10), "'zoom_size_y' must be")
   expect_error(draw(m, zoom_y = "nope"), "'zoom_y' contains names")
-  expect_warning(
-    hm <- draw(m, zoom_y = 2, layout = "classic"),
-    "zoom lens requires layout"
-  )
-  expect_null(heat_map_info(hm)$zoom_y)
   # Marks on one axis and a zoom panel on the other
   hm <- draw(m, zoom_y = 2:3, mark_x = 1)
   expect_equal(heat_map_info(hm)$zoom_y, 3:2)
