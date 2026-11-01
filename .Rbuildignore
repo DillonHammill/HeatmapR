@@ -11,6 +11,4 @@
 ^Meta$
 vignettes/HeatmapR/
 man/figures/HeatmapR/
-^\.github$
-^_pkgdown\.yml$
 ^GEMINI\.md$

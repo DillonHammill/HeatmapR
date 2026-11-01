@@ -15,7 +15,7 @@ coverage](https://codecov.io/gh/DillonHammill/HeatmapR/branch/master/graph/badge
 stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://lifecycle.r-lib.org/articles/stages.html#stable)
 <!-- badges: end -->
 
-**HeatmapR** it a lightweight R package that makes it easy to generate
+**HeatmapR** is a lightweight R package that makes it easy to generate
 high quality, complex heatmaps with minimal data preprocessing or manual
 customization. Visit the **HeatmapR** website to get started
 <https://dillonhammill.github.io/HeatmapR/>.
@@ -43,14 +43,15 @@ graphics approach.
 
 - **HeatmapR** is built using base graphics to remove the need for
   familiarity with `ggplot2` or `plotly`.
-- **HeatmapR** is extremely lighweight and therefore there are no
+- **HeatmapR** is extremely lightweight and therefore there are no
   external dependencies that need to be installed.
 - **HeatmapR** is designed under ROpenSci naming guidelines for a
   consistent and intuitive user experience.
 - Unlike other heatmap packages that use base graphics, **HeatmapR**
   actually returns the plot object instead of an image. This makes it
   easy to arrange multiple plots in complex layouts without sacrificing
-  resolution.
+  resolution, and `heat_map_info()` returns the row/column order and
+  cluster assignments for use in downstream analyses.
 - **HeatmapR** is fully customizable and comes with useful saving API
   (`heat_map_save()`) to export high resolution images.
 - **HeatmapR** handles datasets that contain non-numeric or missing
@@ -62,7 +63,13 @@ graphics approach.
 
 ## Installation
 
-**HeatmapR** can be installed directly from GitHub:
+**HeatmapR** can be installed from CRAN:
+
+``` r
+install.packages("HeatmapR")
+```
+
+The development version can be installed directly from GitHub:
 
 ``` r
 devtools::install_github("DillonHammill/HeatmapR")
@@ -95,10 +102,10 @@ heat_map(
 ## Acknowledgements
 
 **HeatmapR** relies on statistical methods in the `stats` package to
-compute distance matrices and perform hierarchical clustering.
-**HeatmapR** also uses some modified `stats` code from the
-[ggdendro](https://github.com/andrie/ggdendro) package to get the
-co-ordinates for the dendrogram line segments.
+compute distance matrices and perform hierarchical clustering. The
+dendrogram line segments follow the layout used by the
+[ggdendro](https://github.com/andrie/ggdendro) package, which earlier
+versions of **HeatmapR** used modified code from.
 
 ## Code of Conduct
 
@@ -117,7 +124,7 @@ citation("HeatmapR")
 #> To cite package 'HeatmapR' in publications use:
 #> 
 #>   Hammill D (2026). _HeatmapR: Create Heatmaps Using Base Graphics_. R
-#>   package version 1.1.0, <https://dillonhammill.github.io/HeatmapR/>.
+#>   package version 1.2.0, <https://dillonhammill.github.io/HeatmapR/>.
 #> 
 #> A BibTeX entry for LaTeX users is
 #> 
@@ -125,7 +132,7 @@ citation("HeatmapR")
 #>     title = {HeatmapR: Create Heatmaps Using Base Graphics},
 #>     author = {Dillon Hammill},
 #>     year = {2026},
-#>     note = {R package version 1.1.0},
+#>     note = {R package version 1.2.0},
 #>     url = {https://dillonhammill.github.io/HeatmapR/},
 #>   }
 ```
