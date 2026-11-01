@@ -508,6 +508,78 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-marks.png')
 ```
 
+#### 2.7.1 Zooming Into a Band of Rows
+
+Mark labels name a few rows, but they don't show their values. `zoom_y` (and `zoom_x` for columns) enlarges a band of rows in a panel beside the heatmap instead, so the detail of a few rows can be read together with the whole. The band runs from the first to the last of the rows you choose in the displayed order (giving the first and last rows is enough), is outlined on the heatmap and joined to the panel by a wedge. The panel sits on the axis text side and is labelled with the names of the enlarged rows, in place of the axis text. `zoom_size_y` sets the width of the panel relative to the heatmap (the same width by default), and enlarged rows are at most 0.3 inches tall.
+
+```{r, eval = FALSE}
+set.seed(2)
+genes <- matrix(
+  rnorm(2000 * 24),
+  nrow = 2000,
+  dimnames = list(
+    paste0("Gene_", 1:2000),
+    paste0("S", 1:24)
+  )
+)
+genes[1:150, 1:12] <- genes[1:150, 1:12] + 2.5
+genes[1001:1150, 13:24] <- genes[1001:1150, 13:24] + 2.5
+# 20 genes of a pathway - up in half of each group of samples
+genes[151:170, c(1:6, 13:18)] <- genes[151:170, c(1:6, 13:18)] + 3
+rownames(genes)[151:170] <- c(
+  "IL7R", "CCR7", "SELL", "LEF1", "TCF7", "CD27", "CD28", "KLF2", "S1PR1",
+  "FOXP1", "BACH2", "SATB1", "PLAC8", "LTB", "MAL", "NOSIP", "PIK3IP1",
+  "TXK", "AQP3", "CD7"
+)
+heat_map(
+  genes,
+  scale = "row",
+  tree_x = TRUE,
+  zoom_y = c("IL7R", "CD7"),
+  title = "A pathway in 2,000 genes"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-zoom.png",
+  height = 6.5,
+  width = 9,
+  res = 300
+)
+set.seed(2)
+genes <- matrix(
+  rnorm(2000 * 24),
+  nrow = 2000,
+  dimnames = list(
+    paste0("Gene_", 1:2000),
+    paste0("S", 1:24)
+  )
+)
+genes[1:150, 1:12] <- genes[1:150, 1:12] + 2.5
+genes[1001:1150, 13:24] <- genes[1001:1150, 13:24] + 2.5
+# 20 genes of a pathway - up in half of each group of samples
+genes[151:170, c(1:6, 13:18)] <- genes[151:170, c(1:6, 13:18)] + 3
+rownames(genes)[151:170] <- c(
+  "IL7R", "CCR7", "SELL", "LEF1", "TCF7", "CD27", "CD28", "KLF2", "S1PR1",
+  "FOXP1", "BACH2", "SATB1", "PLAC8", "LTB", "MAL", "NOSIP", "PIK3IP1",
+  "TXK", "AQP3", "CD7"
+)
+heat_map(
+  genes,
+  scale = "row",
+  tree_x = TRUE,
+  zoom_y = c("IL7R", "CD7"),
+  title = "A pathway in 2,000 genes"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-zoom.png')
+```
+
+The panel keeps the cells' shapes, text and distributions and the gaps between clusters. Rows that are far apart in a clustered heatmap make a wide band; to enlarge one cluster, pass its rows, e.g. `zoom_y = heat_map_info(hm)$row_clusters == 2`.
+
 ### 2.8 Rotated Column Labels
 
 Long column names are easier to read at an angle. As well as the `las` codes 0 to 3 (3, perpendicular to the axis, by default), `axis_text_angle_x` takes an angle in degrees. Rotated labels end at their ticks and slant towards the y axis text, so the longest labels extend beneath the row names rather than into the dendrograms or the legend. They are only shrunk when neighbouring labels would overlap across their baselines, so they stay larger than perpendicular labels on crowded heatmaps.

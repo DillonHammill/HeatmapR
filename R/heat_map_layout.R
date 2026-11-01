@@ -1041,7 +1041,28 @@
       y0 + dir * c(0.1, 0.1 + w)
     )
   }
-  # BAR GRAPH AXES & LABELS
+  # ZOOM PANELS - FROM THE EDGE OF THE HEATMAP TO THE FAR SIDE OF THE PANEL
+  if(!is.null(g$zoom_x)) {
+    z <- g$zoom_x
+    add("zoom_x", ux(range(z$lim, z$along)), uy(c(z$edge, z$across)))
+  }
+  if(!is.null(g$zoom_y)) {
+    z <- g$zoom_y
+    add("zoom_y", ux(c(z$edge, z$across)), uy(range(z$lim, z$along)))
+  }
+  # BAR GRAPH AXES & LABELS - DRAWN AT THE EDGE OF THE HEATMAP, WHICH IS THE
+  # EDGE OF THE PLOT REGION UNLESS A ZOOM PANEL IS BESIDE IT
+  from_heatmap <- function(side, from, to) {
+    if(side == 1) {
+      uy(min(g$heatmap_ylim)) - c(from, to)
+    } else if(side == 3) {
+      uy(max(g$heatmap_ylim)) + c(from, to)
+    } else if(side == 2) {
+      ux(min(g$heatmap_xlim)) - c(from, to)
+    } else {
+      ux(max(g$heatmap_xlim)) + c(from, to)
+    }
+  }
   if(!is.null(g$bar_ticks_x)) {
     out <- .text_in(as.character(g$bar_ticks_x), g$bar_cex_x, g$bar_font_x, g$bar_out_x)
     lab <- if(.all_na(g$bar_label_x) || is.null(g$bar_label_x)) {
@@ -1052,7 +1073,9 @@
     }
     add(
       "bar_axis_x",
-      outward(g$side_y, 0, max(line_in + out, lab)),
+      (if(is.null(g$zoom_y)) outward else from_heatmap)(
+        g$side_y, 0, max(line_in + out, lab)
+      ),
       uy(g$bar_x_ylim)
     )
   }
@@ -1067,7 +1090,9 @@
     add(
       "bar_axis_y",
       ux(g$bar_y_xlim),
-      outward(g$side_x, 0, max(line_in + out, lab))
+      (if(is.null(g$zoom_x)) outward else from_heatmap)(
+        g$side_x, 0, max(line_in + out, lab)
+      )
     )
   }
   # LEGEND - THE BOX DRAWN (FIT LAYOUT) OR ITS REGION PLUS ANY TEXT BEYOND IT
@@ -1322,6 +1347,23 @@
   annot_x_in <- if(p$n_annot_x > 0) p$annot_gap + p$n_annot_x * p$annot_size_x else 0
   annot_y_in <- if(p$n_annot_y > 0) p$annot_gap + p$n_annot_y * p$annot_size_y else 0
 
+  # ZOOM LENS - A PANEL OF ENLARGED COLUMNS (ROWS) BETWEEN THE HEATMAP AND THE
+  # AXIS TEXT, WHICH LABELS THE ENLARGED COLUMNS (ROWS)
+  zx <- p$zoom_x
+  zy <- p$zoom_y
+  # DEPTH OF THE PANEL - A SHARE OF THE SPACE LEFT FOR THE HEATMAP (INCHES)
+  zoom_depth <- function(z, free) {
+    if(is.null(z)) {
+      return(c(wedge = 0, depth = 0, len = 0))
+    }
+    wedge <- min(.ZOOM$wedge, 0.15 * free)
+    c(wedge = wedge, depth = z$size * (free - wedge) / (1 + z$size), len = 0)
+  }
+  # LENGTH OF THE PANEL - ENLARGED CELLS NO LARGER THAN .ZOOM$cell_max
+  zoom_len <- function(z, heat_in) {
+    min(heat_in, .ZOOM$cell_max * diff(z$lim))
+  }
+
   # AXIS TEXT - MEASURED ONCE (TEXT SCALES WITH CEX)
   dims_x <- .axis_text_dims(p$side_x, p$las_x)
   dims_y <- .axis_text_dims(p$side_y, p$las_y)
@@ -1493,7 +1535,8 @@
       ),
       0.5 * ph
     )
-    upi_y <- hh / (ph - sum(tracks_y))
+    zoom_x_in <- zoom_depth(zx, ph - sum(tracks_y))
+    upi_y <- hh / (ph - sum(tracks_y) - zoom_x_in[["wedge"]] - zoom_x_in[["depth"]])
 
     # TRACKS ALONG X (ROW TRACKS & LEGEND) - AT MOST 60% OF THE PLOT WIDTH
     legend_in <- if(p$legend && !bottom) legend$width + 0.15 else 0
@@ -1509,7 +1552,26 @@
       room
     )
     legend_in <- min(legend_in, 0.6 * pw - sum(tracks_x))
-    upi_x <- wx / (pw - sum(tracks_x) - legend_in)
+    zoom_y_in <- zoom_depth(zy, pw - sum(tracks_x) - legend_in)
+    upi_x <- wx / (pw - sum(tracks_x) - legend_in - zoom_y_in[["wedge"]] -
+                     zoom_y_in[["depth"]])
+    if(!is.null(zx)) {
+      zoom_x_in[["len"]] <- zoom_len(zx, wx / upi_x)
+    }
+    if(!is.null(zy)) {
+      zoom_y_in[["len"]] <- zoom_len(zy, hh / upi_y)
+    }
+    # SPACE FOR EACH AXIS LABEL (INCHES) - THE ENLARGED CELLS OF A ZOOM PANEL
+    space_x <- if(is.null(zx)) {
+      .min_spacing(p$x_centers) / upi_x
+    } else {
+      .min_spacing(p$x_centers) * zoom_x_in[["len"]] / diff(zx$lim)
+    }
+    space_y <- if(is.null(zy)) {
+      .min_spacing(p$y_centers) / upi_y
+    } else {
+      .min_spacing(p$y_centers) * zoom_y_in[["len"]] / diff(zy$lim)
+    }
 
     # ANNOTATION NAMES - SHRUNK TO FIT ANNOTATION TRACKS THAT WERE SHRUNK
     name_h <- 1.1 * .text_in("Mg", p$annot_text_size, p$annot_text_font, "height")
@@ -1527,7 +1589,7 @@
         p$axis_text_size_x,
         p$axis_text_font_x,
         along_x,
-        .min_spacing(p$x_centers) / upi_x,
+        space_x,
         ext = along_ext_x
       )
       fit_y <- .fit_text(
@@ -1535,7 +1597,7 @@
         p$axis_text_size_y,
         p$axis_text_font_y,
         dims_y[["along"]],
-        .min_spacing(p$y_centers) / upi_y,
+        space_y,
         ext = ext_y[[dims_y[["along"]]]]
       )
     }
@@ -1623,7 +1685,15 @@
     # CONVERGED WHEN THE TEXT SIZES, SPILLS & GAPS USED ARE THOSE NEEDED
     new_over_x <- .rotated_over(
       rx,
-      p$x_centers,
+      if(is.null(zx)) {
+        p$x_centers
+      } else {
+        .zoom_map(
+          p$x_centers,
+          zx$lim,
+          .zoom_place(zx$lim, hx, zoom_x_in[["len"]] * upi_x)
+        )
+      },
       hx,
       upi_x,
       p$side_y,
@@ -1673,6 +1743,25 @@
     c(outer_y, outer_y)
   }
   xlim <- range(c(hx, unlist(y_tracks), outer_y + dir_y * legend_in * upi_x))
+  ylim <- range(c(hy, unlist(x_tracks)))
+
+  # ZOOM PANELS (CELL UNITS) - ACROSS FROM THE WEDGE OUTWARDS, ALONG CENTRED
+  # ON THE BAND
+  zoom_panel <- function(z, zin, side, hlim, alim, upi_across, upi_along) {
+    if(is.null(z)) {
+      return(NULL)
+    }
+    low <- side %in% c(1, 2)
+    z$edge <- if(low) min(hlim) else max(hlim)
+    z$across <- z$edge + (if(low) -1 else 1) *
+      c(zin[["wedge"]], zin[["wedge"]] + zin[["depth"]]) * upi_across
+    z$along <- .zoom_place(z$lim, alim, zin[["len"]] * upi_along)
+    z
+  }
+  zoom_x <- zoom_panel(zx, zoom_x_in, p$side_x, hy, hx, upi_y, upi_x)
+  zoom_y <- zoom_panel(zy, zoom_y_in, p$side_y, hx, hy, upi_x, upi_y)
+  xlim <- range(c(xlim, zoom_y$across))
+  ylim <- range(c(ylim, zoom_x$across))
 
   # MARGIN TEXT (mtext LINES) - IN A USER SUPPLIED MARGIN THE TEXT KEEPS ITS
   # DISTANCE FROM THE EDGE OF THE FIGURE
@@ -1689,7 +1778,7 @@
     y_tracks = y_tracks,
     legend_xlim = legend_xlim,
     xlim = xlim,
-    ylim = range(c(hy, unlist(x_tracks))),
+    ylim = ylim,
     margins = margins,
     # NEVER LARGER THAN THE TEXT THE MARGINS WERE SIZED FOR
     axis_text_size_x = p$axis_text_size_x * min(fit_x$scale, shrink, sc_x),
@@ -1722,7 +1811,9 @@
       orientation = if(bottom) "bottom" else "side",
       band_in = band_in,
       centre = mean(hx)
-    )
+    ),
+    zoom_x = zoom_x,
+    zoom_y = zoom_y
   )
 
 }

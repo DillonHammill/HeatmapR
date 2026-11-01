@@ -165,6 +165,10 @@ heat_map(
   mark_labels_x = NULL,
   mark_labels_y = NULL,
   mark_line_col = "grey40",
+  zoom_x = NULL,
+  zoom_y = NULL,
+  zoom_size_x = 1,
+  zoom_size_y = 1,
   cell_raster = "auto",
   cell_values = NULL,
   cell_glyph = "density",
@@ -897,6 +901,23 @@ to use the column or row names.}
 
 \item{mark_line_col}{colour of the leader lines connecting mark labels to
 their rows or columns, set to \code{"grey40"} by default.}
+
+\item{zoom_x, zoom_y}{columns or rows to enlarge, as names, indices in the
+original order of \code{x}, or a logical vector with one value per column
+or row. Every row from the first to the last of these in the displayed
+order is enlarged, so giving the first and last rows of a band is enough
+(e.g. a cluster from \code{tree_cut_y}). The band is outlined on the
+heatmap and drawn again in a larger panel on the axis text side, joined to
+the band by a wedge, and the enlarged rows are named beside the panel in
+place of the axis text. This shows the detail of a few rows of a large
+heatmap together with the whole. Requires \code{layout = "fit"}; can't be
+combined with \code{mark_x} or \code{mark_y} on the same axis.}
+
+\item{zoom_size_x, zoom_size_y}{size of the zoom panel relative to the
+heatmap - its height for \code{zoom_x} and its width for \code{zoom_y} -
+between 0.2 and 5, set to 1 by default. Along the band the panel is as long
+as the heatmap, or shorter when that would make the enlarged cells larger
+than 0.3 inches.}
 
 \item{cell_raster}{whether to draw the cells as raster images, which is much
 faster and gives smaller files for large heatmaps. Set to \code{"auto"} by
