@@ -57,6 +57,10 @@ graphics approach.
 - **HeatmapR** handles datasets that contain non-numeric or missing
   data, which means you don’t have to spend ages formatting and
   pre-processing the data beforehand.
+- **HeatmapR** shows sample or feature metadata as annotation tracks
+  (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
+  labels and bar plots, and adapts the layout so that labels and
+  legends don’t overlap.
 - **HeatmapR** generates publication ready images with minimal manual
   customization, making it ideal for users that have limited coding
   experience.

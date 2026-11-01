@@ -16,6 +16,7 @@ heat_map_bar <- function(x,
                          splits_x = NULL,
                          splits_y = NULL,
                          axis_label = NULL,
+                         axis_label_offset = NULL,
                          axis_label_text_adj = 0,
                          axis_label_text_font = 1,
                          axis_label_text_size = 1,
@@ -137,9 +138,17 @@ heat_map_bar <- function(x,
     if(!is.null(axis_label)) {
       text(
         x = if(axis_text_side_y %in% 2) {
-          min(xlim) - (0.15 + axis_label_text_adj * 0.15) * (diff(xlim))
+          min(xlim) - .bar_label_offset(
+            axis_label_offset,
+            axis_label_text_adj,
+            xlim
+          )
         } else {
-          max(xlim) + (0.15 + axis_label_text_adj * 0.15) * (diff(xlim))
+          max(xlim) + .bar_label_offset(
+            axis_label_offset,
+            axis_label_text_adj,
+            xlim
+          )
         },
         y = mean(ylim),
         labels = axis_label,
@@ -247,9 +256,17 @@ heat_map_bar <- function(x,
       text(
         x = mean(xlim),
         y = if(axis_text_side_x %in% 1) {
-          min(ylim) - (0.15 + axis_label_text_adj * 0.15) * (diff(ylim))
+          min(ylim) - .bar_label_offset(
+            axis_label_offset,
+            axis_label_text_adj,
+            ylim
+          )
         } else {
-          max(ylim) + (0.15 + axis_label_text_adj * 0.15) * (diff(ylim))
+          max(ylim) + .bar_label_offset(
+            axis_label_offset,
+            axis_label_text_adj,
+            ylim
+          )
         },
         labels = axis_label,
         font = axis_label_text_font,
@@ -263,6 +280,21 @@ heat_map_bar <- function(x,
     }
   }
 }
+#' Distance of the bar graph axis label from the axis
+#'
+#' @param offset distance computed by the layout to clear the tick labels, or
+#'   NULL to use the default distance.
+#'
+#' @noRd
+.bar_label_offset <- function(offset,
+                              adj,
+                              lim) {
+  if(is.null(offset)) {
+    return((0.15 + adj * 0.15) * diff(lim))
+  }
+  offset
+}
+
 #' Range of bar values - always includes zero and ignores missing values
 #' @noRd
 .bar_range <- function(x) {

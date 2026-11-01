@@ -368,6 +368,33 @@
 #' @param title_text_col_alpha numeric ranging from 0 to 1 to control the
 #'   transparency of text in heatmap title, set to 1 by default for solid
 #'   colours.
+#' @param annotation_x a data.frame of metadata describing the columns of
+#'   \code{x} (e.g. the treatment and sex of each sample), drawn as coloured
+#'   tracks beside the heatmap opposite the x axis text. Rows are matched to the
+#'   column names of \code{x} when the data.frame has row names, otherwise one
+#'   row per column of \code{x} in the original order. Non-numeric columns are
+#'   coloured by level and numeric columns with a colour ramp. A single vector
+#'   is treated as one annotation.
+#' @param annotation_y a data.frame of metadata describing the rows of
+#'   \code{x}, drawn as tracks opposite the y axis text (see
+#'   \code{annotation_x}).
+#' @param annotation_colours a named list of colours for the annotations, e.g.
+#'   \code{list(Treatment = c(Control = "grey", Drug = "red"))}. Discrete
+#'   annotations accept a named vector (one colour per level), an unnamed vector,
+#'   a palette function or an \code{hcl.pals()} name; numeric annotations accept
+#'   colours for a ramp, a \code{colorRamp()} function or an \code{hcl.pals()}
+#'   name. Annotations without an entry get default palettes.
+#' @param annotation_size_x,annotation_size_y height (width) of each annotation
+#'   track in inches, set to 0.2 by default.
+#' @param annotation_text_size,annotation_text_font,annotation_text_col size,
+#'   font and colour of the annotation names, which are written beside the
+#'   tracks on the side of the axis text.
+#' @param annotation_legend logical indicating whether legends should be drawn
+#'   for the annotations, set to TRUE by default.
+#' @param fit_text logical indicating whether axis text, cell text and cluster
+#'   label text should be shrunk to fit the available space when it would
+#'   otherwise overlap, set to TRUE by default. Axis labels that still don't
+#'   fit at half their size are thinned to every second, third, ... label.
 #' @param legend logical indicating whether to include a legend in the heatmap,
 #'   set to TRUE by default to include colour and size legends.
 #'   Alternatively, a character vector containing any of \code{"colour"},
@@ -406,7 +433,11 @@
 #' @param popup_size vector to control the height and width of the popup window
 #'   in inches, set to \code{c(7,7)}.
 #' @param ... additional arguments passed to \code{\link{heat_map_clust}} (and
-#'   on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}).
+#'   on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other
+#'   arguments are ignored with a warning, which catches misspelled argument
+#'   names. Note that \code{p} (for Minkowski distances) is partially matched
+#'   to \code{popup_size}, so cluster with \code{heat_map_clust()} and supply
+#'   the result to \code{tree_x} or \code{tree_y} instead.
 #'
 #' @return an object of class \code{heat_map} returned invisibly. The object
 #'   is the \code{recordedplot} of the heatmap (so it can still be used with
@@ -419,7 +450,7 @@
 #' @seealso \code{\link{heat_map_info}}, \code{\link{heat_map_save}}
 #'
 #' @importFrom grDevices colorRamp colorRampPalette rgb adjustcolor dev.control
-#' @importFrom graphics mtext polygon text segments rect plot
+#' @importFrom graphics mtext polygon text segments rect plot plot.new plot.window
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
@@ -580,6 +611,15 @@ heat_map <- function(x,
                      title_text_size = 1.5,
                      title_text_col = "black",
                      title_text_col_alpha = 1,
+                     annotation_x = NULL,
+                     annotation_y = NULL,
+                     annotation_colours = NULL,
+                     annotation_size_x = 0.2,
+                     annotation_size_y = 0.2,
+                     annotation_text_size = 0.9,
+                     annotation_text_font = 1,
+                     annotation_text_col = "black",
+                     annotation_legend = TRUE,
                      legend = TRUE,
                      legend_size = 1,
                      legend_col_scale_size = 1,
@@ -592,6 +632,7 @@ heat_map <- function(x,
                      legend_text_size = 1,
                      legend_text_col = "black",
                      legend_text_col_alpha = 1,
+                     fit_text = TRUE,
                      popup = TRUE,
                      popup_size = c(7,7),
                      ...) {
@@ -620,6 +661,9 @@ heat_map <- function(x,
     environment(),
     setdiff(names(formals(sys.function())), "...")
   )
+
+  # ARGUMENTS PASSED THROUGH ... ARE ONLY USED BY dist() AND hclust()
+  .check_dots(list(...))
 
   # DATA -----------------------------------------------------------------------
 
@@ -756,6 +800,10 @@ heat_map <- function(x,
       keep_order = inherits(tree_x, "hclust"),
       labels = colnames(x)
     )
+    # NAMES OF NON-NUMERIC CLUSTERS LABEL THE CLUSTERS BY DEFAULT
+    if(.all_na(tree_label_text_x) && !is.null(manual$labels)) {
+      tree_label_text_x <- manual$labels
+    }
     # DENDROGRAM REQUIRES UNCHANGED ORDER OF NUMERIC COLUMNS
     if(inherits(tree_x, "hclust")) {
       n_num <- length(num_cols)
@@ -815,6 +863,10 @@ heat_map <- function(x,
       keep_order = inherits(tree_y, "hclust"),
       labels = rownames(x)
     )
+    # NAMES OF NON-NUMERIC CLUSTERS LABEL THE CLUSTERS BY DEFAULT
+    if(.all_na(tree_label_text_y) && !is.null(manual$labels)) {
+      tree_label_text_y <- manual$labels
+    }
     # DENDROGRAM REQUIRES UNCHANGED ROW ORDER
     if(inherits(tree_y, "hclust")) {
       if(identical(manual$ind, row_ind)) {
@@ -1203,6 +1255,29 @@ heat_map <- function(x,
     }
   }
 
+  # ANNOTATIONS ----------------------------------------------------------------
+
+  # METADATA TRACKS - COLOURS IN DISPLAY ORDER
+  annot_x <- .annotation_tracks(
+    annotation_x,
+    labels = colnames(x),
+    n = ncol(x),
+    ind = col_ind,
+    colours = annotation_colours,
+    empty = cell_col_empty,
+    arg = "annotation_x"
+  )
+  annot_y <- .annotation_tracks(
+    annotation_y,
+    labels = rownames(x),
+    n = nrow(x),
+    ind = row_ind,
+    colours = annotation_colours,
+    offset = length(annot_x$tracks),
+    empty = cell_col_empty,
+    arg = "annotation_y"
+  )
+
   # HEATMAP DIMENSIONS ---------------------------------------------------------
 
   # HEATMAP XLIM
@@ -1211,266 +1286,9 @@ heat_map <- function(x,
   # HEATMAP YLIM
   heatmap_ylim <- c(min(y_centers) - 0.5, max(y_centers) + 0.5)
 
-  # X AXIS BAR GRAPH
-  if(!is.null(bar_values_x)) {
-    # BAR GRAPH ABOVE HEATMAP
-    if(axis_text_side_x == 1) {
-      bar_x_xlim <- heatmap_xlim
-      bar_x_ylim <- c(
-        max(heatmap_ylim),
-        max(heatmap_ylim) + 0.2 * bar_size_x * diff(range(heatmap_ylim))
-      )
-    # BAR GRAPH BELOW HEATMAP
-    } else {
-      bar_x_xlim <- heatmap_xlim
-      bar_x_ylim <- c(
-        min(heatmap_ylim),
-        min(heatmap_ylim) - 0.2 * bar_size_x * diff(range(heatmap_ylim))
-      )
-    }
-  # NO X AXIS BAR GRAPH
-  } else {
-    # BAR GRAPH ABOVE HEATMAP
-    if(axis_text_side_x == 1) {
-      bar_x_xlim <- c(max(heatmap_xlim), max(heatmap_xlim))
-      bar_x_ylim <- c(max(heatmap_ylim), max(heatmap_ylim))
-    # BAR GRAPH BELOW HEATMAP
-    } else {
-      bar_x_xlim <- c(max(heatmap_xlim), max(heatmap_xlim))
-      bar_x_ylim <- c(min(heatmap_ylim), min(heatmap_ylim))
-    }
-  }
-
-  # Y AXIS BAR GRAPH
-  if(!is.null(bar_values_y)) {
-    # BAR GRAPH RIGHT OF HEATMAP
-    if(axis_text_side_y == 2) {
-      bar_y_xlim <- c(
-        max(heatmap_xlim),
-        max(heatmap_xlim) + 0.2 * bar_size_y * diff(range(heatmap_xlim))
-      )
-      bar_y_ylim <- heatmap_ylim
-    # BAR GRAPH LEFT OF HEATMAP
-    } else {
-      bar_y_xlim <- c(
-        min(heatmap_xlim),
-        min(heatmap_xlim) - 0.2 * bar_size_y * diff(range(heatmap_xlim))
-      )
-      bar_y_ylim <- heatmap_ylim
-    }
-  # NO Y AXIS BAR GRAPH
-  } else {
-    # BAR GRAPH RIGHT OF HEATMAP
-    if(axis_text_side_y == 2) {
-      bar_y_xlim <- c(max(heatmap_xlim), max(heatmap_xlim))
-      bar_y_ylim <- c(max(heatmap_ylim), max(heatmap_ylim))
-    # BAR GRAPH LEFT OF HEATMAP
-    } else {
-      bar_y_xlim <- c(min(heatmap_xlim), min(heatmap_xlim))
-      bar_y_ylim <- c(max(heatmap_ylim), max(heatmap_ylim))
-    }
-  }
-
-  # X AXIS TREE LABELS
-  if(tree_label_x) {
-    # X AXIS TREE LABELS ABOVE HEATMAP
-    if(axis_text_side_x == 1) {
-      tree_label_x_xlim <- heatmap_xlim
-      tree_label_x_ylim <- c(
-        max(bar_x_ylim),
-        max(bar_x_ylim) +  tree_label_size_x
-      )
-    # X AXIS TREE LABELS BELOW HEATMAP
-    } else {
-      tree_label_x_xlim <- heatmap_xlim
-      tree_label_x_ylim <- c(
-        min(bar_x_ylim),
-        min(bar_x_ylim) - tree_label_size_x
-      )
-    }
-  # NO X AXIS TREE LABELS
-  } else {
-    # X AXIS TREE LABELS ABOVE HEATMAP
-    if(axis_text_side_x == 1) {
-      tree_label_x_xlim <- rep(max(heatmap_xlim), 2)
-      tree_label_x_ylim <- rep(max(bar_x_ylim), 2)
-      # X AXIS TREE LABELS BELOW HEATMAP
-    } else {
-      tree_label_x_xlim <- rep(max(heatmap_xlim), 2)
-      tree_label_x_ylim <- rep(min(bar_x_ylim), 2)
-    }
-  }
-
-  # Y AXIS TREE LABELS
-  if(tree_label_y) {
-    # Y AXIS TREE LABELS RIGHT
-    if(axis_text_side_y == 2) {
-      tree_label_y_xlim <- c(
-        max(bar_y_xlim),
-        max(bar_y_xlim) + tree_label_size_y
-      )
-      tree_label_y_ylim <- heatmap_ylim
-    # Y AXIS TREE LABELS LEFT
-    } else {
-      tree_label_y_xlim <- c(
-        min(bar_y_xlim),
-        min(bar_y_xlim) - tree_label_size_y
-      )
-      tree_label_y_ylim <- heatmap_ylim
-    }
-  # NO Y AXIS TREE LABELS
-  } else {
-    # Y AXIS TREE LABELS RIGHT
-    if(axis_text_side_y == 2) {
-      tree_label_y_xlim <- rep(max(bar_y_xlim), 2)
-      tree_label_y_ylim <- rep(max(heatmap_ylim), 2)
-    # Y AXIS TREE LABELS
-    } else {
-      tree_label_y_xlim <- rep(min(bar_y_xlim), 2)
-      tree_label_y_ylim <- rep(max(heatmap_ylim), 2)
-    }
-  }
-
-  # X AXIS TREE
-  if(inherits(tree_x, "hclust")) {
-    # TREE ABOVE HEATMAP
-    if(axis_text_side_x == 1) {
-      tree_x_xlim <- tree_label_x_xlim
-      tree_x_ylim <- c(
-        max(tree_label_x_ylim),
-        max(tree_label_x_ylim) + 0.2 * tree_size_x * diff(range(heatmap_ylim))
-      )
-    # TREE BELOW HEATMAP
-    } else {
-      tree_x_xlim <- tree_label_x_xlim
-      tree_x_ylim <- c(
-        min(tree_label_x_ylim),
-        min(tree_label_x_ylim) - 0.2 * tree_size_x * diff(range(heatmap_ylim))
-      )
-    }
-  # NO X AXIS TREE
-  } else {
-    # TREE ABOVE HEATMAP
-    if(axis_text_side_x == 1) {
-      tree_x_xlim <- c(max(tree_label_x_xlim), max(tree_label_x_xlim))
-      tree_x_ylim <- c(max(tree_label_x_ylim), max(tree_label_x_ylim))
-    # BAR BELOW HEATMAP
-    } else {
-      tree_x_xlim <- c(max(tree_label_x_xlim), max(tree_label_x_xlim))
-      tree_x_ylim <- c(min(tree_label_x_ylim), min(tree_label_x_ylim))
-    }
-  }
-
-  # Y AXIS TREE
-  if(inherits(tree_y, "hclust")) {
-    # TREE RIGHT OF HEATMAP
-    if(axis_text_side_y == 2) {
-      tree_y_xlim <- c(
-        max(tree_label_y_xlim),
-        max(tree_label_y_xlim) + 0.2 * tree_size_y * diff(range(heatmap_xlim))
-      )
-      tree_y_ylim <- heatmap_ylim
-    # TREE LEFT OF HEATMAP
-    } else {
-      tree_y_xlim <- c(
-        min(tree_label_y_xlim),
-        min(tree_label_y_xlim) - 0.2 * tree_size_y * diff(range(heatmap_xlim))
-      )
-      tree_y_ylim <- heatmap_ylim
-    }
-  # NO Y AXIS TREE
-  } else {
-    # TREE RIGHT OF HEATMAP
-    if(axis_text_side_y == 2) {
-      tree_y_xlim <- c(max(tree_label_y_xlim), max(tree_label_y_xlim))
-      tree_y_ylim <- c(max(tree_label_y_ylim), max(tree_label_y_ylim))
-    # TREE LEFT OF HEATMAP
-    } else {
-      tree_y_xlim <- c(min(tree_label_y_xlim), min(tree_label_y_xlim))
-      tree_y_ylim <- c(max(tree_label_y_ylim), max(tree_label_y_ylim))
-    }
-  }
-
   # LEGEND TYPES
   legend_types <- .legend_types(legend)
-
-  # LEGEND - OPPOSITE Y AXIS TEXT
-  if(length(legend_types) > 0) {
-    # COMPUTE LEGEND X DIMENSIONS - 20% of XLIM
-    legend_size <- legend_size * 0.20 * diff(
-      range(
-        c(
-          heatmap_xlim,
-          bar_y_xlim,
-          tree_label_y_xlim,
-          tree_y_xlim
-        )
-      )
-    )
-    # LEGEND RIGHT
-    if(axis_text_side_y == 2) {
-      legend_xlim  <- c(
-        max(tree_y_xlim),
-        max(tree_y_xlim) + legend_size
-      )
-    # LEGEND LEFT
-    } else {
-      legend_xlim  <- c(
-        min(tree_y_xlim) - legend_size,
-        min(tree_y_xlim)
-      )
-    }
-  # NO LEGEND
-  } else {
-    # LEGEND - RIGHT
-    if(axis_text_side_y == 2) {
-      legend_xlim  <- rep(
-        max(
-          c(
-            heatmap_xlim,
-            bar_y_xlim,
-            tree_label_y_xlim,
-            tree_y_xlim
-          )
-        )
-      )
-    # LEGEND - LEFT
-    } else {
-      legend_xlim  <- rep(
-        min(
-          c(
-            heatmap_xlim,
-            bar_y_xlim,
-            tree_label_y_xlim,
-            tree_y_xlim
-          )
-        )
-      )
-    }
-  }
-
-  # HEATMAP AXES ---------------------------------------------------------------
-
-  # X AXIS LIMITS
-  xlim <- range(
-    c(
-      heatmap_xlim,
-      bar_y_xlim,
-      tree_label_y_xlim,
-      tree_y_xlim,
-      legend_xlim
-    )
-  )
-
-  # Y AXIS LIMITS
-  ylim <- range(
-    c(
-      heatmap_ylim,
-      bar_x_ylim,
-      tree_label_x_ylim,
-      tree_x_ylim
-    )
-  )
+  legend_side <- if(axis_text_side_y == 2) 4 else 2
 
   # X AXIS TEXT - LEFT TO RIGHT
   if (is.null(axis_text_x)) {
@@ -1512,43 +1330,75 @@ heat_map <- function(x,
     axis_label_y <- ""
   }
 
-  # HEATMAP MARGINS ------------------------------------------------------------
-
-  # PREPARE MARGINS
-  margins <- rep(c(margins, rep(NA, 4)), length.out = 4)
-  margins_auto <- is.na(margins)
-
-  # COMPUTE MARGINS - USE HELPER FOR AUTO-COMPUTED SIDES
-  margins <- vapply(
-    seq_along(margins),
-    function(z) {
-      if(is.na(margins[z])) {
-        .compute_margin(
-          side = z,
-          axis_text_x = axis_text_x,
-          axis_text_y = axis_text_y,
-          axis_text_size_x = axis_text_size_x,
-          axis_text_size_y = axis_text_size_y,
-          axis_text_side_x = axis_text_side_x,
-          axis_text_side_y = axis_text_side_y,
-          axis_label_x = axis_label_x,
-          axis_label_y = axis_label_y,
-          title = title
-        )
-      } else {
-        margins[z]
-      }
-    },
-    numeric(1)
+  # LEGEND CONTENTS - MEASURED TO MAKE ROOM FOR THE LEGEND TEXT
+  legend_title <- c(legend_title, rep(NA, 3))[1:3]
+  legend_drawn <- intersect(
+    legend_types,
+    c(
+      if(length(c(cell_min, cell_max)) == 2) "colour",
+      if(length(c(cell_size_min, cell_size_max)) == 2) "size",
+      if(length(cell_levels) > 0) "levels"
+    )
   )
-  
+  legend_spec <- list(
+    types = legend_drawn,
+    side = legend_side,
+    col_labels = if("colour" %in% legend_types) {
+      .legend_col_labels(c(cell_min, cell_max))
+    },
+    size_labels = if("size" %in% legend_types) {
+      .legend_size_labels(c(cell_size_min, cell_size_max))
+    },
+    levels_labels = if("levels" %in% legend_types) {
+      unique(unname(cell_levels))
+    },
+    annotation_labels = if(annotation_legend) {
+      unlist(
+        lapply(
+          c(annot_x$legends, annot_y$legends),
+          function(z) {
+            if(is.null(z$ramp)) z$labels else .legend_col_labels(z$limits)
+          }
+        )
+      )
+    },
+    titles = c(
+      legend_title[c("colour", "size", "levels") %in% legend_drawn],
+      if(annotation_legend) names(c(annot_x$legends, annot_y$legends))
+    ),
+    title_size = c(
+      rep_len(legend_title_text_size, 3)[
+        c("colour", "size", "levels") %in% legend_drawn
+      ],
+      if(annotation_legend) {
+        rep(
+          rep_len(legend_title_text_size, 3)[3],
+          length(c(annot_x$legends, annot_y$legends))
+        )
+      }
+    ),
+    title_font = c(
+      rep_len(legend_title_text_font, 3)[
+        c("colour", "size", "levels") %in% legend_drawn
+      ],
+      if(annotation_legend) {
+        rep(
+          rep_len(legend_title_text_font, 3)[3],
+          length(c(annot_x$legends, annot_y$legends))
+        )
+      }
+    ),
+    text_size = legend_text_size,
+    text_font = legend_text_font,
+    col_scale_size = legend_col_scale_size
+  )
+
   # SPACE FOR LEVELS LEGEND TEXT - OPPOSITE Y AXIS TEXT
-  legend_side <- if(axis_text_side_y == 2) 4 else 2
-  if("levels" %in% legend_types && 
-     length(cell_levels) > 0 &&
-     margins_auto[legend_side]) {
-    margins[legend_side] <- margins[legend_side] + 
-      0.5 * max(nchar(cell_levels)) * max(legend_text_size)
+  levels_margin <- if("levels" %in% legend_types &&
+                      length(cell_levels) > 0) {
+    0.5 * max(nchar(cell_levels)) * max(legend_text_size)
+  } else {
+    0
   }
 
   # HEATMAP CONSTRUCTION -------------------------------------------------------
@@ -1574,19 +1424,107 @@ heat_map <- function(x,
     dev.control(displaylist = "enable")
   }
 
+  # NEW PLOT - THE FIGURE REGION IS NEEDED TO MEASURE THE LAYOUT
+  plot.new()
+
+  # LAYOUT ---------------------------------------------------------------------
+
+  lay <- .heat_map_layout(
+    list(
+      fin = par("fin"),
+      heatmap_xlim = heatmap_xlim,
+      heatmap_ylim = heatmap_ylim,
+      x_centers = x_centers,
+      y_centers = y_centers,
+      side_x = axis_text_side_x,
+      side_y = axis_text_side_y,
+      las_x = axis_text_angle_x,
+      las_y = axis_text_angle_y,
+      axis_text_x = axis_text_x,
+      axis_text_y = axis_text_y,
+      axis_text_size_x = axis_text_size_x,
+      axis_text_size_y = axis_text_size_y,
+      axis_text_font_x = axis_text_font_x,
+      axis_text_font_y = axis_text_font_y,
+      axis_label_x = axis_label_x,
+      axis_label_y = axis_label_y,
+      title = title,
+      margins = rep(c(margins, rep(NA, 4)), length.out = 4),
+      levels_margin = levels_margin,
+      bar_x = !is.null(bar_values_x),
+      bar_y = !is.null(bar_values_y),
+      bar_size_x = bar_size_x,
+      bar_size_y = bar_size_y,
+      bar_ticks_x = if(!is.null(bar_values_x)) {
+        axisTicks(.bar_range(bar_values_x), log = FALSE)
+      },
+      bar_ticks_y = if(!is.null(bar_values_y)) {
+        axisTicks(.bar_range(bar_values_y), log = FALSE)
+      },
+      bar_label_x = bar_axis_label_x,
+      bar_label_y = bar_axis_label_y,
+      bar_label_size_x = bar_axis_label_size_x,
+      bar_label_size_y = bar_axis_label_size_y,
+      bar_label_font_x = bar_axis_label_font_x,
+      bar_label_font_y = bar_axis_label_font_y,
+      bar_label_default_x = 0.15 + bar_axis_label_adj_x * 0.15,
+      bar_label_default_y = 0.15 + bar_axis_label_adj_y * 0.15,
+      tree_x = inherits(tree_x, "hclust"),
+      tree_y = inherits(tree_y, "hclust"),
+      tree_size_x = tree_size_x,
+      tree_size_y = tree_size_y,
+      label_x = tree_label_x,
+      label_y = tree_label_y,
+      tree_label_size_x = tree_label_size_x,
+      tree_label_size_y = tree_label_size_y,
+      label_text_x = tree_label_text_x,
+      label_text_y = tree_label_text_y,
+      label_size_x = tree_label_text_size_x,
+      label_size_y = tree_label_text_size_y,
+      label_font_x = tree_label_text_font_x,
+      label_font_y = tree_label_text_font_y,
+      n_annot_x = length(annot_x$tracks),
+      n_annot_y = length(annot_y$tracks),
+      annot_names_x = names(annot_x$tracks),
+      annot_names_y = names(annot_y$tracks),
+      annot_size_x = annotation_size_x,
+      annot_size_y = annotation_size_y,
+      annot_gap = 0.05,
+      annot_text_size = annotation_text_size,
+      annot_text_font = annotation_text_font,
+      legend = length(legend_types) > 0 ||
+        (annotation_legend && length(c(annot_x$legends, annot_y$legends)) > 0),
+      legend_size = legend_size,
+      legend_spec = legend_spec,
+      fit = fit_text
+    )
+  )
+
+  # TRACK LIMITS
+  annotation_x_ylim <- lay$x_tracks$annotation
+  bar_x_xlim <- heatmap_xlim
+  bar_x_ylim <- lay$x_tracks$bar
+  tree_label_x_ylim <- lay$x_tracks$label
+  tree_x_xlim <- heatmap_xlim
+  tree_x_ylim <- lay$x_tracks$tree
+  annotation_y_xlim <- lay$y_tracks$annotation
+  bar_y_xlim <- lay$y_tracks$bar
+  bar_y_ylim <- heatmap_ylim
+  tree_label_y_xlim <- lay$y_tracks$label
+  tree_y_xlim <- lay$y_tracks$tree
+  tree_y_ylim <- heatmap_ylim
+  legend_xlim <- lay$legend_xlim
+  xlim <- lay$xlim
+  ylim <- lay$ylim
+  margins <- lay$margins
+
   # SET MARGINS
   par("mar" = margins)
 
-  # PLOT
-  plot(
-    1,
-    type = "n",
-    axes = FALSE,
+  # PLOT WINDOW
+  plot.window(
     xlim = xlim,
     ylim = ylim,
-    xlab = "",
-    ylab = "",
-    bty = "n",
     xaxs = "i",
     yaxs = "i"
   )
@@ -1600,7 +1538,8 @@ heat_map <- function(x,
     padj = axis_text_adjust_x,
     tck = -0.02 * axis_ticks_length_x,
     font = axis_text_font_x,
-    size = axis_text_size_x,
+    size = lay$axis_text_size_x,
+    keep = seq(1, length(x_centers), by = lay$step_x),
     col = axis_text_col_x,
     col_alpha = axis_text_col_alpha_x
   )
@@ -1614,7 +1553,8 @@ heat_map <- function(x,
     padj = axis_text_adjust_y,
     tck = -0.02 * axis_ticks_length_y,
     font = axis_text_font_y,
-    size = axis_text_size_y,
+    size = lay$axis_text_size_y,
+    keep = seq(1, length(y_centers), by = lay$step_y),
     col = axis_text_col_y,
     col_alpha = axis_text_col_alpha_y
   )
@@ -1697,9 +1637,17 @@ heat_map <- function(x,
     line_width = cell_border_line_width
   )
 
-  # CELL TEXT
+  # CELL TEXT - SHRUNK TO FIT INSIDE THE CELLS
   ind <- !is.na(cell_texts)
   if(any(ind)) {
+    if(fit_text) {
+      cell_text_size <- .fit_cell_text(
+        cell_texts[ind],
+        cell_text_size,
+        cell_text_font,
+        lay$cell_in
+      )
+    }
     text(
       x = cell_x[ind],
       y = cell_y[ind],
@@ -1713,6 +1661,43 @@ heat_map <- function(x,
     )
   }
 
+  # ANNOTATIONS ----------------------------------------------------------------
+
+  .draw_annotations(
+    annot_x$tracks,
+    centers = x_centers,
+    lim = annotation_x_ylim,
+    gap = lay$annot_gap_x,
+    size = lay$annot_size_x,
+    axis = "x",
+    name_side = axis_text_side_y,
+    name_at = if(axis_text_side_y == 2) min(heatmap_xlim) else max(heatmap_xlim),
+    upi = lay$upi,
+    border = border_col_adjusted,
+    line_type = cell_border_line_type,
+    line_width = cell_border_line_width,
+    text_size = annotation_text_size,
+    text_font = annotation_text_font,
+    text_col = annotation_text_col
+  )
+  .draw_annotations(
+    annot_y$tracks,
+    centers = y_centers,
+    lim = annotation_y_xlim,
+    gap = lay$annot_gap_y,
+    size = lay$annot_size_y,
+    axis = "y",
+    name_side = axis_text_side_x,
+    name_at = if(axis_text_side_x == 1) min(heatmap_ylim) else max(heatmap_ylim),
+    upi = lay$upi,
+    border = border_col_adjusted,
+    line_type = cell_border_line_type,
+    line_width = cell_border_line_width,
+    text_size = annotation_text_size,
+    text_font = annotation_text_font,
+    text_col = annotation_text_col
+  )
+
   # BAR GRAPHS -----------------------------------------------------------------
 
   # X BAR GRAPH
@@ -1724,6 +1709,7 @@ heat_map <- function(x,
       centers_x = x_centers,
       splits_x = x_splits,
       axis_label = bar_axis_label_x,
+      axis_label_offset = lay$bar_label_x,
       axis_label_text_adj = bar_axis_label_adj_x,
       axis_label_text_font = bar_axis_label_font_x,
       axis_label_text_size = bar_axis_label_size_x,
@@ -1755,6 +1741,7 @@ heat_map <- function(x,
       centers_y = y_centers,
       splits_y = y_splits,
       axis_label = bar_axis_label_y,
+      axis_label_offset = lay$bar_label_y,
       axis_label_text_adj = bar_axis_label_adj_y,
       axis_label_text_font = bar_axis_label_font_y,
       axis_label_text_size = bar_axis_label_size_y,
@@ -1788,7 +1775,16 @@ heat_map <- function(x,
       label_col_alpha = tree_label_col_alpha_x,
       label_text = tree_label_text_x,
       label_text_font = tree_label_text_font_x,
-      label_text_size = tree_label_text_size_x,
+      label_text_size = if(fit_text) {
+        .fit_label_text(
+          tree_label_text_x,
+          tree_label_text_size_x,
+          tree_label_text_font_x,
+          .split_spans(x_splits) / lay$upi[["x"]]
+        )
+      } else {
+        tree_label_text_size_x
+      },
       label_text_col = tree_label_text_col_x,
       label_text_col_alpha = tree_label_text_col_alpha_x
     )
@@ -1803,7 +1799,16 @@ heat_map <- function(x,
       label_col_alpha = tree_label_col_alpha_y,
       label_text = tree_label_text_y,
       label_text_font = tree_label_text_font_y,
-      label_text_size = tree_label_text_size_y,
+      label_text_size = if(fit_text) {
+        .fit_label_text(
+          tree_label_text_y,
+          tree_label_text_size_y,
+          tree_label_text_font_y,
+          .split_spans(y_splits) / lay$upi[["y"]]
+        )
+      } else {
+        tree_label_text_size_y
+      },
       label_text_col = tree_label_text_col_y,
       label_text_col_alpha = tree_label_text_col_alpha_y
     )
@@ -1847,7 +1852,8 @@ heat_map <- function(x,
   }
 
   # LEGEND - LEFT OR RIGHT ONLY - OPPOSITE Y AXIS TEXT
-  if(length(legend_types) > 0) {
+  if(length(legend_types) > 0 ||
+     (annotation_legend && length(c(annot_x$legends, annot_y$legends)) > 0)) {
     heat_map_legend(
       col = if("colour" %in% legend_types) {
         c(
@@ -1866,9 +1872,13 @@ heat_map <- function(x,
         NULL
       },
       levels = legend_levels,
+      annotations = if(annotation_legend) {
+        c(annot_x$legends, annot_y$legends)
+      },
       size_fun = size_fun,
       xlim = legend_xlim,
       ylim = ylim,
+      upi = lay$upi,
       side = if(axis_text_side_y == 2) {
         4
       } else {
@@ -1889,6 +1899,84 @@ heat_map <- function(x,
       title_text_col_alpha = legend_title_text_col_alpha
     )
   }
+
+  # COMPONENT BOUNDING BOXES (INCHES) ------------------------------------------
+
+  keep_x <- seq(1, length(x_centers), by = lay$step_x)
+  keep_y <- seq(1, length(y_centers), by = lay$step_y)
+  hm_layout <- .layout_boxes(
+    list(
+      heatmap_xlim = heatmap_xlim,
+      heatmap_ylim = heatmap_ylim,
+      x_centers = x_centers[keep_x],
+      y_centers = y_centers[keep_y],
+      axis_text_x = rep_len(axis_text_x, length(x_centers))[keep_x],
+      axis_text_y = rep_len(axis_text_y, length(y_centers))[keep_y],
+      side_x = axis_text_side_x,
+      side_y = axis_text_side_y,
+      las_x = axis_text_angle_x,
+      las_y = axis_text_angle_y,
+      cex_x = lay$axis_text_size_x,
+      cex_y = lay$axis_text_size_y,
+      font_x = axis_text_font_x,
+      font_y = axis_text_font_y,
+      annot_x = if(length(annot_x$tracks) > 0) annotation_x_ylim,
+      annot_y = if(length(annot_y$tracks) > 0) annotation_y_xlim,
+      annot_names_x = names(annot_x$tracks),
+      annot_names_y = names(annot_y$tracks),
+      annot_gap_x = lay$annot_gap_x,
+      annot_gap_y = lay$annot_gap_y,
+      annot_size_x = lay$annot_size_x,
+      annot_size_y = lay$annot_size_y,
+      annot_cex = annotation_text_size,
+      annot_font = annotation_text_font,
+      bar_x_ylim = if(!is.null(bar_values_x)) bar_x_ylim,
+      bar_y_xlim = if(!is.null(bar_values_y)) bar_y_xlim,
+      label_x_ylim = if(tree_label_x) tree_label_x_ylim,
+      label_y_xlim = if(tree_label_y) tree_label_y_xlim,
+      tree_x_ylim = if(inherits(tree_x, "hclust")) tree_x_ylim,
+      tree_y_xlim = if(inherits(tree_y, "hclust")) tree_y_xlim,
+      bar_ticks_x = if(!is.null(bar_values_x)) {
+        axisTicks(.bar_range(bar_values_x), log = FALSE)
+      },
+      bar_cex_x = axis_text_size_y[1],
+      bar_font_x = axis_text_font_y[1],
+      bar_out_x = .axis_text_dims(axis_text_side_y, axis_text_angle_y)[["out"]],
+      bar_label_x = bar_axis_label_x,
+      bar_label_cex_x = bar_axis_label_size_x,
+      bar_label_font_x = bar_axis_label_font_x,
+      bar_offset_x = lay$bar_label_x,
+      bar_ticks_y = if(!is.null(bar_values_y)) {
+        axisTicks(.bar_range(bar_values_y), log = FALSE)
+      },
+      bar_cex_y = axis_text_size_x[1],
+      bar_font_y = axis_text_font_x[1],
+      bar_out_y = .axis_text_dims(axis_text_side_x, axis_text_angle_y)[["out"]],
+      bar_label_y = bar_axis_label_y,
+      bar_label_cex_y = bar_axis_label_size_y,
+      bar_label_font_y = bar_axis_label_font_y,
+      bar_offset_y = lay$bar_label_y,
+      legend_xlim = legend_xlim,
+      legend_spec = legend_spec,
+      upi = lay$upi,
+      title = title,
+      title_line = margins[3] - 2,
+      title_cex = title_text_size,
+      title_font = title_text_font,
+      axis_label_x = axis_label_x,
+      axis_label_x_line = if(axis_text_side_x == 1 || is.null(title)) {
+        margins[axis_text_side_x] - 2
+      } else {
+        margins[axis_text_side_x] - 4
+      },
+      axis_label_cex_x = axis_label_size_x,
+      axis_label_font_x = axis_label_font_x,
+      axis_label_y = axis_label_y,
+      axis_label_y_line = margins[axis_text_side_y] - 2,
+      axis_label_cex_y = axis_label_size_y,
+      axis_label_font_y = axis_label_font_y
+    )
+  )
 
   # RECORD HEATMAP -------------------------------------------------------------
 
@@ -1919,6 +2007,11 @@ heat_map <- function(x,
     axis_text_y = rev(axis_text_y),
     colours = .cell_matrix(cell_fill, cell_ind, x),
     sizes = .cell_matrix(cell_sizes, cell_ind, x),
+    annotations = list(
+      x = annot_x$colours,
+      y = annot_y$colours
+    ),
+    layout = hm_layout,
     col_limits = c(cell_min, cell_max),
     size_limits = c(cell_size_min, cell_size_max)
   )

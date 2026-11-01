@@ -178,6 +178,7 @@
       paste0("'", arg, "' must not contain missing values!")
     )
   }
+  cluster_labels <- NULL
 
   # CLUSTER INDICES - ORIGINAL ORDER
   if(length(cut) == n) {
@@ -211,6 +212,15 @@
       new_ind <- ind[order(groups[ind], seq_along(ind))]
     }
     new_cut <- groups[new_ind]
+    # NAMES OF NON-NUMERIC CLUSTERS IN DISPLAY ORDER - USED AS DEFAULT LABELS
+    if(!is.numeric(cut)) {
+      lev <- if(is.factor(cut)) {
+        levels(droplevels(cut))
+      } else {
+        levels(factor(cut))
+      }
+      cluster_labels <- lev[unique(new_cut)]
+    }
     new_cut <- match(new_cut, unique(new_cut))
   # CLUSTER SIZES - DISPLAY ORDER
   } else if(is.numeric(cut) &&
@@ -239,7 +249,8 @@
 
   list(
     ind = new_ind,
-    cut = as.integer(new_cut)
+    cut = as.integer(new_cut),
+    labels = cluster_labels
   )
 
 }
@@ -471,6 +482,48 @@
   range[1] + rel * (range[2] - range[1])
 }
 
+#' Labels of the colour legend
+#' @importFrom grDevices axisTicks
+#' @noRd
+.legend_col_labels <- function(limits) {
+  if(length(limits) < 2) {
+    return(NULL)
+  }
+  if(diff(limits) == 0) {
+    return(limits[1])
+  }
+  axisTicks(limits, log = FALSE)
+}
+
+#' Labels of the size legend - at most five, dropping the smallest
+#' @importFrom grDevices axisTicks
+#' @noRd
+.legend_size_labels <- function(limits) {
+  if(length(limits) < 2) {
+    return(NULL)
+  }
+  if(diff(limits) == 0) {
+    return(limits[1])
+  }
+  labels <- axisTicks(limits, log = FALSE, nint = 5)
+  if(length(labels) > 5) {
+    labels <- labels[seq(length(labels) - 4, length(labels))]
+  }
+  labels
+}
+
+#' Size of each cluster between consecutive splits (cell units)
+#' @noRd
+.split_spans <- function(splits) {
+  vapply(
+    seq_len(length(splits) - 1),
+    function(z) {
+      min(splits[[z + 1]]) - max(splits[[z]])
+    },
+    numeric(1)
+  )
+}
+
 #' Most common cell shape (used for the size legend)
 #' @noRd
 .main_shape <- function(x) {
@@ -506,10 +559,14 @@
                             font,
                             size,
                             col,
-                            col_alpha) {
+                            col_alpha,
+                            keep = NULL) {
   n <- length(at)
   if(n == 0) {
     return(invisible(NULL))
+  }
+  if(is.null(keep)) {
+    keep <- seq_len(n)
   }
   # PLOTMATH EXPRESSIONS ARE KEPT AS EXPRESSIONS
   labels <- if(is.expression(labels)) {
@@ -523,8 +580,9 @@
     .alpha_col(col, col_alpha),
     n
   )
-  # EACH TICK IS DRAWN SEPARATELY SO THAT OVERLAPPING LABELS ARE NOT DROPPED
-  for(z in seq_len(n)) {
+  # EACH TICK IS DRAWN SEPARATELY SO THAT OVERLAPPING LABELS ARE NOT DROPPED -
+  # ONLY THE LABELS KEPT AFTER THINNING ARE DRAWN
+  for(z in keep) {
     axis(
       side,
       at = at[z],
@@ -703,6 +761,11 @@
 #'   right and from top to bottom respectively.}
 #'   \item{\code{colours}, \code{sizes}: the fill colour and relative size of
 #'   each cell, in the orientation of the original data.}
+#'   \item{\code{annotations}: lists \code{x} and \code{y} with the colour of
+#'   each row/column for every annotation, in the original order.}
+#'   \item{\code{layout}: a data.frame with the bounding box (\code{xmin},
+#'   \code{xmax}, \code{ymin}, \code{ymax}) of each component of the heatmap
+#'   in inches from the bottom left corner of the device.}
 #'   \item{\code{col_limits}, \code{size_limits}: limits of the colour and
 #'   size scales.}
 #' }
@@ -823,4 +886,299 @@ print.heat_map <- function(x, ...) {
     },
     character(1)
   )
+}
+
+## ANNOTATIONS -----------------------------------------------------------------
+
+#' Prepare annotation tracks for the rows or columns of a heatmap
+#'
+#' @param annotation data.frame, matrix or vector with one row (or element)
+#'   per row/column of the heatmap. Rows are matched to \code{labels} by name
+#'   when names are supplied, otherwise they are taken in the original order.
+#' @param labels row/column names of the heatmap data.
+#' @param n number of rows/columns.
+#' @param ind display order as indices into the original data.
+#' @param colours named list of colour specifications per annotation.
+#' @param offset number of annotations already given default colours (so that
+#'   x and y annotations don't share palettes).
+#' @param empty colour for missing values.
+#' @param arg argument name for messages.
+#'
+#' @return list with \code{tracks} (colours of each annotation in display
+#'   order), \code{legends} and \code{colours} (in the original data order).
+#'
+#' @importFrom grDevices hcl.colors rgb
+#' @noRd
+.annotation_tracks <- function(annotation,
+                               labels,
+                               n,
+                               ind,
+                               colours = NULL,
+                               offset = 0,
+                               empty = "white",
+                               arg = "annotation_x") {
+  if(is.null(annotation)) {
+    return(NULL)
+  }
+  # VECTOR -> SINGLE ANNOTATION
+  if(is.null(dim(annotation))) {
+    nms <- names(annotation)
+    annotation <- data.frame(
+      annotation = annotation,
+      stringsAsFactors = FALSE
+    )
+    names(annotation) <- arg
+    if(!is.null(nms)) {
+      rownames(annotation) <- make.unique(nms)
+    }
+  }
+  annotation <- as.data.frame(
+    annotation,
+    stringsAsFactors = FALSE
+  )
+  if(ncol(annotation) == 0) {
+    return(NULL)
+  }
+  # MATCH BY NAME WHEN ROW NAMES ARE SUPPLIED
+  named <- .row_names_info(annotation) > 0
+  if(named && !is.null(labels) && all(labels %in% rownames(annotation))) {
+    annotation <- annotation[labels, , drop = FALSE]
+  } else if(nrow(annotation) != n) {
+    stop(
+      paste0(
+        "'", arg, "' must have one row per ",
+        if(arg == "annotation_x") "column" else "row",
+        " of 'x' (", n, "), or row names matching them!"
+      )
+    )
+  }
+  # DEFAULT PALETTES - DIFFERENT FOR EACH ANNOTATION
+  discrete_pals <- c(
+    "Dark 3", "Set 2", "Dynamic", "Harmonic", "Cold", "Warm", "Pastel 1"
+  )
+  continuous_pals <- c(
+    "Blues 3", "Greens 3", "Purples 3", "Reds 3", "Oranges", "Teal"
+  )
+  tracks <- list()
+  legends <- list()
+  data_cols <- list()
+  for(z in seq_along(annotation)) {
+    nm <- names(annotation)[z]
+    v <- annotation[[z]]
+    spec <- colours[[nm]]
+    k <- offset + z
+    cols <- rep(NA_character_, n)
+    ok <- !is.na(v)
+    # CONTINUOUS ANNOTATION - COLOUR RAMP
+    if(is.numeric(v)) {
+      ramp <- if(is.null(spec)) {
+        .col_scale(
+          rev(hcl.colors(9, continuous_pals[(k - 1) %% length(continuous_pals) + 1]))
+        )
+      } else {
+        .col_scale(spec)
+      }
+      limits <- .finite_range(v)
+      if(any(ok)) {
+        rel <- if(diff(limits) == 0) {
+          rep(0.5, sum(ok))
+        } else {
+          pmax(0, pmin(1, (v[ok] - limits[1]) / diff(limits)))
+        }
+        rgb_mat <- ramp(rel)
+        cols[ok] <- rgb(
+          rgb_mat[, 1],
+          rgb_mat[, 2],
+          rgb_mat[, 3],
+          maxColorValue = 255
+        )
+      }
+      legends[[nm]] <- list(
+        title = nm,
+        limits = limits,
+        ramp = ramp
+      )
+    # DISCRETE ANNOTATION - ONE COLOUR PER LEVEL
+    } else {
+      lev <- if(is.factor(v)) {
+        levels(droplevels(v))
+      } else {
+        sort(unique(as.character(v[ok])))
+      }
+      v <- as.character(v)
+      pal <- if(is.null(spec)) {
+        hcl.colors(
+          max(length(lev), 1),
+          discrete_pals[(k - 1) %% length(discrete_pals) + 1]
+        )[seq_along(lev)]
+      } else if(is.function(spec)) {
+        spec(length(lev))
+      } else if(.is_hcl_palette(spec)) {
+        hcl.colors(max(length(lev), 1), spec)[seq_along(lev)]
+      } else if(!is.null(names(spec))) {
+        if(!all(lev %in% names(spec))) {
+          stop(
+            paste0(
+              "'annotation_colours' for '", nm, "' must name a colour for ",
+              "every level: ", paste(setdiff(lev, names(spec)), collapse = ", "),
+              " missing!"
+            )
+          )
+        }
+        unname(spec[lev])
+      } else {
+        rep_len(spec, length(lev))
+      }
+      cols[ok] <- pal[match(v[ok], lev)]
+      legends[[nm]] <- list(
+        title = nm,
+        labels = lev,
+        colours = pal
+      )
+    }
+    cols[!ok] <- empty
+    data_cols[[nm]] <- structure(cols, names = labels)
+    tracks[[nm]] <- cols[ind]
+  }
+  list(
+    tracks = tracks,
+    legends = legends,
+    colours = data_cols
+  )
+}
+
+#' Draw annotation tracks beside the heatmap
+#'
+#' @param tracks colours of each annotation in display order.
+#' @param centers cell centres along the annotated axis.
+#' @param lim limits of the annotation tracks across the heatmap
+#'   (\code{c(inner, outer)}).
+#' @param gap gap between the heatmap and the first track (plot units).
+#' @param size size of each track (plot units).
+#' @param axis \code{"x"} for column annotations (horizontal tracks) or
+#'   \code{"y"} for row annotations (vertical tracks).
+#' @param name_side side of the heatmap on which the annotation names are
+#'   written (the side of the axis text).
+#' @param name_at co-ordinate of that edge of the heatmap.
+#'
+#' @importFrom graphics rect text
+#' @noRd
+.draw_annotations <- function(tracks,
+                              centers,
+                              lim,
+                              gap,
+                              size,
+                              axis = "x",
+                              name_side,
+                              name_at,
+                              upi,
+                              border = "black",
+                              line_type = 1,
+                              line_width = 1,
+                              text_size = 0.9,
+                              text_font = 1,
+                              text_col = "black") {
+  n <- length(tracks)
+  if(n == 0) {
+    return(invisible(NULL))
+  }
+  # SLOTS FROM THE FIRST (TOP OR LEFT) TO THE LAST ANNOTATION
+  lo <- min(lim)
+  hi <- max(lim)
+  starts <- if(lim[2] > lim[1]) {
+    # TRACKS EXTEND TOWARDS LARGER CO-ORDINATES - GAP AT THE LOW END
+    lo + gap + (rev(seq_len(n)) - 1) * size
+  } else {
+    lo + (rev(seq_len(n)) - 1) * size
+  }
+  if(axis == "y") {
+    # LEFT TO RIGHT
+    starts <- rev(starts)
+  }
+  for(z in seq_len(n)) {
+    a <- starts[z]
+    b <- starts[z] + size
+    if(axis == "x") {
+      rect(
+        xleft = centers - 0.5,
+        ybottom = a,
+        xright = centers + 0.5,
+        ytop = b,
+        col = tracks[[z]],
+        border = border,
+        lty = line_type,
+        lwd = line_width
+      )
+      text(
+        x = name_at,
+        y = (a + b) / 2,
+        labels = names(tracks)[z],
+        pos = name_side,
+        cex = text_size,
+        font = text_font,
+        col = text_col,
+        xpd = TRUE
+      )
+    } else {
+      rect(
+        xleft = a,
+        ybottom = centers - 0.5,
+        xright = b,
+        ytop = centers + 0.5,
+        col = tracks[[z]],
+        border = border,
+        lty = line_type,
+        lwd = line_width
+      )
+      text(
+        x = (a + b) / 2,
+        y = if(name_side == 1) {
+          name_at - 0.1 * upi[["y"]]
+        } else {
+          name_at + 0.1 * upi[["y"]]
+        },
+        labels = names(tracks)[z],
+        srt = 90,
+        adj = c(if(name_side == 1) 1 else 0, 0.5),
+        cex = text_size,
+        font = text_font,
+        col = text_col,
+        xpd = TRUE
+      )
+    }
+  }
+  invisible(NULL)
+}
+
+#' Warn about arguments in ... that nothing uses
+#'
+#' Arguments passed through \code{...} to \code{heat_map()} are only used by
+#' \code{dist()} and \code{hclust()}; anything else is most likely a misspelled
+#' argument name.
+#'
+#' @importFrom methods formalArgs
+#' @importFrom stats dist hclust
+#' @noRd
+.check_dots <- function(dots) {
+  if(length(dots) == 0) {
+    return(invisible(NULL))
+  }
+  nms <- names(dots)
+  if(is.null(nms)) {
+    nms <- rep("", length(dots))
+  }
+  used <- setdiff(
+    c(formalArgs(stats::dist), formalArgs(stats::hclust)),
+    c("x", "d", "method")
+  )
+  unknown <- nms[!nms %in% used]
+  if(length(unknown) > 0) {
+    unknown[unknown == ""] <- "<unnamed>"
+    warning(
+      "Ignoring unknown argument(s) passed to heat_map(): ",
+      paste(unique(unknown), collapse = ", "),
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
 }
