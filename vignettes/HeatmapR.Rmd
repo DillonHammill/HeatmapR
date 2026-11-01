@@ -210,6 +210,72 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-2.png')
 ```
 
+#### 2.3.1 Uncertainty in Colour
+
+Estimates such as fold changes come with uncertainty, and a noisy estimate shouldn't look as strong as a precise one. `cell_uncertainty` takes a matrix of uncertainties (standard errors, confidence interval widths or p-values) and colours the cells with a value-suppressing palette: the more uncertain a value, the fewer colours its part of the scale has and the closer they are to grey. Precise values use eight colours across the scale, then four, two, and the most uncertain values a single, nearly grey colour. `cell_uncertainty_breaks` sets the thresholds between the levels, and the colour legend becomes a key with one row per level.
+
+```{r, eval = FALSE}
+set.seed(3)
+genes <- c("IFIT1", "ISG15", "MX1", "OAS1", "IRF7", "STAT1", "CXCL10",
+           "GBP1", "IL6", "TNF", "CCL2", "NFKBIA", "SOCS3", "JUNB")
+times <- c("6 h", "12 h", "24 h", "48 h", "72 h", "96 h")
+# log2 fold changes and their standard errors
+lfc <- outer(
+  c(rep(2.4, 7), rep(-1.6, 4), rep(0.6, 3)),
+  c(0.5, 1, 1.2, 1, 0.7, 0.4)
+) + matrix(rnorm(84, 0, 0.5), 14)
+se <- matrix(rgamma(84, 2, 6), 14) *
+  rep(c(1, 1, 1, 3, 1, 1, 4, 1, 2.5, 3.5, 1, 1, 5, 1), 6)
+dimnames(lfc) <- dimnames(se) <- list(genes, times)
+heat_map(
+  lfc,
+  tree_y = TRUE,
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_limits = c(-3, 3),
+  cell_uncertainty = se,
+  cell_uncertainty_breaks = c(0.3, 0.6, 0.9),
+  cell_uncertainty_title = "SE",
+  legend_title = "log2 FC",
+  title = "Fold changes, faded where they're uncertain"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+set.seed(3)
+genes <- c("IFIT1", "ISG15", "MX1", "OAS1", "IRF7", "STAT1", "CXCL10",
+           "GBP1", "IL6", "TNF", "CCL2", "NFKBIA", "SOCS3", "JUNB")
+times <- c("6 h", "12 h", "24 h", "48 h", "72 h", "96 h")
+# log2 fold changes and their standard errors
+lfc <- outer(
+  c(rep(2.4, 7), rep(-1.6, 4), rep(0.6, 3)),
+  c(0.5, 1, 1.2, 1, 0.7, 0.4)
+) + matrix(rnorm(84, 0, 0.5), 14)
+se <- matrix(rgamma(84, 2, 6), 14) *
+  rep(c(1, 1, 1, 3, 1, 1, 4, 1, 2.5, 3.5, 1, 1, 5, 1), 6)
+dimnames(lfc) <- dimnames(se) <- list(genes, times)
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-uncertainty.png",
+  height = 6,
+  width = 7.5,
+  res = 300
+)
+heat_map(
+  lfc,
+  tree_y = TRUE,
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_limits = c(-3, 3),
+  cell_uncertainty = se,
+  cell_uncertainty_breaks = c(0.3, 0.6, 0.9),
+  cell_uncertainty_title = "SE",
+  legend_title = "log2 FC",
+  title = "Fold changes, faded where they're uncertain"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-uncertainty.png')
+```
+
 ### 2.4 Cell Borders
 
 The borders of every cell within the constructed heatmap can also be customised using the `cell_border_line_type`, `cell_border_line_width`, `cell_border_line_col` and `cell_border_line_col_alpha` arguments.

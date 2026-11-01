@@ -113,6 +113,10 @@ random_layout_case <- function(seed) {
   }
   # Density trace over the colour legend - a wider colour bar
   if (runif(1) < 0.3) args$legend_col_density <- TRUE
+  # Uncertainty - value-suppressing colours and their legend key
+  if (runif(1) < 0.2) {
+    args$cell_uncertainty <- abs(m) * runif(1, 0.1, 2)
+  }
   list(
     args = args,
     din = din

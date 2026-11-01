@@ -200,3 +200,13 @@ test_that("the distribution of the values is traced over the colour legend", {
   expect_length(traces(draw(matrix(1, 3, 3), legend_col_density = TRUE)), 0)
   expect_error(draw(m, legend_col_density = NA), "'legend_col_density' must be")
 })
+
+test_that("legends shrink until they fit, even when text sizes are rounded", {
+  # Widths that jump with the scale, as with whole point font sizes
+  measure <- function(s) list(width = 4 * ceiling(s * 12) / 12, height = 1, scale = s)
+  m <- .legend_shrink(measure(1), measure, c(1.3, 5))
+  expect_lte(m$width, 1.3)
+  # Legends that fit are left alone
+  m <- .legend_shrink(measure(1), measure, c(5, 5))
+  expect_equal(m$scale, 1)
+})
