@@ -17,6 +17,7 @@ heat_map(
   tree_scale_x = FALSE,
   tree_order_x = "default",
   tree_cut_x = NULL,
+  tree_kmeans_x = NULL,
   tree_split_x = 1,
   tree_label_x = FALSE,
   tree_label_size_x = 0.1,
@@ -32,6 +33,7 @@ heat_map(
   tree_scale_y = FALSE,
   tree_order_y = "default",
   tree_cut_y = NULL,
+  tree_kmeans_y = NULL,
   tree_split_y = 1,
   tree_label_y = FALSE,
   tree_label_size_y = 0.1,
@@ -247,6 +249,10 @@ when the clusters are contiguous in its order. Clusters are always
 numbered, and labelled by \code{tree_label_text_x}, in the displayed
 order from left to right.}
 
+\item{tree_kmeans_x}{number of k-means clusters to split the columns of
+\code{x} into, an alternative to \code{tree_cut_x} (e.g.
+\code{tree_kmeans_x = 3}). See \code{tree_kmeans_y}.}
+
 \item{tree_split_x}{a numeric to control the spacing between x axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
 tree splits. Each unit is 0.08 inches in the default fit layout and half
@@ -326,6 +332,20 @@ when the clusters are contiguous in its order. Clusters are
 always numbered, and labelled by \code{tree_label_text_y}, in the
 displayed order from the bottom of the heatmap to the top, which may
 differ from the supplied indices when the dendrogram order is kept.}
+
+\item{tree_kmeans_y}{number of k-means clusters to split the rows of
+\code{x} into, an alternative to \code{tree_cut_y} that is quick for many
+rows (e.g. \code{tree_kmeans_y = 4}). The rows are clustered on the
+numeric columns of \code{x} after scaling, starting from the centres of
+equal slices of the rows along their first principal component, so the
+clusters don't depend on the random seed. The clusters are ordered so
+that similar clusters are neighbours (optimal leaf order of their
+centres) and then act like groups supplied to \code{tree_cut_y}: with a
+dendrogram (\code{tree_y = TRUE}) the rows are clustered within each
+k-means cluster, and \code{tree_split_y} and \code{tree_label_y}
+separate and label the clusters. Missing values are replaced by the mean
+of their column for k-means. \code{heat_map_info()$row_clusters} returns
+the clusters.}
 
 \item{tree_split_y}{a numeric to control the spacing between y axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
