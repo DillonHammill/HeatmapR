@@ -44,24 +44,28 @@ heat_map_bar <- function(x,
                          axis_text_angle_y = 1,
                          axis_text_adjust_y = 0.45,
                          axis_ticks_length_y = 1,
+                         type = "bar",
                          ...) {
   
   # VERTICAL BARS
   if(!is.null(splits_x)) {
     # VALUE RANGE - ALWAYS INCLUDES ZERO, MISSING VALUES ARE NOT DRAWN
-    rng <- .bar_range(x)
+    rng <- .bar_range(x, type)
     # BARS FILL THE Y LIMITS WITH 5% PADDING
     pad <- 0.05 * diff(range(ylim))
     bar_scale <- c(
       min(ylim) + pad,
       max(ylim) - pad
     )
-    # RESCALE VALUES TO YLIM
-    x <- .rescale(
-      x,
-      limits = rng,
-      scale = bar_scale
-    )
+    # RESCALE VALUES TO YLIM - DISTRIBUTIONS ARE RESCALED AS THEY ARE DRAWN
+    values <- x
+    if(type == "bar") {
+      x <- .rescale(
+        x,
+        limits = rng,
+        scale = bar_scale
+      )
+    }
     # AXIS LABELS
     axis_labels <- axisTicks(
       rng,
@@ -92,13 +96,15 @@ heat_map_bar <- function(x,
           border = "black"
         )
         # HORIZONTAL LINE THROUGH ZERO
-        segments(
-          x0 = max(splits_x[[z]]),
-          y0 = h,
-          x1 = min(splits_x[[z + 1]]),
-          y1 = h,
-          col = "black"
-        )
+        if(type == "bar") {
+          segments(
+            x0 = max(splits_x[[z]]),
+            y0 = h,
+            x1 = min(splits_x[[z + 1]]),
+            y1 = h,
+            col = "black"
+          )
+        }
       }
     )
     # ADD AXIS
@@ -122,18 +128,37 @@ heat_map_bar <- function(x,
       }
     )
     # BARS - SPANNING ZERO LINE TO VALUE
-    .draw_bars(
-      values = x,
-      centers = centers_x,
-      zero = h,
-      vertical = TRUE,
-      fill = fill,
-      fill_alpha = fill_alpha,
-      line_type = line_type,
-      line_width = line_width,
-      line_col = line_col,
-      line_col_alpha = line_col_alpha
-    )
+    if(type == "bar") {
+      .draw_bars(
+        values = x,
+        centers = centers_x,
+        zero = h,
+        vertical = TRUE,
+        fill = fill,
+        fill_alpha = fill_alpha,
+        line_type = line_type,
+        line_width = line_width,
+        line_col = line_col,
+        line_col_alpha = line_col_alpha
+      )
+    # BOX PLOTS OR VIOLINS OF THE VALUES OF EACH COLUMN
+    } else {
+      .draw_distributions(
+        values = values,
+        centers = centers_x,
+        map = function(v) {
+          bar_scale[1] + (v - rng[1]) / diff(rng) * diff(bar_scale)
+        },
+        vertical = TRUE,
+        type = type,
+        fill = fill,
+        fill_alpha = fill_alpha,
+        line_type = line_type,
+        line_width = line_width,
+        line_col = line_col,
+        line_col_alpha = line_col_alpha
+      )
+    }
     # AXIS LABEL
     if(!is.null(axis_label)) {
       text(
@@ -164,7 +189,7 @@ heat_map_bar <- function(x,
   # HORIZONTAL BARS
   } else if(!is.null(splits_y)) {
     # VALUE RANGE - ALWAYS INCLUDES ZERO, MISSING VALUES ARE NOT DRAWN
-    rng <- .bar_range(x)
+    rng <- .bar_range(x, type)
     # BARS FILL THE X LIMITS WITH 5% PADDING - BARS ON THE LEFT OF THE
     # HEATMAP (NEGATIVE CO-ORDINATES) GROW AWAY FROM THE HEATMAP
     pad <- 0.05 * diff(range(xlim))
@@ -173,12 +198,15 @@ heat_map_bar <- function(x,
     } else {
       c(max(xlim) - pad, min(xlim) + pad)
     }
-    # RESCALE VALUES TO XLIM
-    x <- .rescale(
-      x,
-      limits = rng,
-      scale = bar_scale
-    )
+    # RESCALE VALUES TO XLIM - DISTRIBUTIONS ARE RESCALED AS THEY ARE DRAWN
+    values <- x
+    if(type == "bar") {
+      x <- .rescale(
+        x,
+        limits = rng,
+        scale = bar_scale
+      )
+    }
     # AXIS LABELS
     axis_labels <- axisTicks(
       rng,
@@ -208,14 +236,16 @@ heat_map_bar <- function(x,
           ytop = min(splits_y[[z + 1]]),
           border = "black"
         )
-        # HORIZONTAL LINE THROUGH ZERO
-        segments(
-          y0 = max(splits_y[[z]]),
-          x0 = h,
-          y1 = min(splits_y[[z + 1]]),
-          x1 = h,
-          col = "black"
-        )
+        # VERTICAL LINE THROUGH ZERO
+        if(type == "bar") {
+          segments(
+            y0 = max(splits_y[[z]]),
+            x0 = h,
+            y1 = min(splits_y[[z + 1]]),
+            x1 = h,
+            col = "black"
+          )
+        }
       }
     )
     # ADD AXIS
@@ -239,18 +269,37 @@ heat_map_bar <- function(x,
       }
     )
     # BARS - SPANNING ZERO LINE TO VALUE
-    .draw_bars(
-      values = x,
-      centers = centers_y,
-      zero = h,
-      vertical = FALSE,
-      fill = fill,
-      fill_alpha = fill_alpha,
-      line_type = line_type,
-      line_width = line_width,
-      line_col = line_col,
-      line_col_alpha = line_col_alpha
-    )
+    if(type == "bar") {
+      .draw_bars(
+        values = x,
+        centers = centers_y,
+        zero = h,
+        vertical = FALSE,
+        fill = fill,
+        fill_alpha = fill_alpha,
+        line_type = line_type,
+        line_width = line_width,
+        line_col = line_col,
+        line_col_alpha = line_col_alpha
+      )
+    # BOX PLOTS OR VIOLINS OF THE VALUES OF EACH ROW
+    } else {
+      .draw_distributions(
+        values = values,
+        centers = centers_y,
+        map = function(v) {
+          bar_scale[1] + (v - rng[1]) / diff(rng) * diff(bar_scale)
+        },
+        vertical = FALSE,
+        type = type,
+        fill = fill,
+        fill_alpha = fill_alpha,
+        line_type = line_type,
+        line_width = line_width,
+        line_col = line_col,
+        line_col_alpha = line_col_alpha
+      )
+    }
     # AXIS LABEL
     if(!is.null(axis_label)) {
       text(
@@ -296,8 +345,26 @@ heat_map_bar <- function(x,
 }
 
 #' Range of bar values - always includes zero and ignores missing values
+#'
+#' Box plots and violins (\code{type}) span the range of their finite values.
+#'
 #' @noRd
-.bar_range <- function(x) {
+.bar_range <- function(x,
+                       type = "bar") {
+  if(is.list(x)) {
+    x <- unlist(x, use.names = FALSE)
+  }
+  if(type != "bar") {
+    x <- x[is.finite(x)]
+    if(length(x) == 0) {
+      return(c(0, 1))
+    }
+    rng <- range(x)
+    if(diff(rng) == 0) {
+      rng <- rng + c(-0.5, 0.5)
+    }
+    return(rng)
+  }
   rng <- range(
     c(0, x),
     na.rm = TRUE
@@ -369,6 +436,244 @@ heat_map_bar <- function(x,
       lty = line_type[ok],
       lwd = line_width[ok]
     )
+  }
+  invisible(NULL)
+}
+
+#' Values of a bar graph track
+#'
+#' A vector holds one value per column (row) for bars. Box plots and violins
+#' take a list with one numeric vector per column (row), a matrix or
+#' data.frame with one column (row) per column (row) of \code{x}, or
+#' \code{TRUE} for the values of the heatmap itself.
+#'
+#' @param data numeric matrix of the heatmap values (NA for non-numeric
+#'   columns), in the orientation of \code{x}.
+#' @param axis \code{"x"} for one entry per column, \code{"y"} per row.
+#' @param labels column (row) names of \code{x}.
+#'
+#' @return a vector, or a list of numeric vectors.
+#'
+#' @noRd
+.bar_values <- function(values,
+                        data,
+                        axis,
+                        labels,
+                        arg) {
+  if(is.null(values)) {
+    return(NULL)
+  }
+  n <- if(axis == "x") ncol(data) else nrow(data)
+  what <- if(axis == "x") "column" else "row"
+  if(isTRUE(values)) {
+    values <- if(axis == "x") {
+      lapply(seq_len(n), function(z) data[, z])
+    } else {
+      lapply(seq_len(n), function(z) data[z, ])
+    }
+    names(values) <- labels
+    return(values)
+  }
+  if(is.data.frame(values)) {
+    values <- data.matrix(values)
+  }
+  if(is.matrix(values)) {
+    d <- dim(values)
+    if(min(d) == 1) {
+      values <- structure(
+        as.vector(values),
+        names = if(d[2] == 1) rownames(values) else colnames(values)
+      )
+    } else if(axis == "x" && d[2] == n) {
+      values <- structure(
+        lapply(seq_len(n), function(z) values[, z]),
+        names = colnames(values)
+      )
+    } else if(axis == "y" && d[1] == n) {
+      values <- structure(
+        lapply(seq_len(n), function(z) values[z, ]),
+        names = rownames(values)
+      )
+    } else {
+      stop(
+        "A matrix supplied to '", arg, "' must have one ", what, " per ",
+        what, " of 'x'.",
+        call. = FALSE
+      )
+    }
+  }
+  if(is.list(values)) {
+    numeric <- vapply(
+      values,
+      function(v) is.null(v) || is.numeric(v) || all(is.na(v)),
+      logical(1)
+    )
+    if(length(values) != n || !all(numeric)) {
+      stop(
+        "A list supplied to '", arg, "' must hold a numeric vector for each ",
+        what, " of 'x'.",
+        call. = FALSE
+      )
+    }
+  }
+  values
+}
+
+#' Type of a bar graph track - bars for single values, box plots for
+#' distributions unless violins are requested
+#' @noRd
+.bar_type <- function(type,
+                      values,
+                      arg) {
+  dist <- is.list(values)
+  if(is.null(type)) {
+    return(if(dist) "box" else "bar")
+  }
+  if(!is.character(type) || length(type) != 1 ||
+     !type %in% c("bar", "box", "violin")) {
+    stop(
+      "'", arg, "' must be \"bar\", \"box\" or \"violin\".",
+      call. = FALSE
+    )
+  }
+  if(type == "bar" && dist) {
+    stop(
+      "'", arg, "' = \"bar\" needs a single value for each bar - use \"box\" ",
+      "or \"violin\" to show the distribution of several values.",
+      call. = FALSE
+    )
+  }
+  type
+}
+
+#' Draw box plots or violins of the values of each column (row)
+#'
+#' Box plots show the median, quartiles and whiskers to the most extreme
+#' values within 1.5 times the interquartile range of the box (as
+#' \code{boxplot()}), with the values beyond the whiskers as points. Violins
+#' are densities of the values, each as wide as a bar at its widest, with a
+#' line across the violin at the median. Sets of a single distinct value are drawn as a line.
+#'
+#' @param map function rescaling values to plot co-ordinates.
+#' @param vertical TRUE for one plot per column (values along y).
+#'
+#' @importFrom graphics rect segments points polygon
+#' @importFrom grDevices boxplot.stats
+#' @importFrom stats density median approx
+#'
+#' @noRd
+.draw_distributions <- function(values,
+                                centers,
+                                map,
+                                vertical = TRUE,
+                                type = "box",
+                                fill = "grey40",
+                                fill_alpha = 1,
+                                line_type = 1,
+                                line_width = 1,
+                                line_col = "black",
+                                line_col_alpha = 1,
+                                width = 0.35) {
+  n <- length(values)
+  if(n == 0) {
+    return(invisible(NULL))
+  }
+  fill <- rep_len(.alpha_col(fill, fill_alpha), n)
+  border <- rep_len(.alpha_col(line_col, line_col_alpha), n)
+  line_type <- rep_len(line_type, n)
+  line_width <- rep_len(line_width, n)
+  centers <- rep_len(centers, n)
+  values <- lapply(
+    values,
+    function(v) {
+      v <- suppressWarnings(as.numeric(v))
+      v[is.finite(v)]
+    }
+  )
+  # CO-ORDINATES FROM POSITIONS ALONG THE AXIS & VALUES
+  xy <- function(pos, val) {
+    if(vertical) list(x = pos, y = val) else list(x = val, y = pos)
+  }
+  seg <- function(p0, v0, p1, v1, ind, lwd = line_width[ind]) {
+    a <- xy(p0, v0)
+    b <- xy(p1, v1)
+    segments(
+      a$x, a$y, b$x, b$y,
+      col = border[ind],
+      lty = line_type[ind],
+      lwd = lwd
+    )
+  }
+  # A SINGLE DISTINCT VALUE - A LINE ACROSS THE BAR
+  single <- vapply(values, function(v) length(unique(v)) == 1, logical(1))
+  if(any(single)) {
+    ind <- which(single)
+    v <- map(vapply(values[ind], `[`, numeric(1), 1))
+    seg(centers[ind] - width, v, centers[ind] + width, v, ind)
+  }
+  ind <- which(lengths(values) > 1 & !single)
+  if(length(ind) == 0) {
+    return(invisible(NULL))
+  }
+  c0 <- centers[ind]
+  if(type == "box") {
+    st <- lapply(values[ind], boxplot.stats)
+    s <- map(do.call(rbind, lapply(st, `[[`, "stats")))
+    s <- matrix(s, ncol = 5)
+    # WHISKERS & CAPS
+    seg(c0, s[, 1], c0, s[, 2], ind)
+    seg(c0, s[, 4], c0, s[, 5], ind)
+    seg(c0 - width / 2, s[, 1], c0 + width / 2, s[, 1], ind)
+    seg(c0 - width / 2, s[, 5], c0 + width / 2, s[, 5], ind)
+    # BOXES & MEDIANS
+    lo <- xy(c0 - width, s[, 2])
+    hi <- xy(c0 + width, s[, 4])
+    rect(
+      lo$x, lo$y, hi$x, hi$y,
+      col = fill[ind],
+      border = border[ind],
+      lty = line_type[ind],
+      lwd = line_width[ind]
+    )
+    seg(c0 - width, s[, 3], c0 + width, s[, 3], ind, 2 * line_width[ind])
+    # VALUES BEYOND THE WHISKERS
+    out <- lapply(st, `[[`, "out")
+    k <- lengths(out)
+    if(sum(k) > 0) {
+      p <- xy(rep(c0, k), map(unlist(out)))
+      points(
+        p$x, p$y,
+        pch = 16,
+        cex = 0.4,
+        col = rep(border[ind], k)
+      )
+    }
+  } else {
+    # VIOLINS - DENSITIES WITHIN THE RANGE OF THE VALUES
+    px <- py <- numeric(0)
+    med <- med_w <- numeric(length(ind))
+    for(z in seq_along(ind)) {
+      v <- values[[ind[z]]]
+      d <- density(v, from = min(v), to = max(v), n = 64)
+      w <- width * d$y / max(d$y)
+      p <- xy(
+        c(c0[z] + w, c0[z] - rev(w)),
+        map(c(d$x, rev(d$x)))
+      )
+      px <- c(px, p$x, NA)
+      py <- c(py, p$y, NA)
+      # MEDIAN - A LINE ACROSS THE VIOLIN
+      med[z] <- median(v)
+      med_w[z] <- approx(d$x, w, med[z])$y
+    }
+    polygon(
+      px, py,
+      col = fill[ind],
+      border = border[ind],
+      lty = line_type[ind],
+      lwd = line_width[ind][1]
+    )
+    seg(c0 - med_w, map(med), c0 + med_w, map(med), ind, 2 * line_width[ind])
   }
   invisible(NULL)
 }
