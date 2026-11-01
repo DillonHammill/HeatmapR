@@ -628,3 +628,137 @@ heat_map_clust <- function(x,
   }
   invisible(TRUE)
 }
+
+## K-MEANS ---------------------------------------------------------------------
+
+#' Scores of the rows of a matrix on its first principal component
+#'
+#' Power iteration from the row furthest from the centre - deterministic and
+#' cheaper than a full decomposition for large matrices.
+#'
+#' @noRd
+.first_pc <- function(m) {
+  m <- sweep(m, 2, colMeans(m))
+  if(ncol(m) == 1) {
+    return(m[, 1])
+  }
+  v <- m[which.max(rowSums(m^2)), ]
+  if(all(v == 0)) {
+    return(rep(0, nrow(m)))
+  }
+  v <- v / sqrt(sum(v^2))
+  for(i in seq_len(100)) {
+    w <- drop(crossprod(m, m %*% v))
+    w <- w / sqrt(sum(w^2))
+    done <- sum((w - v)^2) < 1e-12
+    v <- w
+    if(done) {
+      break
+    }
+  }
+  drop(m %*% v)
+}
+
+#' k-means from given centres - NULL when it fails (e.g. an empty cluster)
+#'
+#' Warnings about the number of transfer steps on large data are dropped -
+#' the clusters are still used for display.
+#'
+#' @importFrom stats kmeans
+#' @noRd
+.try_kmeans <- function(m,
+                        centres) {
+  tryCatch(
+    suppressWarnings(kmeans(m, centres, iter.max = 100)),
+    error = function(e) NULL
+  )
+}
+
+#' Deterministic k-means clusters of the rows of a matrix
+#'
+#' k-means starts from the centres of k equal slices of the rows along their
+#' first principal component (or, when those coincide, from k distinct rows
+#' spread along it), so the clusters don't depend on the random seed. The
+#' clusters are numbered so that similar clusters are neighbours: in the
+#' optimal leaf order of their centres, starting from the end with the lowest
+#' scores on the first principal component.
+#'
+#' @param m numeric matrix - its rows are clustered.
+#' @param k number of clusters.
+#' @param arg,what argument name and description of the rows for messages.
+#'
+#' @return integer cluster of each row.
+#'
+#' @importFrom stats kmeans dist hclust
+#'
+#' @noRd
+.kmeans_groups <- function(m,
+                           k,
+                           arg = "k",
+                           what = "rows") {
+  if(!is.numeric(k) || length(k) != 1 || !is.finite(k) || k < 2 ||
+     k != round(k)) {
+    stop(
+      "'", arg, "' must be a whole number of clusters (at least 2).",
+      call. = FALSE
+    )
+  }
+  m <- as.matrix(m)
+  storage.mode(m) <- "double"
+  if(ncol(m) == 0) {
+    stop("'", arg, "' requires numeric data to cluster.", call. = FALSE)
+  }
+  # MISSING & INFINITE VALUES - THE MEAN OF THEIR COLUMN
+  m[!is.finite(m)] <- NA
+  if(anyNA(m)) {
+    mu <- colMeans(m, na.rm = TRUE)
+    mu[!is.finite(mu)] <- 0
+    miss <- which(is.na(m), arr.ind = TRUE)
+    m[miss] <- mu[miss[, 2]]
+  }
+  n <- nrow(m)
+  distinct <- !duplicated(m)
+  if(k > sum(distinct)) {
+    stop(
+      "'", arg, "' asks for ", k, " clusters but there are only ",
+      sum(distinct), " distinct ", what, ".",
+      call. = FALSE
+    )
+  }
+  # STARTING CENTRES - EQUAL SLICES ALONG THE FIRST PRINCIPAL COMPONENT
+  pc <- .first_pc(m)
+  start <- integer(n)
+  start[order(pc)] <- ceiling(seq_len(n) * k / n)
+  centres <- rowsum(m, start) / tabulate(start, k)
+  # k DISTINCT ROWS SPREAD ALONG THE FIRST PRINCIPAL COMPONENT
+  spread <- function() {
+    u <- which(distinct)
+    u <- u[order(pc[u])]
+    m[u[round(seq(1, length(u), length.out = k))], , drop = FALSE]
+  }
+  fit <- NULL
+  if(!anyDuplicated(centres)) {
+    fit <- .try_kmeans(m, centres)
+  }
+  if(is.null(fit)) {
+    fit <- .try_kmeans(m, spread())
+  }
+  if(is.null(fit)) {
+    cl <- start
+    centres <- rowsum(m, cl) / tabulate(cl, k)
+  } else {
+    cl <- fit$cluster
+    centres <- fit$centers
+  }
+  # NUMBER THE CLUSTERS SO THAT SIMILAR CLUSTERS ARE NEIGHBOURS
+  pc_mean <- vapply(seq_len(k), function(z) mean(pc[cl == z]), numeric(1))
+  ord <- order(pc_mean)
+  if(k > 2) {
+    d <- dist(centres)
+    ord <- .olo_order(hclust(d, "average")$merge, d)
+    if(pc_mean[ord[1]] > pc_mean[ord[k]]) {
+      ord <- rev(ord)
+    }
+  }
+  match(cl, ord)
+}
