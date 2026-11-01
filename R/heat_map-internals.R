@@ -374,7 +374,9 @@
     .palette_key(x) %in% .palette_key(hcl.pals())
 }
 
-#' Default hybrid viridis colour scale
+#' Default colour scale - viridis from dark purple to yellow, then orange,
+#' red and dark red (evenly spaced in CIELAB) so that the two ends of the
+#' scale can't be confused
 #' @noRd
 .default_col_scale <- function() {
   c(
@@ -391,13 +393,13 @@
     "#C2DF23FF",
     "#E1DD37FF",
     "#FCD225FF",
-    "#FDAD32FF",
-    "#F58C46FF",
-    "#E76F5AFF",
-    "#D5546EFF",
-    "#C03A83FF",
-    "#A62098FF",
-    "#8707A6FF"
+    "#FCB729FF",
+    "#FB9B2BFF",
+    "#F67C2AFF",
+    "#E75424FF",
+    "#C42218FF",
+    "#940D0DFF",
+    "#6E0A0AFF"
   )
 }
 

@@ -197,8 +197,9 @@
 #'   palette listed in \code{\link[grDevices]{hcl.pals}} (e.g. \code{"Dark 3"})
 #'   or a function that returns \code{n} colours.
 #' @param cell_col_scale a vector of colours to use for the colour scale of
-#'   numeric values, set to a hybrid colour-blind friendly viridis colour
-#'   palette by default. Alternatively, the name of a palette listed in
+#'   numeric values. By default the scale runs through the colour-blind
+#'   friendly viridis colours from dark purple to yellow, then on through
+#'   orange and red to dark red. Alternatively, the name of a palette listed in
 #'   \code{\link[grDevices]{hcl.pals}} (e.g. \code{"viridis"} or
 #'   \code{"Blue-Red 3"}), or a function created by
 #'   \code{\link[grDevices]{colorRamp}}.

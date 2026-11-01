@@ -7,6 +7,8 @@
 * `heat_map_scale()` now errors for unsupported scaling methods (e.g. `"minmax"` was previously treated as `"mean"`) or margins, instead of silently guessing. The margin must be `"column"` or `"row"` (or an abbreviation such as `"col"`), or `"x"`/`"y"`; previously any value not starting with `"c"`, including `"x"`, scaled rows.
 * `heat_map(scale = "range")` (or `"mean"`/`"zscore"`) now applies that scaling method to each column. Previously the method name was treated as the margin, so rows were scaled (and scrambled by the row scaling bug below).
 
+* The default colour scale no longer returns to purple at the top. It runs through the viridis colours from dark purple to yellow as before, then on through orange and red to dark red (evenly spaced in CIELAB), so the lowest and highest values can't be confused. Set `cell_col_scale` to a vector of colours, a palette name or a function for other scales.
+
 ## Bug fixes
 
 * Row-wise scaling (`scale = "row"` in `heat_map()` or `heat_map_scale()`) returned transposed values, silently scrambling the data. Values are now scaled within each row as documented.
