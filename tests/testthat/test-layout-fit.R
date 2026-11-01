@@ -95,9 +95,11 @@ test_that("long row names on a small device fit instead of erroring", {
   rownames(m) <- paste(rownames(m), "- a much longer sample description that goes on")
   grDevices::pdf(NULL, width = 4, height = 4)
   on.exit(grDevices::dev.off())
-  expect_no_error(hm <- suppressMessages(heat_map(m, popup = FALSE)))
-  boxes <- heat_map_info(hm)$layout
-  expect_equal(layout_outside(boxes, c(4, 4)), character(0))
+  for (layout in c("fit", "classic")) {
+    expect_no_error(hm <- suppressMessages(heat_map(m, layout = layout, popup = FALSE)))
+    boxes <- heat_map_info(hm)$layout
+    expect_equal(layout_outside(boxes, c(4, 4)), character(0))
+  }
 })
 
 test_that("unknown arguments are reported", {

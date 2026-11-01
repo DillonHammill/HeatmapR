@@ -144,6 +144,11 @@ heat_map(
   legend_text_size = 1,
   legend_text_col = "black",
   legend_text_col_alpha = 1,
+  mark_x = NULL,
+  mark_y = NULL,
+  mark_labels_x = NULL,
+  mark_labels_y = NULL,
+  mark_line_col = "grey40",
   cell_raster = "auto",
   fit_text = TRUE,
   layout = "fit",
@@ -720,6 +725,22 @@ set to 1 by default.}
 
 \item{legend_text_col_alpha}{numeric to control the transparency of text in
 the legend, set to 1 by default to use solid colours.}
+
+\item{mark_x, mark_y}{columns or rows to label, as names, indices in the
+original order of \code{x}, or a logical vector with one value per
+column or row. The labels replace the axis text on that axis: they are
+spread out beside the heatmap so that they don't overlap, and leader
+lines connect each label to its column or row. This names a few rows of
+a large heatmap (e.g. marker genes) when there is no room to label every
+row. The labels use the axis text font, size and colour; row labels are
+horizontal and column labels vertical.}
+
+\item{mark_labels_x, mark_labels_y}{labels for the columns or rows in
+\code{mark_x} and \code{mark_y}, one per element, set to NULL by default
+to use the column or row names.}
+
+\item{mark_line_col}{colour of the leader lines connecting mark labels to
+their rows or columns, set to \code{"grey40"} by default.}
 
 \item{cell_raster}{whether to draw the cells as raster images, which is much
 faster and gives smaller files for large heatmaps. Set to \code{"auto"} by

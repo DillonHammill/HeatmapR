@@ -384,6 +384,64 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-raster.png')
 ```
 
+### 2.7 Labelling Chosen Rows and Columns
+
+When a heatmap has too many rows to label them all, `mark_y` (and `mark_x` for columns) labels just the rows you choose, given as names, indices in the original order of the data or a logical vector. The labels replace the axis text: they are spread out beside the heatmap so that they don't overlap, and leader lines connect each label to its row. `mark_labels_y` supplies other text for the labels (e.g. gene symbols), and `mark_line_col` sets the colour of the leader lines.
+
+```{r, eval = FALSE}
+set.seed(2)
+genes <- matrix(
+  rnorm(2000 * 24),
+  nrow = 2000,
+  dimnames = list(
+    paste0("Gene_", 1:2000),
+    paste0("S", 1:24)
+  )
+)
+genes[1:150, 1:12] <- genes[1:150, 1:12] + 2.5
+genes[1001:1150, 13:24] <- genes[1001:1150, 13:24] + 2.5
+heat_map(
+  genes,
+  tree_x = TRUE,
+  tree_cut_y = 2,
+  mark_y = c("Gene_3", "Gene_42", "Gene_77", "Gene_150", "Gene_1010", "Gene_1100", "Gene_1500"),
+  mark_labels_y = c("CD3E", "CD4", "IL7R", "CCR7", "MS4A1", "CD79A", "ACTB"),
+  title = "Marker genes"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-marks.png",
+  height = 8,
+  width = 7,
+  res = 300
+)
+set.seed(2)
+genes <- matrix(
+  rnorm(2000 * 24),
+  nrow = 2000,
+  dimnames = list(
+    paste0("Gene_", 1:2000),
+    paste0("S", 1:24)
+  )
+)
+genes[1:150, 1:12] <- genes[1:150, 1:12] + 2.5
+genes[1001:1150, 13:24] <- genes[1001:1150, 13:24] + 2.5
+heat_map(
+  genes,
+  tree_x = TRUE,
+  tree_cut_y = 2,
+  mark_y = c("Gene_3", "Gene_42", "Gene_77", "Gene_150", "Gene_1010", "Gene_1100", "Gene_1500"),
+  mark_labels_y = c("CD3E", "CD4", "IL7R", "CCR7", "MS4A1", "CD79A", "ACTB"),
+  title = "Marker genes"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-marks.png')
+```
+
 ## 3. Data Scaling
 
 In the above heatmap, it is very clear that each of the columns of the input matrix are on completely different scales, making it difficult to visualise differences in columns with very small values. In order to represent each column on the same scale, we can apply a form of data scaling through the `scale_method` argument either to each row or column as specified by the `scale` argument. Currently, `heat_map()` has internal support for `"mean"`, `"range"` and `"z-score"` scaling methods that can be applied to either the rows or columns of the input matrix.
