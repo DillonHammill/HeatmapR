@@ -93,9 +93,13 @@ random_layout_case <- function(seed) {
   # Legend options - drawn last so that earlier draws keep their cases
   if (runif(1) < 0.3) args$legend_side <- "bottom"
   if (runif(1) < 0.2) args$cell_col_scale_breaks <- c(-3, -1, 0, 1, 3)
+  din <- c(sample(c(4, 6, 8, 11), 1), sample(c(4, 6, 8, 11), 1))
+  # Rotated column labels - drawn after the device size so that earlier draws
+  # keep their cases
+  if (runif(1) < 0.3) args$axis_text_angle_x <- sample(c(20, 45, 60), 1)
   list(
     args = args,
-    din = c(sample(c(4, 6, 8, 11), 1), sample(c(4, 6, 8, 11), 1))
+    din = din
   )
 }
 

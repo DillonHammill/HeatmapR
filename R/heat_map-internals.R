@@ -560,7 +560,9 @@
                             size,
                             col,
                             col_alpha,
-                            keep = NULL) {
+                            keep = NULL,
+                            rotate = NULL,
+                            slant = 2) {
   n <- length(at)
   if(n == 0) {
     return(invisible(NULL))
@@ -583,6 +585,29 @@
   # MISSING OR EMPTY LABELS GET NO TICK
   if(!is.expression(labels)) {
     keep <- keep[!is.na(labels[keep]) & nzchar(labels[keep])]
+  }
+  # LABELS ROTATED BY AN ANGLE (DEGREES) - EACH ENDS ONE LINE BEYOND ITS TICK
+  # AND SLANTS TOWARDS THE Y AXIS TEXT (SIDE slant)
+  if(!is.null(rotate)) {
+    for(z in keep) {
+      axis(side, at = at[z], labels = FALSE, tck = tck)
+    }
+    if(length(keep) > 0) {
+      usr <- par("usr")
+      off <- .line_in() / par("pin")[2] * diff(usr[3:4])
+      text(
+        x = at[keep],
+        y = if(side == 1) usr[3] - off else usr[4] + off,
+        labels = labels[keep],
+        srt = if((side == 1) == (slant == 2)) rotate else -rotate,
+        adj = c(if(slant == 2) 1 else 0, 0.5),
+        cex = size[keep],
+        font = font[keep],
+        col = cols[keep],
+        xpd = TRUE
+      )
+    }
+    return(invisible(NULL))
   }
   # EACH TICK IS DRAWN SEPARATELY SO THAT OVERLAPPING LABELS ARE NOT DROPPED -
   # ONLY THE LABELS KEPT AFTER THINNING ARE DRAWN

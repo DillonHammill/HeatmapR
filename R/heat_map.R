@@ -339,9 +339,15 @@
 #' @param axis_text_col_alpha_x numeric ranging from 0 to 1 to control the
 #'   transparency of x axis text labels, set to 1 by default to use solid text
 #'   colours.
-#' @param axis_text_angle_x integer to control the angle of x axis text labels
-#'   relative to the x axis, set to 3 by default. See \code{las} in \code{?par}
-#'   for alternatives.
+#' @param axis_text_angle_x controls the angle of x axis text labels relative
+#'   to the x axis, set to 3 by default. The whole numbers 0 to 3 are
+#'   \code{las} codes (see \code{las} in \code{?par}), any other angle between
+#'   0 and 90 is in degrees. Labels rotated by an angle (e.g. 45) end at their
+#'   ticks and slant towards the y axis text, so that the longest labels extend
+#'   beneath (or above) the y axis text rather than the dendrograms and
+#'   legends. Rotated labels are spaced along the axis by their height across
+#'   their baselines, and \code{axis_text_adjust_x} is not used. The angle is
+#'   not used for mark labels (\code{mark_x}).
 #' @param axis_text_adjust_x numeric to adjust position x axis text relative to
 #'   x axis ticks, set to 0.45 by default.
 #' @param axis_label_x label to use for the x axis.
@@ -796,6 +802,11 @@ heat_map <- function(x,
       call. = FALSE
     )
   }
+
+  # X AXIS TEXT ANGLE - las CODES OR AN ANGLE IN DEGREES
+  rot_x <- .axis_rotation(axis_text_angle_x)
+  axis_text_angle_x <- rot_x$las
+  rot_x <- rot_x$angle
 
   # DATA -----------------------------------------------------------------------
 
@@ -1659,6 +1670,7 @@ heat_map <- function(x,
       side_y = axis_text_side_y,
       las_x = if(is.null(marks_x)) axis_text_angle_x else 2,
       las_y = if(is.null(marks_y)) axis_text_angle_y else 1,
+      rot_x = if(is.null(marks_x)) rot_x,
       axis_text_x = if(is.null(marks_x)) axis_text_x else marks_x$labels,
       axis_text_y = if(is.null(marks_y)) axis_text_y else marks_y$labels,
       mark_in_x = if(is.null(marks_x)) 0 else .mark_depth(),
@@ -1807,7 +1819,9 @@ heat_map <- function(x,
       size = lay$axis_text_size_x,
       keep = seq(1, length(x_centers), by = lay$step_x),
       col = axis_text_col_x,
-      col_alpha = axis_text_col_alpha_x
+      col_alpha = axis_text_col_alpha_x,
+      rotate = rot_x,
+      slant = axis_text_side_y
     )
   } else {
     marks_x <- c(
@@ -2305,6 +2319,7 @@ heat_map <- function(x,
       side_y = axis_text_side_y,
       las_x = axis_text_angle_x,
       las_y = axis_text_angle_y,
+      rot_x = if(is.null(marks_x)) rot_x,
       cex_x = lay$axis_text_size_x,
       cex_y = lay$axis_text_size_y,
       font_x = axis_text_font_x,

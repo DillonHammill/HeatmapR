@@ -442,6 +442,36 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-marks.png')
 ```
 
+### 2.8 Rotated Column Labels
+
+Long column names are easier to read at an angle. As well as the `las` codes 0 to 3 (3, perpendicular to the axis, by default), `axis_text_angle_x` takes an angle in degrees. Rotated labels end at their ticks and slant towards the y axis text, so the longest labels extend beneath the row names rather than into the dendrograms or the legend. They are only shrunk when neighbouring labels would overlap across their baselines, so they stay larger than perpendicular labels on crowded heatmaps.
+
+```{r, eval = FALSE}
+heat_map(
+  t(scale(mtcars)),
+  tree = "both",
+  axis_text_angle_x = 45
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-rotate.png",
+  height = 7,
+  width = 9,
+  res = 300
+)
+heat_map(
+  t(scale(mtcars)),
+  tree = "both",
+  axis_text_angle_x = 45
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-rotate.png')
+```
+
 ## 3. Data Scaling
 
 In the above heatmap, it is very clear that each of the columns of the input matrix are on completely different scales, making it difficult to visualise differences in columns with very small values. In order to represent each column on the same scale, we can apply a form of data scaling through the `scale_method` argument either to each row or column as specified by the `scale` argument. Currently, `heat_map()` has internal support for `"mean"`, `"range"` and `"z-score"` scaling methods that can be applied to either the rows or columns of the input matrix.
