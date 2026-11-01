@@ -255,7 +255,13 @@ test_that("heat_map() returns a heat_map object that can be redrawn", {
 test_that("heat_map_save() accepts common extensions in any case", {
   skip_on_cran()
   hm <- draw(mtcars)
-  for (ext in c("jpg", "JPEG", "PNG", "tif", "svg")) {
+  exts <- c("jpg", "JPEG", "PNG", "tif")
+  # svg() requires cairo, which is missing on some systems (e.g. macOS
+  # runners without XQuartz)
+  if (isTRUE(capabilities("cairo"))) {
+    exts <- c(exts, "svg")
+  }
+  for (ext in exts) {
     f <- tempfile(fileext = paste0(".", ext))
     expect_no_error(heat_map_save(f, x = hm))
     expect_true(file.exists(f))
@@ -442,6 +448,8 @@ test_that("plot() accepts new data and print() replays custom layouts", {
 
 test_that("heatmap snapshots", {
   skip_on_cran()
+  # Colour interpolation can round differently (by 1/255) on Apple silicon
+  skip_on_os("mac")
   skip_if_not_installed("vdiffr")
   vdiffr::expect_doppelganger(
     "readme example",
