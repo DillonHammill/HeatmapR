@@ -2,3 +2,35 @@ url: https://dillonhammill.github.io/HeatmapR/
 template:
   bootstrap: 5
 
+reference:
+- title: Draw heatmaps
+  contents:
+  - heat_map
+  - heat_map-methods
+- title: Inspect and describe heatmaps
+  desc: >
+    Extract the order, clusters, colours and layout of a heatmap, or describe
+    it in plain language as alternative text.
+  contents:
+  - heat_map_info
+  - heat_map_describe
+  - print.heat_map_description
+- title: Prepare data
+  desc: >
+    Scale, summarise and cluster data before (or while) drawing a heatmap.
+  contents:
+  - heat_map_scale
+  - heat_map_summarise
+  - heat_map_clust
+- title: Arrange and save heatmaps
+  desc: >
+    Arrange heatmaps with other plots in custom layouts and save high
+    resolution images.
+  contents:
+  - heat_map_custom
+  - heat_map_layout
+  - heat_map_new
+  - heat_map_record
+  - heat_map_complete
+  - heat_map_save
+  - heat_map_reset

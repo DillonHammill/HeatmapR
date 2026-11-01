@@ -24,9 +24,9 @@ as wrapped text. Use \code{as.character()} for the plain string.
 language - its size and scaling, what the colours show, the most extreme
 values, how the rows and columns are clustered and what sets each cluster
 apart, and any annotations, bars, labels or panels. Use it as alternative
-text for readers of screen readers (e.g. the \code{fig.alt} chunk option of
-R Markdown and Quarto), as a starting point for a figure legend, or to
-check what a heatmap shows.
+text for people who use screen readers (e.g. the \code{fig.alt} chunk
+option of R Markdown and Quarto), as a starting point for a figure legend,
+or to check what a heatmap shows.
 }
 \details{
 Clusters are described by the columns (for row clusters) or rows (for

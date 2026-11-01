@@ -3,6 +3,7 @@ title: "HeatmapR"
 output: 
   rmarkdown::html_vignette:
     self_contained: false
+    toc: true
 vignette: >
   %\VignetteIndexEntry{HeatmapR}
   %\VignetteEngine{knitr::rmarkdown}
@@ -23,6 +24,9 @@ knitr::opts_chunk$set(
 -   `heat_map()` convenient wrapper around all `HeatmapR` functions providing an intuitive way to create complex heatmaps using base graphics.
 -   `heat_map_clust()` is used inside `heat_map()` to perform hierarchical clustering on the dataset using `stats::hclust()`.
 -   `heat_map_scale()` is used inside `heat_map()` to apply column- or row-wise mean, z-score or range scaling to the dataset prior to constructing the heatmap.
+-   `heat_map_summarise()` reduces groups of rows or columns to one summary each (e.g. the mean expression of each cell type), or keeps the values of each group for distributions inside the cells.
+-   `heat_map_info()` returns the data, row and column order, clusters, colours and layout of a heatmap for downstream analyses.
+-   `heat_map_describe()` writes a plain-language description of a heatmap to use as alternative text for screen readers.
 -   `heat_map_layout()` allows you to create custom plot layouts to arrange multiple heatmaps.
 -   `heat_map_save()` can be called prior to any `heat_map()` call to save a high resolution image.
 -   `heat_map_record()` can be called after any `heat_map()` calls to record the current plot for saving to an R object.
