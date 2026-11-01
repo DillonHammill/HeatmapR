@@ -546,6 +546,36 @@ heat_map_bar <- function(x,
   type
 }
 
+#' Gaussian kernel density of values within their range
+#'
+#' Computed directly (rather than with \code{density()}, whose output changed
+#' in R 4.4.0) so that violins are the same in every version of R. The
+#' bandwidth is \code{bw.nrd0()}; more than 2,000 values are first binned
+#' into 512 bins across their range.
+#'
+#' @param v finite values with at least two distinct values.
+#' @param n number of points along the range of the values.
+#'
+#' @return list with the positions \code{x} and densities \code{y}.
+#'
+#' @importFrom stats bw.nrd0 dnorm
+#'
+#' @noRd
+.violin_density <- function(v,
+                            n = 64) {
+  bw <- bw.nrd0(v)
+  grid <- seq(min(v), max(v), length.out = n)
+  if(length(v) > 2000) {
+    edges <- seq(min(v), max(v), length.out = 513)
+    w <- tabulate(findInterval(v, edges, all.inside = TRUE), 512)
+    v <- (edges[-1] + edges[-513]) / 2
+  } else {
+    w <- rep(1, length(v))
+  }
+  k <- dnorm(outer(grid, v, "-") / bw) * rep(w, each = n)
+  list(x = grid, y = rowSums(k) / (sum(w) * bw))
+}
+
 #' Draw box plots or violins of the values of each column (row)
 #'
 #' Box plots show the median, quartiles and whiskers to the most extreme
@@ -559,7 +589,7 @@ heat_map_bar <- function(x,
 #'
 #' @importFrom graphics rect segments points polygon
 #' @importFrom grDevices boxplot.stats
-#' @importFrom stats density median approx
+#' @importFrom stats median approx
 #'
 #' @noRd
 .draw_distributions <- function(values,
@@ -654,7 +684,7 @@ heat_map_bar <- function(x,
     med <- med_w <- numeric(length(ind))
     for(z in seq_along(ind)) {
       v <- values[[ind[z]]]
-      d <- density(v, from = min(v), to = max(v), n = 64)
+      d <- .violin_density(v)
       w <- width * d$y / max(d$y)
       p <- xy(
         c(c0[z] + w, c0[z] - rev(w)),

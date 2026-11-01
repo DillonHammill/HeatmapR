@@ -86,6 +86,16 @@ test_that("box plots show quartiles, whiskers and outliers", {
   )
 })
 
+test_that("violin densities match density() in every version of R", {
+  set.seed(2)
+  for (v in list(rnorm(100), c(rnorm(500), rnorm(300, 4)), rexp(5000))) {
+    d <- .violin_density(v)
+    ref <- density(v, from = min(v), to = max(v), n = 64)
+    expect_equal(d$x, ref$x)
+    expect_lt(max(abs(d$y - ref$y)) / max(ref$y), 0.01)
+  }
+})
+
 test_that("violins are densities as wide as a bar with a median line", {
   set.seed(1)
   vals <- list(rnorm(50, 50, 10), rexp(40) * 10, 7)
