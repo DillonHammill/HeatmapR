@@ -35,7 +35,7 @@
 #'   heatmap. Clusters stored in the \code{hclust} object are kept unless
 #'   \code{tree_cut_x} is supplied.
 #' @param tree_size_x numeric to control the height of the dendrogram for the x
-#'   axis, set to 1 by default.
+#'   axis, set to 1 by default (0.6 inches in the default fit layout).
 #' @param tree_scale_x logical indicating whether the branch heights of the x
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
@@ -67,7 +67,10 @@
 #'   each cluster within the x axis tree when \code{tree_cut_x} is specified,
 #'   set to FALSE by default.
 #' @param tree_label_size_x numeric to control the height of the tree cluster
-#'   labels for the x axis tree, set to 0.1 by default.
+#'   labels for the x axis tree, set to 0.1 by default. Strips holding label
+#'   text are made tall enough for the text. In the default fit layout the
+#'   strip is at least 0.8 inches x \code{tree_label_size_x} tall, in the
+#'   classic layout \code{tree_label_size_x} cells.
 #' @param tree_label_col_x vector of colours to use for x axis tree cluster
 #'   labels, set to "grey40" by default.
 #' @param tree_label_col_alpha_x numeric to control the transparency of the x
@@ -91,7 +94,7 @@
 #'   heatmap. Clusters stored in the \code{hclust} object are kept unless
 #'   \code{tree_cut_y} is supplied.
 #' @param tree_size_y numeric to control the width of the dendrogram for the y
-#'   axis, set to 1 by default.
+#'   axis, set to 1 by default (0.6 inches in the default fit layout).
 #' @param tree_scale_y logical indicating whether the branch heights of the y
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
@@ -122,7 +125,10 @@
 #'   each cluster within the y axis tree when \code{tree_cut_y} is specified,
 #'   set to FALSE by default.
 #' @param tree_label_size_y numeric to control the width of the tree cluster
-#'   labels for the y axis tree, set to 0.1 by default.
+#'   labels for the y axis tree, set to 0.1 by default. Strips holding label
+#'   text are made wide enough for the text. In the default fit layout the
+#'   strip is at least 0.8 inches x \code{tree_label_size_y} wide, in the
+#'   classic layout \code{tree_label_size_y} cells.
 #' @param tree_label_col_y vector of colours to use for y axis tree cluster
 #'   labels, set to "grey40" by default.
 #' @param tree_label_col_alpha_y numeric to control the transparency of the y
@@ -215,7 +221,7 @@
 #'   transparency of cell text, set to 1 by default to use solid colours for
 #'   cell text.
 #' @param bar_size_x numeric to control the height of x axis bar plot, set to 1
-#'   by default.
+#'   by default (0.6 inches in the default fit layout).
 #' @param bar_values_x a vector of values to display in x axis bar plot,
 #'   supplied in the order matching the original columns of \code{x} or named
 #'   with the column names of \code{x}. The values supplied to
@@ -248,7 +254,7 @@
 #' @param bar_line_col_alpha_x numeric ranging from 0 to 1 to control the
 #'   transparency of bar borders in x axis bar plot, set to 1 by default.
 #' @param bar_size_y numeric to control the width of y axis bar plot, set to 1
-#'   by default.
+#'   by default (0.6 inches in the default fit layout).
 #' @param bar_values_y a vector of values to display in y axis bar plot,
 #'   supplied in the order matching the original rownames of \code{x} or named
 #'   with the row names of \code{x}. The values supplied to \code{bar_values_y}
@@ -395,6 +401,19 @@
 #'   label text should be shrunk to fit the available space when it would
 #'   otherwise overlap, set to TRUE by default. Axis labels that still don't
 #'   fit at half their size are thinned to every second, third, ... label.
+#' @param layout how space is shared between the heatmap and everything around
+#'   it, either \code{"fit"} (the default) or \code{"classic"}. The fit layout
+#'   sizes dendrograms, bar graphs, annotation tracks, the legend and the
+#'   margins in inches from their contents - dendrograms and bar graphs keep
+#'   the same size whatever the shape of the data, the legend is as wide as its
+#'   text, the margins are as wide as the axis text, labels and title, and the
+#'   heatmap body takes the remaining space. In the fit layout
+#'   \code{tree_size_x}, \code{tree_size_y}, \code{bar_size_x} and
+#'   \code{bar_size_y} are multiples of 0.6 inches and \code{legend_size}
+#'   scales the legend keys (colour bars, swatches and size legend shapes). The
+#'   classic layout of HeatmapR 1.1.0 and earlier sizes dendrograms, bar graphs
+#'   and the legend as fractions of the heatmap, so they grow and shrink with
+#'   the number of rows and columns.
 #' @param legend logical indicating whether to include a legend in the heatmap,
 #'   set to TRUE by default to include colour and size legends.
 #'   Alternatively, a character vector containing any of \code{"colour"},
@@ -404,7 +423,9 @@
 #'   non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
 #'   \code{FALSE}, \code{NA} or \code{"none"} to remove the legend.
 #' @param legend_size numeric to control the amount of space allocated to the
-#'   legend, set to 1 by default.
+#'   legend, set to 1 by default. In the fit layout (the default) the legend is
+#'   sized from its contents and \code{legend_size} scales the legend keys
+#'   instead.
 #' @param legend_col_scale_size numeric to control the width of the legend
 #'   colour scale relative to the allocated space for the legend, set to 1 by
 #'   default.
@@ -633,6 +654,7 @@ heat_map <- function(x,
                      legend_text_col = "black",
                      legend_text_col_alpha = 1,
                      fit_text = TRUE,
+                     layout = "fit",
                      popup = TRUE,
                      popup_size = c(7,7),
                      ...) {
@@ -664,6 +686,15 @@ heat_map <- function(x,
 
   # ARGUMENTS PASSED THROUGH ... ARE ONLY USED BY dist() AND hclust()
   .check_dots(list(...))
+
+  # LAYOUT
+  if(!is.character(layout) || length(layout) != 1 ||
+     !layout %in% c("classic", "fit")) {
+    stop(
+      "'layout' must be either \"classic\" or \"fit\".",
+      call. = FALSE
+    )
+  }
 
   # DATA -----------------------------------------------------------------------
 
@@ -1390,7 +1421,20 @@ heat_map <- function(x,
     ),
     text_size = legend_text_size,
     text_font = legend_text_font,
-    col_scale_size = legend_col_scale_size
+    col_scale_size = legend_col_scale_size,
+    blocks = .legend_blocks(
+      col = if("colour" %in% legend_drawn) c(cell_min, cell_max),
+      size = if("size" %in% legend_drawn) c(cell_size_min, cell_size_max),
+      levels = if("levels" %in% legend_drawn) {
+        list(labels = unique(unname(cell_levels)))
+      },
+      annotations = if(annotation_legend) {
+        c(annot_x$legends, annot_y$legends)
+      },
+      title = legend_title,
+      title_size = legend_title_text_size,
+      title_font = legend_title_text_font
+    )
   )
 
   # SPACE FOR LEVELS LEGEND TEXT - OPPOSITE Y AXIS TEXT
@@ -1496,7 +1540,11 @@ heat_map <- function(x,
         (annotation_legend && length(c(annot_x$legends, annot_y$legends)) > 0),
       legend_size = legend_size,
       legend_spec = legend_spec,
-      fit = fit_text
+      fit = fit_text,
+      mode = layout,
+      title_size = title_text_size,
+      axis_label_size_x = axis_label_size_x,
+      axis_label_size_y = axis_label_size_y
     )
   )
 
@@ -1565,12 +1613,27 @@ heat_map <- function(x,
     y_splits
   )
 
+  # TITLE & AXIS LABELS - CENTRED ON THE HEATMAP BUT KEPT ON THE DEVICE IN
+  # THE FIT LAYOUT
+  fit_layout <- layout == "fit"
+  title_at <- NA
+  axis_label_x_at <- NA
+  axis_label_y_at <- NA
+  if(fit_layout) {
+    title_at <- .mtext_at(title, title_text_size, title_text_font,
+                          mean(heatmap_xlim), "x")
+    axis_label_x_at <- .mtext_at(axis_label_x, axis_label_size_x,
+                                 axis_label_font_x, mean(heatmap_xlim), "x")
+    axis_label_y_at <- .mtext_at(axis_label_y, axis_label_size_y,
+                                 axis_label_font_y, mean(heatmap_ylim), "y")
+  }
+
   # TITLE
   if (!is.null(title)) {
     mtext(
       title,
       side = 3,
-      line = margins[3] - 2,
+      line = lay$title_line,
       font = title_text_font,
       cex = title_text_size,
       col = adjustcolor(
@@ -1578,7 +1641,12 @@ heat_map <- function(x,
         title_text_col_alpha
       ),
       las = 0,
-      adj = (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
+      at = title_at,
+      adj = if(fit_layout) {
+        0.5
+      } else {
+        (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
+      }
     )
   }
 
@@ -1588,15 +1656,7 @@ heat_map <- function(x,
     mtext(
       axis_label_x,
       side = axis_text_side_x,
-      line = if(axis_text_side_x == 1) {
-        margins[axis_text_side_x] - 2
-      } else {
-        if(is.null(title)) {
-          margins[axis_text_side_x] - 2
-        } else {
-          margins[axis_text_side_x] - 4
-        }
-      },
+      line = lay$axis_label_x_line,
       font = axis_label_font_x,
       cex = axis_label_size_x,
       col = adjustcolor(
@@ -1604,7 +1664,12 @@ heat_map <- function(x,
         axis_label_col_alpha_x
       ),
       las = 0,
-      adj = (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
+      at = axis_label_x_at,
+      adj = if(fit_layout) {
+        0.5
+      } else {
+        (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
+      }
     )
   }
 
@@ -1613,7 +1678,7 @@ heat_map <- function(x,
     mtext(
       axis_label_y,
       side = axis_text_side_y,
-      line = margins[axis_text_side_y] - 2,
+      line = lay$axis_label_y_line,
       font = axis_label_font_y,
       cex = axis_label_size_y,
       col = adjustcolor(
@@ -1621,7 +1686,12 @@ heat_map <- function(x,
         axis_label_col_alpha_y
       ),
       las = 0,
-      adj = (mean(heatmap_ylim) - min(ylim))/diff(range(ylim))
+      at = axis_label_y_at,
+      adj = if(fit_layout) {
+        0.5
+      } else {
+        (mean(heatmap_ylim) - min(ylim))/diff(range(ylim))
+      }
     )
   }
 
@@ -1676,7 +1746,7 @@ heat_map <- function(x,
     border = border_col_adjusted,
     line_type = cell_border_line_type,
     line_width = cell_border_line_width,
-    text_size = annotation_text_size,
+    text_size = lay$annot_text_size_x,
     text_font = annotation_text_font,
     text_col = annotation_text_col
   )
@@ -1693,7 +1763,7 @@ heat_map <- function(x,
     border = border_col_adjusted,
     line_type = cell_border_line_type,
     line_width = cell_border_line_width,
-    text_size = annotation_text_size,
+    text_size = lay$annot_text_size_y,
     text_font = annotation_text_font,
     text_col = annotation_text_col
   )
@@ -1852,9 +1922,10 @@ heat_map <- function(x,
   }
 
   # LEGEND - LEFT OR RIGHT ONLY - OPPOSITE Y AXIS TEXT
+  legend_box <- NULL
   if(length(legend_types) > 0 ||
      (annotation_legend && length(c(annot_x$legends, annot_y$legends)) > 0)) {
-    heat_map_legend(
+    legend_box <- heat_map_legend(
       col = if("colour" %in% legend_types) {
         c(
           cell_min,
@@ -1896,7 +1967,8 @@ heat_map <- function(x,
       title_text_size = legend_title_text_size,
       title_text_font = legend_title_text_font,
       title_text_col = legend_title_text_col,
-      title_text_col_alpha = legend_title_text_col_alpha
+      title_text_col_alpha = legend_title_text_col_alpha,
+      geom = lay$legend_geom
     )
   }
 
@@ -1929,6 +2001,8 @@ heat_map <- function(x,
       annot_size_x = lay$annot_size_x,
       annot_size_y = lay$annot_size_y,
       annot_cex = annotation_text_size,
+      annot_cex_x = lay$annot_text_size_x,
+      annot_cex_y = lay$annot_text_size_y,
       annot_font = annotation_text_font,
       bar_x_ylim = if(!is.null(bar_values_x)) bar_x_ylim,
       bar_y_xlim = if(!is.null(bar_values_y)) bar_y_xlim,
@@ -1958,21 +2032,21 @@ heat_map <- function(x,
       bar_offset_y = lay$bar_label_y,
       legend_xlim = legend_xlim,
       legend_spec = legend_spec,
+      legend_box = legend_box,
       upi = lay$upi,
       title = title,
-      title_line = margins[3] - 2,
+      title_line = lay$title_line,
+      title_at = title_at,
+      axis_label_x_at = axis_label_x_at,
+      axis_label_y_at = axis_label_y_at,
       title_cex = title_text_size,
       title_font = title_text_font,
       axis_label_x = axis_label_x,
-      axis_label_x_line = if(axis_text_side_x == 1 || is.null(title)) {
-        margins[axis_text_side_x] - 2
-      } else {
-        margins[axis_text_side_x] - 4
-      },
+      axis_label_x_line = lay$axis_label_x_line,
       axis_label_cex_x = axis_label_size_x,
       axis_label_font_x = axis_label_font_x,
       axis_label_y = axis_label_y,
-      axis_label_y_line = margins[axis_text_side_y] - 2,
+      axis_label_y_line = lay$axis_label_y_line,
       axis_label_cex_y = axis_label_size_y,
       axis_label_font_y = axis_label_font_y
     )

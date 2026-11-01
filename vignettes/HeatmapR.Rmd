@@ -400,7 +400,7 @@ In addition to the cells of the heatmap, `heat_map()` supports the display of ad
 heat_map(
   mtcars,
   bar_values_x = 1:ncol(mtcars),
-  bar_size_x = 0.5,
+  bar_size_x = 1.5,
   bar_fill_x = rainbow(ncol(mtcars)),
   bar_line_col_x = "black",
   bar_values_y = 1:nrow(mtcars),
@@ -421,7 +421,7 @@ heat_map_save(
 heat_map(
   mtcars,
   bar_values_x = 1:ncol(mtcars),
-  bar_size_x = 0.5,
+  bar_size_x = 1.5,
   bar_fill_x = rainbow(ncol(mtcars)),
   bar_line_col_x = "black",
   bar_values_y = 1:nrow(mtcars),
@@ -494,7 +494,6 @@ heat_map(
   dist_method = "euclidean",
   clust_method = "complete",
   tree_x = TRUE,
-  tree_size_x = 0.4,
   tree_y = TRUE,
   tree_size_y = 0.8,
   title = "Dendrograms"
@@ -514,7 +513,6 @@ heat_map(
   dist_method = "euclidean",
   clust_method = "complete",
   tree_x = TRUE,
-  tree_size_x = 0.4,
   tree_scale_x = TRUE,
   tree_y = TRUE,
   tree_size_y = 0.8,
@@ -537,7 +535,6 @@ heat_map(
   dist_method = "cosine",
   clust_method = "complete",
   tree_x = TRUE,
-  tree_size_x = 0.4,
   tree_y = TRUE,
   tree_size_y = 0.8,
   title = "Cosine Distance Clustering"
@@ -557,7 +554,6 @@ heat_map(
   dist_method = "cosine",
   clust_method = "complete",
   tree_x = TRUE,
-  tree_size_x = 0.4,
   tree_scale_x = TRUE,
   tree_y = TRUE,
   tree_size_y = 0.8,
@@ -595,7 +591,6 @@ heat_map(
   dist_method = "euclidean",
   clust_method = "complete",
   tree_x = TRUE,
-  tree_size_x = 0.4,
   tree_cut_x = 4,
   tree_split_x = 1,
   tree_y = TRUE,
@@ -619,7 +614,6 @@ heat_map(
   dist_method = "euclidean",
   clust_method = "complete",
   tree_x = TRUE,
-  tree_size_x = 0.4,
   tree_cut_x = 4,
   tree_split_x = 1,
   tree_y = TRUE,
@@ -640,11 +634,9 @@ In addition to heatmap splitting, `heat_map()` also supports the labelling of cl
 heat_map(
   mtcars,
   scale = "column",
-  tree_size_x = 0.4,
   tree_cut_x = 4,
   tree_split_x = 1,
   tree_label_x = TRUE,
-  tree_label_size_x = 1.4,
   tree_label_text_x = c(1:4),
   tree_label_col_x = c(
     "red",
@@ -657,7 +649,6 @@ heat_map(
   tree_cut_y = 5,
   tree_split_y = 1,
   tree_label_y = TRUE,
-  tree_label_size_y = 1,
   tree_label_text_y = c(1:5),
   tree_label_col_y = c(
     "red",
@@ -680,11 +671,9 @@ heat_map_save(
 heat_map(
   mtcars,
   scale = "column",
-  tree_size_x = 0.4,
   tree_cut_x = 4,
   tree_split_x = 1,
   tree_label_x = TRUE,
-  tree_label_size_x = 1.4,
   tree_label_text_x = c(1:4),
   tree_label_col_x = c(
     "red",
@@ -697,7 +686,6 @@ heat_map(
   tree_cut_y = 5,
   tree_split_y = 1,
   tree_label_y = TRUE,
-  tree_label_size_y = 1,
   tree_label_text_y = c(1:5),
   tree_label_col_y = c(
     "red",
@@ -748,7 +736,6 @@ heat_map(
   tree_split_x = 1,
   tree_label_x = TRUE,
   tree_label_text_x = c("Group A", "Group B", "Group C"),
-  tree_label_size_x = 1.2,
   tree_label_col_x = "white",
   title = "Manual Clustering by Size"
 )
@@ -794,7 +781,6 @@ heat_map(
   tree_split_x = 1,
   tree_label_x = TRUE,
   tree_label_text_x = c("Low", "Medium", "High"),
-  tree_label_size_x = 1.2,
   tree_label_col_x = c("blue", "yellow", "red"),
   title = "Manual Clustering by Index"
 )
@@ -823,7 +809,7 @@ rownames(mtcars)[info$row_order]
 
 ## 6. Legends
 
-`heat_map()` will automatically add legends for the colour scale and size of the cells in the heatmap. The `legend` argument controls the type(s) of legends to display including `"colour"`, `"size"` or `"both"`, and `"levels"` can be added (e.g. `legend = c("both", "levels")`) to include a legend for the colours of non-numeric columns. The space available to the legend can be tweaked using the `legend_size` argument, and the size of the colour scale legend can be controlled through the `legend_col_scale_size` argument. The titles and text displayed in the legend(s) are also fully customisable using the the `legend_title_` and `legend_text_` family of arguments.
+`heat_map()` will automatically add legends for the colour scale and size of the cells in the heatmap. The `legend` argument controls the type(s) of legends to display including `"colour"`, `"size"` or `"both"`, and `"levels"` can be added (e.g. `legend = c("both", "levels")`) to include a legend for the colours of non-numeric columns. The legend is sized from its contents: `legend_size` scales the legend keys (colour bars, swatches and size legend shapes) and `legend_col_scale_size` controls the width of the colour scale. The titles and text displayed in the legend(s) are also fully customisable using the the `legend_title_` and `legend_text_` family of arguments.
 
 ```{r, eval = FALSE}
 heat_map(
@@ -852,7 +838,6 @@ heat_map(
   mtcars,
   scale = TRUE,
   tree_x = TRUE,
-  tree_size_x = 0.6,
   tree_y = TRUE,
   cell_shape = "circle",
   cell_size = TRUE,
@@ -866,6 +851,47 @@ heat_map(
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-17.png')
+```
+
+### 6.1 Layout
+
+By default `heat_map()` uses the `"fit"` layout, which sizes everything around the heatmap in inches from its contents: dendrograms and bar graphs keep the same size whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are multiples of 0.6 inches), the legend is as wide as its text, the margins are as wide as the axis text, axis labels and title, and the heatmap body takes the remaining space. Legends are stacked from the top of the heatmap and shrunk if they don't fit. Setting `layout = "classic"` restores the layout of earlier versions, in which dendrograms, bar graphs and the legend are sized as fractions of the heatmap, so they grow and shrink with the number of rows and columns.
+
+```{r, eval = FALSE}
+set.seed(3)
+mat <- matrix(
+  rnorm(60 * 8),
+  nrow = 60,
+  dimnames = list(
+    paste0("Gene_", 1:60),
+    paste0("Sample_", 1:8)
+  )
+)
+mat[1:20, 1:4] <- mat[1:20, 1:4] + 2
+group <- data.frame(
+  Group = rep(c("Control", "Treated"), each = 4),
+  row.names = colnames(mat)
+)
+heat_map_custom(
+  popup = TRUE,
+  popup_size = c(11, 6.5),
+  layout = c(1, 2)
+)
+for(layout in c("classic", "fit")) {
+  heat_map(
+    mat,
+    tree = "both",
+    annotation_x = group,
+    legend_title = "Expression",
+    title = paste0("layout = \"", layout, "\""),
+    layout = layout
+  )
+}
+heat_map_complete()
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-layout.png')
 ```
 
 ## 7. Complex Layouts
@@ -1051,7 +1077,6 @@ heat_map(
   tree_y = TRUE,
   tree_cut_x = 4,
   tree_cut_y = 12,
-  tree_size_x = 0.6,
   cell_size = TRUE,
   cell_shape = "circle",
   title = "mtcars"
