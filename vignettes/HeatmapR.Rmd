@@ -1770,7 +1770,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 ### 6.1 Layout
 
-By default `heat_map()` uses the `"fit"` layout, which sizes everything around the heatmap in inches from its contents: dendrograms and bar graphs keep the same size whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are multiples of 0.6 inches), the legend is as wide as its text, the margins are as wide as the axis text, axis labels and title, and the heatmap body takes the remaining space. Legends are stacked from the top of the heatmap and shrunk if they don't fit. Setting `layout = "classic"` restores the layout of earlier versions, in which dendrograms, bar graphs and the legend are sized as fractions of the heatmap, so they grow and shrink with the number of rows and columns.
+`heat_map()` sizes everything around the heatmap in inches from its contents: dendrograms and bar graphs keep the same size whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are multiples of 0.6 inches), the legend is as wide as its text, the margins are as wide as the axis text, axis labels and title, and the heatmap body takes the remaining space. Legends are stacked from the top of the heatmap and shrunk if they don't fit, and text is shrunk (or thinned) only when it would otherwise overlap. Below, the dendrograms, annotation track and legend are the same size for 60 genes as for 12.
 
 ```{r, eval = FALSE}
 set.seed(3)
@@ -1792,20 +1792,63 @@ heat_map_custom(
   popup_size = c(11, 6.5),
   layout = c(1, 2)
 )
-for(layout in c("classic", "fit")) {
-  heat_map(
-    mat,
-    tree = "both",
-    annotation_x = group,
-    legend_title = "Expression",
-    title = paste0("layout = \"", layout, "\""),
-    layout = layout
-  )
-}
+heat_map(
+  mat,
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "60 genes"
+)
+heat_map(
+  mat[1:12, ],
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "12 genes"
+)
 heat_map_complete()
 ```
 
-```{r echo = FALSE, out.width = '95%', fig.align="center"}
+```{r, eval = FALSE, echo = FALSE}
+set.seed(3)
+mat <- matrix(
+  rnorm(60 * 8),
+  nrow = 60,
+  dimnames = list(
+    paste0("Gene_", 1:60),
+    paste0("Sample_", 1:8)
+  )
+)
+mat[1:20, 1:4] <- mat[1:20, 1:4] + 2
+group <- data.frame(
+  Group = rep(c("Control", "Treated"), each = 4),
+  row.names = colnames(mat)
+)
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-layout.png",
+  height = 6.5,
+  width = 11,
+  res = 300,
+  layout = c(1, 2)
+)
+heat_map(
+  mat,
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "60 genes"
+)
+heat_map(
+  mat[1:12, ],
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "12 genes"
+)
+heat_map_complete()
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Two clustered heatmaps side by side, of 60 and 12 genes, with dendrograms, annotation tracks and legends of the same size"}
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-layout.png')
 ```
 
