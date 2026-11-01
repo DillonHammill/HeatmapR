@@ -106,6 +106,11 @@ random_layout_case <- function(seed) {
     args$bar_values_y <- TRUE
     args$bar_type_y <- sample(c("box", "violin"), 1)
   }
+  # Branch support - styled dendrograms, labels and a legend key
+  if (runif(1) < 0.2) {
+    args$tree_support_y <- 10
+    args$tree_support_x <- 10
+  }
   list(
     args = args,
     din = din

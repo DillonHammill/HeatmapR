@@ -24,6 +24,10 @@ from left to right for columns and from bottom to top for rows.}
 \item{\code{tree_x}, \code{tree_y}: \code{hclust} objects for the x and
 y axis dendrograms (or \code{NULL}). Branch heights are rescaled for
 display.}
+\item{\code{support_x}, \code{support_y}: bootstrap support of each merge
+of \code{tree_x} and \code{tree_y} (\code{tree_support_x},
+\code{tree_support_y}), \code{NA} for the root and merges fixed by
+groups, or \code{NULL}.}
 \item{\code{axis_text_x}, \code{axis_text_y}: axis labels from left to
 right and from top to bottom respectively.}
 \item{\code{colours}, \code{sizes}: the fill colour and relative size of

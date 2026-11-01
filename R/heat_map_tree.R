@@ -11,7 +11,9 @@ heat_map_tree <- function(x,
                           xlim,
                           ylim,
                           centers_x = NULL,
-                          centers_y = NULL) {
+                          centers_y = NULL,
+                          support = NULL,
+                          support_labels = TRUE) {
 
   # NOTHING TO DRAW
   if(is.null(centers_x) && is.null(centers_y)) {
@@ -58,13 +60,36 @@ heat_map_tree <- function(x,
     }
   }
 
-  # TREE
-  segments(
-    x0 = x_segments$x,
-    y0 = x_segments$y,
-    x1 = x_segments$xend,
-    y1 = x_segments$yend
-  )
+  # TREE - BRANCHES STYLED BY THEIR SUPPORT
+  if(is.null(support)) {
+    segments(
+      x0 = x_segments$x,
+      y0 = x_segments$y,
+      x1 = x_segments$xend,
+      y1 = x_segments$yend
+    )
+  } else {
+    st <- .support_style(support)
+    segments(
+      x0 = x_segments$x,
+      y0 = x_segments$y,
+      x1 = x_segments$xend,
+      y1 = x_segments$yend,
+      col = rep(st$col, 4),
+      lwd = rep(st$lwd, 4),
+      lty = rep(st$lty, 4)
+    )
+    if(support_labels) {
+      .support_labels(
+        support,
+        x$merge,
+        x_segments,
+        vertical = !is.null(centers_x),
+        xlim = xlim,
+        ylim = ylim
+      )
+    }
+  }
 
   invisible(NULL)
 
@@ -132,4 +157,56 @@ heat_map_tree <- function(x,
     xend = c(node_x, child_x[, 2], child_x[, 1], child_x[, 2]),
     yend = c(height, height, child_y[, 1], child_y[, 2])
   )
+}
+
+#' Label larger branches with their support
+#'
+#' Branches with at least five leaves (and an eighth of all leaves) are
+#' labelled with their support as a percentage, beside the node on the side of
+#' the leaves, over a white box so the label stays readable over the branches.
+#'
+#' @param segments dendrogram segments in plot co-ordinates - the first
+#'   segment of each merge ends at its node.
+#' @param vertical TRUE for a tree above or below the heatmap.
+#'
+#' @importFrom graphics rect text strwidth strheight
+#' @noRd
+.support_labels <- function(support,
+                            merge,
+                            segments,
+                            vertical,
+                            xlim,
+                            ylim) {
+  k <- nrow(merge)
+  size <- .clade_sizes(merge)
+  keep <- which(!is.na(support) & size >= max(5, ceiling((k + 1) / 8)))
+  if(length(keep) == 0) {
+    return(invisible(NULL))
+  }
+  labels <- sprintf("%d%%", round(100 * support[keep]))
+  cex <- 0.6
+  w <- strwidth(labels, cex = cex, font = 2)
+  h <- strheight("M", cex = cex, font = 2)
+  if(vertical) {
+    # BELOW THE NODE'S BAR, TOWARDS THE LEAVES
+    x <- segments$xend[keep]
+    y <- segments$y[keep]
+    dir <- if(ylim[2] > ylim[1]) -1 else 1
+    yc <- y + dir * 0.9 * h
+    rect(x - 0.6 * w, yc - 0.7 * h, x + 0.6 * w, yc + 0.7 * h, col = "white",
+         border = NA, xpd = NA)
+    text(x, yc, labels, cex = cex, font = 2, col = "grey15", xpd = NA)
+  } else {
+    # BESIDE THE NODE'S BAR, TOWARDS THE LEAVES, JUST ABOVE THE NODE
+    x <- segments$xend[keep]
+    y <- segments$yend[keep]
+    dir <- if(xlim[2] > xlim[1]) -1 else 1
+    gap <- 0.25 * strwidth("M", cex = cex)
+    xc <- x + dir * (gap + 0.5 * w)
+    yc <- y + 0.9 * h
+    rect(xc - 0.55 * w, yc - 0.7 * h, xc + 0.55 * w, yc + 0.7 * h,
+         col = "white", border = NA, xpd = NA)
+    text(xc, yc, labels, cex = cex, font = 2, col = "grey15", xpd = NA)
+  }
+  invisible(NULL)
 }

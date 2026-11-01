@@ -366,6 +366,9 @@ heat_map_legend <- function(col = NULL,
       .legend_swatches(
         labels = ann$labels,
         colours = ann$colours,
+        glyph = ann$glyph,
+        lwd = if(is.null(ann$lwd)) 1 else ann$lwd,
+        lty = if(is.null(ann$lty)) 1 else ann$lty,
         xcoords = c(xlim_mean - shape_w, xlim_mean),
         ycoords = ycoords,
         upi = upi,
@@ -573,6 +576,9 @@ heat_map_legend <- function(col = NULL,
 #' @noRd
 .legend_swatches <- function(labels,
                              colours,
+                             glyph = NULL,
+                             lwd = 1,
+                             lty = 1,
                              xcoords,
                              ycoords,
                              upi,
@@ -597,15 +603,28 @@ heat_map_legend <- function(col = NULL,
   box_in <- min(0.7 * step_in, diff(xcoords) / upi[["x"]], 0.18)
   xc <- mean(xcoords)
   ycenters <- max(ycoords) - (seq_len(n) - 0.5) * step_in * upi[["y"]]
-  rect(
-    xleft = xc - 0.5 * box_in * upi[["x"]],
-    ybottom = ycenters - 0.5 * box_in * upi[["y"]],
-    xright = xc + 0.5 * box_in * upi[["x"]],
-    ytop = ycenters + 0.5 * box_in * upi[["y"]],
-    col = colours,
-    border = "black",
-    xpd = TRUE
-  )
+  if(identical(glyph, "line")) {
+    segments(
+      x0 = xc - box_in * upi[["x"]],
+      y0 = ycenters,
+      x1 = xc + box_in * upi[["x"]],
+      y1 = ycenters,
+      col = colours,
+      lwd = lwd,
+      lty = lty,
+      xpd = TRUE
+    )
+  } else {
+    rect(
+      xleft = xc - 0.5 * box_in * upi[["x"]],
+      ybottom = ycenters - 0.5 * box_in * upi[["y"]],
+      xright = xc + 0.5 * box_in * upi[["x"]],
+      ytop = ycenters + 0.5 * box_in * upi[["y"]],
+      col = colours,
+      border = "black",
+      xpd = TRUE
+    )
+  }
   # TEXT
   text(
     x = if(side == 4) {
@@ -810,7 +829,15 @@ heat_map_legend <- function(col = NULL,
   }
   for(a in annotations) {
     if(is.null(a$ramp)) {
-      b <- block("swatch", a$labels, 3, colours = a$colours)
+      b <- block(
+        "swatch",
+        a$labels,
+        3,
+        colours = a$colours,
+        glyph = a$glyph,
+        lwd = a$lwd,
+        lty = a$lty
+      )
     } else {
       b <- block(
         "bar",
@@ -888,8 +915,9 @@ heat_map_legend <- function(col = NULL,
       b$row_h <- max(1.15 * geom$shape, geom$line)
       b$body_h <- n * b$row_h
     } else {
-      b$key_w <- geom$swatch
-      b$label_x <- geom$swatch + geom$gap
+      # LINE KEYS ARE TWICE AS WIDE AS SWATCHES
+      b$key_w <- geom$swatch * if(identical(b$glyph, "line")) 2 else 1
+      b$label_x <- b$key_w + geom$gap
       b$row_h <- max(geom$line, 1.2 * geom$swatch)
       b$body_h <- n * b$row_h
     }
@@ -1074,6 +1102,18 @@ heat_map_legend <- function(col = NULL,
             xpd = TRUE
           )
         }
+      } else if(identical(b$glyph, "line")) {
+        h <- 0.5 * b$key_w
+        segments(
+          x0 = xc - h * upi[["x"]],
+          y0 = yc,
+          x1 = xc + h * upi[["x"]],
+          y1 = yc,
+          col = b$colours,
+          lwd = b$lwd,
+          lty = b$lty,
+          xpd = TRUE
+        )
       } else {
         h <- 0.5 * b$key_w
         rect(
@@ -1332,6 +1372,9 @@ heat_map_legend <- function(col = NULL,
             xpd = NA
           )
         }
+      } else if(identical(b$glyph, "line")) {
+        segments(X(kx - h), Y(ky), X(kx + h), Y(ky), col = b$colours,
+                 lwd = b$lwd, lty = b$lty, xpd = NA)
       } else {
         rect(X(kx - h), Y(ky - h), X(kx + h), Y(ky + h),
              col = b$colours, border = "black", xpd = NA)
