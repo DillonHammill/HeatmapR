@@ -76,6 +76,7 @@
   - size and levels legend shapes stay inside the legend (they covered the heatmap when it had fewer than 10 columns), legend titles never extend over the heatmap, and legend labels shrink to fit;
   - margins grow to fit long labels, legends and bar graph axes, and shrink the text rather than failing with "figure margins too large" on small devices;
   - bar graph axis labels are placed beyond their tick labels, and a gap is added between the heatmap and a bar graph only when their labels would touch.
+* Circle and diamond cells stay round when the cells aren't square: they are sized by the shorter side of the cells (as in the size legend) instead of stretching into ovals and flat diamonds.
 * Cell borders are left out when cells are smaller than three line widths (e.g. more than about 200 rows on a 7 inch device with the default borders), instead of turning the heatmap black. Borders requested with `cell_border_mask` are always drawn.
 * Missing (`NA`) axis labels no longer get a tick mark, so `axis_text_y = NA` removes the y axis text of a large heatmap instead of leaving a solid bar of ticks.
 * Faster cell colouring: transparency is applied without converting every colour, which also speeds up large vector heatmaps.

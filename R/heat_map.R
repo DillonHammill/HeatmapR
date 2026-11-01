@@ -206,8 +206,9 @@
 #'   solid colours.
 #' @param cell_shape indicates the shape to use for the cells in the heatmap,
 #'   options include \code{"rect"}, \code{"circle"} or \code{"diamond"}.
-#'   Alternatively, a matrix of the same dimensions as \code{x} containing the
-#'   shape to use for each cell.
+#'   Circles and diamonds stay round on cells that aren't square, sized by the
+#'   shorter side of the cells. Alternatively, a matrix of the same dimensions
+#'   as \code{x} containing the shape to use for each cell.
 #' @param cell_size logical indicating whether each cell in the heatmap should
 #'   be scaled by the value in \code{x}, set to FALSE by default. Alternatively,
 #'   a matrix of the same dimensions as \code{x} containing the values by which
@@ -2509,7 +2510,8 @@ heat_map <- function(x,
       fill = cell_fill,
       border = cell_borders,
       line_type = cell_border_line_type,
-      line_width = cell_border_line_width
+      line_width = cell_border_line_width,
+      cell_in = lay$cell_in
     )
   }
 
@@ -2594,7 +2596,8 @@ heat_map <- function(x,
         cell_borders_all[panel]
       },
       line_type = cell_border_line_type,
-      line_width = cell_border_line_width
+      line_width = cell_border_line_width,
+      cell_in = panel_in
     )
     if(!is.null(split_fill)) {
       .draw_split_cells(

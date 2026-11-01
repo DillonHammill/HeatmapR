@@ -679,6 +679,12 @@
 }
 
 #' Draw heatmap cells with one graphics call per shape
+#'
+#' Circles and diamonds stay round on cells that aren't square - their size is
+#' set by the shorter side of the cells, as in the size legend.
+#'
+#' @param cell_in width and height of the cells (inches).
+#'
 #' @importFrom graphics rect polygon
 #' @noRd
 .draw_cells <- function(x,
@@ -688,10 +694,14 @@
                         fill,
                         border,
                         line_type = 1,
-                        line_width = 1) {
+                        line_width = 1,
+                        cell_in = c(1, 1)) {
 
   # CELLS WITH MISSING SIZES ARE NOT DRAWN
   keep <- !is.na(size) & !is.na(x) & !is.na(y)
+
+  # SHORTER SIDE OF THE CELLS ALONG X AND Y (FRACTIONS OF THE CELLS)
+  aspect <- min(cell_in) / cell_in
 
   # RECTANGLES
   ind <- keep & shape == "rect"
@@ -716,8 +726,8 @@
       x = x[ind],
       y = y[ind],
       r = 0.5 * size[ind],
-      dx = c(-1, 0, 1, 0),
-      dy = c(0, 1, 0, -1),
+      dx = c(-1, 0, 1, 0) * aspect[1],
+      dy = c(0, 1, 0, -1) * aspect[2],
       fill = fill[ind],
       border = border[ind],
       line_type = line_type,
@@ -733,8 +743,8 @@
       x = x[ind],
       y = y[ind],
       r = 0.5 * size[ind],
-      dx = sin(angles),
-      dy = cos(angles),
+      dx = sin(angles) * aspect[1],
+      dy = cos(angles) * aspect[2],
       fill = fill[ind],
       border = border[ind],
       line_type = line_type,
