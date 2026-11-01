@@ -260,6 +260,21 @@
 #'   dimensions as \code{x}, or a vector that is recycled down the columns of
 #'   \code{x} (as in \code{matrix()}). Legends use solid colours unless all
 #'   cells share the same transparency.
+#' @param cell_uncertainty a numeric matrix with the same dimensions as
+#'   \code{x} holding the uncertainty of each value, such as a standard error,
+#'   a confidence interval width or a p-value. Cells are coloured with a
+#'   value-suppressing palette: the more uncertain a value, the fewer colours
+#'   its part of the scale has and the closer they are to grey, so an
+#'   uncertain value can't look like a strong one. The most certain level
+#'   uses 8 colours across the scale (with the default 4 levels), the next 4,
+#'   then 2, and the most uncertain level a single, nearly grey colour.
+#'   Missing uncertainties are treated as the most uncertain. The colour
+#'   legend becomes a key with one row per uncertainty level (fit layout).
+#' @param cell_uncertainty_breaks 1 to 5 increasing thresholds between the
+#'   uncertainty levels, set to NULL by default for thresholds at a quarter,
+#'   half and three quarters of the largest uncertainty (4 levels).
+#' @param cell_uncertainty_title heading of the uncertainty levels in the
+#'   colour legend, set to \code{"Uncertainty"} by default.
 #' @param cell_col_empty a colour to use for missing values in \code{x}, set to
 #'   \code{"white"} by default.
 #' @param cell_border_line_type a integer to indicate the type of line to use
@@ -716,6 +731,9 @@ heat_map <- function(x,
                      cell_size_scale_method = "linear",
                      cell_size_scale_range = c(0, 1),
                      cell_col_alpha = 1,
+                     cell_uncertainty = NULL,
+                     cell_uncertainty_breaks = NULL,
+                     cell_uncertainty_title = "Uncertainty",
                      cell_col_empty = "white",
                      cell_border_line_type = 1,
                      cell_border_line_width = 1,
@@ -1369,6 +1387,26 @@ heat_map <- function(x,
 
   # CELL ARGUMENTS -------------------------------------------------------------
 
+  # UNCERTAINTY OF EACH VALUE - VALUE-SUPPRESSING COLOURS
+  unc_mat <- .check_uncertainty(cell_uncertainty, x)
+  unc_key <- NULL
+  if(!is.null(unc_mat)) {
+    unc_breaks <- .uncertainty_breaks(unc_mat, cell_uncertainty_breaks)
+    if(identical(layout, "classic")) {
+      warning(
+        "The uncertainty legend requires layout = \"fit\" - the colour ",
+        "legend shows the colours of certain values.",
+        call. = FALSE
+      )
+    } else {
+      unc_key <- list(
+        n_levels = length(unc_breaks) + 1,
+        labels = .uncertainty_labels(unc_breaks),
+        title = cell_uncertainty_title
+      )
+    }
+  }
+
   # DISTRIBUTIONS INSIDE THE CELLS - VALUES IN THE ORIENTATION OF x
   cell_values <- .check_cell_values(cell_values, x)
   if(!is.null(cell_values)) {
@@ -1552,13 +1590,23 @@ heat_map <- function(x,
       k[k < 0] <- 0
       k[k > 1] <- 1
     }
-    rgb_mat <- cell_col_scale(k)
-    cell_fill[ind] <- rgb(
-      rgb_mat[, 1],
-      rgb_mat[, 2],
-      rgb_mat[, 3],
-      maxColorValue = 255
-    )
+    if(is.null(unc_mat)) {
+      rgb_mat <- cell_col_scale(k)
+      cell_fill[ind] <- rgb(
+        rgb_mat[, 1],
+        rgb_mat[, 2],
+        rgb_mat[, 3],
+        maxColorValue = 255
+      )
+    } else {
+      # FEWER, GREYER COLOURS FOR MORE UNCERTAIN VALUES
+      cell_fill[ind] <- .vsup_colour(
+        k,
+        .uncertainty_level(unc_mat[cell_ind][ind], unc_breaks),
+        length(unc_breaks) + 1,
+        cell_col_scale
+      )
+    }
   }
   ind <- !cell_num & !cell_missing
   if(any(ind)) {
@@ -1815,6 +1863,7 @@ heat_map <- function(x,
       col_ticks = legend_ticks,
       col_breaks = col_breaks,
       col_density = legend_density,
+      col_uncertainty = unc_key,
       size = if("size" %in% legend_drawn) c(cell_size_min, cell_size_max),
       levels = if("levels" %in% legend_drawn) {
         list(labels = unique(unname(cell_levels)))
@@ -2509,6 +2558,7 @@ heat_map <- function(x,
       col_ticks = legend_ticks,
       col_breaks = col_breaks,
       col_density = legend_density,
+      col_uncertainty = unc_key,
       col_scale_size = legend_col_scale_size,
       col_alpha = legend_alpha,
       shape = .main_shape(cell_shapes),

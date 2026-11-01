@@ -41,6 +41,7 @@ heat_map_legend <- function(col = NULL,
                             col_ticks = NULL,
                             col_breaks = NULL,
                             col_density = NULL,
+                            col_uncertainty = NULL,
                             shape = "rect",
                             text_font = 1,
                             text_size = 1,
@@ -115,7 +116,8 @@ heat_map_legend <- function(col = NULL,
           col_alpha = col_alpha,
           col_ticks = col_ticks,
           col_breaks = col_breaks,
-          col_density = col_density
+          col_density = col_density,
+          col_uncertainty = col_uncertainty
         ),
         size_fun = size_fun,
         xlim = xlim,
@@ -784,7 +786,8 @@ heat_map_legend <- function(col = NULL,
                            col_alpha = 1,
                            col_ticks = NULL,
                            col_breaks = NULL,
-                           col_density = NULL) {
+                           col_density = NULL,
+                           col_uncertainty = NULL) {
   if(length(title) == 0) {
     title <- NA
   }
@@ -811,7 +814,7 @@ heat_map_legend <- function(col = NULL,
       col_ticks <- .legend_col_ticks(NULL, col_breaks, col)
     }
     blocks[[length(blocks) + 1]] <- block(
-      "bar",
+      if(is.null(col_uncertainty)) "bar" else "vsup",
       col_ticks$labels,
       1,
       at = col_ticks$at,
@@ -819,8 +822,11 @@ heat_map_legend <- function(col = NULL,
       breaks = col_breaks,
       ramp = col_ramp,
       alpha = col_alpha,
-      density = col_density,
-      min_in = 1
+      density = if(is.null(col_uncertainty)) col_density,
+      min_in = 1,
+      n_levels = col_uncertainty$n_levels,
+      unc_labels = col_uncertainty$labels,
+      unc_title = col_uncertainty$title
     )
   }
   if(length(size) >= 2) {
@@ -915,7 +921,19 @@ heat_map_legend <- function(col = NULL,
       0
     }
     n <- length(b$labels)
-    if(b$kind == "bar") {
+    side_labels <- b$labels
+    if(b$kind == "vsup") {
+      # VALUES ACROSS THE TOP, ONE ROW PER UNCERTAINTY LEVEL, UNCERTAINTY
+      # LABELS BESIDE THE ROWS
+      lab_w <- .text_in(b$labels, text_size, text_font, "width")
+      b$key_w <- max(1.1 * key * scale, n * (lab_w + 0.1 * scale))
+      b$row_h <- 0.17 * key * scale
+      # CLEAR OF THE HALF OF THE LAST VALUE LABEL BEYOND THE KEY
+      b$label_x <- b$key_w + 0.5 * lab_w + geom$gap
+      b$body_h <- geom$text_h + geom$tick + 0.5 * geom$gap +
+        b$n_levels * b$row_h
+      side_labels <- c(b$unc_labels, b$unc_title)
+    } else if(b$kind == "bar") {
       # WIDER BARS CARRY A DENSITY TRACE
       b$key_w <- geom$bar * if(is.null(b$density)) 1 else 1.6
       b$label_x <- b$key_w + geom$tick + 0.5 * geom$gap
@@ -935,7 +953,7 @@ heat_map_legend <- function(col = NULL,
     }
     b$width <- max(
       b$title_w,
-      b$label_x + .text_in(b$labels, text_size, text_font, "width")
+      b$label_x + .text_in(side_labels, text_size, text_font, "width")
     )
     b$height <- b$title_h + b$body_h
     blocks[[z]] <- b
@@ -993,14 +1011,8 @@ heat_map_legend <- function(col = NULL,
     )
   }
   m <- measure(1)
-  scale <- min(
-    1,
-    (diff(range(xlim)) / upi[["x"]]) / m$width,
-    (diff(range(ylim)) / upi[["y"]]) / m$height
-  )
-  if(scale < 1 - 1e-6) {
-    m <- measure(scale)
-  }
+  avail <- c(diff(range(xlim)) / upi[["x"]], diff(range(ylim)) / upi[["y"]])
+  m <- .legend_shrink(m, measure, avail)
   g <- m$geom
 
   # CO-ORDINATES - INCHES FROM THE INNER EDGE & THE TOP OF THE LEGEND
@@ -1034,7 +1046,24 @@ heat_map_legend <- function(col = NULL,
     }
     t <- t + b$title_h
     n <- length(b$labels)
-    if(b$kind == "bar") {
+    if(b$kind == "vsup") {
+      kx <- key_x(0, b$key_w)
+      key_top <- Y(t + g$text_h + g$tick + 0.5 * g$gap)
+      .draw_vsup_key(
+        b,
+        xl = kx[1],
+        xr = kx[2],
+        top = key_top,
+        row_h = b$row_h * upi[["y"]],
+        label_y = Y(t + g$text_h),
+        tick_h = g$tick * upi[["y"]],
+        unc_x = X(b$label_x),
+        hadj = hadj,
+        cex = g$text_size,
+        font = text_font,
+        col = text_col
+      )
+    } else if(b$kind == "bar") {
       # COLOUR BAR - INSET BY HALF A LINE OF TEXT SO END LABELS FIT
       y_bar <- c(Y(t + b$body_h - 0.5 * g$text_h), Y(t + 0.5 * g$text_h))
       kx <- key_x(0, b$key_w)
@@ -1211,7 +1240,10 @@ heat_map_legend <- function(col = NULL,
       function(l) .text_in(l, g$text_size, text_font, "width"),
       numeric(1)
     )
-    if(b$kind == "bar") {
+    if(b$kind == "vsup") {
+      # AS BESIDE THE HEATMAP
+      b$body_w <- b$width
+    } else if(b$kind == "bar") {
       # HORIZONTAL BAR - LONG ENOUGH TO SEPARATE ITS LABELS
       b$bar_len <- max(
         1.2 * key * scale,
@@ -1300,10 +1332,7 @@ heat_map_legend <- function(col = NULL,
     )
   }
   m <- measure(1)
-  scale <- min(1, avail / m$width, geom$band_in / m$height)
-  if(scale < 1 - 1e-6) {
-    m <- measure(scale)
-  }
+  m <- .legend_shrink(m, measure, c(avail, geom$band_in))
   g <- m$geom
   # FIGURE INCHES TO PLOT UNITS
   X <- function(v) grconvertX(v / fin[1], "nfc", "user")
@@ -1327,7 +1356,23 @@ heat_map_legend <- function(col = NULL,
       )
     }
     yb <- y0 - b$title_h
-    if(b$kind == "bar") {
+    if(b$kind == "vsup") {
+      key_top <- yb - g$text_h - g$tick - 0.5 * g$gap
+      .draw_vsup_key(
+        b,
+        xl = X(x0),
+        xr = X(x0 + b$key_w),
+        top = Y(key_top),
+        row_h = Y(key_top) - Y(key_top - b$row_h),
+        label_y = Y(yb - g$text_h),
+        tick_h = Y(key_top + g$tick) - Y(key_top),
+        unc_x = X(x0 + b$label_x),
+        hadj = 0,
+        cex = g$text_size,
+        font = text_font,
+        col = text_col
+      )
+    } else if(b$kind == "bar") {
       bx <- x0 + b$bar_x + c(0, b$bar_len)
       by <- yb - c(b$bar_h, 0)
       box_n <- 75
@@ -1446,4 +1491,30 @@ heat_map_legend <- function(col = NULL,
   lines(px, py, col = "white", lwd = 2.5, xpd = NA)
   lines(px, py, col = "grey10", lwd = 1, xpd = NA)
   invisible(NULL)
+}
+
+#' Shrink a legend until it fits the space available
+#'
+#' Text is measured at whole point sizes on some devices, so a legend scaled
+#' in proportion to the space can still be slightly too big - it is shrunk
+#' again until it fits.
+#'
+#' @param m legend measured at full size.
+#' @param measure function measuring the legend at a scale.
+#' @param avail width and height available (inches).
+#'
+#' @noRd
+.legend_shrink <- function(m,
+                           measure,
+                           avail) {
+  scale <- 1
+  for(i in seq_len(8)) {
+    ratio <- min(avail[1] / m$width, avail[2] / m$height)
+    if(!is.finite(ratio) || ratio >= 1 - 1e-6) {
+      break
+    }
+    scale <- scale * ratio * if(i > 1) 0.97 else 1
+    m <- measure(scale)
+  }
+  m
 }

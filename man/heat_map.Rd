@@ -58,6 +58,9 @@ heat_map(
   cell_size_scale_method = "linear",
   cell_size_scale_range = c(0, 1),
   cell_col_alpha = 1,
+  cell_uncertainty = NULL,
+  cell_uncertainty_breaks = NULL,
+  cell_uncertainty_title = "Uncertainty",
   cell_col_empty = "white",
   cell_border_line_type = 1,
   cell_border_line_width = 1,
@@ -486,6 +489,24 @@ transparency can be used for each cell by supplying a matrix with the same
 dimensions as \code{x}, or a vector that is recycled down the columns of
 \code{x} (as in \code{matrix()}). Legends use solid colours unless all
 cells share the same transparency.}
+
+\item{cell_uncertainty}{a numeric matrix with the same dimensions as
+\code{x} holding the uncertainty of each value, such as a standard error,
+a confidence interval width or a p-value. Cells are coloured with a
+value-suppressing palette: the more uncertain a value, the fewer colours
+its part of the scale has and the closer they are to grey, so an
+uncertain value can't look like a strong one. The most certain level
+uses 8 colours across the scale (with the default 4 levels), the next 4,
+then 2, and the most uncertain level a single, nearly grey colour.
+Missing uncertainties are treated as the most uncertain. The colour
+legend becomes a key with one row per uncertainty level (fit layout).}
+
+\item{cell_uncertainty_breaks}{1 to 5 increasing thresholds between the
+uncertainty levels, set to NULL by default for thresholds at a quarter,
+half and three quarters of the largest uncertainty (4 levels).}
+
+\item{cell_uncertainty_title}{heading of the uncertainty levels in the
+colour legend, set to \code{"Uncertainty"} by default.}
 
 \item{cell_col_empty}{a colour to use for missing values in \code{x}, set to
 \code{"white"} by default.}
