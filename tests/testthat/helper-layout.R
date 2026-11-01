@@ -97,6 +97,15 @@ random_layout_case <- function(seed) {
   # Rotated column labels - drawn after the device size so that earlier draws
   # keep their cases
   if (runif(1) < 0.3) args$axis_text_angle_x <- sample(c(20, 45, 60), 1)
+  # Box plots and violins of the heatmap values instead of bars
+  if (!is.null(args$bar_values_x) && runif(1) < 0.5) {
+    args$bar_values_x <- TRUE
+    args$bar_type_x <- sample(c("box", "violin"), 1)
+  }
+  if (!is.null(args$bar_values_y) && runif(1) < 0.5) {
+    args$bar_values_y <- TRUE
+    args$bar_type_y <- sample(c("box", "violin"), 1)
+  }
   list(
     args = args,
     din = din

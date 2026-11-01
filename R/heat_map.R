@@ -277,6 +277,19 @@
 #'   with the column names of \code{x}. The values supplied to
 #'   \code{bar_values_x} will be internally reordered to match the order of
 #'   columns as determined by hierarchical clustering.
+#'   To show the distribution of several values for each column as a box
+#'   plot or violin (\code{bar_type_x}), supply a list with a numeric vector
+#'   for each column (named or in the original order), a matrix or data.frame
+#'   with one column for each column of \code{x}, or \code{TRUE} for the
+#'   values of each column of the heatmap (after scaling).
+#' @param bar_type_x the type of plot drawn for \code{bar_values_x}:
+#'   \code{"bar"} (one value per column), \code{"box"} (box plots of the
+#'   values of each column, with the median, quartiles, whiskers to the most
+#'   extreme values within 1.5 times the interquartile range and points beyond
+#'   them) or \code{"violin"} (densities of the values of each column, with a
+#'   line at the median). Set to \code{NULL} by default to draw bars for a
+#'   vector and box plots for distributions. \code{bar_fill_x} and the
+#'   \code{bar_line_*_x} arguments style the boxes and violins.
 #' @param bar_axis_label_x axis label to use for the x axis bar plot.
 #' @param bar_axis_label_adj_x scalar \[-1, 1\] to adjust the position of the x
 #'   axis bar graph label relative to the x axis, set to 0 by default.
@@ -309,7 +322,12 @@
 #'   supplied in the order matching the original rownames of \code{x} or named
 #'   with the row names of \code{x}. The values supplied to \code{bar_values_y}
 #'   will be internally reordered to match the order of rows as determined by
-#'   hierarchical clustering.
+#'   hierarchical clustering. As for \code{bar_values_x}, a list (one numeric
+#'   vector per row), a matrix or data.frame with one row per row of
+#'   \code{x}, or \code{TRUE} (the values of each row of the heatmap) shows
+#'   the distribution of each row as a box plot or violin.
+#' @param bar_type_y the type of plot drawn for \code{bar_values_y}, as for
+#'   \code{bar_type_x}.
 #' @param bar_axis_label_y axis label to use for the y axis bar plot.
 #' @param bar_axis_label_adj_y scalar \[-1, 1\] to adjust the position of the y
 #'   axis bar graph label relative to the y axis, set to 0 by default.
@@ -662,6 +680,7 @@ heat_map <- function(x,
                      cell_text_col_alpha = 1,
                      bar_size_x = 1,
                      bar_values_x = NULL,
+                     bar_type_x = NULL,
                      bar_axis_label_x = NULL,
                      bar_axis_label_adj_x = 0,
                      bar_axis_label_font_x = 1,
@@ -676,6 +695,7 @@ heat_map <- function(x,
                      bar_line_col_alpha_x = 1,
                      bar_size_y = 1,
                      bar_values_y = NULL,
+                     bar_type_y = NULL,
                      bar_axis_label_y = NULL,
                      bar_axis_label_adj_y = 0,
                      bar_axis_label_font_y = 1,
@@ -1178,6 +1198,35 @@ heat_map <- function(x,
     "bar_line_col_",
     "bar_line_col_alpha_"
   )
+
+  # BAR VALUES - SINGLE VALUES FOR BARS OR DISTRIBUTIONS FOR BOX PLOTS AND
+  # VIOLINS (A LIST WITH ONE NUMERIC VECTOR PER COLUMN OR ROW)
+  bar_values_x <- .bar_values(
+    bar_values_x,
+    num_mat,
+    "x",
+    colnames(x),
+    "bar_values_x"
+  )
+  bar_values_y <- .bar_values(
+    bar_values_y,
+    num_mat,
+    "y",
+    rownames(x),
+    "bar_values_y"
+  )
+  if(!is.null(bar_values_x)) {
+    bar_type_x <- .bar_type(bar_type_x, bar_values_x, "bar_type_x")
+    if(bar_type_x != "bar" && !is.list(bar_values_x)) {
+      bar_values_x <- as.list(bar_values_x)
+    }
+  }
+  if(!is.null(bar_values_y)) {
+    bar_type_y <- .bar_type(bar_type_y, bar_values_y, "bar_type_y")
+    if(bar_type_y != "bar" && !is.list(bar_values_y)) {
+      bar_values_y <- as.list(bar_values_y)
+    }
+  }
 
   # BAR_VALUES_X - ORIGINAL COLUMN ORDER -> DISPLAY ORDER
   if(!is.null(bar_values_x)) {
@@ -1740,10 +1789,10 @@ heat_map <- function(x,
       bar_size_x = bar_size_x,
       bar_size_y = bar_size_y,
       bar_ticks_x = if(!is.null(bar_values_x)) {
-        axisTicks(.bar_range(bar_values_x), log = FALSE)
+        axisTicks(.bar_range(bar_values_x, bar_type_x), log = FALSE)
       },
       bar_ticks_y = if(!is.null(bar_values_y)) {
-        axisTicks(.bar_range(bar_values_y), log = FALSE)
+        axisTicks(.bar_range(bar_values_y, bar_type_y), log = FALSE)
       },
       bar_label_x = bar_axis_label_x,
       bar_label_y = bar_axis_label_y,
@@ -2168,7 +2217,8 @@ heat_map <- function(x,
       axis_text_col_alpha_y = axis_text_col_alpha_y,
       axis_text_angle_y = axis_text_angle_y,
       axis_text_adjust_y = axis_text_adjust_y,
-      axis_ticks_length_y = axis_ticks_length_y
+      axis_ticks_length_y = axis_ticks_length_y,
+      type = bar_type_x
     )
   }
 
@@ -2200,7 +2250,8 @@ heat_map <- function(x,
       axis_text_col_alpha_x = axis_text_col_alpha_x,
       axis_text_angle_x = axis_text_angle_x,
       axis_text_adjust_x = axis_text_adjust_x,
-      axis_ticks_length_x = axis_ticks_length_x
+      axis_ticks_length_x = axis_ticks_length_x,
+      type = bar_type_y
     )
   }
 
@@ -2394,7 +2445,7 @@ heat_map <- function(x,
       tree_x_ylim = if(inherits(tree_x, "hclust")) tree_x_ylim,
       tree_y_xlim = if(inherits(tree_y, "hclust")) tree_y_xlim,
       bar_ticks_x = if(!is.null(bar_values_x)) {
-        axisTicks(.bar_range(bar_values_x), log = FALSE)
+        axisTicks(.bar_range(bar_values_x, bar_type_x), log = FALSE)
       },
       bar_cex_x = axis_text_size_y[1],
       bar_font_x = axis_text_font_y[1],
@@ -2404,7 +2455,7 @@ heat_map <- function(x,
       bar_label_font_x = bar_axis_label_font_x,
       bar_offset_x = lay$bar_label_x,
       bar_ticks_y = if(!is.null(bar_values_y)) {
-        axisTicks(.bar_range(bar_values_y), log = FALSE)
+        axisTicks(.bar_range(bar_values_y, bar_type_y), log = FALSE)
       },
       bar_cex_y = axis_text_size_x[1],
       bar_font_y = axis_text_font_x[1],

@@ -627,6 +627,100 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-annotations.png')
 ```
 
+### 4.2 Box Plots and Violins
+
+The bar plots can also show the distribution of several values for each column or row, as box plots (`bar_type_x = "box"`) or violins (`bar_type_x = "violin"`). Supply a list with a numeric vector for each column (or row), a matrix or data.frame with one column per column of the heatmap (one row per row for `bar_values_y`), or `TRUE` to show the values of each column or row of the heatmap itself. Box plots are drawn by default when distributions are supplied. In the example below, the heatmap shows the median intensity of each marker in each cluster of simulated cytometry events (computed with `heat_map_summarise()`, see section 5.3), the violins show the distribution of each marker across all events, and the bars show the size of each cluster:
+
+```{r, eval = FALSE}
+set.seed(7)
+markers <- c("CD3", "CD4", "CD8", "CD19", "CD56", "CD14")
+pops <- list(
+  "CD4 T" = c("CD3", "CD4"),
+  "CD8 T" = c("CD3", "CD8"),
+  "B" = "CD19",
+  "NK" = "CD56",
+  "Monocyte" = c("CD4", "CD14")
+)
+cluster <- sample(
+  names(pops),
+  5000,
+  replace = TRUE,
+  prob = c(0.35, 0.2, 0.15, 0.1, 0.2)
+)
+events <- matrix(
+  rnorm(5000 * 6, 0.5, 0.5),
+  ncol = 6,
+  dimnames = list(NULL, markers)
+)
+for (p in names(pops)) {
+  ind <- cluster == p
+  events[ind, pops[[p]]] <- rnorm(sum(ind) * length(pops[[p]]), 4, 0.6)
+}
+heat_map(
+  heat_map_summarise(events, group_y = cluster, fun = "median"),
+  cell_col_scale = "viridis",
+  bar_values_x = events,
+  bar_type_x = "violin",
+  bar_size_x = 2,
+  bar_fill_x = "grey85",
+  bar_axis_label_x = "All events",
+  bar_values_y = table(cluster),
+  bar_fill_y = "grey85",
+  bar_axis_label_y = "Events",
+  title = "Median marker intensity per cluster"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+set.seed(7)
+markers <- c("CD3", "CD4", "CD8", "CD19", "CD56", "CD14")
+pops <- list(
+  "CD4 T" = c("CD3", "CD4"),
+  "CD8 T" = c("CD3", "CD8"),
+  "B" = "CD19",
+  "NK" = "CD56",
+  "Monocyte" = c("CD4", "CD14")
+)
+cluster <- sample(
+  names(pops),
+  5000,
+  replace = TRUE,
+  prob = c(0.35, 0.2, 0.15, 0.1, 0.2)
+)
+events <- matrix(
+  rnorm(5000 * 6, 0.5, 0.5),
+  ncol = 6,
+  dimnames = list(NULL, markers)
+)
+for (p in names(pops)) {
+  ind <- cluster == p
+  events[ind, pops[[p]]] <- rnorm(sum(ind) * length(pops[[p]]), 4, 0.6)
+}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-side-plots.png",
+  height = 6,
+  width = 7,
+  res = 300
+)
+heat_map(
+  heat_map_summarise(events, group_y = cluster, fun = "median"),
+  cell_col_scale = "viridis",
+  bar_values_x = events,
+  bar_type_x = "violin",
+  bar_size_x = 2,
+  bar_fill_x = "grey85",
+  bar_axis_label_x = "All events",
+  bar_values_y = table(cluster),
+  bar_fill_y = "grey85",
+  bar_axis_label_y = "Events",
+  title = "Median marker intensity per cluster"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-side-plots.png')
+```
+
 ## 5. Hierarchical Clustering
 
 `heat_map()` also supports hierarchical clustering using the conventional `stats::hclust()` to construct dendrograms and `stats::cutree()` to partition the dendrograms into distinct clusters. The `dist_method` and `clust_method` arguments allow for control over the distance metric to use for hierarchical clustering (any method supported by `stats::dist()`, `"cosine"` for cosine distance, `"pearson"`, `"spearman"` or `"kendall"` for correlation distances, or a function) and the agglomeration method to use (any method supported by `stats::hclust()`).

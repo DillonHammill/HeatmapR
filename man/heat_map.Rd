@@ -68,6 +68,7 @@ heat_map(
   cell_text_col_alpha = 1,
   bar_size_x = 1,
   bar_values_x = NULL,
+  bar_type_x = NULL,
   bar_axis_label_x = NULL,
   bar_axis_label_adj_x = 0,
   bar_axis_label_font_x = 1,
@@ -82,6 +83,7 @@ heat_map(
   bar_line_col_alpha_x = 1,
   bar_size_y = 1,
   bar_values_y = NULL,
+  bar_type_y = NULL,
   bar_axis_label_y = NULL,
   bar_axis_label_adj_y = 0,
   bar_axis_label_font_y = 1,
@@ -501,7 +503,21 @@ by default (0.6 inches in the default fit layout).}
 supplied in the order matching the original columns of \code{x} or named
 with the column names of \code{x}. The values supplied to
 \code{bar_values_x} will be internally reordered to match the order of
-columns as determined by hierarchical clustering.}
+columns as determined by hierarchical clustering.
+To show the distribution of several values for each column as a box
+plot or violin (\code{bar_type_x}), supply a list with a numeric vector
+for each column (named or in the original order), a matrix or data.frame
+with one column for each column of \code{x}, or \code{TRUE} for the
+values of each column of the heatmap (after scaling).}
+
+\item{bar_type_x}{the type of plot drawn for \code{bar_values_x}:
+\code{"bar"} (one value per column), \code{"box"} (box plots of the
+values of each column, with the median, quartiles, whiskers to the most
+extreme values within 1.5 times the interquartile range and points beyond
+them) or \code{"violin"} (densities of the values of each column, with a
+line at the median). Set to \code{NULL} by default to draw bars for a
+vector and box plots for distributions. \code{bar_fill_x} and the
+\code{bar_line_*_x} arguments style the boxes and violins.}
 
 \item{bar_axis_label_x}{axis label to use for the x axis bar plot.}
 
@@ -548,7 +564,13 @@ by default (0.6 inches in the default fit layout).}
 supplied in the order matching the original rownames of \code{x} or named
 with the row names of \code{x}. The values supplied to \code{bar_values_y}
 will be internally reordered to match the order of rows as determined by
-hierarchical clustering.}
+hierarchical clustering. As for \code{bar_values_x}, a list (one numeric
+vector per row), a matrix or data.frame with one row per row of
+\code{x}, or \code{TRUE} (the values of each row of the heatmap) shows
+the distribution of each row as a box plot or violin.}
+
+\item{bar_type_y}{the type of plot drawn for \code{bar_values_y}, as for
+\code{bar_type_x}.}
 
 \item{bar_axis_label_y}{axis label to use for the y axis bar plot.}
 
