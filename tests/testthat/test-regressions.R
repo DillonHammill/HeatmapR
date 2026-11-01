@@ -103,18 +103,26 @@ test_that("cluster sizes still refer to the displayed order", {
   expect_equal(unname(info$col_clusters), rep(1:3, c(4, 3, 4)))
 })
 
-test_that("dendrograms are kept only for contiguous manual clusters", {
+test_that("manual clusters with a dendrogram are clustered within each group", {
   # Columns 1-2 and 3-4 form two clear groups
   x <- cbind(c(1, 2, 3), c(1.1, 2.1, 3.1), c(9, 1, 5), c(9.1, 1.1, 5.1))
-  # Indices that split the dendrogram groups - dendrogram dropped
+  # Indices that split the dendrogram groups - clustered within each group
+  expect_no_warning(
+    hm <- draw(x, tree_x = TRUE, tree_cut_x = c(1, 2, 1, 2))
+  )
+  info <- heat_map_info(hm)
+  expect_s3_class(info$tree_x, "hclust")
+  expect_equal(unname(info$col_clusters), c(1, 2, 1, 2))
+  expect_equal(sort(info$col_order[1:2]), c(1, 3))
+  # A supplied dendrogram is kept only when the clusters follow it
+  tree <- hclust(dist(t(x)))
   expect_warning(
-    hm <- draw(x, tree_x = TRUE, tree_cut_x = c(1, 2, 1, 2)),
+    hm <- draw(x, tree_x = tree, tree_cut_x = c(1, 2, 1, 2)),
     "not contiguous"
   )
   expect_null(heat_map_info(hm)$tree_x)
-  # Indices that follow the dendrogram groups - dendrogram kept
   expect_no_warning(
-    hm <- draw(x, tree_x = TRUE, tree_cut_x = c(1, 1, 2, 2))
+    hm <- draw(x, tree_x = tree, tree_cut_x = c(1, 1, 2, 2))
   )
   expect_s3_class(heat_map_info(hm)$tree_x, "hclust")
 })

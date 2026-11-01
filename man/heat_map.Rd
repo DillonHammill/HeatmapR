@@ -221,15 +221,19 @@ ordered from left to right. When a vector of indices is supplied, its
 length must equal the number of columns in \code{x}; if its length also
 matches a valid set of cluster sizes, it is treated as cluster indices.
 Named indices are matched to the column names of \code{x}. If a
-dendrogram is requested, clusters that are contiguous in the dendrogram
-order keep that order; otherwise the dendrogram is not drawn. Clusters
-are always numbered, and labelled by \code{tree_label_text_x}, in the
-displayed order from left to right, which may differ from the supplied
-indices when the dendrogram order is kept.}
+dendrogram is requested (\code{tree_x = TRUE}), the columns are clustered
+within each cluster and the clusters are joined at the top of the
+dendrogram, so the clusters act as groups (e.g. treatments) with a
+dendrogram inside each one. A dendrogram supplied as an \code{hclust} or
+\code{dist} object (or a heatmap with non-numeric columns) is kept only
+when the clusters are contiguous in its order. Clusters are always
+numbered, and labelled by \code{tree_label_text_x}, in the displayed
+order from left to right.}
 
 \item{tree_split_x}{a numeric to control the spacing between x axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
-tree splits.}
+tree splits. Each unit is 0.08 inches in the default fit layout and half
+a column in the classic layout.}
 
 \item{tree_label_x}{logical indicating whether a label should be added for
 each cluster within the x axis tree when \code{tree_cut_x} is specified,
@@ -293,15 +297,19 @@ character or factor, and rows are regrouped so that each cluster is
 contiguous, ordered from the bottom of the heatmap to the top. When a
 vector of indices is supplied, its length must equal the number of rows in
 \code{x}, and named indices are matched to the row names of \code{x}. If
-a dendrogram is requested, clusters that are contiguous in the dendrogram
-order keep that order; otherwise the dendrogram is not drawn. Clusters are
+a dendrogram is requested (\code{tree_y = TRUE}), the rows are clustered
+within each cluster and the clusters are joined at the top of the
+dendrogram (e.g. cells grouped by cell type, each with its own
+dendrogram); a supplied \code{hclust} or \code{dist} object is kept only
+when the clusters are contiguous in its order. Clusters are
 always numbered, and labelled by \code{tree_label_text_y}, in the
 displayed order from the bottom of the heatmap to the top, which may
 differ from the supplied indices when the dendrogram order is kept.}
 
 \item{tree_split_y}{a numeric to control the spacing between y axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
-tree splits.}
+tree splits. Each unit is 0.08 inches in the default fit layout and half
+a row in the classic layout.}
 
 \item{tree_label_y}{logical indicating whether a label should be added for
 each cluster within the y axis tree when \code{tree_cut_y} is specified,
