@@ -7,7 +7,7 @@ test_that("cells are listed from the top left with their positions", {
   cells <- heat_map_data(hm)
   expect_equal(nrow(cells), 12)
   expect_equal(names(cells), c("row", "column", "row_index", "col_index", "display_row",
-                               "display_col", "x", "y", "value", "colour", "size"))
+                               "display_col", "x", "y", "value", "colour", "size", "shape"))
   # Rows from the top, columns from the left
   expect_equal(cells$row_index, rep(info$row_order, each = 3))
   expect_equal(cells$col_index, rep(info$col_order, times = 4))
@@ -20,6 +20,7 @@ test_that("cells are listed from the top left with their positions", {
   expect_equal(cells$value, m[cbind(cells$row_index, cells$col_index)])
   expect_equal(cells$colour, unname(info$colours[cbind(cells$row_index, cells$col_index)]))
   expect_true(all(cells$size == 1))
+  expect_true(all(cells$shape == "rect"))
   # The centres are where the cells are drawn
   rects <- Filter(function(z) length(z[[1]]) == 12, drawn(hm, "C_rect"))[[1]]
   expect_setequal(round((rects[[1]] + rects[[3]]) / 2, 6), round(cells$x, 6))

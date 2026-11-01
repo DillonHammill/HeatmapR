@@ -205,10 +205,21 @@
 #'   transparency of text in y axis cluster labels, set to 1 by default to use
 #'   solid colours.
 #' @param cell_shape indicates the shape to use for the cells in the heatmap,
-#'   options include \code{"rect"}, \code{"circle"} or \code{"diamond"}.
-#'   Circles and diamonds stay round on cells that aren't square, sized by the
-#'   shorter side of the cells. Alternatively, a matrix of the same dimensions
-#'   as \code{x} containing the shape to use for each cell.
+#'   options include \code{"rect"}, \code{"circle"}, \code{"diamond"},
+#'   \code{"ellipse"}, \code{"number"} or \code{"none"}. Circles, diamonds and
+#'   ellipses stay round on cells that aren't square, sized by the shorter
+#'   side of the cells. Ellipses show values between -1 and 1, such as
+#'   correlations, by their shape - the outline of a bivariate normal
+#'   distribution with that correlation, rising to the right for positive
+#'   values, falling for negative values, and narrower the closer the value is
+#'   to -1 or 1 (a circle at 0); values beyond -1 and 1 are drawn as -1 or 1
+#'   with a warning. \code{"number"} writes the value of each cell (or its
+#'   \code{cell_text}) in the colour of the cell instead of filling it,
+#'   darkened where the colour is too light to read, and \code{"none"} leaves
+#'   the cell empty apart from its \code{cell_text}. Alternatively, a matrix of
+#'   the same dimensions as \code{x} containing the shape to use for each
+#'   cell, e.g. ellipses below the diagonal of a correlation matrix and numbers
+#'   above it (see \code{\link{heat_map_cor}}).
 #' @param cell_size logical indicating whether each cell in the heatmap should
 #'   be scaled by the value in \code{x}, set to FALSE by default. Alternatively,
 #'   a matrix of the same dimensions as \code{x} containing the values by which
@@ -306,6 +317,14 @@
 #'   \code{cell_border_mask} is supplied.
 #' @param cell_border_line_col_alpha numeric to control the transparency of cell
 #'   borders, set to 1 by default to use solid colours.
+#' @param cell_grid_line_col colour of grid lines drawn around every cell
+#'   (apart from empty cells, see \code{cell_shape = "none"}), behind the
+#'   cells, set to \code{NA} by default to draw no grid. A light
+#'   grid (e.g. \code{"grey85"}) keeps the rows and columns visible when cells
+#'   are drawn as shapes that don't fill them, such as circles, ellipses or
+#'   numbers. The grid uses \code{cell_border_line_type} and
+#'   \code{cell_border_line_width} and is left out, like cell borders, when
+#'   the cells are too small.
 #' @param cell_border_mask a matrix of the same dimensions as \code{x} containing
 #'   TRUE/FALSE values indicating whether each cell should have a colored border
 #'   (TRUE) or a transparent border (FALSE), set to NULL by default to apply
@@ -766,6 +785,7 @@ heat_map <- function(x,
                      cell_border_line_width = 1,
                      cell_border_line_col = "black",
                      cell_border_line_col_alpha = 1,
+                     cell_grid_line_col = NA,
                      cell_border_mask = NULL,
                      cell_text = FALSE,
                      cell_text_font = 1,
@@ -1587,27 +1607,23 @@ heat_map <- function(x,
   }
 
   # CELL_SHAPE
-  shapes <- c("circle", "rect", "diamond")
   shape_mat <- NULL
   if(!is.null(dim(cell_shape))) {
     .check_dims(cell_shape, x, "cell_shape")
     shape_mat <- as.matrix(cell_shape)
-    bad <- !shape_mat %in% shapes
+    bad <- !shape_mat %in% .SHAPES
     if(any(bad)) {
-      warning(
-        "'cell_shape' must be either circle, rect or diamond!",
-        call. = FALSE
-      )
+      warning(.shape_message(), call. = FALSE)
       shape_mat[bad] <- "rect"
     }
   } else {
-    if(length(cell_shape) != 1 || !cell_shape %in% shapes) {
-      warning(
-        "'cell_shape' must be either circle, rect or diamond!",
-        call. = FALSE
-      )
+    if(length(cell_shape) != 1 || !cell_shape %in% .SHAPES) {
+      warning(.shape_message(), call. = FALSE)
       cell_shape <- "rect"
     }
+  }
+  if(length(cell_grid_line_col) != 1) {
+    stop("'cell_grid_line_col' must be a single colour or NA.", call. = FALSE)
   }
 
   # CELL_BORDER_MASK
@@ -1807,6 +1823,16 @@ heat_map <- function(x,
       call. = FALSE
     )
   }
+  # ELLIPSES SHOW VALUES FROM -1 TO 1
+  cell_r <- ifelse(cell_num, cell_num_val, NA_real_)
+  if(any(abs(cell_r[cell_shapes == "ellipse"]) > 1 + 1e-8, na.rm = TRUE)) {
+    warning(
+      "Ellipses show values between -1 and 1 (e.g. correlations) - larger ",
+      "values are drawn as -1 or 1.",
+      call. = FALSE
+    )
+  }
+  cell_r <- pmin(pmax(cell_r, -1), 1)
 
   # BORDERS
   border_col_adjusted <- adjustcolor(
@@ -1828,6 +1854,24 @@ heat_map <- function(x,
     rep(NA_character_, length(cell_row))
   } else {
     text_mat[cell_ind]
+  }
+
+  # NUMBERS - THE CELL TEXT (OR THE VALUE) OF EACH "number" CELL, WRITTEN IN
+  # THE COLOUR OF THE CELL
+  cell_number <- cell_shapes == "number" & !cell_missing
+  number_texts <- rep(NA_character_, length(cell_row))
+  number_cols <- rep(NA_character_, length(cell_row))
+  if(any(cell_number)) {
+    number_texts[cell_number] <- ifelse(
+      is.na(cell_texts[cell_number]),
+      ifelse(
+        cell_num[cell_number],
+        .format_number(cell_num_val[cell_number], round),
+        cell_chr_val[cell_number]
+      ),
+      cell_texts[cell_number]
+    )
+    number_cols[cell_number] <- .readable_col(cell_fill[cell_number])
   }
 
   # AXES SIDES -----------------------------------------------------------------
@@ -2400,11 +2444,16 @@ heat_map <- function(x,
     )
   }
 
-  # HEATMAP BORDER
-  heat_map_border(
-    x_splits,
-    y_splits
-  )
+  # HEATMAP BORDER - THE GRID OUTLINES THE CELLS INSTEAD WHEN IT IS DRAWN, SO
+  # THAT EMPTY CELLS (cell_shape = "none") ARE LEFT OPEN
+  grid_drawn <- !is.na(cell_grid_line_col) &&
+    min(lay$cell_in) >= 3 * max(cell_border_line_width) / 96
+  if(!grid_drawn) {
+    heat_map_border(
+      x_splits,
+      y_splits
+    )
+  }
 
   # TITLE & AXIS LABELS - CENTRED ON THE HEATMAP BUT KEPT ON THE DEVICE
   title_at <- .mtext_at(title, title_text_size, title_text_font,
@@ -2484,6 +2533,18 @@ heat_map <- function(x,
     border_col_cells <- border_col_adjusted
   }
 
+  # GRID LINES AROUND EVERY CELL THAT ISN'T EMPTY, BEHIND THE CELLS
+  cell_gridded <- cell_shapes != "none" | !is.na(cell_texts)
+  if(grid_drawn) {
+    .draw_cell_outlines(
+      x = cell_x[cell_gridded],
+      y = cell_y[cell_gridded],
+      col = cell_grid_line_col,
+      line_type = cell_border_line_type,
+      line_width = cell_border_line_width
+    )
+  }
+
   # HEATMAP CELLS - RASTER IMAGES FOR LARGE HEATMAPS OF FULL-SIZE RECTANGLES,
   # VECTORISED SHAPES OTHERWISE
   cell_raster_drawn <- .use_raster(
@@ -2511,7 +2572,8 @@ heat_map <- function(x,
       border = cell_borders,
       line_type = cell_border_line_type,
       line_width = cell_border_line_width,
-      cell_in = lay$cell_in
+      cell_in = lay$cell_in,
+      value = cell_r
     )
   }
 
@@ -2543,7 +2605,7 @@ heat_map <- function(x,
   }
 
   # CELL TEXT - SHRUNK TO FIT INSIDE THE CELLS
-  ind <- !is.na(cell_texts)
+  ind <- !is.na(cell_texts) & !cell_number
   if(any(ind)) {
     if(fit_text) {
       cell_text_size <- .fit_cell_text(
@@ -2566,6 +2628,17 @@ heat_map <- function(x,
     )
   }
 
+  # NUMBERS IN THE COLOURS OF THEIR CELLS - SHRUNK TO FIT INSIDE THE CELLS
+  .draw_cell_numbers(
+    x = cell_x[cell_number],
+    y = cell_y[cell_number],
+    labels = number_texts[cell_number],
+    col = number_cols[cell_number],
+    size = cell_text_size_all,
+    font = cell_text_font,
+    cell_in = if(fit_text) lay$cell_in
+  )
+
   # ZOOM LENS - THE BAND, THE WEDGE AND THE ENLARGED CELLS, DRAWN WITH USER
   # CO-ORDINATES THAT PUT THE CELLS OF THE BAND IN THE PANEL
   for(ax in c("x", "y")) {
@@ -2584,6 +2657,15 @@ heat_map <- function(x,
       usr = .zoom_usr(z, ax, heatmap_xlim, heatmap_ylim),
       xpd = NA
     )
+    if(!is.na(cell_grid_line_col) && min(panel_in) >= border_min_in) {
+      .draw_cell_outlines(
+        x = cell_x[panel & cell_gridded],
+        y = cell_y[panel & cell_gridded],
+        col = cell_grid_line_col,
+        line_type = cell_border_line_type,
+        line_width = cell_border_line_width
+      )
+    }
     .draw_cells(
       x = cell_x[panel],
       y = cell_y[panel],
@@ -2597,7 +2679,8 @@ heat_map <- function(x,
       },
       line_type = cell_border_line_type,
       line_width = cell_border_line_width,
-      cell_in = panel_in
+      cell_in = panel_in,
+      value = cell_r[panel]
     )
     if(!is.null(split_fill)) {
       .draw_split_cells(
@@ -2626,7 +2709,7 @@ heat_map <- function(x,
         fill = cell_glyph_fill
       )
     }
-    ind <- panel & !is.na(cell_texts)
+    ind <- panel & !is.na(cell_texts) & !cell_number
     if(any(ind)) {
       text(
         x = cell_x[ind],
@@ -2645,10 +2728,22 @@ heat_map <- function(x,
         )
       )
     }
-    if(ax == "x") {
-      heat_map_border(.zoom_splits(x_splits, z$lim), y_splits)
-    } else {
-      heat_map_border(x_splits, .zoom_splits(y_splits, z$lim))
+    ind <- panel & cell_number
+    .draw_cell_numbers(
+      x = cell_x[ind],
+      y = cell_y[ind],
+      labels = number_texts[ind],
+      col = number_cols[ind],
+      size = cell_text_size_all,
+      font = cell_text_font,
+      cell_in = if(fit_text) panel_in
+    )
+    if(is.na(cell_grid_line_col) || min(panel_in) < border_min_in) {
+      if(ax == "x") {
+        heat_map_border(.zoom_splits(x_splits, z$lim), y_splits)
+      } else {
+        heat_map_border(x_splits, .zoom_splits(y_splits, z$lim))
+      }
     }
     par(old_par)
   }
@@ -3037,6 +3132,7 @@ heat_map <- function(x,
     },
     split_data = split_mat,
     sizes = .cell_matrix(cell_sizes, cell_ind, x),
+    shapes = .cell_matrix(cell_shapes, cell_ind, x),
     centers = list(
       x = stats::setNames(
         x_centers[match(seq_len(n_col), col_ind)],

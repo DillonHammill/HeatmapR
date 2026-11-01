@@ -23,10 +23,10 @@ test_that("cell_border_mask selects the cells with borders", {
 
 test_that("unsupported cell shapes fall back to rectangles with a warning", {
   m <- test_matrix(2, 3)
-  expect_warning(hm <- draw(m, cell_shape = "hexagon", legend = FALSE), "circle, rect or diamond")
+  expect_warning(hm <- draw(m, cell_shape = "hexagon", legend = FALSE), "must be one of")
   expect_length(cell_rects(hm, 6)[[1]], 6)
   shapes <- matrix(c("circle", "star", "rect", "rect", "diamond", "rect"), 2)
-  expect_warning(hm <- draw(m, cell_shape = shapes, legend = FALSE), "circle, rect or diamond")
+  expect_warning(hm <- draw(m, cell_shape = shapes, legend = FALSE), "\"ellipse\", \"number\" or \"none\"")
   # Three rectangles (including the replaced star) and one circle and diamond
   expect_length(cell_rects(hm, 4)[[1]], 4)
   expect_length(drawn(hm, "C_polygon"), 2)

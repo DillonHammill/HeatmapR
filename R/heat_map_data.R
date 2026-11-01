@@ -28,7 +28,8 @@
 #'   \code{row_index} and \code{col_index} in the original data,
 #'   \code{display_row}, \code{display_col}, \code{x} and \code{y}, the
 #'   displayed \code{value} (after any scaling), \code{level} for
-#'   non-numeric columns, the fill \code{colour} and relative \code{size},
+#'   non-numeric columns, the fill \code{colour}, relative \code{size} and
+#'   \code{shape} (see \code{cell_shape} in \code{\link{heat_map}}),
 #'   \code{split_value} and \code{split_colour} for split cells
 #'   (\code{cell_split}), and the \code{row_cluster} and \code{col_cluster}
 #'   when rows or columns are split into clusters.}
@@ -139,6 +140,9 @@ heat_map_data <- function(x,
   }
   out$colour <- unname(info$colours[ind])
   out$size <- unname(info$sizes[ind])
+  if(!is.null(info$shapes)) {
+    out$shape <- unname(info$shapes[ind])
+  }
   # SPLIT CELLS
   if(!is.null(info$split_data)) {
     split <- .describe_values(as.data.frame(info$split_data))
