@@ -47,26 +47,20 @@ heat_map_bar <- function(x,
   
   # VERTICAL BARS
   if(!is.null(splits_x)) {
-    # TODO: DO WE WANT MIN ZERO IF NO VALUES LESS THAN ZERO?
-    # VALUE RANGE
-    rng <- range(
-      c(0, x)
+    # VALUE RANGE - ALWAYS INCLUDES ZERO, MISSING VALUES ARE NOT DRAWN
+    rng <- .bar_range(x)
+    # BARS FILL THE Y LIMITS WITH 5% PADDING
+    pad <- 0.05 * diff(range(ylim))
+    bar_scale <- c(
+      min(ylim) + pad,
+      max(ylim) - pad
     )
-    # RESCALE VALUES TO YLIM - 5%
+    # RESCALE VALUES TO YLIM
     x <- .rescale(
-      c(min(rng), x),
-      scale = if(max(ylim) > 0) {
-        c(
-          min(ylim) + 0.05 * diff(range(ylim)),
-          max(ylim) - 0.05 * diff(range(ylim))
-        )
-      } else {
-        c(
-          min(ylim) + 0.05 * diff(range(ylim)),
-          max(ylim) - 0.05 * diff(range(ylim))
-        )
-      }
-    )[-1]
+      x,
+      limits = rng,
+      scale = bar_scale
+    )
     # AXIS LABELS
     axis_labels <- axisTicks(
       rng,
@@ -74,37 +68,15 @@ heat_map_bar <- function(x,
     )
     # RESCALE AXIS LABELS TO YLIM
     axis_ticks <- .rescale(
-      .rescale(
-        axis_labels,
-        limits = rng
-      ),
-      scale = if(max(ylim) > 0) {
-        c(
-          min(ylim) + 0.05 * diff(range(ylim)),
-          max(ylim) - 0.05 * diff(range(ylim))
-        )
-      } else {
-        c(
-          min(ylim) + 0.05 * diff(range(ylim)),
-          max(ylim) - 0.05 * diff(range(ylim))
-        )
-      }
+      axis_labels,
+      limits = rng,
+      scale = bar_scale
     )
     # BAR ANCHOR POINT - ZERO LINE
     h <- .rescale(
       0,
       limits = rng,
-      scale = if(max(ylim) > 0) {
-        c(
-          min(ylim) + 0.05 * diff(range(ylim)),
-          max(ylim) - 0.05 * diff(range(ylim))
-        )
-      } else {
-        c(
-          min(ylim) + 0.05 * diff(range(ylim)),
-          max(ylim) - 0.05 * diff(range(ylim))
-        )
-      }
+      scale = bar_scale
     )
     # BORDER
     lapply(
@@ -129,7 +101,6 @@ heat_map_bar <- function(x,
       }
     )
     # ADD AXIS
-    # TODO: SWITCH TO TCL?
     axis(
       side = axis_text_side_y,
       at = axis_ticks,
@@ -183,63 +154,38 @@ heat_map_bar <- function(x,
     }
   # HORIZONTAL BARS
   } else if(!is.null(splits_y)) {
-    # VALUE RANGE
-    rng <- range(
-      c(0, x)
-    )
-    # RESCALE VALUES TO XLIM - 5%
+    # VALUE RANGE - ALWAYS INCLUDES ZERO, MISSING VALUES ARE NOT DRAWN
+    rng <- .bar_range(x)
+    # BARS FILL THE X LIMITS WITH 5% PADDING - BARS ON THE LEFT OF THE
+    # HEATMAP (NEGATIVE CO-ORDINATES) GROW AWAY FROM THE HEATMAP
+    pad <- 0.05 * diff(range(xlim))
+    bar_scale <- if(max(xlim) > 0) {
+      c(min(xlim) + pad, max(xlim) - pad)
+    } else {
+      c(max(xlim) - pad, min(xlim) + pad)
+    }
+    # RESCALE VALUES TO XLIM
     x <- .rescale(
-      c(min(rng), x),
-      scale = if(max(xlim) > 0) {
-        c(
-          min(xlim) + 0.05 * diff(range(xlim)),
-          max(xlim) - 0.05 * diff(range(xlim))
-        )
-      } else {
-        c(
-          max(xlim) - 0.05 * diff(range(xlim)),
-          min(xlim) + 0.05 * diff(range(xlim))
-        )
-      }
-    )[-1]
+      x,
+      limits = rng,
+      scale = bar_scale
+    )
     # AXIS LABELS
     axis_labels <- axisTicks(
       rng,
       log = FALSE
     )
-    # RESCALE AXIS LIMITS TO XLIM
+    # RESCALE AXIS LABELS TO XLIM
     axis_ticks <- .rescale(
-      .rescale(
-        axis_labels,
-        rng
-      ),
-      scale = if(max(xlim) > 0) {
-        c(
-          min(xlim) + 0.05 * diff(range(xlim)),
-          max(xlim) - 0.05 * diff(range(xlim))
-        )
-      } else {
-        c(
-          max(xlim) - 0.05 * diff(range(xlim)),
-          min(xlim) + 0.05 * diff(range(xlim))
-        )
-      }
+      axis_labels,
+      limits = rng,
+      scale = bar_scale
     )
     # BAR ANCHOR POINT
     h <- .rescale(
       0,
       limits = rng,
-      scale = if(max(xlim) > 0) {
-        c(
-          min(xlim) + 0.05 * diff(range(xlim)),
-          max(xlim) - 0.05 * diff(range(xlim))
-        )
-      } else {
-        c(
-          max(xlim) - 0.05 * diff(range(xlim)),
-          min(xlim) + 0.05 * diff(range(xlim))
-        )
-      }
+      scale = bar_scale
     )
     # BORDER
     lapply(
@@ -317,6 +263,20 @@ heat_map_bar <- function(x,
     }
   }
 }
+#' Range of bar values - always includes zero and ignores missing values
+#' @noRd
+.bar_range <- function(x) {
+  rng <- range(
+    c(0, x),
+    na.rm = TRUE
+  )
+  # ALL VALUES ZERO OR MISSING
+  if(diff(rng) == 0) {
+    rng <- c(0, 1)
+  }
+  rng
+}
+
 #' Draw all bars in a single rect() call
 #' 
 #' Bar properties are recycled across bars in display order, matching the

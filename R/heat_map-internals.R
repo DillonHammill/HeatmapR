@@ -807,10 +807,10 @@ print.heat_map <- function(x, ...) {
 #' @noRd
 .alpha_col <- function(col,
                        alpha = 1) {
-  n <- max(length(col), length(alpha))
-  if(n == 0) {
+  if(length(col) == 0) {
     return(character(0))
   }
+  n <- max(length(col), length(alpha))
   col <- rep_len(col, n)
   alpha <- rep_len(alpha, n)
   if(all(alpha == alpha[1])) {

@@ -1,12 +1,5 @@
 # REGRESSION TESTS -------------------------------------------------------------
 
-# Draw a heatmap on a null device and return the heat_map object
-draw <- function(...) {
-  grDevices::pdf(NULL)
-  on.exit(grDevices::dev.off())
-  suppressMessages(heat_map(..., popup = FALSE))
-}
-
 # SCALING ----------------------------------------------------------------------
 
 test_that("row scaling scales within each row (not transposed)", {

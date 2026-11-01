@@ -88,8 +88,15 @@ heat_map_scale <- function(x,
     num_data[] <- t(apply(num_data, 1, fun))
   }
 
-  # REPLACE ORIGINAL DATA
-  x[, num_cols] <- num_data
+  # REPLACE ORIGINAL DATA - DATA.FRAME COLUMNS ARE REPLACED ONE AT A TIME SO
+  # THAT A SINGLE COLUMN IS NOT STORED AS A MATRIX
+  if(is.data.frame(x)) {
+    for(j in seq_along(num_cols)) {
+      x[[num_cols[j]]] <- unname(num_data[, j])
+    }
+  } else {
+    x[, num_cols] <- num_data
+  }
 
   # RETURN SCALED DATA
   return(x)

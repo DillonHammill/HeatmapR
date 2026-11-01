@@ -27,6 +27,10 @@
 * If `heat_map()` fails while saving, the graphics device opened by `heat_map_save()` is closed and the saving state is reset, so subsequent plots are no longer drawn into the file.
 * The x axis bar graph axis now uses the y axis text font, size and colour (and vice versa), matching the side on which it is drawn.
 * Matrices supplied to `cell_shape` now work as documented.
+* Bar graph axes were mislabelled whenever the largest bar value was not a tick value (tick positions were rescaled to the range of the tick labels rather than the data), so bars appeared larger than their values. Bars containing missing values caused an error, and bars with only negative values were drawn on the wrong scale.
+* `heat_map_reset()` now closes the graphics device opened by `heat_map_save()`; previously the saving state was cleared before the device could be closed.
+* `heat_map_scale()` stored a single numeric data.frame column as a one-column matrix.
+* Heatmaps drawn on file devices (e.g. `png()` or `pdf()`) returned an empty recorded plot because file devices don't keep a display list by default; `heat_map()` now enables recording on the drawing device.
 * Infinite values no longer distort the automatically computed colour and size scale limits.
 
 ## New features
@@ -41,7 +45,8 @@
 ## Improvements
 
 * Much faster rendering: cell properties are computed and drawn with vectorised graphics calls, and dendrogram segments are computed directly from the `hclust` merge matrix (no recursion). A 2000 x 50 heatmap now draws in ~0.1 s instead of ~13 s. Apart from the fixes listed above, default output is unchanged.
-* Removed unused and commented-out code, including the modified `ggdendro` functions.
+* Removed unused and commented-out code, including the modified `ggdendro` functions and unused internal helpers.
+* The test suite now checks the output of each feature (through `heat_map_info()` and the recorded drawing calls) rather than only that no error occurs, and covers over 99% of the code.
 * Documentation now matches the function defaults and the README describes CRAN installation.
 * Requires R >= 3.6.0 (for `hcl.colors()`).
 

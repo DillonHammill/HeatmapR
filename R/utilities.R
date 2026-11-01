@@ -55,26 +55,6 @@
   
 }
 
-## ARGUMENT UPDATE -------------------------------------------------------------
-
-#' Update arguments of function using a named list of arguments
-#' 
-#' @param x named list of arguments to assign to function environment.
-#' 
-#' @return update arguments in function environment.
-#' 
-#' @author Dillon Hammill (dillon.hammill21@gmail.com)
-#' 
-#' @noRd
-.args_update <- function(x){
-  
-  lapply(seq(1,length(x)), function(z){
-    assign(names(x)[z], 
-           x[[z]], envir = parent.frame(n = 3))
-  })
-  
-}
-
 ## ALL_NA ----------------------------------------------------------------------
 
 #' Check all elements of vector are NA
@@ -92,41 +72,6 @@
   }else{
     return(all(suppressWarnings(is.na(unlist(x)))))
   }
-}
-
-## EMPTY CHARACTER STRINGS -----------------------------------------------------
-
-#' Check if vector contains only empty chracter strings
-#'
-#' @param x vector.
-#' 
-#' @return TRUE/FALSE
-#' 
-#' @author Dillon Hammill (dillon.hammill21@gmail.com)
-#'
-#' @noRd
-.empty <- function(x){
-  
-  if(.all_na(x)){
-    return(FALSE)
-  }else if(is.character(x)){
-    if(all(nchar(trimws(x)) == 0)){
-      return(TRUE)
-    }else{
-      return(FALSE)
-    }
-  }else{
-    return(FALSE)
-  }
-  
-}
-
-## LAPPLY ----------------------------------------------------------------------
-
-#' Automatically flatten lapply results
-#' @noRd
-LAPPLY <- function(...){
-  unlist(lapply(...))
 }
 
 ## COMPUTE_MARGIN --------------------------------------------------------------

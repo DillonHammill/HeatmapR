@@ -298,14 +298,14 @@ heat_map_custom <- function(popup = TRUE,
 #' @export
 heat_map_reset <- function(){
   
+  # CLOSE ANY DEVICE OPENED BY HEAT_MAP_SAVE() & RESET OPTIONS
+  heat_map_complete()
+  
   # HEAT_MAP_SAVE
   options("heat_map_save" = FALSE)
   
   # HEAT_MAP_CUSTOM
   options("heat_map_custom" = FALSE)
-  
-  # TURN OFF GRAPHICS DEVICE
-  heat_map_complete()
   
   invisible(NULL)
   
@@ -526,100 +526,85 @@ heat_map_new <- function(popup = FALSE,
 
   # OPEN GRAPHICS DEVICE -------------------------------------------------------
 
-  # NEW GRAPHICS DEVICE REQUIRED?
-  {
-    # NULL -> RSTUDIOGD
-    if (dev.cur() == 1) {
-      dev.new()
-    }
-    # NEW DEVICE
-    if (popup) {
-      dev_new <- "popup"
-    } else {
-      dev_new <- "rstudio"
-    }
-    # CURRENT DEVICE
-    dev_old <- names(dev.cur())
-    if (grepl("rstudio", dev_old, ignore.case = TRUE)) {
-      dev_old <- "rstudio"
-    } else {
-      dev_old <- "popup"
-    }
-    # CURRENT DEVICE - RSTUDIO
-    if (dev_old == "rstudio") {
-      # REQUIRE - POPUP
-      if (dev_new == "popup") {
-        # NEW POPUP DEVICE REQUIRED
-        dev_new <- "popup"
-        dev_empty <- TRUE
-        # REQUIRE - RSTUDIO
-      } else {
-        # EMPTY DEVICE
-        if(dev_empty()) {
-          dev_new <- FALSE
-          dev_empty <- TRUE
-          # CUSTOM PLOTTING FUNCTION - OPEN NEW DEVICE WHEN FULL
-        } else if(getOption("heat_map_custom")) {
-          # OPEN NEW DEVICE WHEN FULL
-          if(par("page")) {
-            dev_new <- "rstudio"
-            dev_empty <- TRUE
-          } else {
-            dev_new <- FALSE
-            dev_empty <- FALSE
-          }
-          # NEW LAYOUT
-        } else {
-          dev_new <- "rstudio"
-          dev_empty <- TRUE
-        }
-      }
-      # CURRENT DEVICE - POPUP
-    } else if(dev_old == "popup") {
-      # REQUIRE POPUP
-      if (dev_new == "popup") {
-        # EMPTY DEVICE
-        if(dev_empty()){
-          dev_new <- FALSE
-          dev_empty <- TRUE
-          # CUSTOM PLOTTING FUNCTION - OPEN NEW DEVICE WHEN FULL
-        } else if(getOption("heat_map_custom")) {
-          # OPEN NEW GRAPHICS DEVICE WHEN FULL
-          if(par("page")) {
-            dev_new <- "popup"
-            dev_empty <- TRUE
-          } else {
-            dev_new <- FALSE
-            dev_empty <- FALSE
-          }
-          # NEW LAYOUT
-        } else {
-          dev_new <- "popup"
-          dev_empty <- TRUE
-        }
-        # REQUIRE - RSTUDIO
-      } else {
-        # NEW RSTUDIO DEVICE REQUIRED
-        dev_new <- "rstudio"
-        dev_empty <- TRUE
-      }
-    }
-    # OPEN NEW POPUP GRAPHICS DEVICE - OTHER DEVICES ARE REUSED
-    if (identical(dev_new, "popup")) {
-      suppressWarnings(
-        dev.new(
-          height = popup_size[1],
-          width = popup_size[2],
-          unit = "in",
-          noRStudioGD = TRUE,
-          ...
-        )
-      )
-    }
+  # NULL DEVICE -> OPEN THE DEFAULT DEVICE (E.G. RSTUDIOGD)
+  if (dev.cur() == 1) {
+    dev.new()
   }
-  
+
+  # NEW POPUP GRAPHICS DEVICE REQUIRED? OTHER DEVICES ARE REUSED
+  dev_new <- .new_device(
+    current = names(dev.cur()),
+    popup = popup,
+    empty = dev_empty,
+    custom = isTRUE(getOption("heat_map_custom")),
+    page = function() par("page")
+  )
+  if (identical(dev_new, "popup")) {
+    suppressWarnings(
+      dev.new(
+        height = popup_size[1],
+        width = popup_size[2],
+        unit = "in",
+        noRStudioGD = TRUE,
+        ...
+      )
+    )
+  }
+
   invisible(NULL)
-  
+
+}
+
+#' Decide whether heat_map() needs a new graphics device
+#'
+#' @param current name of the current graphics device.
+#' @param popup logical indicating whether a popup device is requested.
+#' @param empty function returning TRUE when the current device is empty.
+#' @param custom logical indicating whether a custom layout is being filled.
+#' @param page function returning TRUE when the next plot starts a new page.
+#'
+#' @return \code{"popup"} when a new popup device should be opened,
+#'   \code{"rstudio"} when the RStudio device should start a new page and
+#'   \code{FALSE} when the current device should be reused as is. Only
+#'   \code{"popup"} requires a new device to be opened.
+#'
+#' @noRd
+.new_device <- function(current,
+                        popup,
+                        empty,
+                        custom = FALSE,
+                        page = function() TRUE) {
+  # CURRENT DEVICE - RSTUDIO
+  if (grepl("rstudio", current, ignore.case = TRUE)) {
+    # POPUP REQUESTED
+    if (popup) {
+      return("popup")
+    }
+    # EMPTY DEVICE
+    if (empty()) {
+      return(FALSE)
+    }
+    # CUSTOM LAYOUT - NEW PAGE ONLY WHEN THE LAYOUT IS FULL
+    if (custom) {
+      return(if (page()) "rstudio" else FALSE)
+    }
+    # NEW PAGE
+    return("rstudio")
+  }
+  # CURRENT DEVICE - POPUP - RSTUDIO REQUESTED
+  if (!popup) {
+    return("rstudio")
+  }
+  # EMPTY DEVICE
+  if (empty()) {
+    return(FALSE)
+  }
+  # CUSTOM LAYOUT - NEW DEVICE ONLY WHEN THE LAYOUT IS FULL
+  if (custom) {
+    return(if (page()) "popup" else FALSE)
+  }
+  # NEW DEVICE
+  "popup"
 }
 
 ## DEV_EMPTY -------------------------------------------------------------------

@@ -418,7 +418,7 @@
 #'
 #' @seealso \code{\link{heat_map_info}}, \code{\link{heat_map_save}}
 #'
-#' @importFrom grDevices colorRamp colorRampPalette rgb adjustcolor
+#' @importFrom grDevices colorRamp colorRampPalette rgb adjustcolor dev.control
 #' @importFrom graphics mtext polygon text segments rect plot
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
@@ -1567,6 +1567,12 @@ heat_map <- function(x,
       par("mar" = old_mar)
     }
   }, add = TRUE)
+
+  # RECORD DRAWING ON ALL DEVICES - FILE DEVICES DON'T KEEP A DISPLAY LIST BY
+  # DEFAULT, WHICH WOULD RETURN AN EMPTY RECORDED PLOT
+  if(dev.cur() != 1) {
+    dev.control(displaylist = "enable")
+  }
 
   # SET MARGINS
   par("mar" = margins)
