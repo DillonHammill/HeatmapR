@@ -111,6 +111,8 @@ random_layout_case <- function(seed) {
     args$tree_support_y <- 10
     args$tree_support_x <- 10
   }
+  # Density trace over the colour legend - a wider colour bar
+  if (runif(1) < 0.3) args$legend_col_density <- TRUE
   list(
     args = args,
     din = din

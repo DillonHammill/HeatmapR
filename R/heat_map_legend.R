@@ -40,6 +40,7 @@ heat_map_legend <- function(col = NULL,
                             col_alpha = 1,
                             col_ticks = NULL,
                             col_breaks = NULL,
+                            col_density = NULL,
                             shape = "rect",
                             text_font = 1,
                             text_size = 1,
@@ -113,7 +114,8 @@ heat_map_legend <- function(col = NULL,
           col_ramp = col_scale,
           col_alpha = col_alpha,
           col_ticks = col_ticks,
-          col_breaks = col_breaks
+          col_breaks = col_breaks,
+          col_density = col_density
         ),
         size_fun = size_fun,
         xlim = xlim,
@@ -205,6 +207,7 @@ heat_map_legend <- function(col = NULL,
       alpha = col_alpha,
       ticks = col_ticks,
       breaks = col_breaks,
+      density = col_density,
       text_font = text_font,
       text_size = text_size,
       text_col = text_col,
@@ -431,6 +434,7 @@ heat_map_legend <- function(col = NULL,
                                alpha,
                                ticks = NULL,
                                breaks = NULL,
+                               density = NULL,
                                text_font,
                                text_size,
                                text_col,
@@ -530,6 +534,11 @@ heat_map_legend <- function(col = NULL,
     col = box_cols,
     xpd = TRUE
   )
+  # DISTRIBUTION OF THE VALUES
+  if(!is.null(density)) {
+    .density_trace(density, limits, along = range(ycoords),
+                   across = range(xcoords), vertical = TRUE)
+  }
   # TITLE
   if(!is.na(title)) {
     text(
@@ -774,7 +783,8 @@ heat_map_legend <- function(col = NULL,
                            col_ramp = NULL,
                            col_alpha = 1,
                            col_ticks = NULL,
-                           col_breaks = NULL) {
+                           col_breaks = NULL,
+                           col_density = NULL) {
   if(length(title) == 0) {
     title <- NA
   }
@@ -809,6 +819,7 @@ heat_map_legend <- function(col = NULL,
       breaks = col_breaks,
       ramp = col_ramp,
       alpha = col_alpha,
+      density = col_density,
       min_in = 1
     )
   }
@@ -905,8 +916,9 @@ heat_map_legend <- function(col = NULL,
     }
     n <- length(b$labels)
     if(b$kind == "bar") {
-      b$key_w <- geom$bar
-      b$label_x <- geom$bar + geom$tick + 0.5 * geom$gap
+      # WIDER BARS CARRY A DENSITY TRACE
+      b$key_w <- geom$bar * if(is.null(b$density)) 1 else 1.6
+      b$label_x <- b$key_w + geom$tick + 0.5 * geom$gap
       b$row_h <- geom$line
       b$body_h <- max(b$min_in * key * scale, (n + 1) * geom$line)
     } else if(b$kind == "shape") {
@@ -1048,6 +1060,10 @@ heat_map_legend <- function(col = NULL,
         xpd = TRUE
       )
       rect(kx[1], y_bar[1], kx[2], y_bar[2], xpd = TRUE)
+      if(!is.null(b$density)) {
+        .density_trace(b$density, b$limits, along = y_bar, across = kx,
+                       vertical = TRUE)
+      }
       at <- if(diff(range(b$limits)) == 0) {
         mean(y_bar)
       } else {
@@ -1202,8 +1218,9 @@ heat_map_legend <- function(col = NULL,
         length(lab_w) * (max(lab_w) + 0.1 * scale)
       )
       b$bar_x <- lab_w[1] / 2
+      b$bar_h <- g$bar * if(is.null(b$density)) 1 else 1.6
       b$body_w <- b$bar_x + b$bar_len + lab_w[length(lab_w)] / 2
-      b$body_h <- g$bar + g$tick + 0.5 * g$gap + g$text_h
+      b$body_h <- b$bar_h + g$tick + 0.5 * g$gap + g$text_h
     } else {
       # ITEMS IN ROWS - KEY THEN LABEL
       b$item_w <- b$key_w + g$gap + max(lab_w)
@@ -1312,7 +1329,7 @@ heat_map_legend <- function(col = NULL,
     yb <- y0 - b$title_h
     if(b$kind == "bar") {
       bx <- x0 + b$bar_x + c(0, b$bar_len)
-      by <- yb - c(g$bar, 0)
+      by <- yb - c(b$bar_h, 0)
       box_n <- 75
       edges <- seq(bx[1], bx[2], length.out = box_n + 1)
       k <- (seq_len(box_n) - 0.5) / box_n
@@ -1327,6 +1344,10 @@ heat_map_legend <- function(col = NULL,
       rect(X(edges[-length(edges)]), Y(by[1]), X(edges[-1]), Y(by[2]),
            col = cols, border = cols, xpd = NA)
       rect(X(bx[1]), Y(by[1]), X(bx[2]), Y(by[2]), xpd = NA)
+      if(!is.null(b$density)) {
+        .density_trace(b$density, b$limits, along = X(bx), across = Y(by),
+                       vertical = FALSE)
+      }
       at <- if(is.null(b$at)) as.numeric(b$labels) else b$at
       tx <- if(diff(range(b$limits)) == 0) {
         mean(bx)
@@ -1396,4 +1417,33 @@ heat_map_legend <- function(col = NULL,
       y = Y(c(top - m$height, top))
     )
   )
+}
+
+#' Draw the distribution of the values as a trace over a colour bar
+#'
+#' The density rises from the left (or bottom) edge of the bar and its peak
+#' reaches 90\% across the bar, drawn as a dark line over a white halo so it
+#' reads over any colour.
+#'
+#' @param density list with the positions \code{x} (values) and densities
+#'   \code{y}.
+#' @param along,across limits of the bar along and across the colour scale
+#'   (plot units), low values at \code{along[1]}.
+#' @param vertical TRUE for a vertical colour bar.
+#'
+#' @importFrom graphics lines
+#' @noRd
+.density_trace <- function(density,
+                           limits,
+                           along,
+                           across,
+                           vertical = TRUE) {
+  t <- (density$x - min(limits)) / diff(range(limits))
+  a <- along[1] + t * diff(along)
+  d <- min(across) + 0.9 * density$y / max(density$y) * diff(range(across))
+  px <- if(vertical) d else a
+  py <- if(vertical) a else d
+  lines(px, py, col = "white", lwd = 2.5, xpd = NA)
+  lines(px, py, col = "grey10", lwd = 1, xpd = NA)
+  invisible(NULL)
 }

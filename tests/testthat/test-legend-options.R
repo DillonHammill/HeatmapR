@@ -156,4 +156,47 @@ test_that("legend options snapshot", {
       popup = FALSE
     ))
   )
+  vdiffr::expect_doppelganger(
+    "colour legend with density trace",
+    function() suppressMessages(heat_map(
+      d$m,
+      tree = "both",
+      cell_col_scale_limits = "robust",
+      legend_col_density = TRUE,
+      legend_title = "z-score",
+      popup = FALSE
+    ))
+  )
+})
+
+test_that("the distribution of the values is traced over the colour legend", {
+  dens <- list(x = seq(0, 10, length.out = 5), y = c(0, 1, 4, 1, 0))
+  calls <- record_calls(
+    function() .density_trace(dens, c(0, 10), along = c(10, 50), across = c(1, 2)),
+    "C_plotXY"
+  )
+  expect_length(calls, 2)
+  xy <- calls[[2]][[1]]
+  expect_equal(xy$y, seq(10, 50, length.out = 5))
+  expect_equal(xy$x, 1 + 0.9 * c(0, 0.25, 1, 0.25, 0))
+  # Horizontal bars
+  xy <- record_calls(
+    function() .density_trace(dens, c(0, 10), along = c(1, 3), across = c(5, 6), vertical = FALSE),
+    "C_plotXY"
+  )[[1]][[1]]
+  expect_equal(xy$x, seq(1, 3, length.out = 5))
+  expect_equal(max(xy$y), 5.9)
+  # heat_map() - side, bottom and classic legends
+  set.seed(2)
+  m <- matrix(rnorm(200), 20)
+  traces <- function(hm) {
+    Filter(function(z) identical(z[[2]], "l") && length(z[[1]]$x) == 128, drawn(hm, "C_plotXY"))
+  }
+  for (args in list(list(), list(legend_side = "bottom"), list(layout = "classic"))) {
+    hm <- do.call(draw, c(list(m, legend_col_density = TRUE), args))
+    expect_length(traces(hm), 2)
+  }
+  expect_length(traces(draw(m)), 0)
+  expect_length(traces(draw(matrix(1, 3, 3), legend_col_density = TRUE)), 0)
+  expect_error(draw(m, legend_col_density = NA), "'legend_col_density' must be")
 })

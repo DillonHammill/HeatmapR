@@ -1507,6 +1507,60 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-legend-bottom.png')
 ```
 
+`legend_col_density = TRUE` traces the distribution of the values (a kernel density) over the colour legend, so you can see which colours most cells take and how much of the data sits near the ends of the scale. It is useful with robust limits, where the values beyond the limits all take the end colours.
+
+```{r, eval = FALSE}
+set.seed(5)
+expr <- matrix(
+  rnorm(40 * 12),
+  nrow = 40,
+  dimnames = list(paste0("Gene_", 1:40), paste0("S", 1:12))
+)
+expr[1:12, 1:6] <- expr[1:12, 1:6] + 1.5
+# A few extreme values
+expr[sample(length(expr), 9)] <- c(6.5, 7.2, 5.8, 8.1, 6, -5.5, -6.2, 6.8, 5.9)
+heat_map(
+  expr,
+  tree = "both",
+  axis_text_y = NA,
+  cell_col_scale_limits = "robust",
+  legend_col_density = TRUE,
+  legend_title = "Expression",
+  title = "Robust limits, with the data behind them"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+set.seed(5)
+expr <- matrix(
+  rnorm(40 * 12),
+  nrow = 40,
+  dimnames = list(paste0("Gene_", 1:40), paste0("S", 1:12))
+)
+expr[1:12, 1:6] <- expr[1:12, 1:6] + 1.5
+# A few extreme values
+expr[sample(length(expr), 9)] <- c(6.5, 7.2, 5.8, 8.1, 6, -5.5, -6.2, 6.8, 5.9)
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-legend-density.png",
+  height = 7,
+  width = 7,
+  res = 300
+)
+heat_map(
+  expr,
+  tree = "both",
+  axis_text_y = NA,
+  cell_col_scale_limits = "robust",
+  legend_col_density = TRUE,
+  legend_title = "Expression",
+  title = "Robust limits, with the data behind them"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-legend-density.png')
+```
+
 ### 6.1 Layout
 
 By default `heat_map()` uses the `"fit"` layout, which sizes everything around the heatmap in inches from its contents: dendrograms and bar graphs keep the same size whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are multiples of 0.6 inches), the legend is as wide as its text, the margins are as wide as the axis text, axis labels and title, and the heatmap body takes the remaining space. Legends are stacked from the top of the heatmap and shrunk if they don't fit. Setting `layout = "classic"` restores the layout of earlier versions, in which dendrograms, bar graphs and the legend are sized as fractions of the heatmap, so they grow and shrink with the number of rows and columns.

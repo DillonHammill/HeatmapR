@@ -568,6 +568,11 @@
 #'   NULL by default to choose them automatically (or use
 #'   \code{cell_col_scale_breaks}). Names, when supplied, are used as the
 #'   labels, e.g. \code{c(low = -2, 0, high = 2)}.
+#' @param legend_col_density logical indicating whether the distribution of
+#'   the numeric values (a kernel density) is drawn as a trace over the colour
+#'   legend, so that you can see which colours most cells take and how many
+#'   values sit near the limits of the scale (e.g. with
+#'   \code{cell_col_scale_limits = "robust"}), set to FALSE by default.
 #' @param legend_side where to draw the legend, either \code{"auto"} (the
 #'   default) beside the heatmap, opposite the y axis text, or
 #'   \code{"bottom"} below the heatmap with horizontal colour bars and the
@@ -800,6 +805,7 @@ heat_map <- function(x,
                      legend_size = 1,
                      legend_col_scale_size = 1,
                      legend_col_breaks = NULL,
+                     legend_col_density = FALSE,
                      legend_title = NULL,
                      legend_title_text_font = 2,
                      legend_title_text_size = 1,
@@ -1728,6 +1734,22 @@ heat_map <- function(x,
     legend_keys
   )
 
+  # DISTRIBUTION OF THE NUMERIC VALUES - A TRACE OVER THE COLOUR LEGEND
+  if(!is.logical(legend_col_density) || length(legend_col_density) != 1 ||
+     is.na(legend_col_density)) {
+    stop("'legend_col_density' must be TRUE or FALSE.", call. = FALSE)
+  }
+  legend_density <- NULL
+  if(legend_col_density && length(num_cols) > 0 &&
+     length(c(cell_min, cell_max)) == 2 && cell_max > cell_min) {
+    v <- num_mat[, num_cols]
+    v <- v[is.finite(v)]
+    if(length(unique(v)) > 1) {
+      legend_density <- .violin_density(v, n = 128, from = cell_min,
+                                        to = cell_max)
+    }
+  }
+
   # LEGEND CONTENTS - MEASURED TO MAKE ROOM FOR THE LEGEND TEXT
   legend_title <- c(legend_title, rep(NA, 3))[1:3]
   legend_drawn <- intersect(
@@ -1792,6 +1814,7 @@ heat_map <- function(x,
       col = if("colour" %in% legend_drawn) c(cell_min, cell_max),
       col_ticks = legend_ticks,
       col_breaks = col_breaks,
+      col_density = legend_density,
       size = if("size" %in% legend_drawn) c(cell_size_min, cell_size_max),
       levels = if("levels" %in% legend_drawn) {
         list(labels = unique(unname(cell_levels)))
@@ -2485,6 +2508,7 @@ heat_map <- function(x,
       col_scale = cell_col_scale,
       col_ticks = legend_ticks,
       col_breaks = col_breaks,
+      col_density = legend_density,
       col_scale_size = legend_col_scale_size,
       col_alpha = legend_alpha,
       shape = .main_shape(cell_shapes),
