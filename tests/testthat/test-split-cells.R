@@ -94,6 +94,30 @@ test_that("heat_map colours both halves on a shared scale with a legend key", {
   expect_equal(layout_overlaps(heat_map_info(hm)$layout), character(0))
 })
 
+test_that("both halves are scaled together", {
+  d <- split_data()
+  for (margin in c("row", "column")) {
+    hm <- draw(d$ctrl, cell_split = d$trt, scale = margin, scale_method = "range")
+    info <- heat_map_info(hm)
+    both <- if (margin == "row") cbind(d$ctrl, d$trt) else rbind(d$ctrl, d$trt)
+    scaled <- suppressMessages(heat_map_scale(both, scale = margin, method = "range"))
+    n <- if (margin == "row") ncol(d$ctrl) else nrow(d$ctrl)
+    expected_x <- if (margin == "row") scaled[, 1:n] else scaled[1:n, ]
+    expected_split <- if (margin == "row") scaled[, -(1:n)] else scaled[-(1:n), ]
+    expect_equal(unname(as.matrix(info$data)), unname(expected_x))
+    expect_equal(info$col_limits, c(0, 1))
+    ramp <- .col_scale(NULL)
+    expect_equal(
+      as.vector(info$split_colours),
+      paste0(grDevices::rgb(ramp(as.vector(expected_split)), maxColorValue = 255), "FF")
+    )
+  }
+  # A data.frame with a non-numeric column
+  df <- data.frame(d$ctrl[, 1:2], Group = rep(c("a", "b"), 3))
+  hm <- draw(df, cell_split = cbind(d$trt[, 1:2], NA), scale = TRUE)
+  expect_equal(heat_map_info(hm)$col_limits, c(0, 1))
+})
+
 test_that("missing values, other columns, transparency and the zoom panel", {
   d <- split_data()
   trt <- d$trt

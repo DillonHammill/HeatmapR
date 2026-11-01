@@ -521,7 +521,10 @@ value in \code{x} fills the upper left half and the value in
 \code{cell_split} the lower right half, on the same colour scale (its
 limits cover both). Requires full-size rectangular cells (no
 \code{cell_size} or other \code{cell_shape}) and can't be combined with
-\code{cell_uncertainty}; cells of non-numeric columns are not split.}
+\code{cell_uncertainty}; cells of non-numeric columns are not split. With
+\code{scale}, each column (or row) of \code{x} is scaled together with
+the same column (or row) of \code{cell_split}, so that the halves stay
+comparable.}
 
 \item{cell_split_labels}{two labels for the halves of the cells in the
 legend - the values in \code{x} and in \code{cell_split}, set to

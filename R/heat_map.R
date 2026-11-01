@@ -282,7 +282,10 @@
 #'   \code{cell_split} the lower right half, on the same colour scale (its
 #'   limits cover both). Requires full-size rectangular cells (no
 #'   \code{cell_size} or other \code{cell_shape}) and can't be combined with
-#'   \code{cell_uncertainty}; cells of non-numeric columns are not split.
+#'   \code{cell_uncertainty}; cells of non-numeric columns are not split. With
+#'   \code{scale}, each column (or row) of \code{x} is scaled together with
+#'   the same column (or row) of \code{cell_split}, so that the halves stay
+#'   comparable.
 #' @param cell_split_labels two labels for the halves of the cells in the
 #'   legend - the values in \code{x} and in \code{cell_split}, set to
 #'   \code{c("x", "cell_split")} by default.
@@ -977,6 +980,9 @@ heat_map <- function(x,
 
   # SCALING --------------------------------------------------------------------
 
+  # SECOND VALUE IN EACH CELL - THE LOWER RIGHT HALF, ON THE SAME SCALE
+  split_mat <- .check_cell_split(cell_split, x)
+
   # ROW/COLUMN SCALING
   if(!is.null(scale) && !isFALSE(scale)) {
     # DEFAULT - COLUMN-WISE
@@ -991,11 +997,32 @@ heat_map <- function(x,
       scale <- "column"
     }
     # SCALING
-    x[, num_cols] <- heat_map_scale(
-      x[, num_cols, drop = FALSE],
-      scale = scale,
-      method = scale_method
-    )
+    if(is.null(split_mat)) {
+      x[, num_cols] <- heat_map_scale(
+        x[, num_cols, drop = FALSE],
+        scale = scale,
+        method = scale_method
+      )
+    # SPLIT CELLS - EACH COLUMN (ROW) OF x IS SCALED TOGETHER WITH THE SAME
+    # COLUMN (ROW) OF cell_split, SO THAT THE TWO HALVES STAY COMPARABLE
+    } else {
+      by_row <- .scale_margin(scale) == "row"
+      x_num <- as.matrix(x[, num_cols, drop = FALSE])
+      storage.mode(x_num) <- "double"
+      split_num <- split_mat[, num_cols, drop = FALSE]
+      both <- heat_map_scale(
+        if(by_row) cbind(x_num, split_num) else rbind(x_num, split_num),
+        scale = scale,
+        method = scale_method
+      )
+      if(by_row) {
+        x[, num_cols] <- both[, seq_len(ncol(x_num)), drop = FALSE]
+        split_mat[, num_cols] <- both[, -seq_len(ncol(x_num)), drop = FALSE]
+      } else {
+        x[, num_cols] <- both[seq_len(nrow(x_num)), , drop = FALSE]
+        split_mat[, num_cols] <- both[-seq_len(nrow(x_num)), , drop = FALSE]
+      }
+    }
   }
 
   # CLUSTERING -----------------------------------------------------------------
@@ -1297,8 +1324,7 @@ heat_map <- function(x,
   # CHARACTER VALUES - NA FOR NUMERIC COLUMNS
   chr_mat <- .value_matrix(x, char_cols, "character")
 
-  # SECOND VALUE IN EACH CELL - THE LOWER RIGHT HALF, ON THE SAME SCALE
-  split_mat <- .check_cell_split(cell_split, x)
+  # SPLIT CELLS - LABELS, NO UNCERTAINTY AND A LEGEND KEY
   if(!is.null(split_mat)) {
     .check_split_labels(cell_split_labels)
     if(!is.null(cell_uncertainty)) {
