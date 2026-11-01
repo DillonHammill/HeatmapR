@@ -38,6 +38,8 @@ heat_map_legend <- function(col = NULL,
                             ),
                             col_scale_size = 1,
                             col_alpha = 1,
+                            col_ticks = NULL,
+                            col_breaks = NULL,
                             shape = "rect",
                             text_font = 1,
                             text_size = 1,
@@ -85,8 +87,15 @@ heat_map_legend <- function(col = NULL,
     if(!is.function(col_scale)) {
       col_scale <- colorRamp(col_scale)
     }
+    draw_fit <- if(identical(geom$orientation, "bottom")) {
+      function(blocks, xlim, ylim, upi, side, ...) {
+        .heat_map_legend_bottom(blocks, ...)
+      }
+    } else {
+      .heat_map_legend_fit
+    }
     return(
-      .heat_map_legend_fit(
+      draw_fit(
         blocks = .legend_blocks(
           col = col,
           size = size,
@@ -102,7 +111,9 @@ heat_map_legend <- function(col = NULL,
             USE.NAMES = FALSE
           ),
           col_ramp = col_scale,
-          col_alpha = col_alpha
+          col_alpha = col_alpha,
+          col_ticks = col_ticks,
+          col_breaks = col_breaks
         ),
         size_fun = size_fun,
         xlim = xlim,
@@ -192,6 +203,8 @@ heat_map_legend <- function(col = NULL,
       upi = upi,
       side = side,
       alpha = col_alpha,
+      ticks = col_ticks,
+      breaks = col_breaks,
       text_font = text_font,
       text_size = text_size,
       text_col = text_col,
@@ -413,6 +426,8 @@ heat_map_legend <- function(col = NULL,
                                upi,
                                side,
                                alpha,
+                               ticks = NULL,
+                               breaks = NULL,
                                text_font,
                                text_size,
                                text_col,
@@ -430,13 +445,19 @@ heat_map_legend <- function(col = NULL,
     xpd = TRUE
   )
   # AXIS LABELS & TICKS
-  labels <- .legend_col_labels(limits)
+  if(is.null(ticks)) {
+    labels <- .legend_col_labels(limits)
+    at <- labels
+  } else {
+    labels <- ticks$labels
+    at <- ticks$at
+  }
   if(diff(limits) == 0) {
     # SINGLE VALUE - MIDDLE OF THE SCALE
     ticks <- mean(ycoords)
   } else {
     ticks <- .rescale(
-      labels,
+      at,
       limits = range(limits),
       scale = ycoords
     )
@@ -483,9 +504,11 @@ heat_map_legend <- function(col = NULL,
     diff(range(ycoords))/box_n
   )
   box_m <- box_y[-length(box_y)] + 0.5 * diff(box_y)
-  box_cols <- ramp(
-    (box_m - min(box_y))/diff(range(box_y))
-  )
+  box_k <- (box_m - min(box_y))/diff(range(box_y))
+  if(!is.null(breaks)) {
+    box_k <- .col_k(limits[1] + box_k * diff(limits), limits, breaks)
+  }
+  box_cols <- ramp(box_k)
   box_cols <- adjustcolor(
     rgb(
       box_cols[, 1],
@@ -730,7 +753,9 @@ heat_map_legend <- function(col = NULL,
                            title_font = 2,
                            title_col = "black",
                            col_ramp = NULL,
-                           col_alpha = 1) {
+                           col_alpha = 1,
+                           col_ticks = NULL,
+                           col_breaks = NULL) {
   if(length(title) == 0) {
     title <- NA
   }
@@ -753,11 +778,16 @@ heat_map_legend <- function(col = NULL,
   }
   blocks <- list()
   if(length(col) >= 2) {
+    if(is.null(col_ticks)) {
+      col_ticks <- .legend_col_ticks(NULL, col_breaks, col)
+    }
     blocks[[length(blocks) + 1]] <- block(
       "bar",
-      .legend_col_labels(col),
+      col_ticks$labels,
       1,
+      at = col_ticks$at,
       limits = col,
+      breaks = col_breaks,
       ramp = col_ramp,
       alpha = col_alpha,
       min_in = 1
@@ -971,7 +1001,11 @@ heat_map_legend <- function(col = NULL,
       box_n <- 75
       box_y <- seq(y_bar[1], y_bar[2], length.out = box_n + 1)
       box_m <- (box_y[-1] + box_y[-length(box_y)]) / 2
-      cols <- b$ramp((box_m - y_bar[1]) / diff(y_bar))
+      box_k <- (box_m - y_bar[1]) / diff(y_bar)
+      if(!is.null(b$breaks)) {
+        box_k <- .col_k(b$limits[1] + box_k * diff(b$limits), b$limits, b$breaks)
+      }
+      cols <- b$ramp(box_k)
       cols <- adjustcolor(
         rgb(cols[, 1], cols[, 2], cols[, 3], maxColorValue = 255),
         b$alpha
@@ -989,7 +1023,11 @@ heat_map_legend <- function(col = NULL,
       at <- if(diff(range(b$limits)) == 0) {
         mean(y_bar)
       } else {
-        .rescale(b$labels, limits = range(b$limits), scale = y_bar)
+        .rescale(
+          if(is.null(b$at)) b$labels else b$at,
+          limits = range(b$limits),
+          scale = y_bar
+        )
       }
       segments(
         x0 = X(b$key_w),
@@ -1066,6 +1104,253 @@ heat_map_legend <- function(col = NULL,
     list(
       x = sort(c(X(0), X(m$width))),
       y = c(Y(m$height), Y(0))
+    )
+  )
+}
+
+## BOTTOM LEGEND ---------------------------------------------------------------
+
+# Legends below the heatmap (legend_side = "bottom", fit layout): the blocks
+# are laid out side by side, wrapping into rows when they don't fit across the
+# figure, with horizontal colour bars and swatches in rows.
+
+#' Measure the legend blocks laid out below the heatmap (inches)
+#'
+#' @param avail width available to the legend (inches).
+#'
+#' @return list with the \code{width} and \code{height} of the legend, the
+#'   geometry of each block and its position (\code{x}, \code{y} from the top
+#'   left of the legend).
+#'
+#' @noRd
+.legend_fit_measure_h <- function(blocks,
+                                  avail,
+                                  text_size = 1,
+                                  text_font = 1,
+                                  col_scale_size = 1,
+                                  shape_in = 0.25,
+                                  key = 1,
+                                  scale = 1) {
+  v <- .legend_fit_measure(
+    blocks,
+    text_size = text_size,
+    text_font = text_font,
+    col_scale_size = col_scale_size,
+    shape_in = shape_in,
+    key = key,
+    scale = scale
+  )
+  g <- v$geom
+  g$item_gap <- 0.15 * scale
+  g$block_gap_x <- 0.3 * scale
+  g$block_gap_y <- 0.15 * scale
+  if(length(v$blocks) == 0) {
+    return(list(width = 0, height = 0, blocks = list(), geom = g))
+  }
+  blocks <- v$blocks
+  for(z in seq_along(blocks)) {
+    b <- blocks[[z]]
+    lab_w <- vapply(
+      as.character(b$labels),
+      function(l) .text_in(l, g$text_size, text_font, "width"),
+      numeric(1)
+    )
+    if(b$kind == "bar") {
+      # HORIZONTAL BAR - LONG ENOUGH TO SEPARATE ITS LABELS
+      b$bar_len <- max(
+        1.2 * key * scale,
+        length(lab_w) * (max(lab_w) + 0.1 * scale)
+      )
+      b$bar_x <- lab_w[1] / 2
+      b$body_w <- b$bar_x + b$bar_len + lab_w[length(lab_w)] / 2
+      b$body_h <- g$bar + g$tick + 0.5 * g$gap + g$text_h
+    } else {
+      # ITEMS IN ROWS - KEY THEN LABEL
+      b$item_w <- b$key_w + g$gap + max(lab_w)
+      b$item_h <- b$row_h
+      n <- length(b$labels)
+      per_row <- max(1, floor((avail + g$item_gap) / (b$item_w + g$item_gap)))
+      b$ncol <- min(n, per_row)
+      b$nrow <- ceiling(n / b$ncol)
+      b$body_w <- b$ncol * b$item_w + (b$ncol - 1) * g$item_gap
+      b$body_h <- b$nrow * b$item_h
+    }
+    b$width <- max(b$title_w, b$body_w)
+    b$height <- b$title_h + b$body_h
+    blocks[[z]] <- b
+  }
+  # PACK THE BLOCKS INTO ROWS
+  x <- 0
+  y <- 0
+  row_h <- 0
+  width <- 0
+  for(z in seq_along(blocks)) {
+    w <- blocks[[z]]$width
+    if(x > 0 && x + w > avail) {
+      y <- y + row_h + g$block_gap_y
+      x <- 0
+      row_h <- 0
+    }
+    blocks[[z]]$x <- x
+    blocks[[z]]$y <- y
+    width <- max(width, x + w)
+    row_h <- max(row_h, blocks[[z]]$height)
+    x <- x + w + g$block_gap_x
+  }
+  list(
+    width = width,
+    height = y + row_h,
+    blocks = blocks,
+    geom = g
+  )
+}
+
+#' Draw the legends below the heatmap
+#'
+#' @param geom legend geometry from the layout, including the height of the
+#'   legend band (\code{band_in}) and the centre of the heatmap (\code{centre},
+#'   plot units).
+#'
+#' @return bounding box of the legend (plot units), invisibly.
+#'
+#' @importFrom grDevices rgb adjustcolor
+#' @importFrom graphics rect segments text polygon grconvertX grconvertY par
+#' @noRd
+.heat_map_legend_bottom <- function(blocks,
+                                    size_fun,
+                                    geom,
+                                    col_scale_size = 1,
+                                    shape = "rect",
+                                    text_font = 1,
+                                    text_size = 1,
+                                    text_col = "black") {
+  if(length(blocks) == 0) {
+    return(invisible(NULL))
+  }
+  fin <- par("fin")
+  pad <- 0.1
+  avail <- fin[1] - 2 * pad
+  measure <- function(scale) {
+    .legend_fit_measure_h(
+      blocks,
+      avail = avail,
+      text_size = text_size,
+      text_font = text_font,
+      col_scale_size = col_scale_size,
+      shape_in = geom$shape_in,
+      key = geom$key,
+      scale = scale
+    )
+  }
+  m <- measure(1)
+  scale <- min(1, avail / m$width, geom$band_in / m$height)
+  if(scale < 1 - 1e-6) {
+    m <- measure(scale)
+  }
+  g <- m$geom
+  # FIGURE INCHES TO PLOT UNITS
+  X <- function(v) grconvertX(v / fin[1], "nfc", "user")
+  Y <- function(v) grconvertY(v / fin[2], "nfc", "user")
+  # CENTRED UNDER THE HEATMAP, KEPT ON THE FIGURE
+  centre <- grconvertX(geom$centre, "user", "nfc") * fin[1]
+  left <- min(max(centre - m$width / 2, pad), fin[1] - pad - m$width)
+  top <- pad + m$height
+  for(b in m$blocks) {
+    x0 <- left + b$x
+    y0 <- top - b$y
+    if(b$title_h > 0) {
+      text(
+        X(x0), Y(y0),
+        labels = b$title,
+        adj = c(0, 1),
+        cex = b$title_size,
+        font = b$title_font,
+        col = b$title_col,
+        xpd = NA
+      )
+    }
+    yb <- y0 - b$title_h
+    if(b$kind == "bar") {
+      bx <- x0 + b$bar_x + c(0, b$bar_len)
+      by <- yb - c(g$bar, 0)
+      box_n <- 75
+      edges <- seq(bx[1], bx[2], length.out = box_n + 1)
+      k <- (seq_len(box_n) - 0.5) / box_n
+      if(!is.null(b$breaks)) {
+        k <- .col_k(b$limits[1] + k * diff(b$limits), b$limits, b$breaks)
+      }
+      cols <- b$ramp(k)
+      cols <- adjustcolor(
+        rgb(cols[, 1], cols[, 2], cols[, 3], maxColorValue = 255),
+        b$alpha
+      )
+      rect(X(edges[-length(edges)]), Y(by[1]), X(edges[-1]), Y(by[2]),
+           col = cols, border = cols, xpd = NA)
+      rect(X(bx[1]), Y(by[1]), X(bx[2]), Y(by[2]), xpd = NA)
+      at <- if(is.null(b$at)) as.numeric(b$labels) else b$at
+      tx <- if(diff(range(b$limits)) == 0) {
+        mean(bx)
+      } else {
+        bx[1] + (at - min(b$limits)) / diff(range(b$limits)) * b$bar_len
+      }
+      segments(X(tx), Y(by[1]), X(tx), Y(by[1] - g$tick), xpd = NA)
+      text(
+        X(tx), Y(by[1] - g$tick - 0.5 * g$gap),
+        labels = b$labels,
+        adj = c(0.5, 1),
+        cex = g$text_size,
+        font = text_font,
+        col = text_col,
+        xpd = NA
+      )
+    } else {
+      n <- length(b$labels)
+      z <- seq_len(n) - 1
+      col_i <- z %% b$ncol
+      row_i <- z %/% b$ncol
+      kx <- x0 + col_i * (b$item_w + g$item_gap) + b$key_w / 2
+      ky <- yb - (row_i + 0.5) * b$item_h
+      h <- b$key_w / 2
+      if(b$kind == "shape") {
+        r <- 0.5 * size_fun(b$labels) * b$key_w
+        if(grepl("^r", shape, ignore.case = TRUE)) {
+          rect(X(kx - r), Y(ky - r), X(kx + r), Y(ky + r), col = "black",
+               xpd = NA)
+        } else {
+          if(grepl("^d", shape, ignore.case = TRUE)) {
+            dx <- c(-1, 0, 1, 0)
+            dy <- c(0, 1, 0, -1)
+          } else {
+            angles <- seq(0, 2, 1/25) * pi
+            dx <- sin(angles)
+            dy <- cos(angles)
+          }
+          polygon(
+            x = X(as.vector(rbind(outer(dx, r) + rep(kx, each = length(dx)), NA))),
+            y = Y(as.vector(rbind(outer(dy, r) + rep(ky, each = length(dy)), NA))),
+            col = "black",
+            xpd = NA
+          )
+        }
+      } else {
+        rect(X(kx - h), Y(ky - h), X(kx + h), Y(ky + h),
+             col = b$colours, border = "black", xpd = NA)
+      }
+      text(
+        X(kx + h + g$gap), Y(ky),
+        labels = b$labels,
+        adj = c(0, 0.5),
+        cex = g$text_size,
+        font = text_font,
+        col = text_col,
+        xpd = NA
+      )
+    }
+  }
+  invisible(
+    list(
+      x = X(c(left, left + m$width)),
+      y = Y(c(top - m$height, top))
     )
   )
 }

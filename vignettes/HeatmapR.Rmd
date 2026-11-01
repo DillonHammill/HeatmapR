@@ -1093,6 +1093,46 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-17.png')
 ```
 
+Legends can also be drawn below the heatmap with `legend_side = "bottom"`, where the colour bars are horizontal and the legends sit side by side, wrapping into rows when they don't fit across the figure. The colour scale itself can be shaped in a few ways: `cell_col_scale_limits = "robust"` uses the 2nd and 98th percentiles of the data so that a few outliers don't wash out the colours, `cell_col_scale_breaks` bins the values into a stepped colour scale, and `legend_col_breaks` chooses the values labelled on the colour legend (names become the labels).
+
+```{r, eval = FALSE}
+heat_map(
+  scale(mtcars),
+  tree = "both",
+  tree_cut_x = 3,
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_breaks = c(-3, -2, -1, 0, 1, 2, 3),
+  legend_col_breaks = c(low = -3, 0, high = 3),
+  legend_side = "bottom",
+  legend_title = "z-score",
+  title = "Legend below the heatmap"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-legend-bottom.png",
+  height = 8,
+  width = 7,
+  res = 300
+)
+heat_map(
+  scale(mtcars),
+  tree = "both",
+  tree_cut_x = 3,
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_breaks = c(-3, -2, -1, 0, 1, 2, 3),
+  legend_col_breaks = c(low = -3, 0, high = 3),
+  legend_side = "bottom",
+  legend_title = "z-score",
+  title = "Legend below the heatmap"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-legend-bottom.png')
+```
+
 ### 6.1 Layout
 
 By default `heat_map()` uses the `"fit"` layout, which sizes everything around the heatmap in inches from its contents: dendrograms and bar graphs keep the same size whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are multiples of 0.6 inches), the legend is as wide as its text, the margins are as wide as the axis text, axis labels and title, and the heatmap body takes the remaining space. Legends are stacked from the top of the heatmap and shrunk if they don't fit. Setting `layout = "classic"` restores the layout of earlier versions, in which dendrograms, bar graphs and the legend are sized as fractions of the heatmap, so they grow and shrink with the number of rows and columns.

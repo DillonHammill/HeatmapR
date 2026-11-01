@@ -90,6 +90,9 @@ random_layout_case <- function(seed) {
   # Mark labels - drawn last so that earlier draws keep their cases
   if (runif(1) < 0.3) args$mark_y <- sample(nr, min(nr, sample(c(1, 3, 12), 1)))
   if (runif(1) < 0.2) args$mark_x <- sample(nc, min(nc, 3))
+  # Legend options - drawn last so that earlier draws keep their cases
+  if (runif(1) < 0.3) args$legend_side <- "bottom"
+  if (runif(1) < 0.2) args$cell_col_scale_breaks <- c(-3, -1, 0, 1, 3)
   list(
     args = args,
     din = c(sample(c(4, 6, 8, 11), 1), sample(c(4, 6, 8, 11), 1))

@@ -1156,7 +1156,22 @@
   bar_label_y_in <- 0
   shape_in <- 0.25
   annot_sc <- c(x = 1, y = 1)
+  # LEGEND BESIDE THE HEATMAP, OR BELOW IT (legend_side = "bottom")
+  bottom <- isTRUE(p$legend_bottom) && isTRUE(p$legend)
   legend_measure <- function(shape_in) {
+    if(bottom) {
+      return(
+        .legend_fit_measure_h(
+          p$legend_spec$blocks,
+          avail = fin[1] - 2 * pad,
+          text_size = p$legend_spec$text_size,
+          text_font = p$legend_spec$text_font,
+          col_scale_size = p$legend_spec$col_scale_size,
+          shape_in = shape_in,
+          key = p$legend_size
+        )
+      )
+    }
     .legend_fit_measure(
       p$legend_spec$blocks,
       text_size = p$legend_spec$text_size,
@@ -1166,6 +1181,7 @@
       key = p$legend_size
     )
   }
+  band_in <- 0
   legend <- legend_measure(shape_in)
 
   for(iter in seq_len(12)) {
@@ -1228,6 +1244,11 @@
       title_inner <- margins_in[3] + gap
       margins_in[3] <- title_inner + 0.75 * title_cex * line_in
     }
+    # LEGEND BELOW EVERYTHING ELSE - AT MOST 35% OF THE FIGURE HEIGHT
+    if(bottom && legend$height > 0) {
+      band_in <- min(legend$height, 0.35 * fin[2])
+      margins_in[1] <- margins_in[1] + 0.15 + band_in
+    }
     margins_in <- margins_in + pad
 
     # USER SUPPLIED MARGINS (LINES) WIN
@@ -1267,7 +1288,7 @@
     upi_y <- hh / (ph - sum(tracks_y))
 
     # TRACKS ALONG X (ROW TRACKS & LEGEND) - AT MOST 60% OF THE PLOT WIDTH
-    legend_in <- if(p$legend) legend$width + 0.15 else 0
+    legend_in <- if(p$legend && !bottom) legend$width + 0.15 else 0
     room <- max(0.6 * pw - legend_in, 0.15 * pw)
     tracks_x <- .fit_tracks(
       c(
@@ -1479,7 +1500,10 @@
     legend_geom = list(
       shape_in = shape_in,
       key = p$legend_size,
-      body = hy
+      body = hy,
+      orientation = if(bottom) "bottom" else "side",
+      band_in = band_in,
+      centre = mean(hx)
     )
   )
 
