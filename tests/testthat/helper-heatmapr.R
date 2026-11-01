@@ -70,3 +70,16 @@ issue_colours <- list(
   Treatment = c(Control = "#4E9FD1", Drug_A = "#E07B54", Drug_B = "#6DBF7E"),
   Sex = c(Male = "#7B5EA7", Female = "#E8A0BF")
 )
+
+# Arguments of the graphics calls made by f() on a blank plot
+record_calls <- function(f, fun) {
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  grDevices::dev.control(displaylist = "enable")
+  plot.new()
+  plot.window(c(0, 10), c(-5, 110))
+  f()
+  calls <- grDevices::recordPlot()[[1]]
+  keep <- vapply(calls, function(z) identical(z[[2]][[1]]$name, fun), logical(1))
+  lapply(calls[keep], function(z) z[[2]][-1])
+}

@@ -159,6 +159,11 @@ heat_map(
   mark_labels_y = NULL,
   mark_line_col = "grey40",
   cell_raster = "auto",
+  cell_values = NULL,
+  cell_glyph = "density",
+  cell_glyph_range = "column",
+  cell_glyph_col = "grey10",
+  cell_glyph_fill = "#FFFFFF8C",
   fit_text = TRUE,
   layout = "fit",
   popup = TRUE,
@@ -849,6 +854,34 @@ default to use raster images for heatmaps with more than 50,000 cells.
 Raster images are only used when every cell is a full-size rectangle (no
 \code{cell_size} scaling or other \code{cell_shape}) and the graphics
 device supports them; cell borders are then drawn as grid lines.}
+
+\item{cell_values}{a matrix of lists with the same dimensions as \code{x},
+holding a numeric vector of values for each cell, such as the result of
+\code{heat_map_summarise(fun = "values")}. The distribution of each
+cell's values is drawn inside the cell (\code{cell_glyph}), so that a
+heatmap of summaries (e.g. the median of each marker in each cluster)
+also shows the spread and shape behind each summary - two populations
+behind a middling median, for example. Values are drawn as supplied,
+without \code{scale}.}
+
+\item{cell_glyph}{how the values in \code{cell_values} are drawn:
+\code{"density"} (a kernel density with a tick at the median, the
+default), \code{"histogram"} (16 bins with a tick at the median) or
+\code{"box"} (a box plot as \code{boxplot()}, with the median,
+quartiles, whiskers to 1.5 times the interquartile range and the values
+beyond them). A single distinct value is drawn as a vertical line.}
+
+\item{cell_glyph_range}{the range of values spanned by each glyph, shared
+by the cells of each \code{"column"} (the default), each \code{"row"} or
+\code{"all"} cells, or a numeric vector \code{c(min, max)}. Values
+beyond the range are drawn at its ends.}
+
+\item{cell_glyph_col}{colour of the lines of the glyphs, set to
+\code{"grey10"} by default.}
+
+\item{cell_glyph_fill}{fill colour of densities, histogram bars and boxes,
+set to translucent white by default so that the cell colour shows
+through.}
 
 \item{fit_text}{logical indicating whether axis text, cell text and cluster
 label text should be shrunk to fit the available space when it would

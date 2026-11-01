@@ -1,18 +1,5 @@
 # BOX PLOTS & VIOLINS BESIDE THE HEATMAP ---------------------------------------
 
-# Arguments of the graphics calls made by f() on a blank plot
-record_calls <- function(f, fun) {
-  grDevices::pdf(NULL)
-  on.exit(grDevices::dev.off())
-  grDevices::dev.control(displaylist = "enable")
-  plot.new()
-  plot.window(c(0, 10), c(-5, 110))
-  f()
-  calls <- grDevices::recordPlot()[[1]]
-  keep <- vapply(calls, function(z) identical(z[[2]][[1]]$name, fun), logical(1))
-  lapply(calls[keep], function(z) z[[2]][-1])
-}
-
 test_that("bar values hold single values or distributions", {
   data <- matrix(1:6, 2, dimnames = list(c("a", "b"), c("A", "B", "C")))
   expect_null(.bar_values(NULL, data, "x", colnames(data), "v"))

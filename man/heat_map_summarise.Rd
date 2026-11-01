@@ -30,7 +30,11 @@ one row of the result. Rows in a missing group are dropped.}
 \code{"sd"}, \code{"n"} (the number of non-missing values) or
 \code{"detected"} (the proportion of non-missing values above
 \code{threshold}), or a function taking a numeric vector and returning a
-single number. Missing values are removed before summarising.}
+single number. Missing values are removed before summarising.
+\code{"values"} keeps the values themselves: the result is then a matrix
+of lists holding the numeric vector of values in each group, for
+\code{cell_values} in \code{heat_map()} to draw their distributions
+inside the cells.}
 
 \item{threshold}{values above \code{threshold} are counted by
 \code{fun = "detected"}, set to 0 by default.}
@@ -38,7 +42,7 @@ single number. Missing values are removed before summarising.}
 \value{
 a numeric matrix with one column per group of \code{group_x} (or
 the columns of \code{x}) and one row per group of \code{group_y} (or the
-rows of \code{x}). Groups are in the order of their factor levels (sorted
+rows of \code{x}), or a matrix of lists for \code{fun = "values"}. Groups are in the order of their factor levels (sorted
 for other vectors). Groups without any values are \code{NA}.
 }
 \description{
@@ -55,6 +59,15 @@ cell size of a dot plot.
 # Mean of each variable for each number of cylinders
 cyl <- heat_map_summarise(mtcars[, -2], group_y = mtcars$cyl)
 heat_map(cyl, scale = "column", popup = FALSE)
+
+# Distribution of each variable for each number of cylinders in its cell
+heat_map(
+  cyl,
+  scale = "column",
+  cell_values = heat_map_summarise(mtcars[, -2], group_y = mtcars$cyl,
+                                   fun = "values"),
+  popup = FALSE
+)
 
 # Dot plot - mean as colour, proportion above the overall mean as size
 z <- scale(mtcars)
