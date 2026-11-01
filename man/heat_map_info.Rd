@@ -33,6 +33,8 @@ each row/column for every annotation, in the original order.}
 \item{\code{layout}: a data.frame with the bounding box (\code{xmin},
 \code{xmax}, \code{ymin}, \code{ymax}) of each component of the heatmap
 in inches from the bottom left corner of the device.}
+\item{\code{raster}: whether the cells were drawn as raster images (see
+\code{cell_raster} in \code{heat_map()}).}
 \item{\code{col_limits}, \code{size_limits}: limits of the colour and
 size scales.}
 }

@@ -580,6 +580,10 @@
     .alpha_col(col, col_alpha),
     n
   )
+  # MISSING OR EMPTY LABELS GET NO TICK
+  if(!is.expression(labels)) {
+    keep <- keep[!is.na(labels[keep]) & nzchar(labels[keep])]
+  }
   # EACH TICK IS DRAWN SEPARATELY SO THAT OVERLAPPING LABELS ARE NOT DROPPED -
   # ONLY THE LABELS KEPT AFTER THINNING ARE DRAWN
   for(z in keep) {
@@ -766,6 +770,8 @@
 #'   \item{\code{layout}: a data.frame with the bounding box (\code{xmin},
 #'   \code{xmax}, \code{ymin}, \code{ymax}) of each component of the heatmap
 #'   in inches from the bottom left corner of the device.}
+#'   \item{\code{raster}: whether the cells were drawn as raster images (see
+#'   \code{cell_raster} in \code{heat_map()}).}
 #'   \item{\code{col_limits}, \code{size_limits}: limits of the colour and
 #'   size scales.}
 #' }
@@ -877,7 +883,22 @@ print.heat_map <- function(x, ...) {
   col <- rep_len(col, n)
   alpha <- rep_len(alpha, n)
   if(all(alpha == alpha[1])) {
-    return(adjustcolor(col, alpha[1]))
+    # FAST PATH FOR OPAQUE "#RRGGBB" COLOURS (FROM rgb()) - THE SAME RESULT AS
+    # adjustcolor(), WHICH APPENDS THE ALPHA CHANNEL; OTHER COLOURS ARE
+    # ADJUSTED ONCE PER UNIQUE COLOUR
+    out <- character(n)
+    hex <- !is.na(col) & nchar(col) == 7 & startsWith(col, "#")
+    if(any(hex)) {
+      out[hex] <- paste0(
+        toupper(col[hex]),
+        sprintf("%02X", as.integer(255 * min(1, max(0, alpha[1])) + 0.5))
+      )
+    }
+    if(any(!hex)) {
+      u <- unique(col[!hex])
+      out[!hex] <- adjustcolor(u, alpha[1])[match(col[!hex], u)]
+    }
+    return(out)
   }
   vapply(
     seq_len(n),
@@ -1181,4 +1202,179 @@ print.heat_map <- function(x, ...) {
     )
   }
   invisible(NULL)
+}
+
+## RASTER CELLS ----------------------------------------------------------------
+
+#' Should the cells be drawn as a raster image?
+#'
+#' @param raster \code{cell_raster} - TRUE, FALSE or "auto".
+#' @param n number of cells.
+#' @param eligible whether every cell is a full-size rectangle.
+#' @param threshold number of cells above which "auto" draws a raster.
+#'
+#' @importFrom grDevices dev.capabilities
+#' @noRd
+.use_raster <- function(raster,
+                        n,
+                        eligible,
+                        threshold = 50000) {
+  if(isFALSE(raster) || !eligible) {
+    return(FALSE)
+  }
+  if(identical(raster, "auto") && n <= threshold) {
+    return(FALSE)
+  }
+  # DEVICE MUST SUPPORT RASTERS WITH TRANSPARENT PIXELS
+  support <- dev.capabilities("rasterImage")$rasterImage
+  is.null(support) || is.na(support) || identical(support, "yes")
+}
+
+#' Runs of consecutive cell centres (blocks between cluster splits)
+#'
+#' @return list of integer vectors indexing the sorted centres.
+#'
+#' @noRd
+.center_runs <- function(centers) {
+  if(length(centers) == 0) {
+    return(list())
+  }
+  breaks <- c(0, which(diff(centers) > 1 + 1e-8), length(centers))
+  lapply(
+    seq_len(length(breaks) - 1),
+    function(z) {
+      seq(breaks[z] + 1, breaks[z + 1])
+    }
+  )
+}
+
+#' Draw full-size rectangular cells as raster images
+#'
+#' Each block of cells between cluster splits is drawn with one
+#' \code{rasterImage()} call. Images are enlarged so that each cell spans
+#' several pixels, which keeps cells sharp in viewers that smooth images.
+#' Uniform borders are drawn as grid lines, borders that differ between cells
+#' (\code{cell_border_mask}) as rectangle outlines.
+#'
+#' @param x,y cell centres (plot units), one cell per element.
+#' @param fill fill colour of each cell (NA for none).
+#' @param border border colour shared by all cells, or one per cell.
+#' @param res smallest resolution of the images (pixels per inch).
+#' @param max_px largest number of pixels in each image.
+#'
+#' @importFrom graphics rasterImage segments rect par
+#' @importFrom grDevices as.raster
+#' @noRd
+.draw_cells_raster <- function(x,
+                               y,
+                               fill,
+                               border,
+                               line_type = 1,
+                               line_width = 1,
+                               res = 150,
+                               max_px = 2e6) {
+
+  keep <- !is.na(x) & !is.na(y)
+  xs <- sort(unique(x[keep]))
+  ys <- sort(unique(y[keep]), decreasing = TRUE)
+
+  # CELL COLOURS IN DISPLAY ORDER - ROW 1 AT THE TOP
+  fill <- fill[keep]
+  fill[is.na(fill)] <- "transparent"
+  img <- matrix(
+    "transparent",
+    nrow = length(ys),
+    ncol = length(xs)
+  )
+  img[match(y[keep], ys) + (match(x[keep], xs) - 1L) * length(ys)] <- fill
+
+  # INCHES PER PLOT UNIT
+  usr <- par("usr")
+  pin <- par("pin")
+  ipu <- c(pin[1] / diff(usr[1:2]), pin[2] / diff(usr[3:4]))
+
+  # ONE IMAGE PER BLOCK OF CELLS
+  runs_x <- .center_runs(xs)
+  runs_y <- .center_runs(rev(ys))
+  runs_y <- lapply(runs_y, function(z) rev(length(ys) + 1 - z))
+  for(rx in runs_x) {
+    for(ry in runs_y) {
+      block <- img[ry, rx, drop = FALSE]
+      # ENLARGE SO THAT EACH CELL SPANS SEVERAL PIXELS, WITHIN max_px
+      kx <- max(1, round(res * ipu[1]))
+      ky <- max(1, round(res * ipu[2]))
+      n <- length(rx) * length(ry)
+      while(n * kx * ky > max_px && (kx > 1 || ky > 1)) {
+        if(kx >= ky) {
+          kx <- max(1, min(kx - 1, floor(max_px / (n * ky))))
+        } else {
+          ky <- max(1, min(ky - 1, floor(max_px / (n * kx))))
+        }
+      }
+      if(kx > 1 || ky > 1) {
+        block <- block[
+          rep(seq_len(nrow(block)), each = ky),
+          rep(seq_len(ncol(block)), each = kx),
+          drop = FALSE
+        ]
+      }
+      rasterImage(
+        as.raster(block),
+        xleft = min(xs[rx]) - 0.5,
+        ybottom = min(ys[ry]) - 0.5,
+        xright = max(xs[rx]) + 0.5,
+        ytop = max(ys[ry]) + 0.5,
+        interpolate = FALSE
+      )
+    }
+  }
+
+  # BORDERS - A SINGLE COLOUR (GRID LINES) OR ONE PER CELL (OUTLINES)
+  shown <- function(col) {
+    !is.na(col) & col != "transparent" & !grepl("^#[0-9A-Fa-f]{6}00$", col)
+  }
+  if(length(border) == 1) {
+    if(!shown(border)) {
+      return(invisible(TRUE))
+    }
+    # GRID LINES - ONE PER CELL EDGE IN EACH BLOCK
+    for(rx in runs_x) {
+      for(ry in runs_y) {
+        x0 <- min(xs[rx]) - 0.5
+        x1 <- max(xs[rx]) + 0.5
+        y0 <- min(ys[ry]) - 0.5
+        y1 <- max(ys[ry]) + 0.5
+        vx <- x0 + seq(0, length(rx))
+        hy <- y0 + seq(0, length(ry))
+        segments(
+          x0 = c(vx, rep(x0, length(hy))),
+          y0 = c(rep(y0, length(vx)), hy),
+          x1 = c(vx, rep(x1, length(hy))),
+          y1 = c(rep(y1, length(vx)), hy),
+          col = border,
+          lty = line_type,
+          lwd = line_width
+        )
+      }
+    }
+  } else {
+    # OUTLINES OF CELLS WITH A VISIBLE BORDER
+    u <- unique(border)
+    visible <- keep & border %in% u[shown(u)]
+    if(!any(visible)) {
+      return(invisible(TRUE))
+    }
+    rect(
+      xleft = x[visible] - 0.5,
+      ybottom = y[visible] - 0.5,
+      xright = x[visible] + 0.5,
+      ytop = y[visible] + 0.5,
+      col = NA,
+      border = border[visible],
+      lty = line_type,
+      lwd = line_width
+    )
+  }
+
+  invisible(TRUE)
 }
