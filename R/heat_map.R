@@ -3020,6 +3020,16 @@ heat_map <- function(x,
     },
     split_data = split_mat,
     sizes = .cell_matrix(cell_sizes, cell_ind, x),
+    centers = list(
+      x = stats::setNames(
+        x_centers[match(seq_len(n_col), col_ind)],
+        colnames(x)
+      ),
+      y = stats::setNames(
+        y_centers[match(seq_len(n_row), row_ind)],
+        rownames(x)
+      )
+    ),
     annotations = list(
       x = annot_x$colours,
       y = annot_y$colours
