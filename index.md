@@ -52,6 +52,7 @@ these layout issues using solely a base graphics approach.
 **HeatmapR** can be installed directly from GitHub:
 
 ``` r
+
 devtools::install_github("DillonHammill/HeatmapR")
 ```
 
@@ -64,6 +65,7 @@ function. For details on customising your heatmaps, refer to the package
 vignette.
 
 ``` r
+
 library(HeatmapR)
 heat_map(
   mtcars,
@@ -102,6 +104,7 @@ If you use **HeatmapR** for your work please cite the package as
 follows:
 
 ``` r
+
 citation("HeatmapR")
 #> To cite package 'HeatmapR' in publications use:
 #> 

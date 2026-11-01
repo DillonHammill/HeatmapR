@@ -52,6 +52,7 @@ uses a hybrid colour blind friendly `viridis` palette to offer high
 visual contrast.
 
 ``` r
+
 library(HeatmapR)
 heat_map(mtcars)
 ```
@@ -75,6 +76,7 @@ supports different cell shapes through the `cell_shape` argument which
 can be set to either `"rect"` (default), `"circle"` or `"diamond"`.
 
 ``` r
+
 heat_map(
   mtcars,
   cell_shape = "circle"
@@ -84,6 +86,7 @@ heat_map(
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-3.png)
 
 ``` r
+
 heat_map(
   mtcars,
   cell_shape = "diamond"
@@ -101,6 +104,7 @@ matrix of the same dimensionality and orientation as the input matrix to
 control the size of the cells independently of their colour.
 
 ``` r
+
 heat_map(
   mtcars,
   cell_shape = "circle",
@@ -128,6 +132,7 @@ using a modified subset of the `iris` dataset where additional missing
 values have been introduced:
 
 ``` r
+
 # Modified subset of iris dataset with missing values
 iris_sub <- iris[sample(1:nrow(iris), 25), ]
 iris_sub[c(2, 19, 14, 7), 2] <- NA
@@ -162,6 +167,7 @@ customised using the `cell_border_line_type`, `cell_border_line_width`,
 `cell_border_line_col` and `cell_border_line_col_alpha` arguments.
 
 ``` r
+
 heat_map(
   mtcars,
   cell_border_line_type = 3,
@@ -183,6 +189,7 @@ borders. This is particularly useful for highlighting specific patterns
 or regions of interest within a heatmap.
 
 ``` r
+
 # Create a mask to highlight high values
 border_mask <- mtcars > median(unlist(mtcars))
 
@@ -207,6 +214,7 @@ customised using the `cell_text_size`, `cell_text_font`, `cell_text_col`
 and `cell_text_col_alpha` arguments.
 
 ``` r
+
 heat_map(
   mtcars,
   cell_text = TRUE,
@@ -240,6 +248,7 @@ specify the scaling method through the `scale_method` argument. For
 example, to apply range scaling to every column in the `mtcars` dataset:
 
 ``` r
+
 heat_map(
   mtcars,
   scale = "column",
@@ -258,6 +267,7 @@ method to `scale_method`. For example, to apply z-score scaling to every
 row in the `mtcars` dataset:
 
 ``` r
+
 heat_map(
   mtcars,
   scale = "row",
@@ -284,6 +294,7 @@ below, we demonstrate the addition of bar plots to the x and y axes of a
 heatmap constructed using the `mtcars` dataset:
 
 ``` r
+
 heat_map(
   mtcars,
   bar_values_x = 1:ncol(mtcars),
@@ -330,6 +341,7 @@ height at each level allowing for better visualisation of relationships
 in large heatmaps.
 
 ``` r
+
 heat_map(
   mtcars,
   scale = "column",
@@ -357,6 +369,7 @@ valuable when analyzing gene expression data or other normalized
 datasets.
 
 ``` r
+
 heat_map(
   mtcars,
   scale = "column",
@@ -380,6 +393,7 @@ of the tree height. This provides more intuitive control over clustering
 based on actual distance values.
 
 ``` r
+
 # Cut at absolute cosine distance of 0.5
 heat_map(
   mtcars,
@@ -403,6 +417,7 @@ the heatmap using the `tree_split_x` and `tree_split_y` arguments which
 are scalars that control the height or width of the splits.
 
 ``` r
+
 heat_map(
   mtcars,
   scale = "column",
@@ -428,6 +443,7 @@ also supports the labelling of clusters through the `tree_label_x`,
 `tree_label_text_x`, `tree_label_y` and `tree_label_text_y` arguments.
 
 ``` r
+
 heat_map(
   mtcars,
   scale = "column",
@@ -475,6 +491,7 @@ knowledge or external factors rather than hierarchical relationships.
 number of rows/columns in each cluster:
 
 ``` r
+
 # Manual clustering by specifying cluster sizes
 # Create 3 clusters: 4 columns, 3 columns, 4 columns
 heat_map(
@@ -494,6 +511,7 @@ heat_map(
 element indicates which cluster that row/column belongs to:
 
 ``` r
+
 # Manual clustering by assigning cluster indices
 # Assign each of the 11 columns to specific clusters
 cluster_indices <- c(1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3)
@@ -530,6 +548,7 @@ displayed in the legend(s) are also fully customisable using the the
 `legend_title_` and `legend_text_` family of arguments.
 
 ``` r
+
 heat_map(
   mtcars,
   scale = TRUE,
@@ -565,6 +584,7 @@ more complex layout. For example, if we want to split different car
 brands into separate heatmaps and arrange them:
 
 ``` r
+
 heat_map_custom(
   popup = TRUE,
   popup_size = c(10, 15),
@@ -597,6 +617,7 @@ graphics. For example, we could arrange a heatmap with a scatterplot and
 a boxplot.
 
 ``` r
+
 heat_map_custom(
   popup = TRUE,
   popup_size = c(10, 15),
@@ -638,6 +659,7 @@ which allows control over the dimensions and resolution of the exported
 image.
 
 ``` r
+
 heat_map_save(
   "mtcars.png",
   height = 9.5,
