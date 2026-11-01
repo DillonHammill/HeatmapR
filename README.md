@@ -91,6 +91,10 @@ text, legends and layouts, **HeatmapR** can:
 - **Explain the figure** - `heat_map_info()` returns the order, clusters
   and layout of a heatmap, and `heat_map_describe()` writes alternative
   text for screen readers.
+- **Work with ggplot2** - `heat_map_grob()` places heatmaps beside
+  `ggplot2` plots in `patchwork` and `cowplot` layouts, and
+  `heat_map_data()` returns the cells, rows, columns and dendrograms as
+  tidy data for rebuilding or restyling them.
 
 <table>
 <tr>

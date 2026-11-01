@@ -35,6 +35,10 @@ to right) and rows (from top to bottom) enlarged in a zoom panel
 right and from top to bottom respectively.}
 \item{\code{colours}, \code{sizes}: the fill colour and relative size of
 each cell, in the orientation of the original data.}
+\item{\code{centers}: lists \code{x} and \code{y} with the centre of
+each column and row in the original order, in the heatmap's plot
+co-ordinates (one unit per cell, plus any gaps between clusters), for
+drawing on top of a heatmap.}
 \item{\code{split_colours}, \code{split_data}: the fill colour and
 value (after scaling) of the lower right half of each cell
 (\code{cell_split}) in the orientation of the original data, or
