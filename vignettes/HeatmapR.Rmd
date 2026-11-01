@@ -884,6 +884,44 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-dist-order.png')
 ```
 
+#### 5.1.2 Branch Support
+
+A dendrogram always has branches, whether or not the data support them. `tree_support_y` (and `tree_support_x`) shows how stable each branch is: the columns are resampled with replacement, the rows are clustered again in the same way, and each branch scores the proportion of resamples in which its exact set of rows is a branch again (its bootstrap support). Branches with 90% support or more are drawn as thick black lines, 70-89% as grey lines and anything less as dashed lines, and the larger branches are labelled with their support. In `mtcars` only small groups, such as the Mazda RX4 pair, are stable; most of the larger splits come back less than half the time, which is worth knowing before cutting clusters from the dendrogram. `TRUE` uses 100 resamples, and the support is the same each time the heatmap is drawn.
+
+```{r, eval = FALSE}
+heat_map(
+  mtcars,
+  scale = "column",
+  tree = "both",
+  tree_size_y = 2,
+  tree_support_x = 200,
+  tree_support_y = 200,
+  title = "Bootstrap support of each branch"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-support.png",
+  height = 8,
+  width = 8,
+  res = 300
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  tree = "both",
+  tree_size_y = 2,
+  tree_support_x = 200,
+  tree_support_y = 200,
+  title = "Bootstrap support of each branch"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-support.png')
+```
+
 ### 5.2 Clustering
 
 The dendrograms on either axis can be optionally cut to reveal clusters in the data. Dendrogram cutting is performed via the `tree_cut_x` and `tree_cut_y` arguments which accept either a fixed number of clusters or a proportion of the total dendrogram height where the cut should be made. The clusters can be spatially separated by introducing splits in the heatmap using the `tree_split_x` and `tree_split_y` arguments which are scalars that control the height or width of the splits.

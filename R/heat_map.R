@@ -116,6 +116,23 @@
 #' @param tree_scale_y logical indicating whether the branch heights of the y
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
+#' @param tree_support_x \code{TRUE} or a number of resamples (at least 10)
+#'   to draw each branch of the x axis dendrogram by its bootstrap support:
+#'   the rows are resampled with replacement and the columns clustered again
+#'   (with \code{dist_method} and \code{clust_method}, within each group for
+#'   a dendrogram split by groups), and each branch scores the proportion of
+#'   resamples in which its exact set of columns is a branch again. Branches
+#'   with 90\% support or more are thick black lines, 70-89\% grey lines and
+#'   lower support dashed lines, with a key in the legend. \code{TRUE} uses
+#'   100 resamples. The resamples use a fixed seed (leaving the random number
+#'   generator as it was), so the support is the same each time the heatmap
+#'   is drawn. \code{heat_map_info()} returns the support of each branch.
+#' @param tree_support_y \code{TRUE} or a number of resamples to draw each
+#'   branch of the y axis dendrogram by its bootstrap support, resampling the
+#'   columns. See \code{tree_support_x}.
+#' @param tree_support_labels logical indicating whether larger branches (at
+#'   least 5 leaves and an eighth of all leaves) are labelled with their
+#'   support as a percentage, set to TRUE by default.
 #' @param tree_order_y how the branches of the y axis dendrogram are ordered,
 #'   either \code{"default"}, \code{"olo"} or \code{"mean"}, as for
 #'   \code{tree_order_x}.
@@ -645,6 +662,7 @@ heat_map <- function(x,
                      tree_size_x = 1,
                      tree_scale_x = FALSE,
                      tree_order_x = "default",
+                     tree_support_x = NULL,
                      tree_cut_x = NULL,
                      tree_kmeans_x = NULL,
                      tree_split_x = 1,
@@ -661,6 +679,8 @@ heat_map <- function(x,
                      tree_size_y = 1,
                      tree_scale_y = FALSE,
                      tree_order_y = "default",
+                     tree_support_y = NULL,
+                     tree_support_labels = TRUE,
                      tree_cut_y = NULL,
                      tree_kmeans_y = NULL,
                      tree_split_y = 1,
@@ -924,6 +944,12 @@ heat_map <- function(x,
 
   # CLUSTERING -----------------------------------------------------------------
 
+  # BRANCH SUPPORT - NUMBER OF RESAMPLES (NULL FOR NONE)
+  support_n_x <- .support_resamples(tree_support_x, "tree_support_x")
+  support_n_y <- .support_resamples(tree_support_y, "tree_support_y")
+  support_groups_x <- NULL
+  support_groups_y <- NULL
+
   # FALSE -> NO TREE
   if(isFALSE(tree_x)) {
     tree_x <- NULL
@@ -1065,6 +1091,7 @@ heat_map <- function(x,
     if(group_x) {
       groups <- integer(ncol(x))
       groups[manual$ind] <- manual$cut
+      support_groups_x <- groups[num_cols]
       tree_x <- .group_tree(
         t(x[, num_cols, drop = FALSE]),
         groups = groups[num_cols],
@@ -1143,6 +1170,7 @@ heat_map <- function(x,
     if(group_y) {
       groups <- integer(nrow(x))
       groups[manual$ind] <- manual$cut
+      support_groups_y <- groups
       tree_y <- .group_tree(
         x[, num_cols, drop = FALSE],
         groups = groups,
@@ -1169,6 +1197,36 @@ heat_map <- function(x,
       tree_y <- list(cut = manual$cut)
     }
     row_ind <- manual$ind
+  }
+
+  # BRANCH SUPPORT - THE OTHER DIMENSION RESAMPLED AND CLUSTERED AGAIN
+  support_x <- NULL
+  support_y <- NULL
+  if(!is.null(support_n_x) && inherits(tree_x, "hclust")) {
+    support_x <- .tree_support(
+      t(data.matrix(x[, num_cols, drop = FALSE])),
+      tree_x,
+      B = support_n_x,
+      dist = dist_method,
+      method = clust_method,
+      groups = support_groups_x,
+      ...
+    )
+  }
+  if(!is.null(support_n_y) && inherits(tree_y, "hclust")) {
+    support_y <- .tree_support(
+      data.matrix(x[, num_cols, drop = FALSE]),
+      tree_y,
+      B = support_n_y,
+      dist = dist_method,
+      method = clust_method,
+      groups = support_groups_y,
+      ...
+    )
+  }
+  legend_keys <- if(!.legend_off(legend) &&
+                    (!is.null(support_x) || !is.null(support_y))) {
+    list("Branch support" = .support_key())
   }
 
   # CLUSTER ASSIGNMENTS IN DISPLAY ORDER
@@ -1664,6 +1722,12 @@ heat_map <- function(x,
     axis_label_y <- ""
   }
 
+  # ANNOTATION LEGENDS & LEGEND KEYS (BRANCH SUPPORT) - DRAWN AS SWATCHES
+  legend_annots <- c(
+    if(annotation_legend) c(annot_x$legends, annot_y$legends),
+    legend_keys
+  )
+
   # LEGEND CONTENTS - MEASURED TO MAKE ROOM FOR THE LEGEND TEXT
   legend_title <- c(legend_title, rep(NA, 3))[1:3]
   legend_drawn <- intersect(
@@ -1691,41 +1755,35 @@ heat_map <- function(x,
     levels_labels = if("levels" %in% legend_types) {
       unique(unname(cell_levels))
     },
-    annotation_labels = if(annotation_legend) {
-      unlist(
-        lapply(
-          c(annot_x$legends, annot_y$legends),
-          function(z) {
-            if(is.null(z$ramp)) z$labels else .legend_col_labels(z$limits)
-          }
-        )
+    annotation_labels = unlist(
+      lapply(
+        legend_annots,
+        function(z) {
+          if(is.null(z$ramp)) z$labels else .legend_col_labels(z$limits)
+        }
       )
-    },
+    ),
     titles = c(
       legend_title[c("colour", "size", "levels") %in% legend_drawn],
-      if(annotation_legend) names(c(annot_x$legends, annot_y$legends))
+      names(legend_annots)
     ),
     title_size = c(
       rep_len(legend_title_text_size, 3)[
         c("colour", "size", "levels") %in% legend_drawn
       ],
-      if(annotation_legend) {
-        rep(
-          rep_len(legend_title_text_size, 3)[3],
-          length(c(annot_x$legends, annot_y$legends))
-        )
-      }
+      rep(
+        rep_len(legend_title_text_size, 3)[3],
+        length(legend_annots)
+      )
     ),
     title_font = c(
       rep_len(legend_title_text_font, 3)[
         c("colour", "size", "levels") %in% legend_drawn
       ],
-      if(annotation_legend) {
-        rep(
-          rep_len(legend_title_text_font, 3)[3],
-          length(c(annot_x$legends, annot_y$legends))
-        )
-      }
+      rep(
+        rep_len(legend_title_text_font, 3)[3],
+        length(legend_annots)
+      )
     ),
     text_size = legend_text_size,
     text_font = legend_text_font,
@@ -1738,9 +1796,7 @@ heat_map <- function(x,
       levels = if("levels" %in% legend_drawn) {
         list(labels = unique(unname(cell_levels)))
       },
-      annotations = if(annotation_legend) {
-        c(annot_x$legends, annot_y$legends)
-      },
+      annotations = legend_annots,
       title = legend_title,
       title_size = legend_title_text_size,
       title_font = legend_title_text_font
@@ -1861,8 +1917,7 @@ heat_map <- function(x,
       annot_gap = 0.05,
       annot_text_size = annotation_text_size,
       annot_text_font = annotation_text_font,
-      legend = length(legend_types) > 0 ||
-        (annotation_legend && length(c(annot_x$legends, annot_y$legends)) > 0),
+      legend = length(legend_types) > 0 || length(legend_annots) > 0,
       legend_size = legend_size,
       legend_bottom = legend_bottom,
       legend_spec = legend_spec,
@@ -2363,7 +2418,9 @@ heat_map <- function(x,
       tree_x,
       xlim = tree_x_xlim,
       ylim = tree_x_ylim,
-      centers_x = x_centers
+      centers_x = x_centers,
+      support = support_x,
+      support_labels = tree_support_labels
     )
   }
 
@@ -2373,7 +2430,9 @@ heat_map <- function(x,
       tree_y,
       xlim = tree_y_xlim,
       ylim = tree_y_ylim,
-      centers_y = y_centers
+      centers_y = y_centers,
+      support = support_y,
+      support_labels = tree_support_labels
     )
   }
 
@@ -2394,8 +2453,7 @@ heat_map <- function(x,
 
   # LEGEND - LEFT OR RIGHT ONLY - OPPOSITE Y AXIS TEXT
   legend_box <- NULL
-  if(length(legend_types) > 0 ||
-     (annotation_legend && length(c(annot_x$legends, annot_y$legends)) > 0)) {
+  if(length(legend_types) > 0 || length(legend_annots) > 0) {
     legend_box <- heat_map_legend(
       col = if("colour" %in% legend_types) {
         c(
@@ -2414,9 +2472,7 @@ heat_map <- function(x,
         NULL
       },
       levels = legend_levels,
-      annotations = if(annotation_legend) {
-        c(annot_x$legends, annot_y$legends)
-      },
+      annotations = legend_annots,
       size_fun = size_fun,
       xlim = legend_xlim,
       ylim = ylim,
@@ -2561,6 +2617,8 @@ heat_map <- function(x,
     },
     tree_x = .info_tree(tree_x),
     tree_y = .info_tree(tree_y),
+    support_x = support_x,
+    support_y = support_y,
     axis_text_x = axis_text_x,
     axis_text_y = rev(axis_text_y),
     colours = .cell_matrix(cell_fill, cell_ind, x),

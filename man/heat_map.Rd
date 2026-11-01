@@ -16,6 +16,7 @@ heat_map(
   tree_size_x = 1,
   tree_scale_x = FALSE,
   tree_order_x = "default",
+  tree_support_x = NULL,
   tree_cut_x = NULL,
   tree_kmeans_x = NULL,
   tree_split_x = 1,
@@ -32,6 +33,8 @@ heat_map(
   tree_size_y = 1,
   tree_scale_y = FALSE,
   tree_order_y = "default",
+  tree_support_y = NULL,
+  tree_support_labels = TRUE,
   tree_cut_y = NULL,
   tree_kmeans_y = NULL,
   tree_split_y = 1,
@@ -231,6 +234,18 @@ mean values, as in \code{\link[stats]{heatmap}}). Optimal leaf ordering
 takes a few seconds for 1000 columns and grows with the cube of the
 number of columns.}
 
+\item{tree_support_x}{\code{TRUE} or a number of resamples (at least 10)
+to draw each branch of the x axis dendrogram by its bootstrap support:
+the rows are resampled with replacement and the columns clustered again
+(with \code{dist_method} and \code{clust_method}, within each group for
+a dendrogram split by groups), and each branch scores the proportion of
+resamples in which its exact set of columns is a branch again. Branches
+with 90\\% support or more are thick black lines, 70-89\\% grey lines and
+lower support dashed lines, with a key in the legend. \code{TRUE} uses
+100 resamples. The resamples use a fixed seed (leaving the random number
+generator as it was), so the support is the same each time the heatmap
+is drawn. \code{heat_map_info()} returns the support of each branch.}
+
 \item{tree_cut_x}{either a numeric ranging from 0 to 1 indicating the branch
 cut height for x axis dendrogram (proportional for non-cosine distances,
 or absolute cosine distance threshold when \code{dist_method = "cosine"})
@@ -315,6 +330,14 @@ default.}
 \item{tree_order_y}{how the branches of the y axis dendrogram are ordered,
 either \code{"default"}, \code{"olo"} or \code{"mean"}, as for
 \code{tree_order_x}.}
+
+\item{tree_support_y}{\code{TRUE} or a number of resamples to draw each
+branch of the y axis dendrogram by its bootstrap support, resampling the
+columns. See \code{tree_support_x}.}
+
+\item{tree_support_labels}{logical indicating whether larger branches (at
+least 5 leaves and an eighth of all leaves) are labelled with their
+support as a percentage, set to TRUE by default.}
 
 \item{tree_cut_y}{either a numeric ranging from 0 to 1 indicating the branch
 cut height for y axis dendrogram (proportional for non-cosine distances,
