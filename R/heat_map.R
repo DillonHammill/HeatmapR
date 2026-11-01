@@ -275,6 +275,20 @@
 #'   half and three quarters of the largest uncertainty (4 levels).
 #' @param cell_uncertainty_title heading of the uncertainty levels in the
 #'   colour legend, set to \code{"Uncertainty"} by default.
+#' @param cell_split a numeric matrix with the same dimensions as \code{x}
+#'   holding a second value for each cell, such as the treated condition when
+#'   \code{x} holds the control. Each cell is split along its diagonal: the
+#'   value in \code{x} fills the upper left half and the value in
+#'   \code{cell_split} the lower right half, on the same colour scale (its
+#'   limits cover both). Requires full-size rectangular cells (no
+#'   \code{cell_size} or other \code{cell_shape}) and can't be combined with
+#'   \code{cell_uncertainty}; cells of non-numeric columns are not split. With
+#'   \code{scale}, each column (or row) of \code{x} is scaled together with
+#'   the same column (or row) of \code{cell_split}, so that the halves stay
+#'   comparable.
+#' @param cell_split_labels two labels for the halves of the cells in the
+#'   legend - the values in \code{x} and in \code{cell_split}, set to
+#'   \code{c("x", "cell_split")} by default.
 #' @param cell_col_empty a colour to use for missing values in \code{x}, set to
 #'   \code{"white"} by default.
 #' @param cell_border_line_type a integer to indicate the type of line to use
@@ -749,6 +763,8 @@ heat_map <- function(x,
                      cell_uncertainty = NULL,
                      cell_uncertainty_breaks = NULL,
                      cell_uncertainty_title = "Uncertainty",
+                     cell_split = NULL,
+                     cell_split_labels = c("x", "cell_split"),
                      cell_col_empty = "white",
                      cell_border_line_type = 1,
                      cell_border_line_width = 1,
@@ -964,6 +980,9 @@ heat_map <- function(x,
 
   # SCALING --------------------------------------------------------------------
 
+  # SECOND VALUE IN EACH CELL - THE LOWER RIGHT HALF, ON THE SAME SCALE
+  split_mat <- .check_cell_split(cell_split, x)
+
   # ROW/COLUMN SCALING
   if(!is.null(scale) && !isFALSE(scale)) {
     # DEFAULT - COLUMN-WISE
@@ -978,11 +997,32 @@ heat_map <- function(x,
       scale <- "column"
     }
     # SCALING
-    x[, num_cols] <- heat_map_scale(
-      x[, num_cols, drop = FALSE],
-      scale = scale,
-      method = scale_method
-    )
+    if(is.null(split_mat)) {
+      x[, num_cols] <- heat_map_scale(
+        x[, num_cols, drop = FALSE],
+        scale = scale,
+        method = scale_method
+      )
+    # SPLIT CELLS - EACH COLUMN (ROW) OF x IS SCALED TOGETHER WITH THE SAME
+    # COLUMN (ROW) OF cell_split, SO THAT THE TWO HALVES STAY COMPARABLE
+    } else {
+      by_row <- .scale_margin(scale) == "row"
+      x_num <- as.matrix(x[, num_cols, drop = FALSE])
+      storage.mode(x_num) <- "double"
+      split_num <- split_mat[, num_cols, drop = FALSE]
+      both <- heat_map_scale(
+        if(by_row) cbind(x_num, split_num) else rbind(x_num, split_num),
+        scale = scale,
+        method = scale_method
+      )
+      if(by_row) {
+        x[, num_cols] <- both[, seq_len(ncol(x_num)), drop = FALSE]
+        split_mat[, num_cols] <- both[, -seq_len(ncol(x_num)), drop = FALSE]
+      } else {
+        x[, num_cols] <- both[seq_len(nrow(x_num)), , drop = FALSE]
+        split_mat[, num_cols] <- both[-seq_len(nrow(x_num)), , drop = FALSE]
+      }
+    }
   }
 
   # CLUSTERING -----------------------------------------------------------------
@@ -1284,6 +1324,29 @@ heat_map <- function(x,
   # CHARACTER VALUES - NA FOR NUMERIC COLUMNS
   chr_mat <- .value_matrix(x, char_cols, "character")
 
+  # SPLIT CELLS - LABELS, NO UNCERTAINTY AND A LEGEND KEY
+  if(!is.null(split_mat)) {
+    .check_split_labels(cell_split_labels)
+    if(!is.null(cell_uncertainty)) {
+      stop(
+        "'cell_split' can't be combined with 'cell_uncertainty'.",
+        call. = FALSE
+      )
+    }
+    # LEGEND KEY FOR THE TWO HALVES
+    if(!.legend_off(legend)) {
+      legend_keys <- c(legend_keys, list(split = .split_key(cell_split_labels)))
+    }
+  }
+  # VALUES ON THE COLOUR SCALE - BOTH HALVES OF SPLIT CELLS
+  col_values <- function() {
+    if(is.null(split_mat)) {
+      num_mat[, num_cols]
+    } else {
+      c(num_mat[, num_cols], split_mat[, num_cols])
+    }
+  }
+
   # COLOUR SCALE LIMITS (UNROUNDED DATA) ---------------------------------------
 
   cell_min <- NULL
@@ -1292,13 +1355,13 @@ heat_map <- function(x,
   if(length(num_cols) > 0) {
     # LIMITS THAT IGNORE OUTLIERS
     if(identical(cell_col_scale_limits, "robust")) {
-      lims <- .robust_range(num_mat[, num_cols])
+      lims <- .robust_range(col_values())
     # CUSTOM LIMITS
     } else if(!is.null(cell_col_scale_limits)) {
       lims <- .check_limits(cell_col_scale_limits, "cell_col_scale_limits")
     # DATA LIMITS
     } else {
-      lims <- .finite_range(num_mat[, num_cols])
+      lims <- .finite_range(col_values())
     }
     # BREAKS DEFINE THE LIMITS
     if(!is.null(col_breaks)) {
@@ -1596,19 +1659,24 @@ heat_map <- function(x,
   # COLOURS
   cell_fill <- rep(NA_character_, length(cell_row))
   ind <- cell_num & !cell_missing
-  if(any(ind)) {
+  # POSITIONS OF VALUES ALONG THE COLOUR SCALE [0,1]
+  col_k <- function(v) {
     if(!is.null(col_breaks)) {
       # BINNED BETWEEN THE BREAKS
-      k <- .col_k(cell_num_val[ind], c(cell_min, cell_max), col_breaks)
+      k <- .col_k(v, c(cell_min, cell_max), col_breaks)
     } else if(cell_max == cell_min) {
       # ALL VALUES THE SAME - MIDDLE OF THE SCALE
-      k <- rep(0.5, sum(ind))
+      k <- rep(0.5, length(v))
     } else {
       # RESCALE [0,1] & CLAMP TO CUSTOM LIMITS
-      k <- (cell_num_val[ind] - cell_min) / (cell_max - cell_min)
+      k <- (v - cell_min) / (cell_max - cell_min)
       k[k < 0] <- 0
       k[k > 1] <- 1
     }
+    k
+  }
+  if(any(ind)) {
+    k <- col_k(cell_num_val[ind])
     if(is.null(unc_mat)) {
       rgb_mat <- cell_col_scale(k)
       cell_fill[ind] <- rgb(
@@ -1635,6 +1703,24 @@ heat_map <- function(x,
   }
   cell_fill[cell_missing] <- cell_col_empty
 
+  # LOWER RIGHT HALVES OF SPLIT CELLS - NA LEAVES A CELL WHOLE
+  split_fill <- NULL
+  if(!is.null(split_mat)) {
+    split_val <- split_mat[cell_ind]
+    split_fill <- rep(NA_character_, length(cell_row))
+    split_ind <- cell_num & !is.na(split_val)
+    if(any(split_ind)) {
+      rgb_mat <- cell_col_scale(col_k(split_val[split_ind]))
+      split_fill[split_ind] <- rgb(
+        rgb_mat[, 1],
+        rgb_mat[, 2],
+        rgb_mat[, 3],
+        maxColorValue = 255
+      )
+    }
+    split_fill[cell_num & is.na(split_val)] <- cell_col_empty
+  }
+
   # TRANSPARENCY - SINGLE VALUE OR ONE VALUE PER CELL IN THE ORIGINAL DATA
   # (VECTORS ARE RECYCLED DOWN THE COLUMNS OF x LIKE matrix())
   if(length(cell_col_alpha) > 1) {
@@ -1656,6 +1742,13 @@ heat_map <- function(x,
     .alpha_col(cell_fill, cell_alpha),
     length(cell_fill)
   )
+  if(!is.null(split_fill)) {
+    ok <- !is.na(split_fill)
+    split_fill[ok] <- .alpha_col(
+      split_fill[ok],
+      rep_len(cell_alpha, length(split_fill))[ok]
+    )
+  }
 
   # LEGEND TRANSPARENCY - SOLID UNLESS ALL CELLS SHARE THE SAME VALUE
   legend_alpha <- if(length(unique(as.vector(cell_alpha))) == 1) {
@@ -1676,6 +1769,13 @@ heat_map <- function(x,
     rep(cell_shape, length(cell_row))
   } else {
     shape_mat[cell_ind]
+  }
+  if(!is.null(split_mat) && (!is.null(size_mat) || any(cell_shapes != "rect"))) {
+    stop(
+      "'cell_split' requires full-size rectangular cells - remove 'cell_size' ",
+      "and use cell_shape = \"rect\".",
+      call. = FALSE
+    )
   }
 
   # BORDERS
@@ -1838,7 +1938,7 @@ heat_map <- function(x,
   legend_density <- NULL
   if(legend_col_density && length(num_cols) > 0 &&
      length(c(cell_min, cell_max)) == 2 && cell_max > cell_min) {
-    v <- num_mat[, num_cols]
+    v <- col_values()
     v <- v[is.finite(v)]
     if(length(unique(v)) > 1) {
       legend_density <- .violin_density(v, n = 128, from = cell_min,
@@ -2374,7 +2474,8 @@ heat_map <- function(x,
   cell_raster_drawn <- .use_raster(
     cell_raster,
     n = length(cell_fill),
-    eligible = is.null(size_mat) && all(cell_shapes == "rect")
+    eligible = is.null(size_mat) && all(cell_shapes == "rect") &&
+      is.null(split_mat)
   )
   if(cell_raster_drawn) {
     .draw_cells_raster(
@@ -2395,6 +2496,19 @@ heat_map <- function(x,
       border = cell_borders,
       line_type = cell_border_line_type,
       line_width = cell_border_line_width
+    )
+  }
+
+  # SECOND VALUES IN THE LOWER RIGHT HALVES OF THE CELLS
+  if(!is.null(split_fill)) {
+    .draw_split_cells(
+      x = cell_x,
+      y = cell_y,
+      fill = split_fill,
+      border = cell_borders,
+      line_type = cell_border_line_type,
+      line_width = cell_border_line_width,
+      diag = !(border_hidden_x || border_hidden_y)
     )
   }
 
@@ -2468,6 +2582,21 @@ heat_map <- function(x,
       line_type = cell_border_line_type,
       line_width = cell_border_line_width
     )
+    if(!is.null(split_fill)) {
+      .draw_split_cells(
+        x = cell_x[panel],
+        y = cell_y[panel],
+        fill = split_fill[panel],
+        border = if(min(panel_in) < border_min_in && is.null(mask_mat)) {
+          NA_character_
+        } else {
+          cell_borders_all[panel]
+        },
+        line_type = cell_border_line_type,
+        line_width = cell_border_line_width,
+        diag = min(panel_in) >= border_min_in
+      )
+    }
     if(!is.null(cell_values)) {
       .draw_cell_glyphs(
         values = cell_values[cell_ind[panel, , drop = FALSE]],
@@ -2886,6 +3015,9 @@ heat_map <- function(x,
     axis_text_x = axis_text_x,
     axis_text_y = rev(axis_text_y),
     colours = .cell_matrix(cell_fill, cell_ind, x),
+    split_colours = if(!is.null(split_fill)) {
+      .cell_matrix(split_fill, cell_ind, x)
+    },
     sizes = .cell_matrix(cell_sizes, cell_ind, x),
     annotations = list(
       x = annot_x$colours,

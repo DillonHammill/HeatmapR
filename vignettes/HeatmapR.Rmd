@@ -276,6 +276,70 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-uncertainty.png')
 ```
 
+#### 2.3.2 Two Values in Each Cell
+
+To compare two conditions cell by cell, such as control and stimulated samples or two time points, `cell_split` takes a second matrix with the same dimensions as the data. Each cell is split along its diagonal: the value in `x` fills the upper left half and the value in `cell_split` the lower right half, on the same colour scale, whose limits cover both. Changes then show up as cells with two colours, without doubling the size of the heatmap. `cell_split_labels` names the two halves in the legend.
+
+```{r, eval = FALSE}
+set.seed(6)
+types <- c("B", "CD4 T", "CD8 T", "NK", "Mono", "DC")
+genes <- c("IFNG", "GZMB", "PRF1", "TNF", "IL2RA", "CD69", "HLA-DR",
+           "CD86", "IL10", "CXCL8")
+# Expression in each cell type before and after stimulation
+control <- matrix(rnorm(60, 0, 0.6), 10, dimnames = list(genes, types))
+stimulated <- control + matrix(rnorm(60, 0, 0.3), 10)
+stimulated["IFNG", c("CD4 T", "CD8 T", "NK")] <-
+  stimulated["IFNG", c("CD4 T", "CD8 T", "NK")] + c(1.8, 2.6, 2.9)
+stimulated["GZMB", c("CD8 T", "NK")] <- stimulated["GZMB", c("CD8 T", "NK")] + 2.2
+stimulated["CD69", ] <- stimulated["CD69", ] + 1.4
+stimulated["IL10", "Mono"] <- stimulated["IL10", "Mono"] + 2.4
+stimulated["CD86", c("Mono", "DC")] <- stimulated["CD86", c("Mono", "DC")] + 1.6
+heat_map(
+  control,
+  cell_split = stimulated,
+  cell_split_labels = c("Control", "Stimulated"),
+  tree_y = TRUE,
+  legend_title = "Expression",
+  title = "Control and stimulated in each cell"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+set.seed(6)
+types <- c("B", "CD4 T", "CD8 T", "NK", "Mono", "DC")
+genes <- c("IFNG", "GZMB", "PRF1", "TNF", "IL2RA", "CD69", "HLA-DR",
+           "CD86", "IL10", "CXCL8")
+# Expression in each cell type before and after stimulation
+control <- matrix(rnorm(60, 0, 0.6), 10, dimnames = list(genes, types))
+stimulated <- control + matrix(rnorm(60, 0, 0.3), 10)
+stimulated["IFNG", c("CD4 T", "CD8 T", "NK")] <-
+  stimulated["IFNG", c("CD4 T", "CD8 T", "NK")] + c(1.8, 2.6, 2.9)
+stimulated["GZMB", c("CD8 T", "NK")] <- stimulated["GZMB", c("CD8 T", "NK")] + 2.2
+stimulated["CD69", ] <- stimulated["CD69", ] + 1.4
+stimulated["IL10", "Mono"] <- stimulated["IL10", "Mono"] + 2.4
+stimulated["CD86", c("Mono", "DC")] <- stimulated["CD86", c("Mono", "DC")] + 1.6
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-split.png",
+  height = 6,
+  width = 7,
+  res = 300
+)
+heat_map(
+  control,
+  cell_split = stimulated,
+  cell_split_labels = c("Control", "Stimulated"),
+  tree_y = TRUE,
+  legend_title = "Expression",
+  title = "Control and stimulated in each cell"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-split.png')
+```
+
+Split cells need full-size rectangles, so `cell_size` and other `cell_shape`s can't be used with them.
+
 ### 2.4 Cell Borders
 
 The borders of every cell within the constructed heatmap can also be customised using the `cell_border_line_type`, `cell_border_line_width`, `cell_border_line_col` and `cell_border_line_col_alpha` arguments.

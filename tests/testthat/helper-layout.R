@@ -130,6 +130,13 @@ random_layout_case <- function(seed) {
     args$zoom_x <- c(first, min(nc, first + sample(c(0, 2, 6), 1)))
     args$zoom_size_x <- sample(c(0.5, 1), 1)
   }
+  # Split cells - a second value in the lower right half of each cell and a
+  # legend key for the halves
+  split <- runif(1) < 0.2
+  if (split && !isTRUE(args$cell_size) && is.null(args$cell_uncertainty)) {
+    args$cell_split <- m + round(rnorm(nr * nc, 0, 0.5), 2)
+    args$cell_split_labels <- c("Control", "Treated")
+  }
   list(
     args = args,
     din = din
