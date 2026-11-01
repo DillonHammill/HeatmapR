@@ -324,6 +324,66 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-7.png')
 ```
 
+### 2.6 Large Heatmaps
+
+Heatmaps with more than 50,000 cells, such as single-cell data with thousands of cells and tens of markers, are drawn as raster images rather than one rectangle per cell. Raster images draw a 1000 x 1000 heatmap about three times faster and give PDFs about a quarter of the size, and look the same as the rectangles. Raster images are only used when every cell is a full-size rectangle; `cell_raster = TRUE` uses them for smaller heatmaps too and `cell_raster = FALSE` turns them off. Cell borders are left out when the cells are smaller than three line widths, as they would otherwise hide the cells.
+
+```{r, eval = FALSE}
+set.seed(1)
+cells <- matrix(
+  rnorm(5000 * 20),
+  nrow = 5000,
+  dimnames = list(
+    NULL,
+    paste0("Marker_", 1:20)
+  )
+)
+cells[1:1500, 1:8] <- cells[1:1500, 1:8] + 2.5
+cells[3001:5000, 12:20] <- cells[3001:5000, 12:20] + 2
+heat_map(
+  cells,
+  tree_x = TRUE,
+  tree_cut_y = 3,
+  tree_label_y = TRUE,
+  tree_label_text_y = c("A", "B", "C"),
+  axis_text_y = NA,
+  title = "5000 cells"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+set.seed(1)
+cells <- matrix(
+  rnorm(5000 * 20),
+  nrow = 5000,
+  dimnames = list(
+    NULL,
+    paste0("Marker_", 1:20)
+  )
+)
+cells[1:1500, 1:8] <- cells[1:1500, 1:8] + 2.5
+cells[3001:5000, 12:20] <- cells[3001:5000, 12:20] + 2
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-raster.png",
+  height = 8,
+  width = 7,
+  res = 300
+)
+heat_map(
+  cells,
+  tree_x = TRUE,
+  tree_cut_y = 3,
+  tree_label_y = TRUE,
+  tree_label_text_y = c("A", "B", "C"),
+  axis_text_y = NA,
+  title = "5000 cells"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-raster.png')
+```
+
 ## 3. Data Scaling
 
 In the above heatmap, it is very clear that each of the columns of the input matrix are on completely different scales, making it difficult to visualise differences in columns with very small values. In order to represent each column on the same scale, we can apply a form of data scaling through the `scale_method` argument either to each row or column as specified by the `scale` argument. Currently, `heat_map()` has internal support for `"mean"`, `"range"` and `"z-score"` scaling methods that can be applied to either the rows or columns of the input matrix.

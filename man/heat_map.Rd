@@ -144,6 +144,7 @@ heat_map(
   legend_text_size = 1,
   legend_text_col = "black",
   legend_text_col_alpha = 1,
+  cell_raster = "auto",
   fit_text = TRUE,
   layout = "fit",
   popup = TRUE,
@@ -400,7 +401,9 @@ for cell borders, set to 1 by default for solid lines. See \code{lty} in
 set to 1 by default.}
 
 \item{cell_border_line_col}{indicates the colour to use for cell borders, set
-to \code{"black"} by default.}
+to \code{"black"} by default. Borders are left out when cells are smaller
+than three line widths, as they would hide the cells, unless a
+\code{cell_border_mask} is supplied.}
 
 \item{cell_border_line_col_alpha}{numeric to control the transparency of cell
 borders, set to 1 by default to use solid colours.}
@@ -523,7 +526,7 @@ transparency of bar borders in y axis bar plot, set to 1 by default.}
 \item{axis_text_x}{vector of text to use for x axis labels supplied in the
 order matching the constructed heatmap, set to NULL by default to use the
 column names of \code{x}. Missing values (\code{NA}) are drawn as empty
-labels. An \code{expression} can be supplied for mathematical
+labels without a tick mark, so \code{NA} removes the x axis text. An \code{expression} can be supplied for mathematical
 annotation (see \code{?plotmath}).}
 
 \item{axis_text_side_x}{indicates whether the x axis text should be on the
@@ -574,7 +577,7 @@ set to 1 by default.}
 order matching the constructed heatmap (from bottom to top), set to NULL
 by default to use the row names of \code{x}, or the row indices when
 \code{x} has no row names. Missing values (\code{NA}) are drawn as empty
-labels. An \code{expression} can be supplied for mathematical
+labels without a tick mark, so \code{NA} removes the y axis text. An \code{expression} can be supplied for mathematical
 annotation (see \code{?plotmath}).}
 
 \item{axis_text_side_y}{indicates whether the y axis text should be on the
@@ -717,6 +720,14 @@ set to 1 by default.}
 
 \item{legend_text_col_alpha}{numeric to control the transparency of text in
 the legend, set to 1 by default to use solid colours.}
+
+\item{cell_raster}{whether to draw the cells as raster images, which is much
+faster and gives smaller files for large heatmaps. Set to \code{"auto"} by
+default to use raster images for heatmaps with more than 50,000 cells.
+\code{TRUE} always uses raster images and \code{FALSE} never does.
+Raster images are only used when every cell is a full-size rectangle (no
+\code{cell_size} scaling or other \code{cell_shape}) and the graphics
+device supports them; cell borders are then drawn as grid lines.}
 
 \item{fit_text}{logical indicating whether axis text, cell text and cluster
 label text should be shrunk to fit the available space when it would

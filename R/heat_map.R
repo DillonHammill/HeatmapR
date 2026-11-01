@@ -202,7 +202,9 @@
 #' @param cell_border_line_width a numeric to control the with of cell borders,
 #'   set to 1 by default.
 #' @param cell_border_line_col indicates the colour to use for cell borders, set
-#'   to \code{"black"} by default.
+#'   to \code{"black"} by default. Borders are left out when cells are smaller
+#'   than three line widths, as they would hide the cells, unless a
+#'   \code{cell_border_mask} is supplied.
 #' @param cell_border_line_col_alpha numeric to control the transparency of cell
 #'   borders, set to 1 by default to use solid colours.
 #' @param cell_border_mask a matrix of the same dimensions as \code{x} containing
@@ -289,7 +291,7 @@
 #' @param axis_text_x vector of text to use for x axis labels supplied in the
 #'   order matching the constructed heatmap, set to NULL by default to use the
 #'   column names of \code{x}. Missing values (\code{NA}) are drawn as empty
-#'   labels. An \code{expression} can be supplied for mathematical
+#'   labels without a tick mark, so \code{NA} removes the x axis text. An \code{expression} can be supplied for mathematical
 #'   annotation (see \code{?plotmath}).
 #' @param axis_text_side_x indicates whether the x axis text should be on the
 #'   \code{1 - "bottom"} or \code{3 - "top"} of the heatmap, set to
@@ -326,7 +328,7 @@
 #'   order matching the constructed heatmap (from bottom to top), set to NULL
 #'   by default to use the row names of \code{x}, or the row indices when
 #'   \code{x} has no row names. Missing values (\code{NA}) are drawn as empty
-#'   labels. An \code{expression} can be supplied for mathematical
+#'   labels without a tick mark, so \code{NA} removes the y axis text. An \code{expression} can be supplied for mathematical
 #'   annotation (see \code{?plotmath}).
 #' @param axis_text_side_y indicates whether the y axis text should be on the
 #'   \code{2 - "left"} or \code{4 - "right"} of the heatmap, set to
@@ -397,6 +399,13 @@
 #'   tracks on the side of the axis text.
 #' @param annotation_legend logical indicating whether legends should be drawn
 #'   for the annotations, set to TRUE by default.
+#' @param cell_raster whether to draw the cells as raster images, which is much
+#'   faster and gives smaller files for large heatmaps. Set to \code{"auto"} by
+#'   default to use raster images for heatmaps with more than 50,000 cells.
+#'   \code{TRUE} always uses raster images and \code{FALSE} never does.
+#'   Raster images are only used when every cell is a full-size rectangle (no
+#'   \code{cell_size} scaling or other \code{cell_shape}) and the graphics
+#'   device supports them; cell borders are then drawn as grid lines.
 #' @param fit_text logical indicating whether axis text, cell text and cluster
 #'   label text should be shrunk to fit the available space when it would
 #'   otherwise overlap, set to TRUE by default. Axis labels that still don't
@@ -653,6 +662,7 @@ heat_map <- function(x,
                      legend_text_size = 1,
                      legend_text_col = "black",
                      legend_text_col_alpha = 1,
+                     cell_raster = "auto",
                      fit_text = TRUE,
                      layout = "fit",
                      popup = TRUE,
@@ -686,6 +696,15 @@ heat_map <- function(x,
 
   # ARGUMENTS PASSED THROUGH ... ARE ONLY USED BY dist() AND hclust()
   .check_dots(list(...))
+
+  # RASTER CELLS
+  if(!(isTRUE(cell_raster) || isFALSE(cell_raster) ||
+       identical(cell_raster, "auto"))) {
+    stop(
+      "'cell_raster' must be TRUE, FALSE or \"auto\".",
+      call. = FALSE
+    )
+  }
 
   # LAYOUT
   if(!is.character(layout) || length(layout) != 1 ||
@@ -1171,7 +1190,8 @@ heat_map <- function(x,
   # VALUES
   cell_num_val <- num_mat[cell_ind]
   cell_chr_val <- chr_mat[cell_ind]
-  cell_missing <- ifelse(cell_num, is.na(cell_num_val), is.na(cell_chr_val))
+  cell_missing <- (cell_num & is.na(cell_num_val)) |
+    (!cell_num & is.na(cell_chr_val))
 
   # COLOURS
   cell_fill <- rep(NA_character_, length(cell_row))
@@ -1183,7 +1203,8 @@ heat_map <- function(x,
     } else {
       # RESCALE [0,1] & CLAMP TO CUSTOM LIMITS
       k <- (cell_num_val[ind] - cell_min) / (cell_max - cell_min)
-      k <- pmax(0, pmin(1, k))
+      k[k < 0] <- 0
+      k[k > 1] <- 1
     }
     rgb_mat <- cell_col_scale(k)
     cell_fill[ind] <- rgb(
@@ -1695,17 +1716,47 @@ heat_map <- function(x,
     )
   }
 
-  # HEATMAP CELLS - VECTORISED RENDERING
-  .draw_cells(
-    x = cell_x,
-    y = cell_y,
-    size = cell_sizes,
-    shape = cell_shapes,
-    fill = cell_fill,
-    border = cell_borders,
-    line_type = cell_border_line_type,
-    line_width = cell_border_line_width
+  # CELL BORDERS - LEFT OUT WHEN CELLS ARE SMALLER THAN THREE LINE WIDTHS, AS
+  # THEY WOULD HIDE THE CELLS (LINE WIDTH 1 IS 1/96 INCH); BORDERS FROM A
+  # cell_border_mask ARE ALWAYS DRAWN
+  border_min_in <- 3 * max(cell_border_line_width) / 96
+  border_hidden_x <- lay$cell_in[1] < border_min_in
+  border_hidden_y <- lay$cell_in[2] < border_min_in
+  if((border_hidden_x || border_hidden_y) && is.null(mask_mat)) {
+    cell_borders <- rep(NA_character_, length(cell_borders))
+    border_col_cells <- NA_character_
+  } else {
+    border_col_cells <- border_col_adjusted
+  }
+
+  # HEATMAP CELLS - RASTER IMAGES FOR LARGE HEATMAPS OF FULL-SIZE RECTANGLES,
+  # VECTORISED SHAPES OTHERWISE
+  cell_raster_drawn <- .use_raster(
+    cell_raster,
+    n = length(cell_fill),
+    eligible = is.null(size_mat) && all(cell_shapes == "rect")
   )
+  if(cell_raster_drawn) {
+    .draw_cells_raster(
+      x = cell_x,
+      y = cell_y,
+      fill = cell_fill,
+      border = if(is.null(mask_mat)) border_col_cells else cell_borders,
+      line_type = cell_border_line_type,
+      line_width = cell_border_line_width
+    )
+  } else {
+    .draw_cells(
+      x = cell_x,
+      y = cell_y,
+      size = cell_sizes,
+      shape = cell_shapes,
+      fill = cell_fill,
+      border = cell_borders,
+      line_type = cell_border_line_type,
+      line_width = cell_border_line_width
+    )
+  }
 
   # CELL TEXT - SHRUNK TO FIT INSIDE THE CELLS
   ind <- !is.na(cell_texts)
@@ -1743,7 +1794,7 @@ heat_map <- function(x,
     name_side = axis_text_side_y,
     name_at = if(axis_text_side_y == 2) min(heatmap_xlim) else max(heatmap_xlim),
     upi = lay$upi,
-    border = border_col_adjusted,
+    border = if(border_hidden_x) NA else border_col_adjusted,
     line_type = cell_border_line_type,
     line_width = cell_border_line_width,
     text_size = lay$annot_text_size_x,
@@ -1760,7 +1811,7 @@ heat_map <- function(x,
     name_side = axis_text_side_x,
     name_at = if(axis_text_side_x == 1) min(heatmap_ylim) else max(heatmap_ylim),
     upi = lay$upi,
-    border = border_col_adjusted,
+    border = if(border_hidden_y) NA else border_col_adjusted,
     line_type = cell_border_line_type,
     line_width = cell_border_line_width,
     text_size = lay$annot_text_size_y,
@@ -2086,6 +2137,7 @@ heat_map <- function(x,
       y = annot_y$colours
     ),
     layout = hm_layout,
+    raster = cell_raster_drawn,
     col_limits = c(cell_min, cell_max),
     size_limits = c(cell_size_min, cell_size_max)
   )

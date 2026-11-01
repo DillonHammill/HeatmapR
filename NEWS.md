@@ -38,6 +38,7 @@
 
 * Metadata annotation tracks (#3): `annotation_x` and `annotation_y` take a data.frame describing the columns or rows of `x` (matched by name when it has row names), drawn as coloured tracks beside the heatmap with their names and legends. Non-numeric annotations are coloured by level and numeric annotations with a colour ramp; `annotation_colours` sets colours per annotation (named vectors, palettes or functions). `annotation_size_*`, `annotation_text_*` and `annotation_legend` control their appearance.
 * When `tree_cut_x`/`tree_cut_y` is a factor or character vector and cluster labels are shown, the clusters are labelled with their levels by default.
+* Large heatmaps are drawn as raster images (`cell_raster`, `"auto"` by default: heatmaps with more than 50,000 cells of full-size rectangles). A 1000 x 1000 heatmap draws about 2.7 times faster (0.8 s instead of 2.2 s) and its PDF is a quarter of the size, with the same colours as the vector cells; cell borders are drawn as grid lines. `heat_map_info()$raster` reports whether raster images were used.
 * `heat_map_info()$layout` gives the bounding box of every component of the heatmap (axis text, dendrograms, bars, legends, titles) in inches, so layouts can be checked programmatically.
 * `heat_map()` now returns a `heat_map` object (still a `recordedplot`) that can be redrawn with `print()`/`plot()` (with optional argument overrides) and saved with `heat_map_save(file, x = hm)`.
 * New `heat_map_info()` extracts the data, row/column order, cluster assignments, dendrograms, cell colours/sizes and scale limits from a heatmap.
@@ -55,6 +56,9 @@
   - margins grow to fit long labels, legends and bar graph axes, and shrink the text rather than failing with "figure margins too large" on small devices;
   - bar graph axis labels are placed beyond their tick labels, and a gap is added between the heatmap and a bar graph only when their labels would touch.
   In the classic layout, heatmaps that already fit are drawn exactly as before.
+* Cell borders are left out when cells are smaller than three line widths (e.g. more than about 200 rows on a 7 inch device with the default borders), instead of turning the heatmap black. Borders requested with `cell_border_mask` are always drawn.
+* Missing (`NA`) axis labels no longer get a tick mark, so `axis_text_y = NA` removes the y axis text of a large heatmap instead of leaving a solid bar of ticks.
+* Faster cell colouring: transparency is applied without converting every colour, which also speeds up large vector heatmaps.
 * Levels and annotation legends are stacked with space in proportion to their contents.
 * Arguments passed through `...` that neither `dist()` nor `hclust()` use now give a warning, catching misspelled argument names that were previously ignored.
 * Much faster rendering: cell properties are computed and drawn with vectorised graphics calls, and dendrogram segments are computed directly from the `hclust` merge matrix (no recursion). A 2000 x 50 heatmap now draws in ~0.1 s instead of ~13 s. Apart from the fixes listed above, default output is unchanged.
