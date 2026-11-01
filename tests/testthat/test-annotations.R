@@ -136,6 +136,7 @@ test_that("issue #3 example snapshot", {
       cell_col_scale = c("#2C7BB6", "white", "#D7191C"),
       cell_col_scale_center = 0,
       legend_title = "z-score",
+      layout = "classic",
       popup = FALSE
     ))
   )

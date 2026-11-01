@@ -60,9 +60,9 @@ graphics approach.
 - **HeatmapR** shows sample or feature metadata as annotation tracks
   (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
   labels and bar plots, and adapts the layout so that labels and
-  legends don’t overlap. `layout = "fit"` goes further, sizing
-  dendrograms, bar plots, legends and margins in inches from their
-  contents so that they look the same whatever the shape of the data.
+  legends don’t overlap. Dendrograms, bar plots, legends and margins
+  are sized in inches from their contents, so they look the same
+  whatever the shape of the data.
 - **HeatmapR** generates publication ready images with minimal manual
   customization, making it ideal for users that have limited coding
   experience.

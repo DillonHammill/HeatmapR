@@ -2,6 +2,7 @@
 
 ## Breaking changes
 
+* `heat_map()` now uses a new fit layout by default (`layout = "fit"`). Dendrograms, bar graphs, annotation tracks, cluster label strips, the legend and the margins are sized in inches from their contents, and the heatmap body gets the remaining space. Dendrograms and bar graphs are 0.6 inches (times `tree_size_*` and `bar_size_*`) whatever the number of rows and columns, the legend is as wide as its text and stacked from the top of the heatmap (`legend_size` scales the legend keys), axis labels and the title sit just beyond the axis text, and margin text is kept on the device. Set `layout = "classic"` for the previous layout, in which these components are sized as fractions of the heatmap.
 * When `tree_cut_x` or `tree_cut_y` is a vector of cluster indices, the indices are now supplied in the original order of the columns/rows of `x` (consistent with `bar_values_x` and `bar_values_y`) rather than the displayed order. Columns/rows are regrouped so that each cluster is contiguous, indices may now be numeric, character or factor, and named indices are matched to the column/row names of `x`. Cluster sizes (e.g. `tree_cut_x = c(3, 4, 5)`) still refer to the displayed order. If a dendrogram is also requested, clusters that are contiguous in the dendrogram order keep that order; otherwise the dendrogram is dropped with a warning.
 * `heat_map_scale()` now errors for unsupported scaling methods (e.g. `"minmax"` was previously treated as `"mean"`) or margins, instead of silently guessing. The margin must be `"column"` or `"row"` (or an abbreviation such as `"col"`), or `"x"`/`"y"`; previously any value not starting with `"c"`, including `"x"`, scaled rows.
 * `heat_map(scale = "range")` (or `"mean"`/`"zscore"`) now applies that scaling method to each column. Previously the method name was treated as the margin, so rows were scaled (and scrambled by the row scaling bug below).
@@ -37,7 +38,6 @@
 
 * Metadata annotation tracks (#3): `annotation_x` and `annotation_y` take a data.frame describing the columns or rows of `x` (matched by name when it has row names), drawn as coloured tracks beside the heatmap with their names and legends. Non-numeric annotations are coloured by level and numeric annotations with a colour ramp; `annotation_colours` sets colours per annotation (named vectors, palettes or functions). `annotation_size_*`, `annotation_text_*` and `annotation_legend` control their appearance.
 * When `tree_cut_x`/`tree_cut_y` is a factor or character vector and cluster labels are shown, the clusters are labelled with their levels by default.
-* Opt-in fit layout: `heat_map(layout = "fit")` sizes dendrograms, bar graphs, annotation tracks, cluster label strips, the legend and the margins in inches from their contents, and gives the heatmap body the remaining space. Dendrograms and bar graphs keep the same size whatever the number of rows and columns (`tree_size_*` and `bar_size_*` are multiples of 0.6 inches), the legend is as wide as its text and stacked from the top of the heatmap, axis labels and the title sit just beyond the axis text, and margin text is kept on the device. `layout = "classic"` (the default) is unchanged.
 * `heat_map_info()$layout` gives the bounding box of every component of the heatmap (axis text, dendrograms, bars, legends, titles) in inches, so layouts can be checked programmatically.
 * `heat_map()` now returns a `heat_map` object (still a `recordedplot`) that can be redrawn with `print()`/`plot()` (with optional argument overrides) and saved with `heat_map_save(file, x = hm)`.
 * New `heat_map_info()` extracts the data, row/column order, cluster assignments, dendrograms, cell colours/sizes and scale limits from a heatmap.
@@ -54,7 +54,7 @@
   - size and levels legend shapes stay inside the legend (they covered the heatmap when it had fewer than 10 columns), legend titles never extend over the heatmap, and legend labels shrink to fit;
   - margins grow to fit long labels, legends and bar graph axes, and shrink the text rather than failing with "figure margins too large" on small devices;
   - bar graph axis labels are placed beyond their tick labels, and a gap is added between the heatmap and a bar graph only when their labels would touch.
-  Heatmaps that already fit are drawn exactly as before.
+  In the classic layout, heatmaps that already fit are drawn exactly as before.
 * Levels and annotation legends are stacked with space in proportion to their contents.
 * Arguments passed through `...` that neither `dist()` nor `hclust()` use now give a warning, catching misspelled argument names that were previously ignored.
 * Much faster rendering: cell properties are computed and drawn with vectorised graphics calls, and dendrogram segments are computed directly from the `hclust` merge matrix (no recursion). A 2000 x 50 heatmap now draws in ~0.1 s instead of ~13 s. Apart from the fixes listed above, default output is unchanged.

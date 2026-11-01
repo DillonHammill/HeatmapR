@@ -188,7 +188,14 @@ test_that("x axis labels on top leave room for the title", {
 })
 
 test_that("explicit margins are used as supplied", {
-  hm <- draw(test_matrix(4, 3), margins = c(1, 2, 3, 4), title = "T")
+  hm <- draw(test_matrix(4, 3), margins = c(1, 2, 3, 4), title = "T", layout = "classic")
   # The title is drawn 2 lines inside the top margin
   expect_equal(mtext_line(hm, "T"), 1)
+  # Fit layout - margin text keeps its padding from the edge of the figure
+  for (top in c(3, 6)) {
+    hm <- draw(test_matrix(4, 3), margins = c(1, 2, top, 4), title = "T",
+               axis_label_x = "X")
+    expect_equal(.mtext_span(3, mtext_line(hm, "T"), 1.5)[2], top - 0.5)
+    expect_equal(.mtext_span(1, mtext_line(hm, "X"), 1.2)[2], 1 - 0.5)
+  }
 })

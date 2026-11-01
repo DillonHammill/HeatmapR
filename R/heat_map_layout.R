@@ -1362,12 +1362,14 @@
   }
   xlim <- range(c(hx, unlist(y_tracks), outer_y + dir_y * legend_in * upi_x))
 
-  # MARGIN TEXT (mtext LINES)
+  # MARGIN TEXT (mtext LINES) - IN A USER SUPPLIED MARGIN THE TEXT KEEPS ITS
+  # DISTANCE FROM THE EDGE OF THE FIGURE
+  shift <- (margins - margins_in / line_in) * line_in
   mt <- function(side, inner_in, cex) {
     if(is.na(inner_in)) {
       return(NA_real_)
     }
-    .mtext_line(side, inner_in / line_in, cex)
+    .mtext_line(side, (inner_in + shift[side]) / line_in, cex)
   }
 
   list(

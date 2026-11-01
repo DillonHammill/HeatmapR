@@ -30,10 +30,10 @@ test_that("layout must be classic or fit", {
   expect_error(draw(m, layout = "tight"), "'layout' must be")
   expect_error(draw(m, layout = c("fit", "classic")), "'layout' must be")
   expect_error(draw(m, layout = 1), "'layout' must be")
-  # CLASSIC IS THE DEFAULT
+  # FIT IS THE DEFAULT
   expect_equal(
     heat_map_info(draw(m))$layout,
-    heat_map_info(draw(m, layout = "classic"))$layout
+    heat_map_info(draw(m, layout = "fit"))$layout
   )
 })
 
@@ -59,8 +59,8 @@ test_that("dendrograms and bar graphs have the same size whatever the data", {
   expect_equal(height(hm, "tree_x"), 0.3, tolerance = 1e-6)
   expect_equal(width(hm, "tree_y"), 1.2, tolerance = 1e-6)
   # CLASSIC TRACKS ARE A FRACTION OF THE HEATMAP
-  small <- draw(test_matrix(5, 4), tree = "both")
-  large <- draw(test_matrix(60, 4), tree = "both")
+  small <- draw(test_matrix(5, 4), tree = "both", layout = "classic")
+  large <- draw(test_matrix(60, 4), tree = "both", layout = "classic")
   expect_equal(
     height(small, "tree_x") / height(small, "heatmap"),
     height(large, "tree_x") / height(large, "heatmap"),
@@ -141,8 +141,10 @@ test_that("fit legends draw every kind of key", {
              layout = "fit")
   expect_true(all(c("Levels", "x", "y", "z") %in% drawn_text(hm)))
   # SINGLE VALUE COLOUR SCALE
-  hm <- draw(matrix(1, 3, 3), layout = "fit")
-  expect_true("1" %in% drawn_text(hm))
+  for (layout in c("fit", "classic")) {
+    hm <- draw(matrix(1, 3, 3), layout = layout)
+    expect_true("1" %in% drawn_text(hm))
+  }
   # NO LEGEND
   hm <- draw(m, legend = FALSE, layout = "fit")
   expect_false("legend" %in% heat_map_info(hm)$layout$component)

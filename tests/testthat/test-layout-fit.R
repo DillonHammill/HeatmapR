@@ -1,9 +1,10 @@
 # LAYOUT FITTING ---------------------------------------------------------------
 
-test_that("no components overlap or leave the device in random layouts", {
+test_that("no components overlap or leave the device in random classic layouts", {
   skip_on_cran()
   for (seed in seq_len(60)) {
     case <- random_layout_case(seed)
+    case$args$layout <- "classic"
     boxes <- layout_case_boxes(case)
     info <- paste("seed", seed, describe_case(case))
     expect_equal(layout_overlaps(boxes), character(0), info = info)
@@ -48,13 +49,19 @@ test_that("cluster label strips are sized for their text", {
     strip <- info$layout[info$layout$component == "labels_y", ]
     strip$xmax - strip$xmin
   }
-  with_text <- heat_map_info(
-    draw(m, tree_cut_y = 2, tree_label_y = TRUE, tree_label_text_y = c("Cluster A", "Cluster B"))
-  )
-  expect_gte(width(with_text), 0.15)
-  # Without text the strip keeps its size in cell units
-  no_text <- heat_map_info(draw(m, tree_cut_y = 2, tree_label_y = TRUE))
+  for (layout in c("classic", "fit")) {
+    with_text <- heat_map_info(
+      draw(m, tree_cut_y = 2, tree_label_y = TRUE,
+           tree_label_text_y = c("Cluster A", "Cluster B"), layout = layout)
+    )
+    expect_gte(width(with_text), 0.15)
+  }
+  # Without text the strip keeps its size in cell units (classic) or is
+  # 0.8 inches x tree_label_size_y (fit)
+  no_text <- heat_map_info(draw(m, tree_cut_y = 2, tree_label_y = TRUE, layout = "classic"))
   expect_lt(width(no_text), 0.02)
+  no_text <- heat_map_info(draw(m, tree_cut_y = 2, tree_label_y = TRUE))
+  expect_equal(width(no_text), 0.08, tolerance = 1e-6)
 })
 
 test_that("cluster label text is shrunk to fit narrow clusters", {
