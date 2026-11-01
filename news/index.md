@@ -15,6 +15,7 @@
   labels and the title sit just beyond the axis text, and margin text is
   kept on the device. Set `layout = "classic"` for the previous layout,
   in which these components are sized as fractions of the heatmap.
+
 - When `tree_cut_x` or `tree_cut_y` is a vector of cluster indices, the
   indices are now supplied in the original order of the columns/rows of
   `x` (consistent with `bar_values_x` and `bar_values_y`) rather than
@@ -27,16 +28,25 @@
   of the dendrogram (see New features); a dendrogram supplied as an
   `hclust` or `dist` object is kept only when the clusters are
   contiguous in its order, and dropped with a warning otherwise.
+
 - [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)
   now errors for unsupported scaling methods (e.g. `"minmax"` was
   previously treated as `"mean"`) or margins, instead of silently
   guessing. The margin must be `"column"` or `"row"` (or an abbreviation
   such as `"col"`), or `"x"`/`"y"`; previously any value not starting
   with `"c"`, including `"x"`, scaled rows.
+
 - `heat_map(scale = "range")` (or `"mean"`/`"zscore"`) now applies that
   scaling method to each column. Previously the method name was treated
   as the margin, so rows were scaled (and scrambled by the row scaling
   bug below).
+
+- The default colour scale no longer returns to purple at the top. It
+  runs through the viridis colours from dark purple to yellow as before,
+  then on through orange and red to dark red (evenly spaced in CIELAB),
+  so the lowest and highest values can’t be confused. Set
+  `cell_col_scale` to a vector of colours, a palette name or a function
+  for other scales.
 
 ### Bug fixes
 

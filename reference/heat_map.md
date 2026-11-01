@@ -480,9 +480,10 @@ heat_map(
 
 - cell_col_scale:
 
-  a vector of colours to use for the colour scale of numeric values, set
-  to a hybrid colour-blind friendly viridis colour palette by default.
-  Alternatively, the name of a palette listed in
+  a vector of colours to use for the colour scale of numeric values. By
+  default the scale runs through the colour-blind friendly viridis
+  colours from dark purple to yellow, then on through orange and red to
+  dark red. Alternatively, the name of a palette listed in
   [`hcl.pals`](https://rdrr.io/r/grDevices/palettes.html) (e.g.
   `"viridis"` or `"Blue-Red 3"`), or a function created by
   [`colorRamp`](https://rdrr.io/r/grDevices/colorRamp.html).
