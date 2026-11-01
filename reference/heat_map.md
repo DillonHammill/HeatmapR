@@ -17,6 +17,7 @@ heat_map(
   tree_size_x = 1,
   tree_scale_x = FALSE,
   tree_order_x = "default",
+  tree_support_x = NULL,
   tree_cut_x = NULL,
   tree_kmeans_x = NULL,
   tree_split_x = 1,
@@ -33,6 +34,8 @@ heat_map(
   tree_size_y = 1,
   tree_scale_y = FALSE,
   tree_order_y = "default",
+  tree_support_y = NULL,
+  tree_support_labels = TRUE,
   tree_cut_y = NULL,
   tree_kmeans_y = NULL,
   tree_split_y = 1,
@@ -56,6 +59,11 @@ heat_map(
   cell_size_scale_method = "linear",
   cell_size_scale_range = c(0, 1),
   cell_col_alpha = 1,
+  cell_uncertainty = NULL,
+  cell_uncertainty_breaks = NULL,
+  cell_uncertainty_title = "Uncertainty",
+  cell_split = NULL,
+  cell_split_labels = c("x", "cell_split"),
   cell_col_empty = "white",
   cell_border_line_type = 1,
   cell_border_line_width = 1,
@@ -145,6 +153,7 @@ heat_map(
   legend_size = 1,
   legend_col_scale_size = 1,
   legend_col_breaks = NULL,
+  legend_col_density = FALSE,
   legend_title = NULL,
   legend_title_text_font = 2,
   legend_title_text_size = 1,
@@ -159,7 +168,16 @@ heat_map(
   mark_labels_x = NULL,
   mark_labels_y = NULL,
   mark_line_col = "grey40",
+  zoom_x = NULL,
+  zoom_y = NULL,
+  zoom_size_x = 1,
+  zoom_size_y = 1,
   cell_raster = "auto",
+  cell_values = NULL,
+  cell_glyph = "density",
+  cell_glyph_range = "column",
+  cell_glyph_col = "grey10",
+  cell_glyph_fill = "#FFFFFF8C",
   fit_text = TRUE,
   layout = "fit",
   popup = TRUE,
@@ -246,6 +264,21 @@ heat_map(
   [`heatmap`](https://rdrr.io/r/stats/heatmap.html)). Optimal leaf
   ordering takes a few seconds for 1000 columns and grows with the cube
   of the number of columns.
+
+- tree_support_x:
+
+  `TRUE` or a number of resamples (at least 10) to draw each branch of
+  the x axis dendrogram by its bootstrap support: the rows are resampled
+  with replacement and the columns clustered again (with `dist_method`
+  and `clust_method`, within each group for a dendrogram split by
+  groups), and each branch scores the proportion of resamples in which
+  its exact set of columns is a branch again. Branches with 90\\ lower
+  support dashed lines, with a key in the legend. `TRUE` uses 100
+  resamples. The resamples use a fixed seed (leaving the random number
+  generator as it was), so the support is the same each time the heatmap
+  is drawn.
+  [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
+  returns the support of each branch.
 
 - tree_cut_x:
 
@@ -358,6 +391,18 @@ heat_map(
 
   how the branches of the y axis dendrogram are ordered, either
   `"default"`, `"olo"` or `"mean"`, as for `tree_order_x`.
+
+- tree_support_y:
+
+  `TRUE` or a number of resamples to draw each branch of the y axis
+  dendrogram by its bootstrap support, resampling the columns. See
+  `tree_support_x`.
+
+- tree_support_labels:
+
+  logical indicating whether larger branches (at least 5 leaves and an
+  eighth of all leaves) are labelled with their support as a percentage,
+  set to TRUE by default.
 
 - tree_cut_y:
 
@@ -545,6 +590,49 @@ heat_map(
   of `x` (as in [`matrix()`](https://rdrr.io/r/base/matrix.html)).
   Legends use solid colours unless all cells share the same
   transparency.
+
+- cell_uncertainty:
+
+  a numeric matrix with the same dimensions as `x` holding the
+  uncertainty of each value, such as a standard error, a confidence
+  interval width or a p-value. Cells are coloured with a
+  value-suppressing palette: the more uncertain a value, the fewer
+  colours its part of the scale has and the closer they are to grey, so
+  an uncertain value can't look like a strong one. The most certain
+  level uses 8 colours across the scale (with the default 4 levels), the
+  next 4, then 2, and the most uncertain level a single, nearly grey
+  colour. Missing uncertainties are treated as the most uncertain. The
+  colour legend becomes a key with one row per uncertainty level (fit
+  layout).
+
+- cell_uncertainty_breaks:
+
+  1 to 5 increasing thresholds between the uncertainty levels, set to
+  NULL by default for thresholds at a quarter, half and three quarters
+  of the largest uncertainty (4 levels).
+
+- cell_uncertainty_title:
+
+  heading of the uncertainty levels in the colour legend, set to
+  `"Uncertainty"` by default.
+
+- cell_split:
+
+  a numeric matrix with the same dimensions as `x` holding a second
+  value for each cell, such as the treated condition when `x` holds the
+  control. Each cell is split along its diagonal: the value in `x` fills
+  the upper left half and the value in `cell_split` the lower right
+  half, on the same colour scale (its limits cover both). Requires
+  full-size rectangular cells (no `cell_size` or other `cell_shape`) and
+  can't be combined with `cell_uncertainty`; cells of non-numeric
+  columns are not split. With `scale`, each column (or row) of `x` is
+  scaled together with the same column (or row) of `cell_split`, so that
+  the halves stay comparable.
+
+- cell_split_labels:
+
+  two labels for the halves of the cells in the legend - the values in
+  `x` and in `cell_split`, set to `c("x", "cell_split")` by default.
 
 - cell_col_empty:
 
@@ -1039,6 +1127,14 @@ heat_map(
   when supplied, are used as the labels, e.g.
   `c(low = -2, 0, high = 2)`.
 
+- legend_col_density:
+
+  logical indicating whether the distribution of the numeric values (a
+  kernel density) is drawn as a trace over the colour legend, so that
+  you can see which colours most cells take and how many values sit near
+  the limits of the scale (e.g. with
+  `cell_col_scale_limits = "robust"`), set to FALSE by default.
+
 - legend_title:
 
   a vector of up to three elements containing text to be displayed above
@@ -1106,6 +1202,27 @@ heat_map(
   colour of the leader lines connecting mark labels to their rows or
   columns, set to `"grey40"` by default.
 
+- zoom_x, zoom_y:
+
+  columns or rows to enlarge, as names, indices in the original order of
+  `x`, or a logical vector with one value per column or row. Every row
+  from the first to the last of these in the displayed order is
+  enlarged, so giving the first and last rows of a band is enough (e.g.
+  a cluster from `tree_cut_y`). The band is outlined on the heatmap and
+  drawn again in a larger panel on the axis text side, joined to the
+  band by a wedge, and the enlarged rows are named beside the panel in
+  place of the axis text. This shows the detail of a few rows of a large
+  heatmap together with the whole. Requires `layout = "fit"`; can't be
+  combined with `mark_x` or `mark_y` on the same axis.
+
+- zoom_size_x, zoom_size_y:
+
+  size of the zoom panel relative to the heatmap - its height for
+  `zoom_x` and its width for `zoom_y` - between 0.2 and 5, set to 1 by
+  default. Along the band the panel is as long as the heatmap, or
+  shorter when that would make the enlarged cells larger than 0.3
+  inches.
+
 - cell_raster:
 
   whether to draw the cells as raster images, which is much faster and
@@ -1115,6 +1232,42 @@ heat_map(
   only used when every cell is a full-size rectangle (no `cell_size`
   scaling or other `cell_shape`) and the graphics device supports them;
   cell borders are then drawn as grid lines.
+
+- cell_values:
+
+  a matrix of lists with the same dimensions as `x`, holding a numeric
+  vector of values for each cell, such as the result of
+  `heat_map_summarise(fun = "values")`. The distribution of each cell's
+  values is drawn inside the cell (`cell_glyph`), so that a heatmap of
+  summaries (e.g. the median of each marker in each cluster) also shows
+  the spread and shape behind each summary - two populations behind a
+  middling median, for example. Values are drawn as supplied, without
+  `scale`.
+
+- cell_glyph:
+
+  how the values in `cell_values` are drawn: `"density"` (a kernel
+  density with a tick at the median, the default), `"histogram"` (16
+  bins with a tick at the median) or `"box"` (a box plot as
+  [`boxplot()`](https://rdrr.io/r/graphics/boxplot.html), with the
+  median, quartiles, whiskers to 1.5 times the interquartile range and
+  the values beyond them). A single distinct value is drawn as a
+  vertical line.
+
+- cell_glyph_range:
+
+  the range of values spanned by each glyph, shared by the cells of each
+  `"column"` (the default), each `"row"` or `"all"` cells, or a numeric
+  vector `c(min, max)`. Values beyond the range are drawn at its ends.
+
+- cell_glyph_col:
+
+  colour of the lines of the glyphs, set to `"grey10"` by default.
+
+- cell_glyph_fill:
+
+  fill colour of densities, histogram bars and boxes, set to translucent
+  white by default so that the cell colour shows through.
 
 - fit_text:
 

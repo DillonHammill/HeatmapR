@@ -171,6 +171,38 @@
   per unit in the fit layout, so they stay visible on large heatmaps
   (they were half a row or column, which vanished with thousands of
   rows).
+- Uncertainty in colour: `cell_uncertainty` (a matrix of standard
+  errors, interval widths or p-values) colours cells with a
+  value-suppressing palette - the more uncertain a value, the fewer
+  colours its part of the scale has and the closer they are to grey (8,
+  4, 2 then 1 colour with the default 4 levels;
+  `cell_uncertainty_breaks` sets the thresholds), so a noisy estimate
+  can’t look like a strong one. The colour legend becomes a key with one
+  row per uncertainty level (fit layout).
+- `legend_col_density = TRUE` traces the distribution of the values (a
+  kernel density) over the colour legend - beside, below or in the
+  classic layout - so you can see which colours most cells take and how
+  much of the data sits near the ends of the scale, e.g. with robust
+  limits.
+- Branch support: `tree_support_x`/`tree_support_y` (`TRUE` or a number
+  of resamples) draw each dendrogram branch by its bootstrap support -
+  the other dimension is resampled, the leaves are clustered again in
+  the same way (within groups too) and each branch scores the proportion
+  of resamples in which its set of leaves is a branch again. Branches
+  with 90% support or more are thick black lines, 70-89% grey and lower
+  support dashed, larger branches are labelled with their support
+  (`tree_support_labels`) and the legend gains a key. The resamples use
+  a fixed seed without touching the random number generator, so the
+  support is the same every time;
+  [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
+  returns it.
+- Distributions inside cells: `cell_values` takes a matrix holding the
+  values behind each cell (e.g. `heat_map_summarise(fun = "values")`,
+  new) and draws their distribution inside the cell - a density with a
+  tick at the median, a histogram or a box plot (`cell_glyph`) - on a
+  range shared by each column, row or all cells (`cell_glyph_range`). A
+  heatmap of cluster medians then also shows the spread and shape behind
+  each median, such as two populations hiding behind a middling one.
 - Box plots and violins beside the heatmap: `bar_type_x`/`bar_type_y`
   draw `"box"` plots or `"violin"`s of the distribution of several
   values for each column/row (as superheat’s `yr.plot.type` or
@@ -206,6 +238,37 @@
   when neighbouring labels would overlap across their baselines, which
   leaves them larger than perpendicular labels need on crowded heatmaps,
   and both layouts make room for the text and its overhang.
+- New
+  [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+  writes a plain-language description of a heatmap - its size and
+  scaling, what the colours show (naming the colours of the scale), the
+  most extreme values, how the rows and columns are clustered and where
+  each cluster is highest and lowest, branch support, uncertainty, split
+  cells, annotations, bars, labelled rows and zoom panels - as
+  alternative text for screen readers (`fig.alt` in R Markdown and
+  Quarto) or a starting point for a figure legend.
+- Split cells: `cell_split` takes a second matrix of values, e.g. a
+  stimulated condition beside the control in `x`, and splits each cell
+  along its diagonal - the value in `x` fills the upper left half and
+  the value in `cell_split` the lower right half, on one colour scale
+  whose limits cover both (with `scale`, each column or row is scaled
+  together with its counterpart). Two conditions are compared cell by
+  cell without doubling the size of the heatmap; `cell_split_labels`
+  names the halves in a legend key, and `heat_map_info()$split_colours`
+  returns the colours of the lower halves.
+- Zoom lens: `zoom_y` (or `zoom_x`) enlarges a band of rows (columns) of
+  a large heatmap in a panel beside it, so a few rows can be read
+  together with the whole. The band runs from the first to the last of
+  the chosen rows in the displayed order (names, indices or a logical
+  vector; the first and last rows are enough), is outlined on the
+  heatmap and joined to the panel by a wedge. The panel sits on the axis
+  text side and replaces the axis text with the names of the enlarged
+  rows; it keeps the cells’ shapes, text, distributions and cluster
+  gaps. `zoom_size_y` sets the width of the panel relative to the
+  heatmap (1 by default) and enlarged cells are at most 0.3 inches along
+  the band.
+  [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
+  returns the enlarged rows and columns (fit layout).
 - Label chosen rows or columns with `mark_y` and `mark_x` (names,
   indices in the original order or a logical vector), e.g. a few marker
   genes on a heatmap of thousands. The labels replace the axis text, are

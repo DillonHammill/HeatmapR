@@ -56,6 +56,41 @@ these layout issues using solely a base graphics approach.
   customization, making it ideal for users that have limited coding
   experience.
 
+## Features
+
+Beyond clustering, scaling and customisable colours, shapes, sizes,
+text, legends and layouts, **HeatmapR** can:
+
+- **Show more than one value in each cell** - split cells to compare two
+  conditions (`cell_split`), the distribution of the values behind each
+  cell (`cell_values`), cell size as a second variable, and colours that
+  fade towards grey where values are uncertain (`cell_uncertainty`).
+- **Annotate rows and columns** - metadata tracks (`annotation_x`,
+  `annotation_y`), bar graphs, box plots and violins beside the heatmap,
+  labels for chosen rows of a large heatmap (`mark_y`) and a zoom lens
+  that enlarges a band of rows beside the whole (`zoom_y`).
+- **Cluster with confidence** - correlation and cosine distances,
+  optimal leaf ordering, clustering within your own groups, k-means
+  splits, and bootstrap support drawn on the dendrogram branches
+  (`tree_support_y`).
+- **Handle large data** - raster images for heatmaps with millions of
+  cells,
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  for pseudobulk heatmaps and dot plots of groups of cells, and robust,
+  stepped or centred colour scales with the distribution of the values
+  traced over the legend.
+- **Explain the figure** -
+  [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
+  returns the order, clusters and layout of a heatmap, and
+  [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+  writes alternative text for screen readers.
+
+[TABLE]
+
+See the
+[changelog](https://dillonhammill.github.io/HeatmapR/news/index.html)
+for everything new in **HeatmapR** 1.2.0.
+
 ## Installation
 
 **HeatmapR** can be installed from CRAN:
@@ -97,7 +132,10 @@ heat_map(
 )
 ```
 
-![](reference/figures/README-HeatmapR-1.png)
+![Heatmap of the mtcars data rescaled within each column, drawn as
+circles sized and coloured by value, with dendrograms splitting the cars
+into 12 groups and the variables into 4
+groups.](reference/figures/README-HeatmapR-1.png)
 
 ## Acknowledgements
 

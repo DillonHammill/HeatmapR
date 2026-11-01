@@ -70,10 +70,21 @@ from left to right for columns and from bottom to top for rows.</p></li>
 <li><p><code>tree_x</code>, <code>tree_y</code>: <code>hclust</code> objects for the x and
 y axis dendrograms (or <code>NULL</code>). Branch heights are rescaled for
 display.</p></li>
+<li><p><code>support_x</code>, <code>support_y</code>: bootstrap support of each merge
+of <code>tree_x</code> and <code>tree_y</code> (<code>tree_support_x</code>,
+<code>tree_support_y</code>), <code>NA</code> for the root and merges fixed by
+groups, or <code>NULL</code>.</p></li>
+<li><p><code>zoom_x</code>, <code>zoom_y</code>: indices of the columns (from left
+to right) and rows (from top to bottom) enlarged in a zoom panel
+(<code>zoom_x</code>, <code>zoom_y</code>), or <code>NULL</code>.</p></li>
 <li><p><code>axis_text_x</code>, <code>axis_text_y</code>: axis labels from left to
 right and from top to bottom respectively.</p></li>
 <li><p><code>colours</code>, <code>sizes</code>: the fill colour and relative size of
 each cell, in the orientation of the original data.</p></li>
+<li><p><code>split_colours</code>, <code>split_data</code>: the fill colour and
+value (after scaling) of the lower right half of each cell
+(<code>cell_split</code>) in the orientation of the original data, or
+<code>NULL</code>.</p></li>
 <li><p><code>annotations</code>: lists <code>x</code> and <code>y</code> with the colour of
 each row/column for every annotation, in the original order.</p></li>
 <li><p><code>layout</code>: a data.frame with the bounding box (<code>xmin</code>,

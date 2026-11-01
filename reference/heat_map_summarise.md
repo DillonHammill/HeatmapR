@@ -48,7 +48,11 @@ heat_map_summarise(
   non-missing values) or `"detected"` (the proportion of non-missing
   values above `threshold`), or a function taking a numeric vector and
   returning a single number. Missing values are removed before
-  summarising.
+  summarising. `"values"` keeps the values themselves: the result is
+  then a matrix of lists holding the numeric vector of values in each
+  group, for `cell_values` in
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  to draw their distributions inside the cells.
 
 - threshold:
 
@@ -58,9 +62,10 @@ heat_map_summarise(
 ## Value
 
 a numeric matrix with one column per group of `group_x` (or the columns
-of `x`) and one row per group of `group_y` (or the rows of `x`). Groups
-are in the order of their factor levels (sorted for other vectors).
-Groups without any values are `NA`.
+of `x`) and one row per group of `group_y` (or the rows of `x`), or a
+matrix of lists for `fun = "values"`. Groups are in the order of their
+factor levels (sorted for other vectors). Groups without any values are
+`NA`.
 
 ## See also
 
@@ -76,6 +81,17 @@ Dillon Hammill (dillon.hammill21@gmail.com)
 # Mean of each variable for each number of cylinders
 cyl <- heat_map_summarise(mtcars[, -2], group_y = mtcars$cyl)
 heat_map(cyl, scale = "column", popup = FALSE)
+#> Applying range scaling to each column...
+
+
+# Distribution of each variable for each number of cylinders in its cell
+heat_map(
+  cyl,
+  scale = "column",
+  cell_values = heat_map_summarise(mtcars[, -2], group_y = mtcars$cyl,
+                                   fun = "values"),
+  popup = FALSE
+)
 #> Applying range scaling to each column...
 
 

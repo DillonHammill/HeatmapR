@@ -37,11 +37,23 @@ a list containing:
 - `tree_x`, `tree_y`: `hclust` objects for the x and y axis dendrograms
   (or `NULL`). Branch heights are rescaled for display.
 
+- `support_x`, `support_y`: bootstrap support of each merge of `tree_x`
+  and `tree_y` (`tree_support_x`, `tree_support_y`), `NA` for the root
+  and merges fixed by groups, or `NULL`.
+
+- `zoom_x`, `zoom_y`: indices of the columns (from left to right) and
+  rows (from top to bottom) enlarged in a zoom panel (`zoom_x`,
+  `zoom_y`), or `NULL`.
+
 - `axis_text_x`, `axis_text_y`: axis labels from left to right and from
   top to bottom respectively.
 
 - `colours`, `sizes`: the fill colour and relative size of each cell, in
   the orientation of the original data.
+
+- `split_colours`, `split_data`: the fill colour and value (after
+  scaling) of the lower right half of each cell (`cell_split`) in the
+  orientation of the original data, or `NULL`.
 
 - `annotations`: lists `x` and `y` with the colour of each row/column
   for every annotation, in the original order.

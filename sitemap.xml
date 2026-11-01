@@ -12,6 +12,7 @@
 <url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.html</loc></url>
 <url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_complete.html</loc></url>
 <url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_custom.html</loc></url>
+<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.html</loc></url>
 <url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.html</loc></url>
 <url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.html</loc></url>
 <url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_new.html</loc></url>
@@ -21,5 +22,6 @@
 <url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.html</loc></url>
 <url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.html</loc></url>
 <url><loc>https://dillonhammill.github.io/HeatmapR/reference/index.html</loc></url>
+<url><loc>https://dillonhammill.github.io/HeatmapR/reference/print.heat_map_description.html</loc></url>
 </urlset>
 

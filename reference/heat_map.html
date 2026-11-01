@@ -51,6 +51,7 @@
 <span>  tree_size_x <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_scale_x <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tree_order_x <span class="op">=</span> <span class="st">"default"</span>,</span>
+<span>  tree_support_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_cut_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_kmeans_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_split_x <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -67,6 +68,8 @@
 <span>  tree_size_y <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_scale_y <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tree_order_y <span class="op">=</span> <span class="st">"default"</span>,</span>
+<span>  tree_support_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  tree_support_labels <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  tree_cut_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_kmeans_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_split_y <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -90,6 +93,11 @@
 <span>  cell_size_scale_method <span class="op">=</span> <span class="st">"linear"</span>,</span>
 <span>  cell_size_scale_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  cell_col_alpha <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  cell_uncertainty <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_uncertainty_breaks <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_uncertainty_title <span class="op">=</span> <span class="st">"Uncertainty"</span>,</span>
+<span>  cell_split <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_split_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"cell_split"</span><span class="op">)</span>,</span>
 <span>  cell_col_empty <span class="op">=</span> <span class="st">"white"</span>,</span>
 <span>  cell_border_line_type <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  cell_border_line_width <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -179,6 +187,7 @@
 <span>  legend_size <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  legend_col_scale_size <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  legend_col_breaks <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  legend_col_density <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  legend_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_title_text_font <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  legend_title_text_size <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -193,7 +202,16 @@
 <span>  mark_labels_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  mark_labels_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  mark_line_col <span class="op">=</span> <span class="st">"grey40"</span>,</span>
+<span>  zoom_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  zoom_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  zoom_size_x <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  zoom_size_y <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  cell_raster <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  cell_values <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_glyph <span class="op">=</span> <span class="st">"density"</span>,</span>
+<span>  cell_glyph_range <span class="op">=</span> <span class="st">"column"</span>,</span>
+<span>  cell_glyph_col <span class="op">=</span> <span class="st">"grey10"</span>,</span>
+<span>  cell_glyph_fill <span class="op">=</span> <span class="st">"#FFFFFF8C"</span>,</span>
 <span>  fit_text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  layout <span class="op">=</span> <span class="st">"fit"</span>,</span>
 <span>  popup <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -285,6 +303,20 @@ are as similar as possible) or <code>"mean"</code> (branches ordered by their
 mean values, as in <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code>). Optimal leaf ordering
 takes a few seconds for 1000 columns and grows with the cube of the
 number of columns.</p></dd>
+
+
+<dt id="arg-tree-support-x">tree_support_x<a class="anchor" aria-label="anchor" href="#arg-tree-support-x"></a></dt>
+<dd><p><code>TRUE</code> or a number of resamples (at least 10)
+to draw each branch of the x axis dendrogram by its bootstrap support:
+the rows are resampled with replacement and the columns clustered again
+(with <code>dist_method</code> and <code>clust_method</code>, within each group for
+a dendrogram split by groups), and each branch scores the proportion of
+resamples in which its exact set of columns is a branch again. Branches
+with 90\<!-- % support or more are thick black lines, 70-89\\% grey lines and -->
+lower support dashed lines, with a key in the legend. <code>TRUE</code> uses
+100 resamples. The resamples use a fixed seed (leaving the random number
+generator as it was), so the support is the same each time the heatmap
+is drawn. <code><a href="heat_map_info.html">heat_map_info()</a></code> returns the support of each branch.</p></dd>
 
 
 <dt id="arg-tree-cut-x">tree_cut_x<a class="anchor" aria-label="anchor" href="#arg-tree-cut-x"></a></dt>
@@ -402,6 +434,18 @@ default.</p></dd>
 <dd><p>how the branches of the y axis dendrogram are ordered,
 either <code>"default"</code>, <code>"olo"</code> or <code>"mean"</code>, as for
 <code>tree_order_x</code>.</p></dd>
+
+
+<dt id="arg-tree-support-y">tree_support_y<a class="anchor" aria-label="anchor" href="#arg-tree-support-y"></a></dt>
+<dd><p><code>TRUE</code> or a number of resamples to draw each
+branch of the y axis dendrogram by its bootstrap support, resampling the
+columns. See <code>tree_support_x</code>.</p></dd>
+
+
+<dt id="arg-tree-support-labels">tree_support_labels<a class="anchor" aria-label="anchor" href="#arg-tree-support-labels"></a></dt>
+<dd><p>logical indicating whether larger branches (at
+least 5 leaves and an eighth of all leaves) are labelled with their
+support as a percentage, set to TRUE by default.</p></dd>
 
 
 <dt id="arg-tree-cut-y">tree_cut_y<a class="anchor" aria-label="anchor" href="#arg-tree-cut-y"></a></dt>
@@ -595,6 +639,50 @@ transparency can be used for each cell by supplying a matrix with the same
 dimensions as <code>x</code>, or a vector that is recycled down the columns of
 <code>x</code> (as in <code><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix()</a></code>). Legends use solid colours unless all
 cells share the same transparency.</p></dd>
+
+
+<dt id="arg-cell-uncertainty">cell_uncertainty<a class="anchor" aria-label="anchor" href="#arg-cell-uncertainty"></a></dt>
+<dd><p>a numeric matrix with the same dimensions as
+<code>x</code> holding the uncertainty of each value, such as a standard error,
+a confidence interval width or a p-value. Cells are coloured with a
+value-suppressing palette: the more uncertain a value, the fewer colours
+its part of the scale has and the closer they are to grey, so an
+uncertain value can't look like a strong one. The most certain level
+uses 8 colours across the scale (with the default 4 levels), the next 4,
+then 2, and the most uncertain level a single, nearly grey colour.
+Missing uncertainties are treated as the most uncertain. The colour
+legend becomes a key with one row per uncertainty level (fit layout).</p></dd>
+
+
+<dt id="arg-cell-uncertainty-breaks">cell_uncertainty_breaks<a class="anchor" aria-label="anchor" href="#arg-cell-uncertainty-breaks"></a></dt>
+<dd><p>1 to 5 increasing thresholds between the
+uncertainty levels, set to NULL by default for thresholds at a quarter,
+half and three quarters of the largest uncertainty (4 levels).</p></dd>
+
+
+<dt id="arg-cell-uncertainty-title">cell_uncertainty_title<a class="anchor" aria-label="anchor" href="#arg-cell-uncertainty-title"></a></dt>
+<dd><p>heading of the uncertainty levels in the
+colour legend, set to <code>"Uncertainty"</code> by default.</p></dd>
+
+
+<dt id="arg-cell-split">cell_split<a class="anchor" aria-label="anchor" href="#arg-cell-split"></a></dt>
+<dd><p>a numeric matrix with the same dimensions as <code>x</code>
+holding a second value for each cell, such as the treated condition when
+<code>x</code> holds the control. Each cell is split along its diagonal: the
+value in <code>x</code> fills the upper left half and the value in
+<code>cell_split</code> the lower right half, on the same colour scale (its
+limits cover both). Requires full-size rectangular cells (no
+<code>cell_size</code> or other <code>cell_shape</code>) and can't be combined with
+<code>cell_uncertainty</code>; cells of non-numeric columns are not split. With
+<code>scale</code>, each column (or row) of <code>x</code> is scaled together with
+the same column (or row) of <code>cell_split</code>, so that the halves stay
+comparable.</p></dd>
+
+
+<dt id="arg-cell-split-labels">cell_split_labels<a class="anchor" aria-label="anchor" href="#arg-cell-split-labels"></a></dt>
+<dd><p>two labels for the halves of the cells in the
+legend - the values in <code>x</code> and in <code>cell_split</code>, set to
+<code>c("x", "cell_split")</code> by default.</p></dd>
 
 
 <dt id="arg-cell-col-empty">cell_col_empty<a class="anchor" aria-label="anchor" href="#arg-cell-col-empty"></a></dt>
@@ -1108,6 +1196,14 @@ NULL by default to choose them automatically (or use
 labels, e.g. <code>c(low = -2, 0, high = 2)</code>.</p></dd>
 
 
+<dt id="arg-legend-col-density">legend_col_density<a class="anchor" aria-label="anchor" href="#arg-legend-col-density"></a></dt>
+<dd><p>logical indicating whether the distribution of
+the numeric values (a kernel density) is drawn as a trace over the colour
+legend, so that you can see which colours most cells take and how many
+values sit near the limits of the scale (e.g. with
+<code>cell_col_scale_limits = "robust"</code>), set to FALSE by default.</p></dd>
+
+
 <dt id="arg-legend-title">legend_title<a class="anchor" aria-label="anchor" href="#arg-legend-title"></a></dt>
 <dd><p>a vector of up to three elements containing text to be
 displayed above the cell colour, size and levels legends respectively.</p></dd>
@@ -1177,6 +1273,27 @@ to use the column or row names.</p></dd>
 their rows or columns, set to <code>"grey40"</code> by default.</p></dd>
 
 
+<dt id="arg-zoom-x-zoom-y">zoom_x, zoom_y<a class="anchor" aria-label="anchor" href="#arg-zoom-x-zoom-y"></a></dt>
+<dd><p>columns or rows to enlarge, as names, indices in the
+original order of <code>x</code>, or a logical vector with one value per column
+or row. Every row from the first to the last of these in the displayed
+order is enlarged, so giving the first and last rows of a band is enough
+(e.g. a cluster from <code>tree_cut_y</code>). The band is outlined on the
+heatmap and drawn again in a larger panel on the axis text side, joined to
+the band by a wedge, and the enlarged rows are named beside the panel in
+place of the axis text. This shows the detail of a few rows of a large
+heatmap together with the whole. Requires <code>layout = "fit"</code>; can't be
+combined with <code>mark_x</code> or <code>mark_y</code> on the same axis.</p></dd>
+
+
+<dt id="arg-zoom-size-x-zoom-size-y">zoom_size_x, zoom_size_y<a class="anchor" aria-label="anchor" href="#arg-zoom-size-x-zoom-size-y"></a></dt>
+<dd><p>size of the zoom panel relative to the
+heatmap - its height for <code>zoom_x</code> and its width for <code>zoom_y</code> -
+between 0.2 and 5, set to 1 by default. Along the band the panel is as long
+as the heatmap, or shorter when that would make the enlarged cells larger
+than 0.3 inches.</p></dd>
+
+
 <dt id="arg-cell-raster">cell_raster<a class="anchor" aria-label="anchor" href="#arg-cell-raster"></a></dt>
 <dd><p>whether to draw the cells as raster images, which is much
 faster and gives smaller files for large heatmaps. Set to <code>"auto"</code> by
@@ -1185,6 +1302,44 @@ default to use raster images for heatmaps with more than 50,000 cells.
 Raster images are only used when every cell is a full-size rectangle (no
 <code>cell_size</code> scaling or other <code>cell_shape</code>) and the graphics
 device supports them; cell borders are then drawn as grid lines.</p></dd>
+
+
+<dt id="arg-cell-values">cell_values<a class="anchor" aria-label="anchor" href="#arg-cell-values"></a></dt>
+<dd><p>a matrix of lists with the same dimensions as <code>x</code>,
+holding a numeric vector of values for each cell, such as the result of
+<code>heat_map_summarise(fun = "values")</code>. The distribution of each
+cell's values is drawn inside the cell (<code>cell_glyph</code>), so that a
+heatmap of summaries (e.g. the median of each marker in each cluster)
+also shows the spread and shape behind each summary - two populations
+behind a middling median, for example. Values are drawn as supplied,
+without <code>scale</code>.</p></dd>
+
+
+<dt id="arg-cell-glyph">cell_glyph<a class="anchor" aria-label="anchor" href="#arg-cell-glyph"></a></dt>
+<dd><p>how the values in <code>cell_values</code> are drawn:
+<code>"density"</code> (a kernel density with a tick at the median, the
+default), <code>"histogram"</code> (16 bins with a tick at the median) or
+<code>"box"</code> (a box plot as <code><a href="https://rdrr.io/r/graphics/boxplot.html" class="external-link">boxplot()</a></code>, with the median,
+quartiles, whiskers to 1.5 times the interquartile range and the values
+beyond them). A single distinct value is drawn as a vertical line.</p></dd>
+
+
+<dt id="arg-cell-glyph-range">cell_glyph_range<a class="anchor" aria-label="anchor" href="#arg-cell-glyph-range"></a></dt>
+<dd><p>the range of values spanned by each glyph, shared
+by the cells of each <code>"column"</code> (the default), each <code>"row"</code> or
+<code>"all"</code> cells, or a numeric vector <code>c(min, max)</code>. Values
+beyond the range are drawn at its ends.</p></dd>
+
+
+<dt id="arg-cell-glyph-col">cell_glyph_col<a class="anchor" aria-label="anchor" href="#arg-cell-glyph-col"></a></dt>
+<dd><p>colour of the lines of the glyphs, set to
+<code>"grey10"</code> by default.</p></dd>
+
+
+<dt id="arg-cell-glyph-fill">cell_glyph_fill<a class="anchor" aria-label="anchor" href="#arg-cell-glyph-fill"></a></dt>
+<dd><p>fill colour of densities, histogram bars and boxes,
+set to translucent white by default so that the cell colour shows
+through.</p></dd>
 
 
 <dt id="arg-fit-text">fit_text<a class="anchor" aria-label="anchor" href="#arg-fit-text"></a></dt>

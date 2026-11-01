@@ -21,6 +21,16 @@ functions in `HeatmapR` as summarised below:
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   to apply column- or row-wise mean, z-score or range scaling to the
   dataset prior to constructing the heatmap.
+- [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  reduces groups of rows or columns to one summary each (e.g. the mean
+  expression of each cell type), or keeps the values of each group for
+  distributions inside the cells.
+- [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
+  returns the data, row and column order, clusters, colours and layout
+  of a heatmap for downstream analyses.
+- [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+  writes a plain-language description of a heatmap to use as alternative
+  text for screen readers.
 - [`heat_map_layout()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.md)
   allows you to create custom plot layouts to arrange multiple heatmaps.
 - [`heat_map_save()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md)
@@ -159,6 +169,89 @@ heat_map(
 ```
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-2.png)
+
+#### 2.3.1 Uncertainty in Colour
+
+Estimates such as fold changes come with uncertainty, and a noisy
+estimate shouldn’t look as strong as a precise one. `cell_uncertainty`
+takes a matrix of uncertainties (standard errors, confidence interval
+widths or p-values) and colours the cells with a value-suppressing
+palette: the more uncertain a value, the fewer colours its part of the
+scale has and the closer they are to grey. Precise values use eight
+colours across the scale, then four, two, and the most uncertain values
+a single, nearly grey colour. `cell_uncertainty_breaks` sets the
+thresholds between the levels, and the colour legend becomes a key with
+one row per level.
+
+``` r
+
+set.seed(3)
+genes <- c("IFIT1", "ISG15", "MX1", "OAS1", "IRF7", "STAT1", "CXCL10",
+           "GBP1", "IL6", "TNF", "CCL2", "NFKBIA", "SOCS3", "JUNB")
+times <- c("6 h", "12 h", "24 h", "48 h", "72 h", "96 h")
+# log2 fold changes and their standard errors
+lfc <- outer(
+  c(rep(2.4, 7), rep(-1.6, 4), rep(0.6, 3)),
+  c(0.5, 1, 1.2, 1, 0.7, 0.4)
+) + matrix(rnorm(84, 0, 0.5), 14)
+se <- matrix(rgamma(84, 2, 6), 14) *
+  rep(c(1, 1, 1, 3, 1, 1, 4, 1, 2.5, 3.5, 1, 1, 5, 1), 6)
+dimnames(lfc) <- dimnames(se) <- list(genes, times)
+heat_map(
+  lfc,
+  tree_y = TRUE,
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_limits = c(-3, 3),
+  cell_uncertainty = se,
+  cell_uncertainty_breaks = c(0.3, 0.6, 0.9),
+  cell_uncertainty_title = "SE",
+  legend_title = "log2 FC",
+  title = "Fold changes, faded where they're uncertain"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-uncertainty.png)
+
+#### 2.3.2 Two Values in Each Cell
+
+To compare two conditions cell by cell, such as control and stimulated
+samples or two time points, `cell_split` takes a second matrix with the
+same dimensions as the data. Each cell is split along its diagonal: the
+value in `x` fills the upper left half and the value in `cell_split` the
+lower right half, on the same colour scale, whose limits cover both.
+Changes then show up as cells with two colours, without doubling the
+size of the heatmap. `cell_split_labels` names the two halves in the
+legend.
+
+``` r
+
+set.seed(6)
+types <- c("B", "CD4 T", "CD8 T", "NK", "Mono", "DC")
+genes <- c("IFNG", "GZMB", "PRF1", "TNF", "IL2RA", "CD69", "HLA-DR",
+           "CD86", "IL10", "CXCL8")
+# Expression in each cell type before and after stimulation
+control <- matrix(rnorm(60, 0, 0.6), 10, dimnames = list(genes, types))
+stimulated <- control + matrix(rnorm(60, 0, 0.3), 10)
+stimulated["IFNG", c("CD4 T", "CD8 T", "NK")] <-
+  stimulated["IFNG", c("CD4 T", "CD8 T", "NK")] + c(1.8, 2.6, 2.9)
+stimulated["GZMB", c("CD8 T", "NK")] <- stimulated["GZMB", c("CD8 T", "NK")] + 2.2
+stimulated["CD69", ] <- stimulated["CD69", ] + 1.4
+stimulated["IL10", "Mono"] <- stimulated["IL10", "Mono"] + 2.4
+stimulated["CD86", c("Mono", "DC")] <- stimulated["CD86", c("Mono", "DC")] + 1.6
+heat_map(
+  control,
+  cell_split = stimulated,
+  cell_split_labels = c("Control", "Stimulated"),
+  tree_y = TRUE,
+  legend_title = "Expression",
+  title = "Control and stimulated in each cell"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-split.png)
+
+Split cells need full-size rectangles, so `cell_size` and other
+`cell_shape`s can’t be used with them.
 
 ### 2.4 Cell Borders
 
@@ -300,6 +393,55 @@ heat_map(
 ```
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-marks.png)
+
+#### 2.7.1 Zooming Into a Band of Rows
+
+Mark labels name a few rows, but they don’t show their values. `zoom_y`
+(and `zoom_x` for columns) enlarges a band of rows in a panel beside the
+heatmap instead, so the detail of a few rows can be read together with
+the whole. The band runs from the first to the last of the rows you
+choose in the displayed order (giving the first and last rows is
+enough), is outlined on the heatmap and joined to the panel by a wedge.
+The panel sits on the axis text side and is labelled with the names of
+the enlarged rows, in place of the axis text. `zoom_size_y` sets the
+width of the panel relative to the heatmap (the same width by default),
+and enlarged rows are at most 0.3 inches tall.
+
+``` r
+
+set.seed(2)
+genes <- matrix(
+  rnorm(2000 * 24),
+  nrow = 2000,
+  dimnames = list(
+    paste0("Gene_", 1:2000),
+    paste0("S", 1:24)
+  )
+)
+genes[1:150, 1:12] <- genes[1:150, 1:12] + 2.5
+genes[1001:1150, 13:24] <- genes[1001:1150, 13:24] + 2.5
+# 20 genes of a pathway - up in half of each group of samples
+genes[151:170, c(1:6, 13:18)] <- genes[151:170, c(1:6, 13:18)] + 3
+rownames(genes)[151:170] <- c(
+  "IL7R", "CCR7", "SELL", "LEF1", "TCF7", "CD27", "CD28", "KLF2", "S1PR1",
+  "FOXP1", "BACH2", "SATB1", "PLAC8", "LTB", "MAL", "NOSIP", "PIK3IP1",
+  "TXK", "AQP3", "CD7"
+)
+heat_map(
+  genes,
+  scale = "row",
+  tree_x = TRUE,
+  zoom_y = c("IL7R", "CD7"),
+  title = "A pathway in 2,000 genes"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-zoom.png)
+
+The panel keeps the cells’ shapes, text and distributions and the gaps
+between clusters. Rows that are far apart in a clustered heatmap make a
+wide band; to enlarge one cluster, pass its rows,
+e.g. `zoom_y = heat_map_info(hm)$row_clusters == 2`.
 
 ### 2.8 Rotated Column Labels
 
@@ -651,6 +793,36 @@ heat_map(
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-dist-order.png)
 
+#### 5.1.2 Branch Support
+
+A dendrogram always has branches, whether or not the data support them.
+`tree_support_y` (and `tree_support_x`) shows how stable each branch is:
+the columns are resampled with replacement, the rows are clustered again
+in the same way, and each branch scores the proportion of resamples in
+which its exact set of rows is a branch again (its bootstrap support).
+Branches with 90% support or more are drawn as thick black lines, 70-89%
+as grey lines and anything less as dashed lines, and the larger branches
+are labelled with their support. In `mtcars` only small groups, such as
+the Mazda RX4 pair, are stable; most of the larger splits come back less
+than half the time, which is worth knowing before cutting clusters from
+the dendrogram. `TRUE` uses 100 resamples, and the support is the same
+each time the heatmap is drawn.
+
+``` r
+
+heat_map(
+  mtcars,
+  scale = "column",
+  tree = "both",
+  tree_size_y = 2,
+  tree_support_x = 200,
+  tree_support_y = 200,
+  title = "Bootstrap support of each branch"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-support.png)
+
 ### 5.2 Clustering
 
 The dendrograms on either axis can be optionally cut to reveal clusters
@@ -911,6 +1083,56 @@ heat_map(
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-summarise.png)
 
+#### 5.3.1 Distributions Inside Cells
+
+A summary hides the shape of the values behind it. `cell_values` takes a
+matrix holding the values behind each cell, such as
+`heat_map_summarise(fun = "values")`, and draws their distribution
+inside the cell: a density with a tick at the median by default, or a
+histogram or box plot with `cell_glyph`. Each column shares one range of
+values (`cell_glyph_range`), so the curves can be compared down the
+column. In the example below the “T mixed” cluster has middling CD4 and
+CD8 medians that look like a dim population; the densities show that it
+is two populations, one CD4+ and one CD8+.
+
+``` r
+
+set.seed(8)
+markers <- c("CD3", "CD4", "CD8", "CD19", "CD56", "CD14")
+pops <- list(
+  "CD4 T" = c("CD3", "CD4"),
+  "CD8 T" = c("CD3", "CD8"),
+  "T mixed" = "CD3",
+  "B" = "CD19",
+  "NK" = "CD56",
+  "Monocyte" = "CD14"
+)
+cluster <- sample(names(pops), 6000, replace = TRUE)
+events <- matrix(
+  rnorm(6000 * 6, 0.5, 0.45),
+  ncol = 6,
+  dimnames = list(NULL, markers)
+)
+for (p in names(pops)) {
+  ind <- cluster == p
+  events[ind, pops[[p]]] <- rnorm(sum(ind) * length(pops[[p]]), 4, 0.55)
+}
+# Half of the "T mixed" cluster is CD4+, the other half CD8+
+mixed <- which(cluster == "T mixed")
+cd4 <- mixed[seq_along(mixed) %% 2 == 0]
+events[cd4, "CD4"] <- rnorm(length(cd4), 4, 0.55)
+cd8 <- setdiff(mixed, cd4)
+events[cd8, "CD8"] <- rnorm(length(cd8), 4, 0.55)
+heat_map(
+  heat_map_summarise(events, group_y = cluster, fun = "median"),
+  cell_values = heat_map_summarise(events, group_y = cluster, fun = "values"),
+  legend_title = "Median",
+  title = "Median intensity, with each cluster's distribution"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-cell-values.png)
+
 ## 6. Legends
 
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
@@ -970,6 +1192,36 @@ heat_map(
 ```
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-legend-bottom.png)
+
+`legend_col_density = TRUE` traces the distribution of the values (a
+kernel density) over the colour legend, so you can see which colours
+most cells take and how much of the data sits near the ends of the
+scale. It is useful with robust limits, where the values beyond the
+limits all take the end colours.
+
+``` r
+
+set.seed(5)
+expr <- matrix(
+  rnorm(40 * 12),
+  nrow = 40,
+  dimnames = list(paste0("Gene_", 1:40), paste0("S", 1:12))
+)
+expr[1:12, 1:6] <- expr[1:12, 1:6] + 1.5
+# A few extreme values
+expr[sample(length(expr), 9)] <- c(6.5, 7.2, 5.8, 8.1, 6, -5.5, -6.2, 6.8, 5.9)
+heat_map(
+  expr,
+  tree = "both",
+  axis_text_y = NA,
+  cell_col_scale_limits = "robust",
+  legend_col_density = TRUE,
+  legend_title = "Expression",
+  title = "Robust limits, with the data behind them"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-legend-density.png)
 
 ### 6.1 Layout
 
@@ -1138,6 +1390,50 @@ heat_map_complete()
 ```
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-16.png)
+
+## 9. Describing a Heatmap
+
+Readers who use screen readers can’t see a heatmap, so figures need
+alternative text that says what they show.
+[`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+writes this description in plain language from the heatmap itself: its
+size and scaling, what the colours show, the most extreme values, how
+the rows and columns are clustered and what sets each cluster apart, and
+any annotations, bars, labels or panels. Pass it to the `fig.alt` chunk
+option in R Markdown or Quarto, or use it as a starting point for a
+figure legend.
+
+``` r
+
+hm <- heat_map(
+  mtcars,
+  scale = "zscore",
+  tree = "both",
+  tree_cut_y = 3,
+  legend_title = "z-score",
+  title = "mtcars"
+)
+heat_map_describe(hm)
+```
+
+    Heatmap titled "mtcars" of 32 rows by 11 columns, converted to z-scores within
+    each column. Colours show z-score, from dark purple (-1.87) through yellow
+    green to dark red (3.21). The highest value is 3.21 (Maserati Bora, carb) and
+    the lowest is -1.87 (Ford Pantera L, qsec). Rows are ordered by hierarchical
+    clustering (euclidean distance, complete linkage). Rows are split into 3
+    groups, numbered from the bottom: group 1 (15 rows, e.g. Datsun 710 and Hornet
+    4 Drive) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows,
+    e.g. Hornet Sportabout and Duster 360) is highest in disp and cyl and lowest in
+    gear and drat; group 3 (5 rows, e.g. Mazda RX4 and Mazda RX4 Wag) is highest in
+    carb and gear and lowest in qsec and vs. Columns are ordered by hierarchical
+    clustering (euclidean distance, complete linkage).
+
+In a chunk that draws the heatmap, compute the description in an earlier
+chunk and refer to it,
+e.g. `fig.alt = as.character(heat_map_describe(hm))`. Clusters are
+described by the columns in which their mean is highest and lowest
+(rows, for clusters of columns), and `max_groups` limits how many
+clusters are described one by one.
 
 ## 10. Summary
 
