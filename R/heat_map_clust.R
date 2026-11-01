@@ -220,3 +220,114 @@ heat_map_clust <- function(x,
   }
   (heights - rng[1]) / diff(rng)
 }
+
+## GROUPED CLUSTERING ----------------------------------------------------------
+
+#' Hierarchical clustering of the rows of a matrix with unscaled heights
+#'
+#' @param x numeric matrix - rows are clustered.
+#' @param ... arguments passed to \code{dist()} (e.g. \code{p}) or
+#'   \code{hclust()} (\code{members}).
+#'
+#' @importFrom stats dist hclust
+#' @noRd
+.hclust_raw <- function(x,
+                        dist = "euclidean",
+                        method = "complete",
+                        ...) {
+  x <- as.matrix(x)
+  dots <- list(...)
+  d <- if(tolower(dist) == "cosine") {
+    .cosine_dist(x)
+  } else {
+    do.call(
+      stats::dist,
+      c(
+        list(x = x, method = dist),
+        dots[names(dots) %in% c("diag", "upper", "p")]
+      )
+    )
+  }
+  hclust(d, method = method)
+}
+
+#' Cluster within groups and join the groups at the top of the dendrogram
+#'
+#' Each group is clustered on its own, so the dendrogram describes the
+#' relationships within each group. The groups keep their order and are
+#' joined at a common height above every group, so the dendrogram doesn't
+#' imply any relationship between them.
+#'
+#' @param x numeric matrix - rows are clustered.
+#' @param groups group of each row, numbered 1, 2, ... in display order.
+#' @param scale passed to \code{.tree_heights()}.
+#'
+#' @return \code{hclust} object with the cluster of each leaf in display order
+#'   (\code{cut}) and heights scaled for display.
+#'
+#' @noRd
+.group_tree <- function(x,
+                        groups,
+                        dist = "euclidean",
+                        method = "complete",
+                        scale = FALSE,
+                        ...) {
+  x <- as.matrix(x)
+  n_groups <- max(groups)
+  merge <- matrix(integer(0), ncol = 2)
+  height <- numeric(0)
+  ord <- integer(0)
+  roots <- integer(0)
+  for(g in seq_len(n_groups)) {
+    idx <- which(groups == g)
+    if(length(idx) == 1) {
+      roots <- c(roots, -idx)
+      ord <- c(ord, idx)
+      next
+    }
+    h <- .hclust_raw(x[idx, , drop = FALSE], dist = dist, method = method, ...)
+    m <- h$merge
+    offset <- nrow(merge)
+    leaf <- m < 0
+    m[leaf] <- -idx[-m[leaf]]
+    m[!leaf] <- m[!leaf] + offset
+    merge <- rbind(merge, m)
+    height <- c(height, h$height)
+    roots <- c(roots, offset + nrow(m))
+    ord <- c(ord, idx[h$order])
+  }
+  # JOIN THE GROUPS LEFT TO RIGHT AT ONE HEIGHT ABOVE EVERY GROUP
+  top <- if(length(height) > 0 && max(height) > 0) 1.1 * max(height) else 1
+  node <- roots[1]
+  for(g in seq_len(n_groups)[-1]) {
+    merge <- rbind(merge, c(node, roots[g]))
+    height <- c(height, top)
+    node <- nrow(merge)
+  }
+  # MERGES IN ORDER OF HEIGHT (AS IN hclust) WHEN CHILDREN STAY BEFORE PARENTS
+  o <- order(height, seq_along(height))
+  rank <- order(o)
+  sorted <- merge[o, , drop = FALSE]
+  sorted[sorted > 0] <- rank[sorted[sorted > 0]]
+  if(all(sorted < seq_len(nrow(sorted)))) {
+    merge <- sorted
+    height <- height[o]
+  }
+  storage.mode(merge) <- "integer"
+  tree <- structure(
+    list(
+      merge = merge,
+      height = .tree_heights(height, scale = scale),
+      order = ord,
+      labels = rownames(x),
+      method = method,
+      dist.method = dist
+    ),
+    class = "hclust"
+  )
+  tree$cut <- structure(
+    as.integer(groups[ord]),
+    names = rownames(x)[ord]
+  )
+  tree
+}

@@ -55,14 +55,18 @@
 #'   length must equal the number of columns in \code{x}; if its length also
 #'   matches a valid set of cluster sizes, it is treated as cluster indices.
 #'   Named indices are matched to the column names of \code{x}. If a
-#'   dendrogram is requested, clusters that are contiguous in the dendrogram
-#'   order keep that order; otherwise the dendrogram is not drawn. Clusters
-#'   are always numbered, and labelled by \code{tree_label_text_x}, in the
-#'   displayed order from left to right, which may differ from the supplied
-#'   indices when the dendrogram order is kept.
+#'   dendrogram is requested (\code{tree_x = TRUE}), the columns are clustered
+#'   within each cluster and the clusters are joined at the top of the
+#'   dendrogram, so the clusters act as groups (e.g. treatments) with a
+#'   dendrogram inside each one. A dendrogram supplied as an \code{hclust} or
+#'   \code{dist} object (or a heatmap with non-numeric columns) is kept only
+#'   when the clusters are contiguous in its order. Clusters are always
+#'   numbered, and labelled by \code{tree_label_text_x}, in the displayed
+#'   order from left to right.
 #' @param tree_split_x a numeric to control the spacing between x axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove axis
-#'   tree splits.
+#'   tree splits. Each unit is 0.08 inches in the default fit layout and half
+#'   a column in the classic layout.
 #' @param tree_label_x logical indicating whether a label should be added for
 #'   each cluster within the x axis tree when \code{tree_cut_x} is specified,
 #'   set to FALSE by default.
@@ -113,14 +117,18 @@
 #'   contiguous, ordered from the bottom of the heatmap to the top. When a
 #'   vector of indices is supplied, its length must equal the number of rows in
 #'   \code{x}, and named indices are matched to the row names of \code{x}. If
-#'   a dendrogram is requested, clusters that are contiguous in the dendrogram
-#'   order keep that order; otherwise the dendrogram is not drawn. Clusters are
+#'   a dendrogram is requested (\code{tree_y = TRUE}), the rows are clustered
+#'   within each cluster and the clusters are joined at the top of the
+#'   dendrogram (e.g. cells grouped by cell type, each with its own
+#'   dendrogram); a supplied \code{hclust} or \code{dist} object is kept only
+#'   when the clusters are contiguous in its order. Clusters are
 #'   always numbered, and labelled by \code{tree_label_text_y}, in the
 #'   displayed order from the bottom of the heatmap to the top, which may
 #'   differ from the supplied indices when the dendrogram order is kept.
 #' @param tree_split_y a numeric to control the spacing between y axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove axis
-#'   tree splits.
+#'   tree splits. Each unit is 0.08 inches in the default fit layout and half
+#'   a row in the classic layout.
 #' @param tree_label_y logical indicating whether a label should be added for
 #'   each cluster within the y axis tree when \code{tree_cut_y} is specified,
 #'   set to FALSE by default.
@@ -815,8 +823,17 @@ heat_map <- function(x,
     tree_y <- TRUE
   }
 
+  # GROUPS SUPPLIED TO tree_cut_* (ONE PER ROW OR COLUMN) WITH A DENDROGRAM -
+  # CLUSTER WITHIN EACH GROUP RATHER THAN ACROSS ALL ROWS OR COLUMNS
+  group_x <- !is.null(tree_x) && !inherits(tree_x, c("dist", "hclust")) &&
+    length(tree_cut_x) > 1 && length(tree_cut_x) == ncol(x) &&
+    length(char_cols) == 0 && length(num_cols) >= 2
+  group_y <- !is.null(tree_y) && !inherits(tree_y, c("dist", "hclust")) &&
+    length(tree_cut_y) > 1 && length(tree_cut_y) == nrow(x) &&
+    length(num_cols) >= 1
+
   # X HIERARCHICAL CLUSTERING
-  if(!is.null(tree_x)) {
+  if(!is.null(tree_x) && !group_x) {
     if(length(num_cols) < 2) {
       warning(
         "At least two numeric columns are required to cluster the columns ",
@@ -872,8 +889,21 @@ heat_map <- function(x,
     if(.all_na(tree_label_text_x) && !is.null(manual$labels)) {
       tree_label_text_x <- manual$labels
     }
+    # CLUSTER WITHIN EACH GROUP
+    if(group_x) {
+      groups <- integer(ncol(x))
+      groups[manual$ind] <- manual$cut
+      tree_x <- .group_tree(
+        t(x[, num_cols, drop = FALSE]),
+        groups = groups[num_cols],
+        dist = dist_method,
+        method = clust_method,
+        scale = tree_scale_x,
+        ...
+      )
+      manual$ind <- num_cols[tree_x$order]
     # DENDROGRAM REQUIRES UNCHANGED ORDER OF NUMERIC COLUMNS
-    if(inherits(tree_x, "hclust")) {
+    } else if(inherits(tree_x, "hclust")) {
       n_num <- length(num_cols)
       if(identical(manual$ind[seq_len(n_num)], col_ind[seq_len(n_num)])) {
         tree_x$cut <- manual$cut
@@ -892,7 +922,7 @@ heat_map <- function(x,
   }
 
   # Y HIERARCHICAL CLUSTERING
-  if(!is.null(tree_y)) {
+  if(!is.null(tree_y) && !group_y) {
     if(nrow(x) < 2 || length(num_cols) == 0) {
       warning(
         "At least two rows and one numeric column are required to cluster ",
@@ -935,8 +965,21 @@ heat_map <- function(x,
     if(.all_na(tree_label_text_y) && !is.null(manual$labels)) {
       tree_label_text_y <- manual$labels
     }
+    # CLUSTER WITHIN EACH GROUP
+    if(group_y) {
+      groups <- integer(nrow(x))
+      groups[manual$ind] <- manual$cut
+      tree_y <- .group_tree(
+        x[, num_cols, drop = FALSE],
+        groups = groups,
+        dist = dist_method,
+        method = clust_method,
+        scale = tree_scale_y,
+        ...
+      )
+      manual$ind <- tree_y$order
     # DENDROGRAM REQUIRES UNCHANGED ROW ORDER
-    if(inherits(tree_y, "hclust")) {
+    } else if(inherits(tree_y, "hclust")) {
       if(identical(manual$ind, row_ind)) {
         tree_y$cut <- manual$cut
       } else {
@@ -1522,7 +1565,8 @@ heat_map <- function(x,
 
   # LAYOUT ---------------------------------------------------------------------
 
-  lay <- .heat_map_layout(
+  # LAYOUT INPUTS - A FUNCTION SO THAT THE LAYOUT CAN BE RECOMPUTED
+  layout_inputs <- function() {
     list(
       fin = par("fin"),
       heatmap_xlim = heatmap_xlim,
@@ -1598,7 +1642,46 @@ heat_map <- function(x,
       axis_label_size_x = axis_label_size_x,
       axis_label_size_y = axis_label_size_y
     )
-  )
+  }
+  lay <- .heat_map_layout(layout_inputs())
+
+  # FIT LAYOUT - GAPS BETWEEN CLUSTERS ARE 0.08 INCHES PER UNIT OF tree_split_*,
+  # WHICH NEEDS THE CELL SIZE FROM THE LAYOUT
+  split_in <- 0.08
+  if(layout == "fit" &&
+     ((length(unique(cut_x)) > 1 && tree_split_x > 0) ||
+      (length(unique(cut_y)) > 1 && tree_split_y > 0))) {
+    split_x <- tree_split_x
+    split_y <- tree_split_y
+    for(pass in seq_len(4)) {
+      new_x <- 2 * split_in * tree_split_x * lay$upi[["x"]]
+      new_y <- 2 * split_in * tree_split_y * lay$upi[["y"]]
+      if(abs(new_x - split_x) <= 1e-3 * max(new_x, 1e-12) &&
+         abs(new_y - split_y) <= 1e-3 * max(new_y, 1e-12)) {
+        break
+      }
+      split_x <- new_x
+      split_y <- new_y
+      x_layout <- .axis_layout(ncol(x), cut_x, split_x)
+      x_centers <- x_layout$centers
+      x_splits <- x_layout$splits
+      y_layout <- .axis_layout(nrow(x), cut_y, split_y)
+      y_centers <- y_layout$centers
+      y_splits <- y_layout$splits
+      cell_x <- rep(x_centers, each = n_row)
+      cell_y <- rep(rev(y_centers), times = n_col)
+      heatmap_xlim <- c(min(x_centers) - 0.5, max(x_centers) + 0.5)
+      heatmap_ylim <- c(min(y_centers) - 0.5, max(y_centers) + 0.5)
+      if(!is.null(marks_x)) {
+        marks_x$at <- x_centers[match(marks_x$ind, col_ind)]
+      }
+      if(!is.null(marks_y)) {
+        marks_y$at <- y_centers[match(marks_y$ind, row_ind)]
+      }
+      lay <- .heat_map_layout(layout_inputs())
+    }
+  }
+
 
   # TRACK LIMITS
   annotation_x_ylim <- lay$x_tracks$annotation

@@ -908,7 +908,67 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13c.png')
 ```
 
-Manual clustering can be combined with dendrograms by setting `tree_x = TRUE` or `tree_y = TRUE`, allowing you to display the hierarchical relationships while still using your custom cluster definitions. If the manual clusters are not contiguous in the dendrogram order, the dendrogram is dropped with a warning because the two orderings cannot be displayed together.
+Manual clusters can be combined with dendrograms by setting `tree_x = TRUE` or `tree_y = TRUE`. The rows or columns are then clustered within each cluster, and the clusters are joined at the top of the dendrogram, so each group (e.g. a treatment, or a cell type) gets its own dendrogram:
+
+```{r, eval = FALSE}
+set.seed(4)
+mat <- matrix(
+  rnorm(40 * 24),
+  nrow = 40,
+  dimnames = list(
+    paste0("Gene_", 1:40),
+    paste0("S", sprintf("%02d", 1:24))
+  )
+)
+treatment <- factor(
+  rep(c("Control", "Drug_A", "Drug_B"), times = 8),
+  levels = c("Control", "Drug_A", "Drug_B")
+)
+mat[1:10, treatment == "Drug_A"] <- mat[1:10, treatment == "Drug_A"] + 2
+heat_map(
+  mat,
+  tree = "both",
+  tree_cut_x = treatment,
+  tree_label_x = TRUE,
+  title = "Clustering within groups"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+set.seed(4)
+mat <- matrix(
+  rnorm(40 * 24),
+  nrow = 40,
+  dimnames = list(
+    paste0("Gene_", 1:40),
+    paste0("S", sprintf("%02d", 1:24))
+  )
+)
+treatment <- factor(
+  rep(c("Control", "Drug_A", "Drug_B"), times = 8),
+  levels = c("Control", "Drug_A", "Drug_B")
+)
+mat[1:10, treatment == "Drug_A"] <- mat[1:10, treatment == "Drug_A"] + 2
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-groups.png",
+  height = 8,
+  width = 8,
+  res = 300
+)
+heat_map(
+  mat,
+  tree = "both",
+  tree_cut_x = treatment,
+  tree_label_x = TRUE,
+  title = "Clustering within groups"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-groups.png')
+```
+
+A dendrogram supplied as an `hclust` or `dist` object is kept only when the clusters are contiguous in its order, and is dropped with a warning otherwise.
 
 The cluster assignments, row/column order and dendrograms used to construct a heatmap can be extracted from the returned object with `heat_map_info()`:
 

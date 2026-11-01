@@ -50,16 +50,17 @@ test_that("annotations are drawn opposite the axis text on every side", {
       sides <- vapply(drawn(hm, "C_axis"), function(z) z[[1]], numeric(1))
       expect_true((if (sx == "top") 3 else 1) %in% sides)
       expect_true((if (sy == "right") 4 else 2) %in% sides)
-      # Heatmap extends from 0 to 9 (y, 3 clusters) and 0 to 6.5 (x, 2 clusters)
+      # Bars are beyond the heatmap cells (which start at 0)
+      cells <- Filter(function(z) length(z[[1]]) == 48, drawn(hm, "C_rect"))[[1]]
       bx <- bar_rects(hm, "x")
       if (sx == "bottom") {
-        expect_true(min(unlist(bx[c(2, 4)])) >= 9)
+        expect_true(min(unlist(bx[c(2, 4)])) >= max(cells[[4]]) - 1e-9)
       } else {
         expect_true(max(unlist(bx[c(2, 4)])) <= 0)
       }
       by <- bar_rects(hm, "y")
       if (sy == "left") {
-        expect_true(min(unlist(by[c(1, 3)])) >= 6.5)
+        expect_true(min(unlist(by[c(1, 3)])) >= max(cells[[3]]) - 1e-9)
       } else {
         expect_true(max(unlist(by[c(1, 3)])) <= 0)
       }
