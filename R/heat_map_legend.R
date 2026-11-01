@@ -614,7 +614,15 @@ heat_map_legend <- function(col = NULL,
   box_in <- min(0.7 * step_in, diff(xcoords) / upi[["x"]], 0.18)
   xc <- mean(xcoords)
   ycenters <- max(ycoords) - (seq_len(n) - 0.5) * step_in * upi[["y"]]
-  if(identical(glyph, "line")) {
+  if(identical(glyph, "split")) {
+    .draw_split_glyph(
+      xc - 0.5 * box_in * upi[["x"]],
+      ycenters - 0.5 * box_in * upi[["y"]],
+      xc + 0.5 * box_in * upi[["x"]],
+      ycenters + 0.5 * box_in * upi[["y"]],
+      upper = seq_len(n) == 1
+    )
+  } else if(identical(glyph, "line")) {
     segments(
       x0 = xc - box_in * upi[["x"]],
       y0 = ycenters,
@@ -945,10 +953,20 @@ heat_map_legend <- function(col = NULL,
       b$row_h <- max(1.15 * geom$shape, geom$line)
       b$body_h <- n * b$row_h
     } else {
-      # LINE KEYS ARE TWICE AS WIDE AS SWATCHES
-      b$key_w <- geom$swatch * if(identical(b$glyph, "line")) 2 else 1
+      # LINE KEYS ARE TWICE AS WIDE AS SWATCHES, SPLIT CELL KEYS LARGER SO
+      # THAT THEIR HALVES CAN BE SEEN
+      b$key_w <- geom$swatch * if(identical(b$glyph, "line")) {
+        2
+      } else if(identical(b$glyph, "split")) {
+        1.6
+      } else {
+        1
+      }
       b$label_x <- b$key_w + geom$gap
-      b$row_h <- max(geom$line, 1.2 * geom$swatch)
+      b$row_h <- max(
+        geom$line,
+        1.2 * if(identical(b$glyph, "split")) b$key_w else geom$swatch
+      )
       b$body_h <- n * b$row_h
     }
     b$width <- max(
@@ -1147,6 +1165,15 @@ heat_map_legend <- function(col = NULL,
             xpd = TRUE
           )
         }
+      } else if(identical(b$glyph, "split")) {
+        h <- 0.5 * b$key_w
+        .draw_split_glyph(
+          xc - h * upi[["x"]],
+          yc - h * upi[["y"]],
+          xc + h * upi[["x"]],
+          yc + h * upi[["y"]],
+          upper = rows == 1
+        )
       } else if(identical(b$glyph, "line")) {
         h <- 0.5 * b$key_w
         segments(
@@ -1438,6 +1465,9 @@ heat_map_legend <- function(col = NULL,
             xpd = NA
           )
         }
+      } else if(identical(b$glyph, "split")) {
+        .draw_split_glyph(X(kx - h), Y(ky - h), X(kx + h), Y(ky + h),
+                          upper = z == 0)
       } else if(identical(b$glyph, "line")) {
         segments(X(kx - h), Y(ky), X(kx + h), Y(ky), col = b$colours,
                  lwd = b$lwd, lty = b$lty, xpd = NA)

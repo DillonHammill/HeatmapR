@@ -61,6 +61,8 @@ heat_map(
   cell_uncertainty = NULL,
   cell_uncertainty_breaks = NULL,
   cell_uncertainty_title = "Uncertainty",
+  cell_split = NULL,
+  cell_split_labels = c("x", "cell_split"),
   cell_col_empty = "white",
   cell_border_line_type = 1,
   cell_border_line_width = 1,
@@ -511,6 +513,19 @@ half and three quarters of the largest uncertainty (4 levels).}
 
 \item{cell_uncertainty_title}{heading of the uncertainty levels in the
 colour legend, set to \code{"Uncertainty"} by default.}
+
+\item{cell_split}{a numeric matrix with the same dimensions as \code{x}
+holding a second value for each cell, such as the treated condition when
+\code{x} holds the control. Each cell is split along its diagonal: the
+value in \code{x} fills the upper left half and the value in
+\code{cell_split} the lower right half, on the same colour scale (its
+limits cover both). Requires full-size rectangular cells (no
+\code{cell_size} or other \code{cell_shape}) and can't be combined with
+\code{cell_uncertainty}; cells of non-numeric columns are not split.}
+
+\item{cell_split_labels}{two labels for the halves of the cells in the
+legend - the values in \code{x} and in \code{cell_split}, set to
+\code{c("x", "cell_split")} by default.}
 
 \item{cell_col_empty}{a colour to use for missing values in \code{x}, set to
 \code{"white"} by default.}
