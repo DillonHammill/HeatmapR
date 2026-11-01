@@ -376,10 +376,12 @@
     need <- rep(0, 4)
     need[p$side_x] <- 1.5 +
       ext_x[[dims_x[["out"]]]] * min(fit_x$scale, shrink) / line_in +
+      (if(isTRUE(p$mark_in_x > 0)) p$mark_in_x / line_in else 0) +
       (if(nzchar(p$axis_label_x)) 2 else 0) +
       (if(p$side_x == 3 && !is.null(p$title)) 2 else 0)
     need[p$side_y] <- 1.5 + max(
-      ext_y[[dims_y[["out"]]]] * min(fit_y$scale, shrink),
+      ext_y[[dims_y[["out"]]]] * min(fit_y$scale, shrink) +
+        (if(isTRUE(p$mark_in_y > 0)) p$mark_in_y else 0),
       .text_in(p$annot_names_x, p$annot_text_size, p$annot_text_font)
     ) / line_in + (if(nzchar(p$axis_label_y)) 2 else 0)
     need[p$side_x] <- max(
@@ -412,14 +414,14 @@
       next
     }
     if(pw < 0.25 * fin[1] || ph < 0.25 * fin[2]) {
-      # CAP THE AUTOMATIC MARGINS
-      for(dim in list(c(2, 4), c(1, 3))) {
-        total <- sum(margins[dim]) * line_in
-        avail <- 0.75 * fin[if(dim[1] == 2) 1 else 2]
-        if(total > avail) {
-          margins[dim] <- margins[dim] * avail / total
-        }
-      }
+      # CAP THE AUTOMATIC MARGINS - KEEPING THE SPACE LEGENDS AND BAR AXES
+      # NEED BEYOND THE PLOT REGION
+      margins <- .cap_margins(
+        margins,
+        keep = (spill > 0) * (spill / line_in + 0.3),
+        fin = fin,
+        line_in = line_in
+      )
       pw <- fin[1] - (margins[2] + margins[4]) * line_in
       ph <- fin[2] - (margins[1] + margins[3]) * line_in
     }
@@ -798,6 +800,24 @@
       add(paste0("axis_text_", ax), depth, span)
     }
   }
+  # MARK LABELS & THEIR LEADER LINES
+  for(ax in c("x", "y")) {
+    mk <- g[[paste0("marks_", ax)]]
+    if(is.null(mk)) {
+      next
+    }
+    side <- g[[paste0("side_", ax)]]
+    w <- .text_in(mk$labels, mk$cex, mk$font, "width")
+    h <- .text_in("Mg", mk$cex, mk$font, "height")
+    conv <- if(ax == "x") ux else uy
+    along <- range(conv(c(mk$pos, mk$at))) + c(-0.5, 0.5) * h
+    depth <- outward(side, 0, .mark_depth() + w)
+    if(side %in% c(1, 3)) {
+      add(paste0("marks_", ax), along, depth)
+    } else {
+      add(paste0("marks_", ax), depth, along)
+    }
+  }
   # ANNOTATION NAMES - WRITTEN BESIDE THE TRACKS ON THE AXIS TEXT SIDE,
   # CENTRED ON THE FIRST AND LAST TRACKS
   name_span <- function(lim, gap, size, h, conv) {
@@ -975,6 +995,50 @@
   }
 }
 
+#' Cap margins that leave less than a quarter of the figure for the plot
+#'
+#' Each pair of opposite margins is reduced to 75\% of the figure. Space that
+#' legends and bar graph axes need beyond the plot region (\code{keep}, lines)
+#' is kept when the other margin text can absorb the reduction.
+#'
+#' @noRd
+.cap_margins <- function(margins,
+                         keep,
+                         fin,
+                         line_in) {
+  for(dim in list(c(2, 4), c(1, 3))) {
+    total <- sum(margins[dim]) * line_in
+    avail <- 0.75 * fin[if(dim[1] == 2) 1 else 2]
+    if(total > avail) {
+      base <- pmin(margins[dim], keep[dim])
+      flex <- margins[dim] - base
+      excess <- (total - avail) / line_in
+      if(sum(flex) > excess) {
+        margins[dim] <- base + flex * (1 - excess / sum(flex))
+      } else {
+        margins[dim] <- margins[dim] * avail / total
+      }
+    }
+  }
+  margins
+}
+
+#' Extent of the axis text (or mark labels with their leader lines) beyond
+#' the plot region in inches
+#'
+#' @param mark_in depth of the mark leader lines (inches), 0 without marks.
+#'
+#' @noRd
+.axis_extent <- function(side,
+                         out,
+                         out_in,
+                         mark_in = 0) {
+  if(!is.null(mark_in) && mark_in > 0) {
+    return(mark_in + out_in)
+  }
+  .axis_text_span(side, out, out_in)[2]
+}
+
 #' Shrink the tracks beside the heatmap to fit the space available (inches)
 #'
 #' Dendrograms and bar graphs are shrunk first (to a quarter of their size),
@@ -1112,7 +1176,12 @@
     # AXIS TEXT, ANNOTATION NAMES & BAR AXES BESIDE THE PLOT REGION (INCHES)
     near <- rep(0, 4)
     near[p$side_x] <- max(
-      .axis_text_span(p$side_x, dims_x[["out"]], ext_x[[dims_x[["out"]]]] * sc_x)[2],
+      .axis_extent(
+        p$side_x,
+        dims_x[["out"]],
+        ext_x[[dims_x[["out"]]]] * sc_x,
+        p$mark_in_x
+      ),
       spill[p$side_x],
       if(p$n_annot_y > 0) {
         0.1 + .text_in(
@@ -1125,7 +1194,12 @@
       }
     )
     near[p$side_y] <- max(
-      .axis_text_span(p$side_y, dims_y[["out"]], ext_y[[dims_y[["out"]]]] * sc_y)[2],
+      .axis_extent(
+        p$side_y,
+        dims_y[["out"]],
+        ext_y[[dims_y[["out"]]]] * sc_y,
+        p$mark_in_y
+      ),
       spill[p$side_y],
       if(p$n_annot_x > 0) {
         cex <- p$annot_text_size * annot_sc[["x"]]
@@ -1169,13 +1243,12 @@
       next
     }
     if(pw < 0.25 * fin[1] || ph < 0.25 * fin[2]) {
-      for(dim in list(c(2, 4), c(1, 3))) {
-        total <- sum(margins[dim]) * line_in
-        avail <- 0.75 * fin[if(dim[1] == 2) 1 else 2]
-        if(total > avail) {
-          margins[dim] <- margins[dim] * avail / total
-        }
-      }
+      margins <- .cap_margins(
+        margins,
+        keep = (spill > 0) * (spill + pad) / line_in,
+        fin = fin,
+        line_in = line_in
+      )
       pw <- fin[1] - (margins[2] + margins[4]) * line_in
       ph <- fin[2] - (margins[1] + margins[3]) * line_in
     }

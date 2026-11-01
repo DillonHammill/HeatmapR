@@ -399,6 +399,19 @@
 #'   tracks on the side of the axis text.
 #' @param annotation_legend logical indicating whether legends should be drawn
 #'   for the annotations, set to TRUE by default.
+#' @param mark_x,mark_y columns or rows to label, as names, indices in the
+#'   original order of \code{x}, or a logical vector with one value per
+#'   column or row. The labels replace the axis text on that axis: they are
+#'   spread out beside the heatmap so that they don't overlap, and leader
+#'   lines connect each label to its column or row. This names a few rows of
+#'   a large heatmap (e.g. marker genes) when there is no room to label every
+#'   row. The labels use the axis text font, size and colour; row labels are
+#'   horizontal and column labels vertical.
+#' @param mark_labels_x,mark_labels_y labels for the columns or rows in
+#'   \code{mark_x} and \code{mark_y}, one per element, set to NULL by default
+#'   to use the column or row names.
+#' @param mark_line_col colour of the leader lines connecting mark labels to
+#'   their rows or columns, set to \code{"grey40"} by default.
 #' @param cell_raster whether to draw the cells as raster images, which is much
 #'   faster and gives smaller files for large heatmaps. Set to \code{"auto"} by
 #'   default to use raster images for heatmaps with more than 50,000 cells.
@@ -662,6 +675,11 @@ heat_map <- function(x,
                      legend_text_size = 1,
                      legend_text_col = "black",
                      legend_text_col_alpha = 1,
+                     mark_x = NULL,
+                     mark_y = NULL,
+                     mark_labels_x = NULL,
+                     mark_labels_y = NULL,
+                     mark_line_col = "grey40",
                      cell_raster = "auto",
                      fit_text = TRUE,
                      layout = "fit",
@@ -1492,6 +1510,16 @@ heat_map <- function(x,
   # NEW PLOT - THE FIGURE REGION IS NEEDED TO MEASURE THE LAYOUT
   plot.new()
 
+  # MARK LABELS - CHOSEN ROWS/COLUMNS LABELLED ON THE AXIS TEXT SIDE
+  marks_x <- .mark_index(mark_x, colnames(x), ncol(x), mark_labels_x, "mark_x")
+  marks_y <- .mark_index(mark_y, rownames(x), nrow(x), mark_labels_y, "mark_y")
+  if(!is.null(marks_x)) {
+    marks_x$at <- x_centers[match(marks_x$ind, col_ind)]
+  }
+  if(!is.null(marks_y)) {
+    marks_y$at <- y_centers[match(marks_y$ind, row_ind)]
+  }
+
   # LAYOUT ---------------------------------------------------------------------
 
   lay <- .heat_map_layout(
@@ -1499,14 +1527,17 @@ heat_map <- function(x,
       fin = par("fin"),
       heatmap_xlim = heatmap_xlim,
       heatmap_ylim = heatmap_ylim,
-      x_centers = x_centers,
-      y_centers = y_centers,
+      # MARK LABELS REPLACE THE AXIS TEXT - SPREAD OUT RATHER THAN FITTED
+      x_centers = if(is.null(marks_x)) x_centers,
+      y_centers = if(is.null(marks_y)) y_centers,
       side_x = axis_text_side_x,
       side_y = axis_text_side_y,
-      las_x = axis_text_angle_x,
-      las_y = axis_text_angle_y,
-      axis_text_x = axis_text_x,
-      axis_text_y = axis_text_y,
+      las_x = if(is.null(marks_x)) axis_text_angle_x else 2,
+      las_y = if(is.null(marks_y)) axis_text_angle_y else 1,
+      axis_text_x = if(is.null(marks_x)) axis_text_x else marks_x$labels,
+      axis_text_y = if(is.null(marks_y)) axis_text_y else marks_y$labels,
+      mark_in_x = if(is.null(marks_x)) 0 else .mark_depth(),
+      mark_in_y = if(is.null(marks_y)) 0 else .mark_depth(),
       axis_text_size_x = axis_text_size_x,
       axis_text_size_y = axis_text_size_y,
       axis_text_font_x = axis_text_font_x,
@@ -1598,35 +1629,93 @@ heat_map <- function(x,
     yaxs = "i"
   )
 
-  # X AXIS
-  .draw_axis_text(
-    side = axis_text_side_x,
-    at = x_centers,
-    labels = axis_text_x,
-    las = axis_text_angle_x,
-    padj = axis_text_adjust_x,
-    tck = -0.02 * axis_ticks_length_x,
-    font = axis_text_font_x,
-    size = lay$axis_text_size_x,
-    keep = seq(1, length(x_centers), by = lay$step_x),
-    col = axis_text_col_x,
-    col_alpha = axis_text_col_alpha_x
-  )
+  # X AXIS - AXIS TEXT OR MARK LABELS
+  if(is.null(marks_x)) {
+    .draw_axis_text(
+      side = axis_text_side_x,
+      at = x_centers,
+      labels = axis_text_x,
+      las = axis_text_angle_x,
+      padj = axis_text_adjust_x,
+      tck = -0.02 * axis_ticks_length_x,
+      font = axis_text_font_x,
+      size = lay$axis_text_size_x,
+      keep = seq(1, length(x_centers), by = lay$step_x),
+      col = axis_text_col_x,
+      col_alpha = axis_text_col_alpha_x
+    )
+  } else {
+    marks_x <- c(
+      marks_x,
+      .place_marks(
+        marks_x$at,
+        marks_x$labels,
+        axis = "x",
+        lim = heatmap_xlim,
+        upi = lay$upi,
+        cex = lay$axis_text_size_x[1],
+        font = axis_text_font_x[1],
+        fit = fit_text
+      ),
+      list(font = axis_text_font_x[1])
+    )
+    .draw_marks(
+      at = marks_x$at,
+      pos = marks_x$pos,
+      labels = marks_x$labels,
+      edge = if(axis_text_side_x == 1) min(heatmap_ylim) else max(heatmap_ylim),
+      side = axis_text_side_x,
+      upi = lay$upi,
+      cex = marks_x$cex,
+      font = marks_x$font,
+      col = adjustcolor(axis_text_col_x[1], axis_text_col_alpha_x[1]),
+      line_col = mark_line_col
+    )
+  }
 
-  # Y AXIS
-  .draw_axis_text(
-    side = axis_text_side_y,
-    at = y_centers,
-    labels = axis_text_y,
-    las = axis_text_angle_y,
-    padj = axis_text_adjust_y,
-    tck = -0.02 * axis_ticks_length_y,
-    font = axis_text_font_y,
-    size = lay$axis_text_size_y,
-    keep = seq(1, length(y_centers), by = lay$step_y),
-    col = axis_text_col_y,
-    col_alpha = axis_text_col_alpha_y
-  )
+  # Y AXIS - AXIS TEXT OR MARK LABELS
+  if(is.null(marks_y)) {
+    .draw_axis_text(
+      side = axis_text_side_y,
+      at = y_centers,
+      labels = axis_text_y,
+      las = axis_text_angle_y,
+      padj = axis_text_adjust_y,
+      tck = -0.02 * axis_ticks_length_y,
+      font = axis_text_font_y,
+      size = lay$axis_text_size_y,
+      keep = seq(1, length(y_centers), by = lay$step_y),
+      col = axis_text_col_y,
+      col_alpha = axis_text_col_alpha_y
+    )
+  } else {
+    marks_y <- c(
+      marks_y,
+      .place_marks(
+        marks_y$at,
+        marks_y$labels,
+        axis = "y",
+        lim = heatmap_ylim,
+        upi = lay$upi,
+        cex = lay$axis_text_size_y[1],
+        font = axis_text_font_y[1],
+        fit = fit_text
+      ),
+      list(font = axis_text_font_y[1])
+    )
+    .draw_marks(
+      at = marks_y$at,
+      pos = marks_y$pos,
+      labels = marks_y$labels,
+      edge = if(axis_text_side_y == 2) min(heatmap_xlim) else max(heatmap_xlim),
+      side = axis_text_side_y,
+      upi = lay$upi,
+      cex = marks_y$cex,
+      font = marks_y$font,
+      col = adjustcolor(axis_text_col_y[1], axis_text_col_alpha_y[1]),
+      line_col = mark_line_col
+    )
+  }
 
   # HEATMAP BORDER
   heat_map_border(
@@ -2033,8 +2122,18 @@ heat_map <- function(x,
       heatmap_ylim = heatmap_ylim,
       x_centers = x_centers[keep_x],
       y_centers = y_centers[keep_y],
-      axis_text_x = rep_len(axis_text_x, length(x_centers))[keep_x],
-      axis_text_y = rep_len(axis_text_y, length(y_centers))[keep_y],
+      axis_text_x = if(is.null(marks_x)) {
+        rep_len(axis_text_x, length(x_centers))[keep_x]
+      } else {
+        ""
+      },
+      axis_text_y = if(is.null(marks_y)) {
+        rep_len(axis_text_y, length(y_centers))[keep_y]
+      } else {
+        ""
+      },
+      marks_x = marks_x,
+      marks_y = marks_y,
       side_x = axis_text_side_x,
       side_y = axis_text_side_y,
       las_x = axis_text_angle_x,
