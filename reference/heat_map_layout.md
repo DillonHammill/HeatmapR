@@ -47,11 +47,11 @@ axis_label_y = "Row ID")
 
 # Construct scaled heatmap
 heat_map(iris[1:10,],
-scale = "range",
+scale = "column",
 title = "Iris Scaled Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
-#> Applying range scaling to each row...
+#> Applying range scaling to each column...
 
 # Signal completion
 heat_map_complete()

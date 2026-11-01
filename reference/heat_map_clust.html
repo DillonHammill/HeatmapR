@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,7 @@
 <span>  method <span class="op">=</span> <span class="st">"complete"</span>,</span>
 <span>  scale <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  cut <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  order <span class="op">=</span> <span class="st">"default"</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -62,14 +63,20 @@ using <code>dist</code> and passed to <code>hclust</code> for hierarchical clust
 <dt id="arg-tree">tree<a class="anchor" aria-label="anchor" href="#arg-tree"></a></dt>
 <dd><p>indicates whether hierarchical clustering should be performed by
 <code>"row"</code> or <code>"column"</code>. Optionally a custom object of class
-<code>"dist"</code> or <code>"hclust"</code> which will be updated with cluster labels
-as specified by <code>cut</code>.</p></dd>
+<code>"dist"</code> (clustered using <code>method</code>) or <code>"hclust"</code> which will
+be updated with cluster labels as specified by <code>cut</code>. Any clusters
+already stored in a supplied <code>hclust</code> object are replaced when
+<code>cut</code> is supplied.</p></dd>
 
 
 <dt id="arg-dist">dist<a class="anchor" aria-label="anchor" href="#arg-dist"></a></dt>
 <dd><p>method passed to <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> to compute distance matrix,
 set to <code>"euclidean"</code> by default. Also supports <code>"cosine"</code> for
-cosine distance (1 - cosine similarity).</p></dd>
+cosine distance (1 - cosine similarity), <code>"pearson"</code>,
+<code>"spearman"</code> or <code>"kendall"</code> for one minus the correlation
+(rows without variation are treated as uncorrelated), or a function that
+takes the matrix being clustered (one row per leaf) and returns a
+<code>dist</code> object or a square matrix of distances.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
@@ -83,10 +90,19 @@ better visualisation, set to FALSE by default.</p></dd>
 
 
 <dt id="arg-cut">cut<a class="anchor" aria-label="anchor" href="#arg-cut"></a></dt>
-<dd><p>value less than 1 specifying the tree cutpoint as a proportion of the
-tree height (for non-cosine distances) or as an absolute cosine distance
-threshold (when <code>dist = "cosine"</code>), or a value greater than or equal
-to 1 indicating the number of desired clusters.</p></dd>
+<dd><p>value from 0 to less than 1 specifying the tree cutpoint as a
+proportion of the tree height (for non-cosine distances) or as an absolute
+cosine distance threshold (when <code>dist = "cosine"</code>), or a value
+greater than or equal to 1 indicating the number of desired clusters.</p></dd>
+
+
+<dt id="arg-order">order<a class="anchor" aria-label="anchor" href="#arg-order"></a></dt>
+<dd><p>how the branches of the dendrogram are ordered:
+<code>"default"</code> keeps the order from <code>hclust</code>, <code>"olo"</code> flips
+branches to minimise the distances between neighbouring leaves (optimal
+leaf ordering; this takes a few seconds for 1000 leaves and grows with the
+cube of the number of leaves) and <code>"mean"</code> orders branches by their
+mean values as in <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -97,7 +113,10 @@ to 1 indicating the number of desired clusters.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>object of class <code>hclust</code> which describes the tree produced by
-the clustering process.</p>
+the clustering process. Branch heights are rescaled to the range
+<code>[0, 1]</code> for display. When <code>cut</code> is supplied, the returned object
+also contains a <code>cut</code> element holding the cluster assigned to each
+leaf in dendrogram order.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>

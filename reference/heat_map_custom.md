@@ -1,11 +1,13 @@
 # Create a custom heatmap plot layout
 
-`heat_map_custom()` is similar to `cheat_map_save()` with the exception
-that it doesn't write the plot to a file. `heat_map_custom()` opens a
-new graphics device and sets the desired layout in preparation for the
-addition of heatmaps and other plot objects. Once the custom plot is
-full users MUST run `cyto_plot_complete()` to close the graphics device
-and reset any
+`heat_map_custom()` is similar to
+[`heat_map_save()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md)
+with the exception that it doesn't write the plot to a file.
+`heat_map_custom()` opens a new graphics device and sets the desired
+layout in preparation for the addition of heatmaps and other plot
+objects. Once the custom plot is full users MUST run
+[`heat_map_complete()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_complete.md)
+to close the graphics device and reset any
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 related settings (see example).
 

@@ -228,6 +228,101 @@ heat_map(
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-7.png)
 
+### 2.6 Large Heatmaps
+
+Heatmaps with more than 50,000 cells, such as single-cell data with
+thousands of cells and tens of markers, are drawn as raster images
+rather than one rectangle per cell. Raster images draw a 1000 x 1000
+heatmap about three times faster and give PDFs about a quarter of the
+size, and look the same as the rectangles. Raster images are only used
+when every cell is a full-size rectangle; `cell_raster = TRUE` uses them
+for smaller heatmaps too and `cell_raster = FALSE` turns them off. Cell
+borders are left out when the cells are smaller than three line widths,
+as they would otherwise hide the cells.
+
+``` r
+
+set.seed(1)
+cells <- matrix(
+  rnorm(5000 * 20),
+  nrow = 5000,
+  dimnames = list(
+    NULL,
+    paste0("Marker_", 1:20)
+  )
+)
+cells[1:1500, 1:8] <- cells[1:1500, 1:8] + 2.5
+cells[3001:5000, 12:20] <- cells[3001:5000, 12:20] + 2
+heat_map(
+  cells,
+  tree_x = TRUE,
+  tree_cut_y = 3,
+  tree_label_y = TRUE,
+  tree_label_text_y = c("A", "B", "C"),
+  axis_text_y = NA,
+  title = "5000 cells"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-raster.png)
+
+### 2.7 Labelling Chosen Rows and Columns
+
+When a heatmap has too many rows to label them all, `mark_y` (and
+`mark_x` for columns) labels just the rows you choose, given as names,
+indices in the original order of the data or a logical vector. The
+labels replace the axis text: they are spread out beside the heatmap so
+that they don’t overlap, and leader lines connect each label to its row.
+`mark_labels_y` supplies other text for the labels (e.g. gene symbols),
+and `mark_line_col` sets the colour of the leader lines.
+
+``` r
+
+set.seed(2)
+genes <- matrix(
+  rnorm(2000 * 24),
+  nrow = 2000,
+  dimnames = list(
+    paste0("Gene_", 1:2000),
+    paste0("S", 1:24)
+  )
+)
+genes[1:150, 1:12] <- genes[1:150, 1:12] + 2.5
+genes[1001:1150, 13:24] <- genes[1001:1150, 13:24] + 2.5
+heat_map(
+  genes,
+  tree_x = TRUE,
+  tree_cut_y = 2,
+  mark_y = c("Gene_3", "Gene_42", "Gene_77", "Gene_150", "Gene_1010", "Gene_1100", "Gene_1500"),
+  mark_labels_y = c("CD3E", "CD4", "IL7R", "CCR7", "MS4A1", "CD79A", "ACTB"),
+  title = "Marker genes"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-marks.png)
+
+### 2.8 Rotated Column Labels
+
+Long column names are easier to read at an angle. As well as the `las`
+codes 0 to 3 (3, perpendicular to the axis, by default),
+`axis_text_angle_x` takes an angle in degrees. Rotated labels end at
+their ticks and slant towards the y axis text, so the longest labels
+extend beneath the row names rather than into the dendrograms or the
+legend. They are only shrunk when neighbouring labels would overlap
+across their baselines, so they stay larger than perpendicular labels on
+crowded heatmaps.
+
+``` r
+
+heat_map(
+  t(scale(mtcars)),
+  tree = "both",
+  axis_text_angle_x = 45
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-rotate.png)
+
 ## 3. Data Scaling
 
 In the above heatmap, it is very clear that each of the columns of the
@@ -298,7 +393,7 @@ heatmap constructed using the `mtcars` dataset:
 heat_map(
   mtcars,
   bar_values_x = 1:ncol(mtcars),
-  bar_size_x = 0.5,
+  bar_size_x = 1.5,
   bar_fill_x = rainbow(ncol(mtcars)),
   bar_line_col_x = "black",
   bar_values_y = 1:nrow(mtcars),
@@ -311,6 +406,117 @@ heat_map(
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-10.png)
 
+### 4.1 Metadata Annotations
+
+Metadata describing the rows or columns of the heatmap, such as the
+treatment and sex of each sample, can be shown as coloured tracks beside
+the heatmap. Supply a `data.frame` with one row per column of `x` to
+`annotation_x` (or one row per row of `x` to `annotation_y`). Rows are
+matched to the column (row) names of `x` when the `data.frame` has row
+names. Each column of the `data.frame` becomes a track: non-numeric
+columns are coloured by level and numeric columns with a colour ramp,
+and each track gets its own legend. Colours can be chosen through
+`annotation_colours`, a named list with one entry per annotation;
+annotations without an entry get default palettes.
+
+Annotations combine well with manual clustering: supplying a factor to
+`tree_cut_x` splits the columns into groups and, when
+`tree_label_x = TRUE`, labels each group with its level.
+
+``` r
+
+set.seed(123)
+mat <- matrix(
+  rnorm(20 * 24, sd = 1.5),
+  nrow = 20,
+  ncol = 24,
+  dimnames = list(
+    paste0("Gene_", 1:20),
+    paste0("S", sprintf("%02d", 1:24))
+  )
+)
+meta <- data.frame(
+  Treatment = factor(rep(c("Control", "Drug_A", "Drug_B"), each = 8)),
+  Sex = factor(rep(c("Male", "Female"), times = 12), levels = c("Male", "Female")),
+  row.names = colnames(mat)
+)
+heat_map(
+  mat,
+  annotation_x = meta,
+  annotation_colours = list(
+    Treatment = c(Control = "#4E9FD1", Drug_A = "#E07B54", Drug_B = "#6DBF7E"),
+    Sex = c(Male = "#7B5EA7", Female = "#E8A0BF")
+  ),
+  tree_cut_x = meta$Treatment,
+  tree_label_x = TRUE,
+  tree_y = TRUE,
+  cell_col_scale = c("#2C7BB6", "white", "#D7191C"),
+  cell_col_scale_center = 0,
+  legend_title = "z-score",
+  title = "Metadata annotations"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-annotations.png)
+
+### 4.2 Box Plots and Violins
+
+The bar plots can also show the distribution of several values for each
+column or row, as box plots (`bar_type_x = "box"`) or violins
+(`bar_type_x = "violin"`). Supply a list with a numeric vector for each
+column (or row), a matrix or data.frame with one column per column of
+the heatmap (one row per row for `bar_values_y`), or `TRUE` to show the
+values of each column or row of the heatmap itself. Box plots are drawn
+by default when distributions are supplied. In the example below, the
+heatmap shows the median intensity of each marker in each cluster of
+simulated cytometry events (computed with
+[`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md),
+see section 5.3), the violins show the distribution of each marker
+across all events, and the bars show the size of each cluster:
+
+``` r
+
+set.seed(7)
+markers <- c("CD3", "CD4", "CD8", "CD19", "CD56", "CD14")
+pops <- list(
+  "CD4 T" = c("CD3", "CD4"),
+  "CD8 T" = c("CD3", "CD8"),
+  "B" = "CD19",
+  "NK" = "CD56",
+  "Monocyte" = c("CD4", "CD14")
+)
+cluster <- sample(
+  names(pops),
+  5000,
+  replace = TRUE,
+  prob = c(0.35, 0.2, 0.15, 0.1, 0.2)
+)
+events <- matrix(
+  rnorm(5000 * 6, 0.5, 0.5),
+  ncol = 6,
+  dimnames = list(NULL, markers)
+)
+for (p in names(pops)) {
+  ind <- cluster == p
+  events[ind, pops[[p]]] <- rnorm(sum(ind) * length(pops[[p]]), 4, 0.6)
+}
+heat_map(
+  heat_map_summarise(events, group_y = cluster, fun = "median"),
+  cell_col_scale = "viridis",
+  bar_values_x = events,
+  bar_type_x = "violin",
+  bar_size_x = 2,
+  bar_fill_x = "grey85",
+  bar_axis_label_x = "All events",
+  bar_values_y = table(cluster),
+  bar_fill_y = "grey85",
+  bar_axis_label_y = "Events",
+  title = "Median marker intensity per cluster"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-side-plots.png)
+
 ## 5. Hierarchical Clustering
 
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
@@ -320,9 +526,11 @@ dendrograms and [`stats::cutree()`](https://rdrr.io/r/stats/cutree.html)
 to partition the dendrograms into distinct clusters. The `dist_method`
 and `clust_method` arguments allow for control over the distance metric
 to use for hierarchical clustering (any method supported by
-[`stats::dist()`](https://rdrr.io/r/stats/dist.html) or `"cosine"` for
-cosine distance) and the agglomeration method to use (any method
-supported by [`stats::hclust()`](https://rdrr.io/r/stats/hclust.html)).
+[`stats::dist()`](https://rdrr.io/r/stats/dist.html), `"cosine"` for
+cosine distance, `"pearson"`, `"spearman"` or `"kendall"` for
+correlation distances, or a function) and the agglomeration method to
+use (any method supported by
+[`stats::hclust()`](https://rdrr.io/r/stats/hclust.html)).
 
 ### 5.1 Dendrograms
 
@@ -348,7 +556,6 @@ heat_map(
   dist_method = "euclidean",
   clust_method = "complete",
   tree_x = TRUE,
-  tree_size_x = 0.4,
   tree_y = TRUE,
   tree_size_y = 0.8,
   title = "Dendrograms"
@@ -376,7 +583,6 @@ heat_map(
   dist_method = "cosine",
   clust_method = "complete",
   tree_x = TRUE,
-  tree_size_x = 0.4,
   tree_y = TRUE,
   tree_size_y = 0.8,
   title = "Cosine Distance Clustering"
@@ -406,6 +612,45 @@ heat_map(
 )
 ```
 
+**Correlation distances and leaf order**: `dist_method` also accepts
+`"pearson"`, `"spearman"` and `"kendall"` for one minus the correlation,
+which groups rows that rise and fall together whatever their level
+(common for gene expression), or a function that takes the matrix being
+clustered and returns a `dist` object. A dendrogram can be drawn in many
+orders, as every branch can be flipped; `tree_order_x` and
+`tree_order_y` choose the order. `"olo"` (optimal leaf ordering) flips
+branches so that neighbouring rows are as similar as possible, giving
+smoother gradients, and `"mean"` orders branches by their mean values as
+[`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) does.
+
+``` r
+
+set.seed(5)
+mat <- matrix(
+  rnorm(60 * 12),
+  nrow = 60,
+  dimnames = list(
+    paste0("Gene_", 1:60),
+    paste0("S", 1:12)
+  )
+)
+# 20 genes that rise and fall together at different levels
+profile <- rnorm(12)
+mat[1:20, ] <- t(replicate(20, 3 * profile + rnorm(12, sd = 0.5))) +
+  rnorm(20, sd = 4)
+heat_map(
+  mat,
+  tree = "both",
+  dist_method = "pearson",
+  tree_order_x = "olo",
+  tree_order_y = "olo",
+  axis_text_y = NA,
+  title = "Pearson distance, optimal leaf order"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-dist-order.png)
+
 ### 5.2 Clustering
 
 The dendrograms on either axis can be optionally cut to reveal clusters
@@ -424,7 +669,6 @@ heat_map(
   dist_method = "euclidean",
   clust_method = "complete",
   tree_x = TRUE,
-  tree_size_x = 0.4,
   tree_cut_x = 4,
   tree_split_x = 1,
   tree_y = TRUE,
@@ -447,11 +691,9 @@ also supports the labelling of clusters through the `tree_label_x`,
 heat_map(
   mtcars,
   scale = "column",
-  tree_size_x = 0.4,
   tree_cut_x = 4,
   tree_split_x = 1,
   tree_label_x = TRUE,
-  tree_label_size_x = 1.4,
   tree_label_text_x = c(1:4),
   tree_label_col_x = c(
     "red",
@@ -464,7 +706,6 @@ heat_map(
   tree_cut_y = 5,
   tree_split_y = 1,
   tree_label_y = TRUE,
-  tree_label_size_y = 1,
   tree_label_text_y = c(1:5),
   tree_label_col_y = c(
     "red",
@@ -508,7 +749,11 @@ heat_map(
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13b.png)
 
 **Method 2: Specify cluster indices** - Provide a vector where each
-element indicates which cluster that row/column belongs to:
+element indicates which cluster that row/column belongs to. Cluster
+indices are supplied in the original order of the rows/columns of the
+data (in the same way as `bar_values_x` and `bar_values_y`), and can be
+numbers, characters or a factor. The rows/columns are regrouped so that
+each cluster is contiguous in the heatmap:
 
 ``` r
 
@@ -530,22 +775,155 @@ heat_map(
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13c.png)
 
-Manual clustering can be combined with dendrograms by setting
-`tree_x = TRUE` or `tree_y = TRUE`, allowing you to display the
-hierarchical relationships while still using your custom cluster
-definitions.
+Manual clusters can be combined with dendrograms by setting
+`tree_x = TRUE` or `tree_y = TRUE`. The rows or columns are then
+clustered within each cluster, and the clusters are joined at the top of
+the dendrogram, so each group (e.g. a treatment, or a cell type) gets
+its own dendrogram:
+
+``` r
+
+set.seed(4)
+mat <- matrix(
+  rnorm(40 * 24),
+  nrow = 40,
+  dimnames = list(
+    paste0("Gene_", 1:40),
+    paste0("S", sprintf("%02d", 1:24))
+  )
+)
+treatment <- factor(
+  rep(c("Control", "Drug_A", "Drug_B"), times = 8),
+  levels = c("Control", "Drug_A", "Drug_B")
+)
+mat[1:10, treatment == "Drug_A"] <- mat[1:10, treatment == "Drug_A"] + 2
+heat_map(
+  mat,
+  tree = "both",
+  tree_cut_x = treatment,
+  tree_label_x = TRUE,
+  title = "Clustering within groups"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-groups.png)
+
+A dendrogram supplied as an `hclust` or `dist` object is kept only when
+the clusters are contiguous in its order, and is dropped with a warning
+otherwise.
+
+The cluster assignments, row/column order and dendrograms used to
+construct a heatmap can be extracted from the returned object with
+[`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md):
+
+``` r
+
+hm <- heat_map(
+  mtcars,
+  scale = "column",
+  tree_cut_x = 3,
+  tree_cut_y = 4,
+  popup = FALSE
+)
+info <- heat_map_info(hm)
+info$row_clusters
+rownames(mtcars)[info$row_order]
+```
+
+#### 5.2.2 k-means Clusters
+
+For thousands of rows, `tree_kmeans_y` (or `tree_kmeans_x` for columns)
+splits the rows into k-means clusters instead of cutting a dendrogram.
+The rows are clustered on the scaled data, starting from slices of the
+rows along their first principal component, so the same clusters are
+found every time whatever the random seed, and similar clusters are
+placed next to each other. The k-means clusters then work like clusters
+supplied to `tree_cut_y`: they are separated by splits and can be
+labelled, and with `tree_y = TRUE` the rows are clustered within each
+k-means cluster. `heat_map_info()$row_clusters` returns the cluster of
+each row.
+
+``` r
+
+set.seed(5)
+genes <- matrix(
+  rnorm(2000 * 12),
+  nrow = 2000,
+  dimnames = list(
+    paste0("Gene_", 1:2000),
+    paste0("S", 1:12)
+  )
+)
+genes[1:400, 1:4] <- genes[1:400, 1:4] + 3
+genes[401:800, 5:8] <- genes[401:800, 5:8] + 3
+genes[801:1200, 9:12] <- genes[801:1200, 9:12] + 3
+heat_map(
+  genes,
+  scale = "row",
+  scale_method = "zscore",
+  tree_kmeans_y = 4,
+  tree_y = TRUE,
+  axis_text_y = NA,
+  title = "k-means clusters of 2,000 genes"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-kmeans.png)
+
+### 5.3 Group Summaries
+
+[`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+reduces the rows (`group_y`) or columns (`group_x`) of a dataset to one
+per group, such as the mean expression of each gene in each cell type, a
+pseudobulk view of single-cell data. `fun` chooses the summary:
+`"mean"`, `"median"`, `"sum"`, `"min"`, `"max"`, `"sd"`, `"n"`,
+`"detected"` (the proportion of values above `threshold`) or a function
+of your own. Summaries can be combined in a dot plot, with the mean
+expression as the colour and the proportion of cells in which each gene
+is detected as the size:
+
+``` r
+
+set.seed(6)
+types <- c("B cell", "T cell", "NK cell", "Monocyte")
+markers <- c("CD19", "MS4A1", "CD3E", "CD4", "NKG7", "GNLY", "CD14", "LYZ")
+cell_type <- sample(types, 2000, replace = TRUE)
+# Expression of each marker in each cell type
+rate <- matrix(runif(32, 0, 0.6), 4, dimnames = list(types, markers))
+rate[cbind(rep(types, each = 2), markers)] <- runif(8, 2, 4)
+expr <- matrix(
+  rpois(2000 * 8, rate[cell_type, ]),
+  ncol = 8,
+  dimnames = list(NULL, markers)
+)
+expr <- log1p(expr)
+heat_map(
+  heat_map_summarise(expr, group_y = cell_type),
+  cell_size = heat_map_summarise(expr, group_y = cell_type, fun = "detected"),
+  cell_shape = "circle",
+  cell_col_scale = "viridis",
+  scale = "column",
+  scale_method = "zscore",
+  legend_title = c("Mean (z-score)", "Detected"),
+  title = "Marker genes by cell type"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-summarise.png)
 
 ## 6. Legends
 
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 will automatically add legends for the colour scale and size of the
 cells in the heatmap. The `legend` argument controls the type(s) of
-legends to display including the `"colour"`, `"shape"` or `"both"`. The
-space available to the legend can be tweaked using the `legend_size`
-argument, and the size of the colour scale legend can be controlled
-through the `legend_col_scale_size` argument. The titles and text
-displayed in the legend(s) are also fully customisable using the the
-`legend_title_` and `legend_text_` family of arguments.
+legends to display including `"colour"`, `"size"` or `"both"`, and
+`"levels"` can be added (e.g. `legend = c("both", "levels")`) to include
+a legend for the colours of non-numeric columns. The legend is sized
+from its contents: `legend_size` scales the legend keys (colour bars,
+swatches and size legend shapes) and `legend_col_scale_size` controls
+the width of the colour scale. The titles and text displayed in the
+legend(s) are also fully customisable using the the `legend_title_` and
+`legend_text_` family of arguments.
 
 ``` r
 
@@ -565,6 +943,84 @@ heat_map(
 ```
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-17.png)
+
+Legends can also be drawn below the heatmap with
+`legend_side = "bottom"`, where the colour bars are horizontal and the
+legends sit side by side, wrapping into rows when they don’t fit across
+the figure. The colour scale itself can be shaped in a few ways:
+`cell_col_scale_limits = "robust"` uses the 2nd and 98th percentiles of
+the data so that a few outliers don’t wash out the colours,
+`cell_col_scale_breaks` bins the values into a stepped colour scale, and
+`legend_col_breaks` chooses the values labelled on the colour legend
+(names become the labels).
+
+``` r
+
+heat_map(
+  scale(mtcars),
+  tree = "both",
+  tree_cut_x = 3,
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_breaks = c(-3, -2, -1, 0, 1, 2, 3),
+  legend_col_breaks = c(low = -3, 0, high = 3),
+  legend_side = "bottom",
+  legend_title = "z-score",
+  title = "Legend below the heatmap"
+)
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-legend-bottom.png)
+
+### 6.1 Layout
+
+By default
+[`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+uses the `"fit"` layout, which sizes everything around the heatmap in
+inches from its contents: dendrograms and bar graphs keep the same size
+whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are
+multiples of 0.6 inches), the legend is as wide as its text, the margins
+are as wide as the axis text, axis labels and title, and the heatmap
+body takes the remaining space. Legends are stacked from the top of the
+heatmap and shrunk if they don’t fit. Setting `layout = "classic"`
+restores the layout of earlier versions, in which dendrograms, bar
+graphs and the legend are sized as fractions of the heatmap, so they
+grow and shrink with the number of rows and columns.
+
+``` r
+
+set.seed(3)
+mat <- matrix(
+  rnorm(60 * 8),
+  nrow = 60,
+  dimnames = list(
+    paste0("Gene_", 1:60),
+    paste0("Sample_", 1:8)
+  )
+)
+mat[1:20, 1:4] <- mat[1:20, 1:4] + 2
+group <- data.frame(
+  Group = rep(c("Control", "Treated"), each = 4),
+  row.names = colnames(mat)
+)
+heat_map_custom(
+  popup = TRUE,
+  popup_size = c(11, 6.5),
+  layout = c(1, 2)
+)
+for(layout in c("classic", "fit")) {
+  heat_map(
+    mat,
+    tree = "both",
+    annotation_x = group,
+    legend_title = "Expression",
+    title = paste0("layout = \"", layout, "\""),
+    layout = layout
+  )
+}
+heat_map_complete()
+```
+
+![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-layout.png)
 
 ## 7. Complex Layouts
 

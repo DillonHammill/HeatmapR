@@ -16,7 +16,9 @@ heat_map(
   tree_x = NULL,
   tree_size_x = 1,
   tree_scale_x = FALSE,
+  tree_order_x = "default",
   tree_cut_x = NULL,
+  tree_kmeans_x = NULL,
   tree_split_x = 1,
   tree_label_x = FALSE,
   tree_label_size_x = 0.1,
@@ -30,7 +32,9 @@ heat_map(
   tree_y = NULL,
   tree_size_y = 1,
   tree_scale_y = FALSE,
+  tree_order_y = "default",
   tree_cut_y = NULL,
+  tree_kmeans_y = NULL,
   tree_split_y = 1,
   tree_label_y = FALSE,
   tree_label_size_y = 0.1,
@@ -46,7 +50,11 @@ heat_map(
   cell_col_palette = c("red", "blue", "green", "orange", "magenta", "purple"),
   cell_col_scale,
   cell_col_scale_limits = NULL,
+  cell_col_scale_center = NULL,
+  cell_col_scale_breaks = NULL,
   cell_size_scale_limits = NULL,
+  cell_size_scale_method = "linear",
+  cell_size_scale_range = c(0, 1),
   cell_col_alpha = 1,
   cell_col_empty = "white",
   cell_border_line_type = 1,
@@ -61,6 +69,7 @@ heat_map(
   cell_text_col_alpha = 1,
   bar_size_x = 1,
   bar_values_x = NULL,
+  bar_type_x = NULL,
   bar_axis_label_x = NULL,
   bar_axis_label_adj_x = 0,
   bar_axis_label_font_x = 1,
@@ -75,6 +84,7 @@ heat_map(
   bar_line_col_alpha_x = 1,
   bar_size_y = 1,
   bar_values_y = NULL,
+  bar_type_y = NULL,
   bar_axis_label_y = NULL,
   bar_axis_label_adj_y = 0,
   bar_axis_label_font_y = 1,
@@ -121,9 +131,20 @@ heat_map(
   title_text_size = 1.5,
   title_text_col = "black",
   title_text_col_alpha = 1,
+  annotation_x = NULL,
+  annotation_y = NULL,
+  annotation_colours = NULL,
+  annotation_size_x = 0.2,
+  annotation_size_y = 0.2,
+  annotation_text_size = 0.9,
+  annotation_text_font = 1,
+  annotation_text_col = "black",
+  annotation_legend = TRUE,
   legend = TRUE,
+  legend_side = "auto",
   legend_size = 1,
   legend_col_scale_size = 1,
+  legend_col_breaks = NULL,
   legend_title = NULL,
   legend_title_text_font = 2,
   legend_title_text_size = 1,
@@ -133,6 +154,14 @@ heat_map(
   legend_text_size = 1,
   legend_text_col = "black",
   legend_text_col_alpha = 1,
+  mark_x = NULL,
+  mark_y = NULL,
+  mark_labels_x = NULL,
+  mark_labels_y = NULL,
+  mark_line_col = "grey40",
+  cell_raster = "auto",
+  fit_text = TRUE,
+  layout = "fit",
   popup = TRUE,
   popup_size = c(7, 7),
   ...
@@ -148,9 +177,11 @@ heat_map(
 - scale:
 
   logical indicating whether the data should be scaled prior to
-  constructing the heatmap. Addition options include `"column"` or
-  `"row"` to indicate whether scaling should be performed across `rows`
-  or `columns`.
+  constructing the heatmap (`TRUE` scales each column). Additional
+  options include `"column"` or `"row"` to indicate whether scaling
+  should be performed within each column or each row. For convenience,
+  the name of a scaling method (`"range"`, `"mean"` or `"zscore"`) can
+  also be supplied to apply that method to each column.
 
 - scale_method:
 
@@ -163,7 +194,11 @@ heat_map(
   indicates the type of distance metric to use when constructing
   dendrograms, set to `"euclidean"` distance by default. See
   [`?dist`](https://rdrr.io/r/stats/dist.html) for alternatives. Also
-  supports `"cosine"` for cosine distance (1 - cosine similarity).
+  supports `"cosine"` for cosine distance (1 - cosine similarity),
+  `"pearson"`, `"spearman"` or `"kendall"` for one minus the correlation
+  (common for gene expression), or a function that takes the matrix
+  being clustered (one row per row or column of the heatmap) and returns
+  a `dist` object or a square matrix of distances.
 
 - clust_method:
 
@@ -179,25 +214,38 @@ heat_map(
 
 - tree:
 
-  options include `"row"`, `"y"`, `"column"`, `"x"` or `"both"` to
-  indicate the axes for which dendrograms should be constructed, set to
-  FALSE by default. This argument overrides the `tree_x` and `tree_y`
-  arguments.
+  options include `"row"`, `"y"`, `"column"`, `"x"` or `"both"` (or
+  `TRUE`) to indicate the axes for which dendrograms should be
+  constructed, set to FALSE by default. This argument overrides the
+  `tree_x` and `tree_y` arguments.
 
 - tree_x:
 
   logical indicating whether dendrograms should be constructed for the x
-  axis (columns), set to NULL by default.
+  axis (columns), set to NULL by default. Alternatively, a pre-computed
+  `hclust` or `dist` object describing the columns of `x`, such as
+  `heat_map_info(hm)$tree_x` from a previous heatmap. Clusters stored in
+  the `hclust` object are kept unless `tree_cut_x` is supplied.
 
 - tree_size_x:
 
   numeric to control the height of the dendrogram for the x axis, set to
-  1 by default.
+  1 by default (0.6 inches in the default fit layout).
 
 - tree_scale_x:
 
   logical indicating whether the branch heights of the x axis dendrogram
   should be scaled for better visualisation, set to FALSE by default.
+
+- tree_order_x:
+
+  how the branches of the x axis dendrogram are ordered, either
+  `"default"` (the order from `hclust`), `"olo"` (optimal leaf ordering,
+  which flips branches so that neighbouring columns are as similar as
+  possible) or `"mean"` (branches ordered by their mean values, as in
+  [`heatmap`](https://rdrr.io/r/stats/heatmap.html)). Optimal leaf
+  ordering takes a few seconds for 1000 columns and grows with the cube
+  of the number of columns.
 
 - tree_cut_x:
 
@@ -207,15 +255,36 @@ heat_map(
   an integer indicating the desired number of clusters to obtain by
   cutting the x axis dendrogram. Alternatively, clusters can be manually
   defined by specifying the number of columns to include in each cluster
-  (e.g., c(3,4,5)), or a vector of cluster indices can be supplied to
-  assign each column to a specific cluster (e.g., c(1,1,1,2,2,2,2,3,3,3)
-  for 10 columns in 3 clusters). When a vector of indices is supplied,
-  its length must equal the number of columns in `x`.
+  in the displayed order (e.g., c(3,4,5)), or a vector of cluster
+  indices can be supplied to assign each column to a specific cluster
+  (e.g., c(1,1,1,2,2,2,2,3,3,3) for 10 columns in 3 clusters). Cluster
+  indices are supplied in the original column order of `x` (like
+  `bar_values_x`), may be numeric, character or factor, and columns are
+  regrouped so that each cluster is contiguous, ordered from left to
+  right. When a vector of indices is supplied, its length must equal the
+  number of columns in `x`; if its length also matches a valid set of
+  cluster sizes, it is treated as cluster indices. Named indices are
+  matched to the column names of `x`. If a dendrogram is requested
+  (`tree_x = TRUE`), the columns are clustered within each cluster and
+  the clusters are joined at the top of the dendrogram, so the clusters
+  act as groups (e.g. treatments) with a dendrogram inside each one. A
+  dendrogram supplied as an `hclust` or `dist` object (or a heatmap with
+  non-numeric columns) is kept only when the clusters are contiguous in
+  its order. Clusters are always numbered, and labelled by
+  `tree_label_text_x`, in the displayed order from left to right.
+
+- tree_kmeans_x:
+
+  number of k-means clusters to split the columns of `x` into, an
+  alternative to `tree_cut_x` (e.g. `tree_kmeans_x = 3`). See
+  `tree_kmeans_y`.
 
 - tree_split_x:
 
   a numeric to control the spacing between x axis tree splits, set to 1
   by default. Setting the argument to 0 will remove axis tree splits.
+  Each unit is 0.08 inches in the default fit layout and half a column
+  in the classic layout.
 
 - tree_label_x:
 
@@ -226,7 +295,10 @@ heat_map(
 - tree_label_size_x:
 
   numeric to control the height of the tree cluster labels for the x
-  axis tree, set to 0.1 by default.
+  axis tree, set to 0.1 by default. Strips holding label text are made
+  tall enough for the text. In the default fit layout the strip is at
+  least 0.8 inches x `tree_label_size_x` tall, in the classic layout
+  `tree_label_size_x` cells.
 
 - tree_label_col_x:
 
@@ -240,8 +312,8 @@ heat_map(
 
 - tree_label_text_x:
 
-  a vector of text to include in the x axis tree cluster labels, set to
-  NA by default.
+  a vector of text to include in the x axis tree cluster labels from
+  left to right, set to NA by default.
 
 - tree_label_text_font_x:
 
@@ -267,17 +339,25 @@ heat_map(
 - tree_y:
 
   logical indicating whether dendrograms should be constructed for the y
-  axis (rows), set to NULL by default.
+  axis (rows), set to NULL by default. Alternatively, a pre-computed
+  `hclust` or `dist` object describing the rows of `x`, such as
+  `heat_map_info(hm)$tree_y` from a previous heatmap. Clusters stored in
+  the `hclust` object are kept unless `tree_cut_y` is supplied.
 
 - tree_size_y:
 
   numeric to control the width of the dendrogram for the y axis, set to
-  1 by default.
+  1 by default (0.6 inches in the default fit layout).
 
 - tree_scale_y:
 
   logical indicating whether the branch heights of the y axis dendrogram
   should be scaled for better visualisation, set to FALSE by default.
+
+- tree_order_y:
+
+  how the branches of the y axis dendrogram are ordered, either
+  `"default"`, `"olo"` or `"mean"`, as for `tree_order_x`.
 
 - tree_cut_y:
 
@@ -286,16 +366,46 @@ heat_map(
   absolute cosine distance threshold when `dist_method = "cosine"`) or
   an integer indicating the desired number of clusters to obtain by
   cutting the y axis dendrogram. Alternatively, clusters can be manually
-  defined by specifying the number of rows to include in each cluster
-  (e.g., c(3,4,5)), or a vector of cluster indices can be supplied to
-  assign each row to a specific cluster (e.g., c(1,1,1,2,2,2) for 6 rows
-  in 2 clusters). When a vector of indices is supplied, its length must
-  equal the number of rows in `x`.
+  defined by specifying the number of rows to include in each cluster in
+  the displayed order, starting from the bottom of the heatmap (e.g.,
+  c(3,4,5)), or a vector of cluster indices can be supplied to assign
+  each row to a specific cluster (e.g., c(1,1,1,2,2,2) for 6 rows in 2
+  clusters). Cluster indices are supplied in the original row order of
+  `x` (like `bar_values_y`), may be numeric, character or factor, and
+  rows are regrouped so that each cluster is contiguous, ordered from
+  the bottom of the heatmap to the top. When a vector of indices is
+  supplied, its length must equal the number of rows in `x`, and named
+  indices are matched to the row names of `x`. If a dendrogram is
+  requested (`tree_y = TRUE`), the rows are clustered within each
+  cluster and the clusters are joined at the top of the dendrogram (e.g.
+  cells grouped by cell type, each with its own dendrogram); a supplied
+  `hclust` or `dist` object is kept only when the clusters are
+  contiguous in its order. Clusters are always numbered, and labelled by
+  `tree_label_text_y`, in the displayed order from the bottom of the
+  heatmap to the top, which may differ from the supplied indices when
+  the dendrogram order is kept.
+
+- tree_kmeans_y:
+
+  number of k-means clusters to split the rows of `x` into, an
+  alternative to `tree_cut_y` that is quick for many rows (e.g.
+  `tree_kmeans_y = 4`). The rows are clustered on the numeric columns of
+  `x` after scaling, starting from the centres of equal slices of the
+  rows along their first principal component, so the clusters don't
+  depend on the random seed. The clusters are ordered so that similar
+  clusters are neighbours (optimal leaf order of their centres) and then
+  act like groups supplied to `tree_cut_y`: with a dendrogram
+  (`tree_y = TRUE`) the rows are clustered within each k-means cluster,
+  and `tree_split_y` and `tree_label_y` separate and label the clusters.
+  Missing values are replaced by the mean of their column for k-means.
+  `heat_map_info()$row_clusters` returns the clusters.
 
 - tree_split_y:
 
   a numeric to control the spacing between y axis tree splits, set to 1
   by default. Setting the argument to 0 will remove axis tree splits.
+  Each unit is 0.08 inches in the default fit layout and half a row in
+  the classic layout.
 
 - tree_label_y:
 
@@ -306,7 +416,10 @@ heat_map(
 - tree_label_size_y:
 
   numeric to control the width of the tree cluster labels for the y axis
-  tree, set to 0.1 by default.
+  tree, set to 0.1 by default. Strips holding label text are made wide
+  enough for the text. In the default fit layout the strip is at least
+  0.8 inches x `tree_label_size_y` wide, in the classic layout
+  `tree_label_size_y` cells.
 
 - tree_label_col_y:
 
@@ -320,8 +433,8 @@ heat_map(
 
 - tree_label_text_y:
 
-  a vector of text to include in the y axis tree cluster labels, set to
-  NA by default.
+  a vector of text to include in the y axis tree cluster labels from the
+  bottom of the heatmap to the top, set to NA by default.
 
 - tree_label_text_font_y:
 
@@ -347,7 +460,9 @@ heat_map(
 - cell_shape:
 
   indicates the shape to use for the cells in the heatmap, options
-  include `"rect"`, `"circle"` or `"diamond"`.
+  include `"rect"`, `"circle"` or `"diamond"`. Alternatively, a matrix
+  of the same dimensions as `x` containing the shape to use for each
+  cell.
 
 - cell_size:
 
@@ -359,12 +474,18 @@ heat_map(
 - cell_col_palette:
 
   a vector of colours from which colours are selected for columns
-  containing non-numeric data.
+  containing non-numeric data. Alternatively, the name of a palette
+  listed in [`hcl.pals`](https://rdrr.io/r/grDevices/palettes.html)
+  (e.g. `"Dark 3"`) or a function that returns `n` colours.
 
 - cell_col_scale:
 
   a vector of colours to use for the colour scale of numeric values, set
   to a hybrid colour-blind friendly viridis colour palette by default.
+  Alternatively, the name of a palette listed in
+  [`hcl.pals`](https://rdrr.io/r/grDevices/palettes.html) (e.g.
+  `"viridis"` or `"Blue-Red 3"`), or a function created by
+  [`colorRamp`](https://rdrr.io/r/grDevices/colorRamp.html).
 
 - cell_col_scale_limits:
 
@@ -372,6 +493,26 @@ heat_map(
   scale as `c(min, max)`. If NULL (default), limits are computed from
   the data before rounding. Custom limits allow you to set consistent
   colour scales across multiple heatmaps or override automatic scaling.
+  Set to `"robust"` to use the 2nd and 98th percentiles of the data, so
+  that a few outliers don't wash out the colour scale; values beyond the
+  limits take the colours at the ends of the scale.
+
+- cell_col_scale_center:
+
+  optional numeric value at which to centre the colour scale, set to
+  NULL by default. When supplied, the colour scale limits are made
+  symmetric around this value so that it maps to the middle colour of
+  `cell_col_scale`. Useful with diverging palettes such as
+  `"Blue-Red 3"` and `scale_method = "zscore"` (`center = 0`).
+
+- cell_col_scale_breaks:
+
+  a numeric vector of at least two breaks that bin the values into a
+  stepped colour scale, set to NULL by default for a continuous scale.
+  Each bin between consecutive breaks takes one colour, evenly spaced
+  along `cell_col_scale` whatever the widths of the bins, and values
+  beyond the outer breaks take the colours of the outer bins. The breaks
+  set the limits of the colour scale and label the colour legend.
 
 - cell_size_scale_limits:
 
@@ -380,10 +521,29 @@ heat_map(
   the data before rounding. Only used when `cell_size` is not FALSE.
   Custom limits allow consistent size scales across multiple heatmaps.
 
+- cell_size_scale_method:
+
+  indicates how values are mapped to cell sizes, either `"linear"`
+  (default) to scale the width of each cell with its value, or `"area"`
+  to scale the area of each cell with its value, which is perceptually
+  more accurate.
+
+- cell_size_scale_range:
+
+  numeric vector of length 2 indicating the smallest and largest
+  relative cell sizes (as a proportion of the cell width), set to
+  `c(0, 1)` by default. Increasing the lower limit (e.g. `c(0.1, 1)`)
+  ensures cells with the smallest values remain visible.
+
 - cell_col_alpha:
 
   a numeric to control the fill transparency of cells within the
-  heatmap, set to 1 by default to use solid colours.
+  heatmap, set to 1 by default to use solid colours. A different
+  transparency can be used for each cell by supplying a matrix with the
+  same dimensions as `x`, or a vector that is recycled down the columns
+  of `x` (as in [`matrix()`](https://rdrr.io/r/base/matrix.html)).
+  Legends use solid colours unless all cells share the same
+  transparency.
 
 - cell_col_empty:
 
@@ -403,7 +563,9 @@ heat_map(
 - cell_border_line_col:
 
   indicates the colour to use for cell borders, set to `"black"` by
-  default.
+  default. Borders are left out when cells are smaller than three line
+  widths, as they would hide the cells, unless a `cell_border_mask` is
+  supplied.
 
 - cell_border_line_col_alpha:
 
@@ -415,7 +577,7 @@ heat_map(
   a matrix of the same dimensions as `x` containing TRUE/FALSE values
   indicating whether each cell should have a colored border (TRUE) or a
   transparent border (FALSE), set to NULL by default to apply border
-  color to all cells.
+  color to all cells. Missing values are treated as FALSE.
 
 - cell_text:
 
@@ -434,7 +596,7 @@ heat_map(
 
 - cell_text_col:
 
-  colour to use for cell text, set to `"white"` by default,
+  colour to use for cell text, set to `"white"` by default.
 
 - cell_text_col_alpha:
 
@@ -443,7 +605,8 @@ heat_map(
 
 - bar_size_x:
 
-  numeric to control the height of x axis bar plot, set to 1 by default.
+  numeric to control the height of x axis bar plot, set to 1 by default
+  (0.6 inches in the default fit layout).
 
 - bar_values_x:
 
@@ -451,7 +614,22 @@ heat_map(
   order matching the original columns of `x` or named with the column
   names of `x`. The values supplied to `bar_values_x` will be internally
   reordered to match the order of columns as determined by hierarchical
-  clustering.
+  clustering. To show the distribution of several values for each column
+  as a box plot or violin (`bar_type_x`), supply a list with a numeric
+  vector for each column (named or in the original order), a matrix or
+  data.frame with one column for each column of `x`, or `TRUE` for the
+  values of each column of the heatmap (after scaling).
+
+- bar_type_x:
+
+  the type of plot drawn for `bar_values_x`: `"bar"` (one value per
+  column), `"box"` (box plots of the values of each column, with the
+  median, quartiles, whiskers to the most extreme values within 1.5
+  times the interquartile range and points beyond them) or `"violin"`
+  (densities of the values of each column, with a line at the median).
+  Set to `NULL` by default to draw bars for a vector and box plots for
+  distributions. `bar_fill_x` and the `bar_line_*_x` arguments style the
+  boxes and violins.
 
 - bar_axis_label_x:
 
@@ -464,7 +642,7 @@ heat_map(
 
 - bar_axis_label_font_x:
 
-  font to use for the axis label of the x axis bar plot, set to 2 by
+  font to use for the axis label of the x axis bar plot, set to 1 by
   default. See `font` in [`?par`](https://rdrr.io/r/graphics/par.html)
   for alternatives.
 
@@ -516,7 +694,8 @@ heat_map(
 
 - bar_size_y:
 
-  numeric to control the width of y axis bar plot, set to 1 by default.
+  numeric to control the width of y axis bar plot, set to 1 by default
+  (0.6 inches in the default fit layout).
 
 - bar_values_y:
 
@@ -524,7 +703,14 @@ heat_map(
   order matching the original rownames of `x` or named with the row
   names of `x`. The values supplied to `bar_values_y` will be internally
   reordered to match the order of rows as determined by hierarchical
-  clustering.
+  clustering. As for `bar_values_x`, a list (one numeric vector per
+  row), a matrix or data.frame with one row per row of `x`, or `TRUE`
+  (the values of each row of the heatmap) shows the distribution of each
+  row as a box plot or violin.
+
+- bar_type_y:
+
+  the type of plot drawn for `bar_values_y`, as for `bar_type_x`.
 
 - bar_axis_label_y:
 
@@ -537,7 +723,7 @@ heat_map(
 
 - bar_axis_label_font_y:
 
-  font to use for the axis label of the y axis bar plot, set to 2 by
+  font to use for the axis label of the y axis bar plot, set to 1 by
   default. See `font` in [`?par`](https://rdrr.io/r/graphics/par.html)
   for alternatives.
 
@@ -591,7 +777,10 @@ heat_map(
 
   vector of text to use for x axis labels supplied in the order matching
   the constructed heatmap, set to NULL by default to use the column
-  names of `x`.
+  names of `x`. Missing values (`NA`) are drawn as empty labels without
+  a tick mark, so `NA` removes the x axis text. An `expression` can be
+  supplied for mathematical annotation (see
+  [`?plotmath`](https://rdrr.io/r/grDevices/plotmath.html)).
 
 - axis_text_side_x:
 
@@ -621,9 +810,15 @@ heat_map(
 
 - axis_text_angle_x:
 
-  integer to control the angle of x axis text labels relative to the x
-  axis, set to 3 by default. See `las` in
-  [`?par`](https://rdrr.io/r/graphics/par.html) for alternatives.
+  controls the angle of x axis text labels relative to the x axis, set
+  to 3 by default. The whole numbers 0 to 3 are `las` codes (see `las`
+  in [`?par`](https://rdrr.io/r/graphics/par.html)), any other angle
+  between 0 and 90 is in degrees. Labels rotated by an angle (e.g. 45)
+  end at their ticks and slant towards the y axis text, so that the
+  longest labels extend beneath (or above) the y axis text rather than
+  the dendrograms and legends. Rotated labels are spaced along the axis
+  by their height across their baselines, and `axis_text_adjust_x` is
+  not used. The angle is not used for mark labels (`mark_x`).
 
 - axis_text_adjust_x:
 
@@ -661,8 +856,12 @@ heat_map(
 - axis_text_y:
 
   vector of text to use for y axis labels supplied in the order matching
-  the constructed heatmap, set to NULL by default to use the row names
-  of `x`.
+  the constructed heatmap (from bottom to top), set to NULL by default
+  to use the row names of `x`, or the row indices when `x` has no row
+  names. Missing values (`NA`) are drawn as empty labels without a tick
+  mark, so `NA` removes the y axis text. An `expression` can be supplied
+  for mathematical annotation (see
+  [`?plotmath`](https://rdrr.io/r/grDevices/plotmath.html)).
 
 - axis_text_side_y:
 
@@ -693,7 +892,7 @@ heat_map(
 - axis_text_angle_y:
 
   integer to control the angle of y axis text labels relative to the y
-  axis, set to 3 by default. See `las` in
+  axis, set to 1 by default. See `las` in
   [`?par`](https://rdrr.io/r/graphics/par.html) for alternatives.
 
 - axis_text_adjust_y:
@@ -749,7 +948,7 @@ heat_map(
 - title_text_size:
 
   numeric to control the size of the text in the heatmap title, set to
-  1.2 by default.
+  1.5 by default.
 
 - title_text_col:
 
@@ -760,27 +959,89 @@ heat_map(
   numeric ranging from 0 to 1 to control the transparency of text in
   heatmap title, set to 1 by default for solid colours.
 
+- annotation_x:
+
+  a data.frame of metadata describing the columns of `x` (e.g. the
+  treatment and sex of each sample), drawn as coloured tracks beside the
+  heatmap opposite the x axis text. Rows are matched to the column names
+  of `x` when the data.frame has row names, otherwise one row per column
+  of `x` in the original order. Non-numeric columns are coloured by
+  level and numeric columns with a colour ramp. A single vector is
+  treated as one annotation.
+
+- annotation_y:
+
+  a data.frame of metadata describing the rows of `x`, drawn as tracks
+  opposite the y axis text (see `annotation_x`).
+
+- annotation_colours:
+
+  a named list of colours for the annotations, e.g.
+  `list(Treatment = c(Control = "grey", Drug = "red"))`. Discrete
+  annotations accept a named vector (one colour per level), an unnamed
+  vector, a palette function or an
+  [`hcl.pals()`](https://rdrr.io/r/grDevices/palettes.html) name;
+  numeric annotations accept colours for a ramp, a
+  [`colorRamp()`](https://rdrr.io/r/grDevices/colorRamp.html) function
+  or an [`hcl.pals()`](https://rdrr.io/r/grDevices/palettes.html) name.
+  Annotations without an entry get default palettes.
+
+- annotation_size_x, annotation_size_y:
+
+  height (width) of each annotation track in inches, set to 0.2 by
+  default.
+
+- annotation_text_size, annotation_text_font, annotation_text_col:
+
+  size, font and colour of the annotation names, which are written
+  beside the tracks on the side of the axis text.
+
+- annotation_legend:
+
+  logical indicating whether legends should be drawn for the
+  annotations, set to TRUE by default.
+
 - legend:
 
   logical indicating whether to include a legend in the heatmap, set to
-  TRUE by default. Alternatively, `"size"`, `"colour"` or `"both"` to
-  indicate the type(s) of legends to include in the heatmap.
+  TRUE by default to include colour and size legends. Alternatively, a
+  character vector containing any of `"colour"`, `"size"`, `"both"`
+  (colour and size) or `"levels"` to indicate the type(s) of legends to
+  include in the heatmap. The `"levels"` legend shows the colours
+  assigned to values in non-numeric columns, e.g.
+  `legend = c("both", "levels")`. Set to `FALSE`, `NA` or `"none"` to
+  remove the legend.
+
+- legend_side:
+
+  where to draw the legend, either `"auto"` (the default) beside the
+  heatmap, opposite the y axis text, or `"bottom"` below the heatmap
+  with horizontal colour bars and the legends side by side (wrapping
+  into rows when they don't fit across the figure). `"bottom"` requires
+  `layout = "fit"`.
 
 - legend_size:
 
   numeric to control the amount of space allocated to the legend, set to
-  1 by default.
+  1 by default. In the fit layout (the default) the legend is sized from
+  its contents and `legend_size` scales the legend keys instead.
 
 - legend_col_scale_size:
 
   numeric to control the width of the legend colour scale relative to
-  the allocated space for the legend, set to 1 by default. legend_title
-  = NULL,
+  the allocated space for the legend, set to 1 by default.
+
+- legend_col_breaks:
+
+  values at which to label the colour legend, set to NULL by default to
+  choose them automatically (or use `cell_col_scale_breaks`). Names,
+  when supplied, are used as the labels, e.g.
+  `c(low = -2, 0, high = 2)`.
 
 - legend_title:
 
-  a vector of length two containing text to be displayed above the cell
-  colour and size legends respectively.
+  a vector of up to three elements containing text to be displayed above
+  the cell colour, size and levels legends respectively.
 
 - legend_title_text_font:
 
@@ -823,6 +1084,60 @@ heat_map(
   numeric to control the transparency of text in the legend, set to 1 by
   default to use solid colours.
 
+- mark_x, mark_y:
+
+  columns or rows to label, as names, indices in the original order of
+  `x`, or a logical vector with one value per column or row. The labels
+  replace the axis text on that axis: they are spread out beside the
+  heatmap so that they don't overlap, and leader lines connect each
+  label to its column or row. This names a few rows of a large heatmap
+  (e.g. marker genes) when there is no room to label every row. The
+  labels use the axis text font, size and colour; row labels are
+  horizontal and column labels vertical.
+
+- mark_labels_x, mark_labels_y:
+
+  labels for the columns or rows in `mark_x` and `mark_y`, one per
+  element, set to NULL by default to use the column or row names.
+
+- mark_line_col:
+
+  colour of the leader lines connecting mark labels to their rows or
+  columns, set to `"grey40"` by default.
+
+- cell_raster:
+
+  whether to draw the cells as raster images, which is much faster and
+  gives smaller files for large heatmaps. Set to `"auto"` by default to
+  use raster images for heatmaps with more than 50,000 cells. `TRUE`
+  always uses raster images and `FALSE` never does. Raster images are
+  only used when every cell is a full-size rectangle (no `cell_size`
+  scaling or other `cell_shape`) and the graphics device supports them;
+  cell borders are then drawn as grid lines.
+
+- fit_text:
+
+  logical indicating whether axis text, cell text and cluster label text
+  should be shrunk to fit the available space when it would otherwise
+  overlap, set to TRUE by default. Axis labels that still don't fit at
+  half their size are thinned to every second, third, ... label.
+
+- layout:
+
+  how space is shared between the heatmap and everything around it,
+  either `"fit"` (the default) or `"classic"`. The fit layout sizes
+  dendrograms, bar graphs, annotation tracks, the legend and the margins
+  in inches from their contents - dendrograms and bar graphs keep the
+  same size whatever the shape of the data, the legend is as wide as its
+  text, the margins are as wide as the axis text, labels and title, and
+  the heatmap body takes the remaining space. In the fit layout
+  `tree_size_x`, `tree_size_y`, `bar_size_x` and `bar_size_y` are
+  multiples of 0.6 inches and `legend_size` scales the legend keys
+  (colour bars, swatches and size legend shapes). The classic layout of
+  HeatmapR 1.1.0 and earlier sizes dendrograms, bar graphs and the
+  legend as fractions of the heatmap, so they grow and shrink with the
+  number of rows and columns.
+
 - popup:
 
   logical indicating whether the heatmap should be constructed in a
@@ -835,11 +1150,32 @@ heat_map(
 
 - ...:
 
-  not in use.
+  additional arguments passed to
+  [`heat_map_clust`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
+  (and on to [`dist`](https://rdrr.io/r/stats/dist.html) or
+  [`hclust`](https://rdrr.io/r/stats/hclust.html)). Any other arguments
+  are ignored with a warning, which catches misspelled argument names.
+  Note that `p` (for Minkowski distances) is partially matched to
+  `popup_size`, so cluster with
+  [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
+  and supply the result to `tree_x` or `tree_y` instead.
 
 ## Value
 
-a recorded heatmap.
+an object of class `heat_map` returned invisibly. The object is the
+`recordedplot` of the heatmap (so it can still be used with
+[`replayPlot`](https://rdrr.io/r/grDevices/recordplot.html)), and can be
+redrawn with [`print()`](https://rdrr.io/r/base/print.html) or
+[`plot()`](https://rdrr.io/r/graphics/plot.default.html) or saved with
+[`heat_map_save`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md).
+The data used to construct the heatmap, including row and column orders,
+cluster assignments, dendrograms and cell colours, can be extracted with
+[`heat_map_info`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md).
+
+## See also
+
+[`heat_map_info`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md),
+[`heat_map_save`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md)
 
 ## Author
 
@@ -864,4 +1200,37 @@ heat_map(
  )
 #> Applying range scaling to each column...
 
+
+# Diverging colour scale centred at zero for z-scores
+hm <- heat_map(
+  mtcars,
+  scale = "column",
+  scale_method = "zscore",
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_center = 0,
+  tree = "both",
+  tree_cut_y = 4,
+  popup = FALSE
+)
+#> Applying zscore scaling to each column...
+
+
+# Extract cluster assignments and display order
+heat_map_info(hm)$row_clusters
+#>           Mazda RX4       Mazda RX4 Wag          Datsun 710      Hornet 4 Drive 
+#>                   4                   4                   2                   1 
+#>   Hornet Sportabout             Valiant          Duster 360           Merc 240D 
+#>                   3                   1                   3                   1 
+#>            Merc 230            Merc 280           Merc 280C          Merc 450SE 
+#>                   1                   1                   1                   3 
+#>          Merc 450SL         Merc 450SLC  Cadillac Fleetwood Lincoln Continental 
+#>                   3                   3                   3                   3 
+#>   Chrysler Imperial            Fiat 128         Honda Civic      Toyota Corolla 
+#>                   3                   2                   2                   2 
+#>       Toyota Corona    Dodge Challenger         AMC Javelin          Camaro Z28 
+#>                   1                   3                   3                   3 
+#>    Pontiac Firebird           Fiat X1-9       Porsche 914-2        Lotus Europa 
+#>                   3                   2                   2                   2 
+#>      Ford Pantera L        Ferrari Dino       Maserati Bora          Volvo 142E 
+#>                   4                   4                   4                   2 
 ```

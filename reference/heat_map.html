@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,7 +50,9 @@
 <span>  tree_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_size_x <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_scale_x <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  tree_order_x <span class="op">=</span> <span class="st">"default"</span>,</span>
 <span>  tree_cut_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  tree_kmeans_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_split_x <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_label_x <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tree_label_size_x <span class="op">=</span> <span class="fl">0.1</span>,</span>
@@ -64,7 +66,9 @@
 <span>  tree_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_size_y <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_scale_y <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  tree_order_y <span class="op">=</span> <span class="st">"default"</span>,</span>
 <span>  tree_cut_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  tree_kmeans_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_split_y <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_label_y <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tree_label_size_y <span class="op">=</span> <span class="fl">0.1</span>,</span>
@@ -80,7 +84,11 @@
 <span>  cell_col_palette <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"red"</span>, <span class="st">"blue"</span>, <span class="st">"green"</span>, <span class="st">"orange"</span>, <span class="st">"magenta"</span>, <span class="st">"purple"</span><span class="op">)</span>,</span>
 <span>  <span class="va">cell_col_scale</span>,</span>
 <span>  cell_col_scale_limits <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_col_scale_center <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_col_scale_breaks <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cell_size_scale_limits <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_size_scale_method <span class="op">=</span> <span class="st">"linear"</span>,</span>
+<span>  cell_size_scale_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  cell_col_alpha <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  cell_col_empty <span class="op">=</span> <span class="st">"white"</span>,</span>
 <span>  cell_border_line_type <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -95,6 +103,7 @@
 <span>  cell_text_col_alpha <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  bar_size_x <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  bar_values_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  bar_type_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  bar_axis_label_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  bar_axis_label_adj_x <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  bar_axis_label_font_x <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -109,6 +118,7 @@
 <span>  bar_line_col_alpha_x <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  bar_size_y <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  bar_values_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  bar_type_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  bar_axis_label_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  bar_axis_label_adj_y <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  bar_axis_label_font_y <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -155,9 +165,20 @@
 <span>  title_text_size <span class="op">=</span> <span class="fl">1.5</span>,</span>
 <span>  title_text_col <span class="op">=</span> <span class="st">"black"</span>,</span>
 <span>  title_text_col_alpha <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  annotation_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotation_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotation_colours <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotation_size_x <span class="op">=</span> <span class="fl">0.2</span>,</span>
+<span>  annotation_size_y <span class="op">=</span> <span class="fl">0.2</span>,</span>
+<span>  annotation_text_size <span class="op">=</span> <span class="fl">0.9</span>,</span>
+<span>  annotation_text_font <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  annotation_text_col <span class="op">=</span> <span class="st">"black"</span>,</span>
+<span>  annotation_legend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  legend <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  legend_side <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  legend_size <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  legend_col_scale_size <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  legend_col_breaks <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_title_text_font <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  legend_title_text_size <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -167,6 +188,14 @@
 <span>  legend_text_size <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  legend_text_col <span class="op">=</span> <span class="st">"black"</span>,</span>
 <span>  legend_text_col_alpha <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  mark_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  mark_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  mark_labels_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  mark_labels_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  mark_line_col <span class="op">=</span> <span class="st">"grey40"</span>,</span>
+<span>  cell_raster <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  fit_text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  layout <span class="op">=</span> <span class="st">"fit"</span>,</span>
 <span>  popup <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  popup_size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">7</span>, <span class="fl">7</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -183,9 +212,12 @@
 
 <dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
 <dd><p>logical indicating whether the data should be scaled prior to
-constructing the heatmap. Addition options include <code>"column"</code> or
-<code>"row"</code> to indicate whether scaling should be performed across
-<code>rows</code> or <code>columns</code>.</p></dd>
+constructing the heatmap (<code>TRUE</code> scales each column). Additional
+options include <code>"column"</code> or <code>"row"</code> to indicate whether
+scaling should be performed within each column or each row. For
+convenience, the name of a scaling method (<code>"range"</code>, <code>"mean"</code>
+or <code>"zscore"</code>) can also be supplied to apply that method to each
+column.</p></dd>
 
 
 <dt id="arg-scale-method">scale_method<a class="anchor" aria-label="anchor" href="#arg-scale-method"></a></dt>
@@ -199,7 +231,11 @@ default.</p></dd>
 <dd><p>indicates the type of distance metric to use when
 constructing dendrograms, set to <code>"euclidean"</code> distance by default.
 See <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">?dist</a></code> for alternatives. Also supports <code>"cosine"</code> for
-cosine distance (1 - cosine similarity).</p></dd>
+cosine distance (1 - cosine similarity), <code>"pearson"</code>,
+<code>"spearman"</code> or <code>"kendall"</code> for one minus the correlation
+(common for gene expression), or a function that takes the matrix being
+clustered (one row per row or column of the heatmap) and returns a
+<code>dist</code> object or a square matrix of distances.</p></dd>
 
 
 <dt id="arg-clust-method">clust_method<a class="anchor" aria-label="anchor" href="#arg-clust-method"></a></dt>
@@ -216,25 +252,39 @@ decimal places by default</p></dd>
 
 <dt id="arg-tree">tree<a class="anchor" aria-label="anchor" href="#arg-tree"></a></dt>
 <dd><p>options include <code>"row"</code>, <code>"y"</code>, <code>"column"</code>,
-<code>"x"</code> or <code>"both"</code> to indicate the axes for which dendrograms
-should be constructed, set to FALSE by default. This argument overrides the
-<code>tree_x</code> and <code>tree_y</code> arguments.</p></dd>
+<code>"x"</code> or <code>"both"</code> (or <code>TRUE</code>) to indicate the axes for
+which dendrograms should be constructed, set to FALSE by default. This
+argument overrides the <code>tree_x</code> and <code>tree_y</code> arguments.</p></dd>
 
 
 <dt id="arg-tree-x">tree_x<a class="anchor" aria-label="anchor" href="#arg-tree-x"></a></dt>
 <dd><p>logical indicating whether dendrograms should be constructed
-for the x axis (columns), set to NULL by default.</p></dd>
+for the x axis (columns), set to NULL by default. Alternatively, a
+pre-computed <code>hclust</code> or <code>dist</code> object describing the columns of
+<code>x</code>, such as <code>heat_map_info(hm)$tree_x</code> from a previous
+heatmap. Clusters stored in the <code>hclust</code> object are kept unless
+<code>tree_cut_x</code> is supplied.</p></dd>
 
 
 <dt id="arg-tree-size-x">tree_size_x<a class="anchor" aria-label="anchor" href="#arg-tree-size-x"></a></dt>
 <dd><p>numeric to control the height of the dendrogram for the x
-axis, set to 1 by default.</p></dd>
+axis, set to 1 by default (0.6 inches in the default fit layout).</p></dd>
 
 
 <dt id="arg-tree-scale-x">tree_scale_x<a class="anchor" aria-label="anchor" href="#arg-tree-scale-x"></a></dt>
 <dd><p>logical indicating whether the branch heights of the x
 axis dendrogram should be scaled for better visualisation, set to FALSE by
 default.</p></dd>
+
+
+<dt id="arg-tree-order-x">tree_order_x<a class="anchor" aria-label="anchor" href="#arg-tree-order-x"></a></dt>
+<dd><p>how the branches of the x axis dendrogram are ordered,
+either <code>"default"</code> (the order from <code>hclust</code>), <code>"olo"</code>
+(optimal leaf ordering, which flips branches so that neighbouring columns
+are as similar as possible) or <code>"mean"</code> (branches ordered by their
+mean values, as in <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code>). Optimal leaf ordering
+takes a few seconds for 1000 columns and grows with the cube of the
+number of columns.</p></dd>
 
 
 <dt id="arg-tree-cut-x">tree_cut_x<a class="anchor" aria-label="anchor" href="#arg-tree-cut-x"></a></dt>
@@ -244,16 +294,37 @@ or absolute cosine distance threshold when <code>dist_method = "cosine"</code>)
 or an integer indicating the desired number of clusters to obtain by
 cutting the x axis dendrogram.
 Alternatively, clusters can be manually defined by specifying the number of
-columns to include in each cluster (e.g., c(3,4,5)), or a vector of cluster
-indices can be supplied to assign each column to a specific cluster (e.g.,
-c(1,1,1,2,2,2,2,3,3,3) for 10 columns in 3 clusters). When a vector of
-indices is supplied, its length must equal the number of columns in <code>x</code>.</p></dd>
+columns to include in each cluster in the displayed order (e.g.,
+c(3,4,5)), or a vector of cluster indices can be supplied to assign each
+column to a specific cluster (e.g., c(1,1,1,2,2,2,2,3,3,3) for 10 columns
+in 3 clusters). Cluster indices are supplied in the original column order
+of <code>x</code> (like <code>bar_values_x</code>), may be numeric, character or
+factor, and columns are regrouped so that each cluster is contiguous,
+ordered from left to right. When a vector of indices is supplied, its
+length must equal the number of columns in <code>x</code>; if its length also
+matches a valid set of cluster sizes, it is treated as cluster indices.
+Named indices are matched to the column names of <code>x</code>. If a
+dendrogram is requested (<code>tree_x = TRUE</code>), the columns are clustered
+within each cluster and the clusters are joined at the top of the
+dendrogram, so the clusters act as groups (e.g. treatments) with a
+dendrogram inside each one. A dendrogram supplied as an <code>hclust</code> or
+<code>dist</code> object (or a heatmap with non-numeric columns) is kept only
+when the clusters are contiguous in its order. Clusters are always
+numbered, and labelled by <code>tree_label_text_x</code>, in the displayed
+order from left to right.</p></dd>
+
+
+<dt id="arg-tree-kmeans-x">tree_kmeans_x<a class="anchor" aria-label="anchor" href="#arg-tree-kmeans-x"></a></dt>
+<dd><p>number of k-means clusters to split the columns of
+<code>x</code> into, an alternative to <code>tree_cut_x</code> (e.g.
+<code>tree_kmeans_x = 3</code>). See <code>tree_kmeans_y</code>.</p></dd>
 
 
 <dt id="arg-tree-split-x">tree_split_x<a class="anchor" aria-label="anchor" href="#arg-tree-split-x"></a></dt>
 <dd><p>a numeric to control the spacing between x axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
-tree splits.</p></dd>
+tree splits. Each unit is 0.08 inches in the default fit layout and half
+a column in the classic layout.</p></dd>
 
 
 <dt id="arg-tree-label-x">tree_label_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-x"></a></dt>
@@ -264,7 +335,10 @@ set to FALSE by default.</p></dd>
 
 <dt id="arg-tree-label-size-x">tree_label_size_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-size-x"></a></dt>
 <dd><p>numeric to control the height of the tree cluster
-labels for the x axis tree, set to 0.1 by default.</p></dd>
+labels for the x axis tree, set to 0.1 by default. Strips holding label
+text are made tall enough for the text. In the default fit layout the
+strip is at least 0.8 inches x <code>tree_label_size_x</code> tall, in the
+classic layout <code>tree_label_size_x</code> cells.</p></dd>
 
 
 <dt id="arg-tree-label-col-x">tree_label_col_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-col-x"></a></dt>
@@ -279,7 +353,7 @@ axis tree cluster labels, set to 1 by default to use solid colours.</p></dd>
 
 <dt id="arg-tree-label-text-x">tree_label_text_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-x"></a></dt>
 <dd><p>a vector of text to include in the x axis tree
-cluster labels, set to NA by default.</p></dd>
+cluster labels from left to right, set to NA by default.</p></dd>
 
 
 <dt id="arg-tree-label-text-font-x">tree_label_text_font_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-font-x"></a></dt>
@@ -306,18 +380,28 @@ solid colours.</p></dd>
 
 <dt id="arg-tree-y">tree_y<a class="anchor" aria-label="anchor" href="#arg-tree-y"></a></dt>
 <dd><p>logical indicating whether dendrograms should be constructed
-for the y axis (rows), set to NULL by default.</p></dd>
+for the y axis (rows), set to NULL by default. Alternatively, a
+pre-computed <code>hclust</code> or <code>dist</code> object describing the rows of
+<code>x</code>, such as <code>heat_map_info(hm)$tree_y</code> from a previous
+heatmap. Clusters stored in the <code>hclust</code> object are kept unless
+<code>tree_cut_y</code> is supplied.</p></dd>
 
 
 <dt id="arg-tree-size-y">tree_size_y<a class="anchor" aria-label="anchor" href="#arg-tree-size-y"></a></dt>
 <dd><p>numeric to control the width of the dendrogram for the y
-axis, set to 1 by default.</p></dd>
+axis, set to 1 by default (0.6 inches in the default fit layout).</p></dd>
 
 
 <dt id="arg-tree-scale-y">tree_scale_y<a class="anchor" aria-label="anchor" href="#arg-tree-scale-y"></a></dt>
 <dd><p>logical indicating whether the branch heights of the y
 axis dendrogram should be scaled for better visualisation, set to FALSE by
 default.</p></dd>
+
+
+<dt id="arg-tree-order-y">tree_order_y<a class="anchor" aria-label="anchor" href="#arg-tree-order-y"></a></dt>
+<dd><p>how the branches of the y axis dendrogram are ordered,
+either <code>"default"</code>, <code>"olo"</code> or <code>"mean"</code>, as for
+<code>tree_order_x</code>.</p></dd>
 
 
 <dt id="arg-tree-cut-y">tree_cut_y<a class="anchor" aria-label="anchor" href="#arg-tree-cut-y"></a></dt>
@@ -327,16 +411,46 @@ or absolute cosine distance threshold when <code>dist_method = "cosine"</code>)
 or an integer indicating the desired number of clusters to obtain by
 cutting the y axis dendrogram.
 Alternatively, clusters can be manually defined by specifying the number of
-rows to include in each cluster (e.g., c(3,4,5)), or a vector of cluster
-indices can be supplied to assign each row to a specific cluster (e.g.,
-c(1,1,1,2,2,2) for 6 rows in 2 clusters). When a vector of indices is
-supplied, its length must equal the number of rows in <code>x</code>.</p></dd>
+rows to include in each cluster in the displayed order, starting from the
+bottom of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
+be supplied to assign each row to a specific cluster (e.g., c(1,1,1,2,2,2)
+for 6 rows in 2 clusters). Cluster indices are supplied in the original
+row order of <code>x</code> (like <code>bar_values_y</code>), may be numeric,
+character or factor, and rows are regrouped so that each cluster is
+contiguous, ordered from the bottom of the heatmap to the top. When a
+vector of indices is supplied, its length must equal the number of rows in
+<code>x</code>, and named indices are matched to the row names of <code>x</code>. If
+a dendrogram is requested (<code>tree_y = TRUE</code>), the rows are clustered
+within each cluster and the clusters are joined at the top of the
+dendrogram (e.g. cells grouped by cell type, each with its own
+dendrogram); a supplied <code>hclust</code> or <code>dist</code> object is kept only
+when the clusters are contiguous in its order. Clusters are
+always numbered, and labelled by <code>tree_label_text_y</code>, in the
+displayed order from the bottom of the heatmap to the top, which may
+differ from the supplied indices when the dendrogram order is kept.</p></dd>
+
+
+<dt id="arg-tree-kmeans-y">tree_kmeans_y<a class="anchor" aria-label="anchor" href="#arg-tree-kmeans-y"></a></dt>
+<dd><p>number of k-means clusters to split the rows of
+<code>x</code> into, an alternative to <code>tree_cut_y</code> that is quick for many
+rows (e.g. <code>tree_kmeans_y = 4</code>). The rows are clustered on the
+numeric columns of <code>x</code> after scaling, starting from the centres of
+equal slices of the rows along their first principal component, so the
+clusters don't depend on the random seed. The clusters are ordered so
+that similar clusters are neighbours (optimal leaf order of their
+centres) and then act like groups supplied to <code>tree_cut_y</code>: with a
+dendrogram (<code>tree_y = TRUE</code>) the rows are clustered within each
+k-means cluster, and <code>tree_split_y</code> and <code>tree_label_y</code>
+separate and label the clusters. Missing values are replaced by the mean
+of their column for k-means. <code>heat_map_info()$row_clusters</code> returns
+the clusters.</p></dd>
 
 
 <dt id="arg-tree-split-y">tree_split_y<a class="anchor" aria-label="anchor" href="#arg-tree-split-y"></a></dt>
 <dd><p>a numeric to control the spacing between y axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
-tree splits.</p></dd>
+tree splits. Each unit is 0.08 inches in the default fit layout and half
+a row in the classic layout.</p></dd>
 
 
 <dt id="arg-tree-label-y">tree_label_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-y"></a></dt>
@@ -347,7 +461,10 @@ set to FALSE by default.</p></dd>
 
 <dt id="arg-tree-label-size-y">tree_label_size_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-size-y"></a></dt>
 <dd><p>numeric to control the width of the tree cluster
-labels for the y axis tree, set to 0.1 by default.</p></dd>
+labels for the y axis tree, set to 0.1 by default. Strips holding label
+text are made wide enough for the text. In the default fit layout the
+strip is at least 0.8 inches x <code>tree_label_size_y</code> wide, in the
+classic layout <code>tree_label_size_y</code> cells.</p></dd>
 
 
 <dt id="arg-tree-label-col-y">tree_label_col_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-col-y"></a></dt>
@@ -362,7 +479,8 @@ axis tree cluster labels, set to 1 by default to use solid colours.</p></dd>
 
 <dt id="arg-tree-label-text-y">tree_label_text_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-y"></a></dt>
 <dd><p>a vector of text to include in the y axis tree
-cluster labels, set to NA by default.</p></dd>
+cluster labels from the bottom of the heatmap to the top, set to NA by
+default.</p></dd>
 
 
 <dt id="arg-tree-label-text-font-y">tree_label_text_font_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-font-y"></a></dt>
@@ -389,7 +507,9 @@ solid colours.</p></dd>
 
 <dt id="arg-cell-shape">cell_shape<a class="anchor" aria-label="anchor" href="#arg-cell-shape"></a></dt>
 <dd><p>indicates the shape to use for the cells in the heatmap,
-options include <code>"rect"</code>, <code>"circle"</code> or <code>"diamond"</code>.</p></dd>
+options include <code>"rect"</code>, <code>"circle"</code> or <code>"diamond"</code>.
+Alternatively, a matrix of the same dimensions as <code>x</code> containing the
+shape to use for each cell.</p></dd>
 
 
 <dt id="arg-cell-size">cell_size<a class="anchor" aria-label="anchor" href="#arg-cell-size"></a></dt>
@@ -401,32 +521,79 @@ the size of each cell should be scaled.</p></dd>
 
 <dt id="arg-cell-col-palette">cell_col_palette<a class="anchor" aria-label="anchor" href="#arg-cell-col-palette"></a></dt>
 <dd><p>a vector of colours from which colours are selected
-for columns containing non-numeric data.</p></dd>
+for columns containing non-numeric data. Alternatively, the name of a
+palette listed in <code><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.pals</a></code> (e.g. <code>"Dark 3"</code>)
+or a function that returns <code>n</code> colours.</p></dd>
 
 
 <dt id="arg-cell-col-scale">cell_col_scale<a class="anchor" aria-label="anchor" href="#arg-cell-col-scale"></a></dt>
 <dd><p>a vector of colours to use for the colour scale of
 numeric values, set to a hybrid colour-blind friendly viridis colour
-palette by default.</p></dd>
+palette by default. Alternatively, the name of a palette listed in
+<code><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.pals</a></code> (e.g. <code>"viridis"</code> or
+<code>"Blue-Red 3"</code>), or a function created by
+<code><a href="https://rdrr.io/r/grDevices/colorRamp.html" class="external-link">colorRamp</a></code>.</p></dd>
 
 
 <dt id="arg-cell-col-scale-limits">cell_col_scale_limits<a class="anchor" aria-label="anchor" href="#arg-cell-col-scale-limits"></a></dt>
 <dd><p>a numeric vector of length 2 specifying custom
-limits for the colour scale as <code>c(min, max)</code>. If NULL (default), limits
-are computed from the data before rounding. Custom limits allow you to set
-consistent colour scales across multiple heatmaps or override automatic scaling.</p></dd>
+limits for the colour scale as <code>c(min, max)</code>. If NULL (default),
+limits are computed from the data before rounding. Custom limits allow you
+to set consistent colour scales across multiple heatmaps or override
+automatic scaling. Set to <code>"robust"</code> to use the 2nd and 98th
+percentiles of the data, so that a few outliers don't wash out the colour
+scale; values beyond the limits take the colours at the ends of the
+scale.</p></dd>
+
+
+<dt id="arg-cell-col-scale-center">cell_col_scale_center<a class="anchor" aria-label="anchor" href="#arg-cell-col-scale-center"></a></dt>
+<dd><p>optional numeric value at which to centre the
+colour scale, set to NULL by default. When supplied, the colour scale
+limits are made symmetric around this value so that it maps to the middle
+colour of <code>cell_col_scale</code>. Useful with diverging palettes such as
+<code>"Blue-Red 3"</code> and <code>scale_method = "zscore"</code> (<code>center =
+  0</code>).</p></dd>
+
+
+<dt id="arg-cell-col-scale-breaks">cell_col_scale_breaks<a class="anchor" aria-label="anchor" href="#arg-cell-col-scale-breaks"></a></dt>
+<dd><p>a numeric vector of at least two breaks that
+bin the values into a stepped colour scale, set to NULL by default for a
+continuous scale. Each bin between consecutive breaks takes one colour,
+evenly spaced along <code>cell_col_scale</code> whatever the widths of the bins,
+and values beyond the outer breaks take the colours of the outer bins.
+The breaks set the limits of the colour scale and label the colour
+legend.</p></dd>
 
 
 <dt id="arg-cell-size-scale-limits">cell_size_scale_limits<a class="anchor" aria-label="anchor" href="#arg-cell-size-scale-limits"></a></dt>
 <dd><p>a numeric vector of length 2 specifying custom
 limits for the size scale as <code>c(min, max)</code>. If NULL (default), limits
 are computed from the data before rounding. Only used when <code>cell_size</code>
-is not FALSE. Custom limits allow consistent size scales across multiple heatmaps.</p></dd>
+is not FALSE. Custom limits allow consistent size scales across multiple
+heatmaps.</p></dd>
+
+
+<dt id="arg-cell-size-scale-method">cell_size_scale_method<a class="anchor" aria-label="anchor" href="#arg-cell-size-scale-method"></a></dt>
+<dd><p>indicates how values are mapped to cell sizes,
+either <code>"linear"</code> (default) to scale the width of each cell with its
+value, or <code>"area"</code> to scale the area of each cell with its value,
+which is perceptually more accurate.</p></dd>
+
+
+<dt id="arg-cell-size-scale-range">cell_size_scale_range<a class="anchor" aria-label="anchor" href="#arg-cell-size-scale-range"></a></dt>
+<dd><p>numeric vector of length 2 indicating the
+smallest and largest relative cell sizes (as a proportion of the cell
+width), set to <code>c(0, 1)</code> by default. Increasing the lower limit (e.g.
+<code>c(0.1, 1)</code>) ensures cells with the smallest values remain visible.</p></dd>
 
 
 <dt id="arg-cell-col-alpha">cell_col_alpha<a class="anchor" aria-label="anchor" href="#arg-cell-col-alpha"></a></dt>
 <dd><p>a numeric to control the fill transparency of cells
-within the heatmap, set to 1 by default to use solid colours.</p></dd>
+within the heatmap, set to 1 by default to use solid colours. A different
+transparency can be used for each cell by supplying a matrix with the same
+dimensions as <code>x</code>, or a vector that is recycled down the columns of
+<code>x</code> (as in <code><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix()</a></code>). Legends use solid colours unless all
+cells share the same transparency.</p></dd>
 
 
 <dt id="arg-cell-col-empty">cell_col_empty<a class="anchor" aria-label="anchor" href="#arg-cell-col-empty"></a></dt>
@@ -447,7 +614,9 @@ set to 1 by default.</p></dd>
 
 <dt id="arg-cell-border-line-col">cell_border_line_col<a class="anchor" aria-label="anchor" href="#arg-cell-border-line-col"></a></dt>
 <dd><p>indicates the colour to use for cell borders, set
-to <code>"black"</code> by default.</p></dd>
+to <code>"black"</code> by default. Borders are left out when cells are smaller
+than three line widths, as they would hide the cells, unless a
+<code>cell_border_mask</code> is supplied.</p></dd>
 
 
 <dt id="arg-cell-border-line-col-alpha">cell_border_line_col_alpha<a class="anchor" aria-label="anchor" href="#arg-cell-border-line-col-alpha"></a></dt>
@@ -459,7 +628,7 @@ borders, set to 1 by default to use solid colours.</p></dd>
 <dd><p>a matrix of the same dimensions as <code>x</code> containing
 TRUE/FALSE values indicating whether each cell should have a colored border
 (TRUE) or a transparent border (FALSE), set to NULL by default to apply
-border color to all cells.</p></dd>
+border color to all cells. Missing values are treated as FALSE.</p></dd>
 
 
 <dt id="arg-cell-text">cell_text<a class="anchor" aria-label="anchor" href="#arg-cell-text"></a></dt>
@@ -479,7 +648,7 @@ default.</p></dd>
 
 <dt id="arg-cell-text-col">cell_text_col<a class="anchor" aria-label="anchor" href="#arg-cell-text-col"></a></dt>
 <dd><p>colour to use for cell text, set to <code>"white"</code> by
-default,</p></dd>
+default.</p></dd>
 
 
 <dt id="arg-cell-text-col-alpha">cell_text_col_alpha<a class="anchor" aria-label="anchor" href="#arg-cell-text-col-alpha"></a></dt>
@@ -490,7 +659,7 @@ cell text.</p></dd>
 
 <dt id="arg-bar-size-x">bar_size_x<a class="anchor" aria-label="anchor" href="#arg-bar-size-x"></a></dt>
 <dd><p>numeric to control the height of x axis bar plot, set to 1
-by default.</p></dd>
+by default (0.6 inches in the default fit layout).</p></dd>
 
 
 <dt id="arg-bar-values-x">bar_values_x<a class="anchor" aria-label="anchor" href="#arg-bar-values-x"></a></dt>
@@ -498,7 +667,23 @@ by default.</p></dd>
 supplied in the order matching the original columns of <code>x</code> or named
 with the column names of <code>x</code>. The values supplied to
 <code>bar_values_x</code> will be internally reordered to match the order of
-columns as determined by hierarchical clustering.</p></dd>
+columns as determined by hierarchical clustering.
+To show the distribution of several values for each column as a box
+plot or violin (<code>bar_type_x</code>), supply a list with a numeric vector
+for each column (named or in the original order), a matrix or data.frame
+with one column for each column of <code>x</code>, or <code>TRUE</code> for the
+values of each column of the heatmap (after scaling).</p></dd>
+
+
+<dt id="arg-bar-type-x">bar_type_x<a class="anchor" aria-label="anchor" href="#arg-bar-type-x"></a></dt>
+<dd><p>the type of plot drawn for <code>bar_values_x</code>:
+<code>"bar"</code> (one value per column), <code>"box"</code> (box plots of the
+values of each column, with the median, quartiles, whiskers to the most
+extreme values within 1.5 times the interquartile range and points beyond
+them) or <code>"violin"</code> (densities of the values of each column, with a
+line at the median). Set to <code>NULL</code> by default to draw bars for a
+vector and box plots for distributions. <code>bar_fill_x</code> and the
+<code>bar_line_*_x</code> arguments style the boxes and violins.</p></dd>
 
 
 <dt id="arg-bar-axis-label-x">bar_axis_label_x<a class="anchor" aria-label="anchor" href="#arg-bar-axis-label-x"></a></dt>
@@ -512,7 +697,7 @@ axis bar graph label relative to the x axis, set to 0 by default.</p></dd>
 
 <dt id="arg-bar-axis-label-font-x">bar_axis_label_font_x<a class="anchor" aria-label="anchor" href="#arg-bar-axis-label-font-x"></a></dt>
 <dd><p>font to use for the axis label of the x axis bar
-plot, set to 2 by default. See <code>font</code> in <code><a href="https://rdrr.io/r/graphics/par.html" class="external-link">?par</a></code> for alternatives.</p></dd>
+plot, set to 1 by default. See <code>font</code> in <code><a href="https://rdrr.io/r/graphics/par.html" class="external-link">?par</a></code> for alternatives.</p></dd>
 
 
 <dt id="arg-bar-axis-label-size-x">bar_axis_label_size_x<a class="anchor" aria-label="anchor" href="#arg-bar-axis-label-size-x"></a></dt>
@@ -565,7 +750,7 @@ transparency of bar borders in x axis bar plot, set to 1 by default.</p></dd>
 
 <dt id="arg-bar-size-y">bar_size_y<a class="anchor" aria-label="anchor" href="#arg-bar-size-y"></a></dt>
 <dd><p>numeric to control the width of y axis bar plot, set to 1
-by default.</p></dd>
+by default (0.6 inches in the default fit layout).</p></dd>
 
 
 <dt id="arg-bar-values-y">bar_values_y<a class="anchor" aria-label="anchor" href="#arg-bar-values-y"></a></dt>
@@ -573,7 +758,15 @@ by default.</p></dd>
 supplied in the order matching the original rownames of <code>x</code> or named
 with the row names of <code>x</code>. The values supplied to <code>bar_values_y</code>
 will be internally reordered to match the order of rows as determined by
-hierarchical clustering.</p></dd>
+hierarchical clustering. As for <code>bar_values_x</code>, a list (one numeric
+vector per row), a matrix or data.frame with one row per row of
+<code>x</code>, or <code>TRUE</code> (the values of each row of the heatmap) shows
+the distribution of each row as a box plot or violin.</p></dd>
+
+
+<dt id="arg-bar-type-y">bar_type_y<a class="anchor" aria-label="anchor" href="#arg-bar-type-y"></a></dt>
+<dd><p>the type of plot drawn for <code>bar_values_y</code>, as for
+<code>bar_type_x</code>.</p></dd>
 
 
 <dt id="arg-bar-axis-label-y">bar_axis_label_y<a class="anchor" aria-label="anchor" href="#arg-bar-axis-label-y"></a></dt>
@@ -587,7 +780,7 @@ axis bar graph label relative to the y axis, set to 0 by default.</p></dd>
 
 <dt id="arg-bar-axis-label-font-y">bar_axis_label_font_y<a class="anchor" aria-label="anchor" href="#arg-bar-axis-label-font-y"></a></dt>
 <dd><p>font to use for the axis label of the y axis bar
-plot, set to 2 by default. See <code>font</code> in <code><a href="https://rdrr.io/r/graphics/par.html" class="external-link">?par</a></code> for alternatives.</p></dd>
+plot, set to 1 by default. See <code>font</code> in <code><a href="https://rdrr.io/r/graphics/par.html" class="external-link">?par</a></code> for alternatives.</p></dd>
 
 
 <dt id="arg-bar-axis-label-size-y">bar_axis_label_size_y<a class="anchor" aria-label="anchor" href="#arg-bar-axis-label-size-y"></a></dt>
@@ -639,9 +832,11 @@ transparency of bar borders in y axis bar plot, set to 1 by default.</p></dd>
 
 
 <dt id="arg-axis-text-x">axis_text_x<a class="anchor" aria-label="anchor" href="#arg-axis-text-x"></a></dt>
-<dd><p>vector of text to use for x axis labels  supplied in the
+<dd><p>vector of text to use for x axis labels supplied in the
 order matching the constructed heatmap, set to NULL by default to use the
-column names of <code>x</code>.</p></dd>
+column names of <code>x</code>. Missing values (<code>NA</code>) are drawn as empty
+labels without a tick mark, so <code>NA</code> removes the x axis text. An <code>expression</code> can be supplied for mathematical
+annotation (see <code><a href="https://rdrr.io/r/grDevices/plotmath.html" class="external-link">?plotmath</a></code>).</p></dd>
 
 
 <dt id="arg-axis-text-side-x">axis_text_side_x<a class="anchor" aria-label="anchor" href="#arg-axis-text-side-x"></a></dt>
@@ -674,9 +869,15 @@ colours.</p></dd>
 
 
 <dt id="arg-axis-text-angle-x">axis_text_angle_x<a class="anchor" aria-label="anchor" href="#arg-axis-text-angle-x"></a></dt>
-<dd><p>integer to control the angle of x axis text labels
-relative to the x axis, set to 3 by default. See <code>las</code> in <code><a href="https://rdrr.io/r/graphics/par.html" class="external-link">?par</a></code>
-for alternatives.</p></dd>
+<dd><p>controls the angle of x axis text labels relative
+to the x axis, set to 3 by default. The whole numbers 0 to 3 are
+<code>las</code> codes (see <code>las</code> in <code><a href="https://rdrr.io/r/graphics/par.html" class="external-link">?par</a></code>), any other angle between
+0 and 90 is in degrees. Labels rotated by an angle (e.g. 45) end at their
+ticks and slant towards the y axis text, so that the longest labels extend
+beneath (or above) the y axis text rather than the dendrograms and
+legends. Rotated labels are spaced along the axis by their height across
+their baselines, and <code>axis_text_adjust_x</code> is not used. The angle is
+not used for mark labels (<code>mark_x</code>).</p></dd>
 
 
 <dt id="arg-axis-text-adjust-x">axis_text_adjust_x<a class="anchor" aria-label="anchor" href="#arg-axis-text-adjust-x"></a></dt>
@@ -715,9 +916,12 @@ set to 1 by default.</p></dd>
 
 
 <dt id="arg-axis-text-y">axis_text_y<a class="anchor" aria-label="anchor" href="#arg-axis-text-y"></a></dt>
-<dd><p>vector of text to use for y axis labels  supplied in the
-order matching the constructed heatmap, set to NULL by default to use the
-row names of <code>x</code>.</p></dd>
+<dd><p>vector of text to use for y axis labels supplied in the
+order matching the constructed heatmap (from bottom to top), set to NULL
+by default to use the row names of <code>x</code>, or the row indices when
+<code>x</code> has no row names. Missing values (<code>NA</code>) are drawn as empty
+labels without a tick mark, so <code>NA</code> removes the y axis text. An <code>expression</code> can be supplied for mathematical
+annotation (see <code><a href="https://rdrr.io/r/grDevices/plotmath.html" class="external-link">?plotmath</a></code>).</p></dd>
 
 
 <dt id="arg-axis-text-side-y">axis_text_side_y<a class="anchor" aria-label="anchor" href="#arg-axis-text-side-y"></a></dt>
@@ -751,7 +955,7 @@ colours.</p></dd>
 
 <dt id="arg-axis-text-angle-y">axis_text_angle_y<a class="anchor" aria-label="anchor" href="#arg-axis-text-angle-y"></a></dt>
 <dd><p>integer to control the angle of y axis text labels
-relative to the y axis, set to 3 by default. See <code>las</code> in <code><a href="https://rdrr.io/r/graphics/par.html" class="external-link">?par</a></code>
+relative to the y axis, set to 1 by default. See <code>las</code> in <code><a href="https://rdrr.io/r/graphics/par.html" class="external-link">?par</a></code>
 for alternatives.</p></dd>
 
 
@@ -809,7 +1013,7 @@ alternatives.</p></dd>
 
 <dt id="arg-title-text-size">title_text_size<a class="anchor" aria-label="anchor" href="#arg-title-text-size"></a></dt>
 <dd><p>numeric to control the size of the text in the heatmap
-title, set to 1.2 by default.</p></dd>
+title, set to 1.5 by default.</p></dd>
 
 
 <dt id="arg-title-text-col">title_text_col<a class="anchor" aria-label="anchor" href="#arg-title-text-col"></a></dt>
@@ -823,26 +1027,89 @@ transparency of text in heatmap title, set to 1 by default for solid
 colours.</p></dd>
 
 
+<dt id="arg-annotation-x">annotation_x<a class="anchor" aria-label="anchor" href="#arg-annotation-x"></a></dt>
+<dd><p>a data.frame of metadata describing the columns of
+<code>x</code> (e.g. the treatment and sex of each sample), drawn as coloured
+tracks beside the heatmap opposite the x axis text. Rows are matched to the
+column names of <code>x</code> when the data.frame has row names, otherwise one
+row per column of <code>x</code> in the original order. Non-numeric columns are
+coloured by level and numeric columns with a colour ramp. A single vector
+is treated as one annotation.</p></dd>
+
+
+<dt id="arg-annotation-y">annotation_y<a class="anchor" aria-label="anchor" href="#arg-annotation-y"></a></dt>
+<dd><p>a data.frame of metadata describing the rows of
+<code>x</code>, drawn as tracks opposite the y axis text (see
+<code>annotation_x</code>).</p></dd>
+
+
+<dt id="arg-annotation-colours">annotation_colours<a class="anchor" aria-label="anchor" href="#arg-annotation-colours"></a></dt>
+<dd><p>a named list of colours for the annotations, e.g.
+<code>list(Treatment = c(Control = "grey", Drug = "red"))</code>. Discrete
+annotations accept a named vector (one colour per level), an unnamed vector,
+a palette function or an <code><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.pals()</a></code> name; numeric annotations accept
+colours for a ramp, a <code><a href="https://rdrr.io/r/grDevices/colorRamp.html" class="external-link">colorRamp()</a></code> function or an <code><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.pals()</a></code>
+name. Annotations without an entry get default palettes.</p></dd>
+
+
+<dt id="arg-annotation-size-x-annotation-size-y">annotation_size_x, annotation_size_y<a class="anchor" aria-label="anchor" href="#arg-annotation-size-x-annotation-size-y"></a></dt>
+<dd><p>height (width) of each annotation
+track in inches, set to 0.2 by default.</p></dd>
+
+
+<dt id="arg-annotation-text-size-annotation-text-font-annotation-text-col">annotation_text_size, annotation_text_font, annotation_text_col<a class="anchor" aria-label="anchor" href="#arg-annotation-text-size-annotation-text-font-annotation-text-col"></a></dt>
+<dd><p>size,
+font and colour of the annotation names, which are written beside the
+tracks on the side of the axis text.</p></dd>
+
+
+<dt id="arg-annotation-legend">annotation_legend<a class="anchor" aria-label="anchor" href="#arg-annotation-legend"></a></dt>
+<dd><p>logical indicating whether legends should be drawn
+for the annotations, set to TRUE by default.</p></dd>
+
+
 <dt id="arg-legend">legend<a class="anchor" aria-label="anchor" href="#arg-legend"></a></dt>
 <dd><p>logical indicating whether to include a legend in the heatmap,
-set to TRUE by default. Alternatively, <code>"size"</code>, <code>"colour"</code> or
-<code>"both"</code> to indicate the type(s) of legends to include in the heatmap.</p></dd>
+set to TRUE by default to include colour and size legends.
+Alternatively, a character vector containing any of <code>"colour"</code>,
+<code>"size"</code>, <code>"both"</code> (colour and size) or <code>"levels"</code> to
+indicate the type(s) of legends to include in the heatmap. The
+<code>"levels"</code> legend shows the colours assigned to values in
+non-numeric columns, e.g. <code>legend = c("both", "levels")</code>. Set to
+<code>FALSE</code>, <code>NA</code> or <code>"none"</code> to remove the legend.</p></dd>
+
+
+<dt id="arg-legend-side">legend_side<a class="anchor" aria-label="anchor" href="#arg-legend-side"></a></dt>
+<dd><p>where to draw the legend, either <code>"auto"</code> (the
+default) beside the heatmap, opposite the y axis text, or
+<code>"bottom"</code> below the heatmap with horizontal colour bars and the
+legends side by side (wrapping into rows when they don't fit across the
+figure). <code>"bottom"</code> requires <code>layout = "fit"</code>.</p></dd>
 
 
 <dt id="arg-legend-size">legend_size<a class="anchor" aria-label="anchor" href="#arg-legend-size"></a></dt>
 <dd><p>numeric to control the amount of space allocated to the
-legend, set to 1 by default.</p></dd>
+legend, set to 1 by default. In the fit layout (the default) the legend is
+sized from its contents and <code>legend_size</code> scales the legend keys
+instead.</p></dd>
 
 
 <dt id="arg-legend-col-scale-size">legend_col_scale_size<a class="anchor" aria-label="anchor" href="#arg-legend-col-scale-size"></a></dt>
 <dd><p>numeric to control the width of the legend
 colour scale relative to the allocated space for the legend, set to 1 by
-default. legend_title = NULL,</p></dd>
+default.</p></dd>
+
+
+<dt id="arg-legend-col-breaks">legend_col_breaks<a class="anchor" aria-label="anchor" href="#arg-legend-col-breaks"></a></dt>
+<dd><p>values at which to label the colour legend, set to
+NULL by default to choose them automatically (or use
+<code>cell_col_scale_breaks</code>). Names, when supplied, are used as the
+labels, e.g. <code>c(low = -2, 0, high = 2)</code>.</p></dd>
 
 
 <dt id="arg-legend-title">legend_title<a class="anchor" aria-label="anchor" href="#arg-legend-title"></a></dt>
-<dd><p>a vector of length two containing text to be displayed
-above the cell colour and size legends respectively.</p></dd>
+<dd><p>a vector of up to three elements containing text to be
+displayed above the cell colour, size and levels legends respectively.</p></dd>
 
 
 <dt id="arg-legend-title-text-font">legend_title_text_font<a class="anchor" aria-label="anchor" href="#arg-legend-title-text-font"></a></dt>
@@ -887,6 +1154,61 @@ set to 1 by default.</p></dd>
 the legend, set to 1 by default to use solid colours.</p></dd>
 
 
+<dt id="arg-mark-x-mark-y">mark_x, mark_y<a class="anchor" aria-label="anchor" href="#arg-mark-x-mark-y"></a></dt>
+<dd><p>columns or rows to label, as names, indices in the
+original order of <code>x</code>, or a logical vector with one value per
+column or row. The labels replace the axis text on that axis: they are
+spread out beside the heatmap so that they don't overlap, and leader
+lines connect each label to its column or row. This names a few rows of
+a large heatmap (e.g. marker genes) when there is no room to label every
+row. The labels use the axis text font, size and colour; row labels are
+horizontal and column labels vertical.</p></dd>
+
+
+<dt id="arg-mark-labels-x-mark-labels-y">mark_labels_x, mark_labels_y<a class="anchor" aria-label="anchor" href="#arg-mark-labels-x-mark-labels-y"></a></dt>
+<dd><p>labels for the columns or rows in
+<code>mark_x</code> and <code>mark_y</code>, one per element, set to NULL by default
+to use the column or row names.</p></dd>
+
+
+<dt id="arg-mark-line-col">mark_line_col<a class="anchor" aria-label="anchor" href="#arg-mark-line-col"></a></dt>
+<dd><p>colour of the leader lines connecting mark labels to
+their rows or columns, set to <code>"grey40"</code> by default.</p></dd>
+
+
+<dt id="arg-cell-raster">cell_raster<a class="anchor" aria-label="anchor" href="#arg-cell-raster"></a></dt>
+<dd><p>whether to draw the cells as raster images, which is much
+faster and gives smaller files for large heatmaps. Set to <code>"auto"</code> by
+default to use raster images for heatmaps with more than 50,000 cells.
+<code>TRUE</code> always uses raster images and <code>FALSE</code> never does.
+Raster images are only used when every cell is a full-size rectangle (no
+<code>cell_size</code> scaling or other <code>cell_shape</code>) and the graphics
+device supports them; cell borders are then drawn as grid lines.</p></dd>
+
+
+<dt id="arg-fit-text">fit_text<a class="anchor" aria-label="anchor" href="#arg-fit-text"></a></dt>
+<dd><p>logical indicating whether axis text, cell text and cluster
+label text should be shrunk to fit the available space when it would
+otherwise overlap, set to TRUE by default. Axis labels that still don't
+fit at half their size are thinned to every second, third, ... label.</p></dd>
+
+
+<dt id="arg-layout">layout<a class="anchor" aria-label="anchor" href="#arg-layout"></a></dt>
+<dd><p>how space is shared between the heatmap and everything around
+it, either <code>"fit"</code> (the default) or <code>"classic"</code>. The fit layout
+sizes dendrograms, bar graphs, annotation tracks, the legend and the
+margins in inches from their contents - dendrograms and bar graphs keep
+the same size whatever the shape of the data, the legend is as wide as its
+text, the margins are as wide as the axis text, labels and title, and the
+heatmap body takes the remaining space. In the fit layout
+<code>tree_size_x</code>, <code>tree_size_y</code>, <code>bar_size_x</code> and
+<code>bar_size_y</code> are multiples of 0.6 inches and <code>legend_size</code>
+scales the legend keys (colour bars, swatches and size legend shapes). The
+classic layout of HeatmapR 1.1.0 and earlier sizes dendrograms, bar graphs
+and the legend as fractions of the heatmap, so they grow and shrink with
+the number of rows and columns.</p></dd>
+
+
 <dt id="arg-popup">popup<a class="anchor" aria-label="anchor" href="#arg-popup"></a></dt>
 <dd><p>logical indicating whether the heatmap should be constructed in
 a popup window, set to TRUE by default.</p></dd>
@@ -898,12 +1220,27 @@ in inches, set to <code>c(7,7)</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>not in use.</p></dd>
+<dd><p>additional arguments passed to <code><a href="heat_map_clust.html">heat_map_clust</a></code> (and
+on to <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> or <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code>). Any other
+arguments are ignored with a warning, which catches misspelled argument
+names. Note that <code>p</code> (for Minkowski distances) is partially matched
+to <code>popup_size</code>, so cluster with <code><a href="heat_map_clust.html">heat_map_clust()</a></code> and supply
+the result to <code>tree_x</code> or <code>tree_y</code> instead.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>a recorded heatmap.</p>
+    <p>an object of class <code>heat_map</code> returned invisibly. The object
+is the <code>recordedplot</code> of the heatmap (so it can still be used with
+<code><a href="https://rdrr.io/r/grDevices/recordplot.html" class="external-link">replayPlot</a></code>), and can be redrawn with
+<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> or <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> or saved with
+<code><a href="heat_map_save.html">heat_map_save</a></code>. The data used to construct the heatmap,
+including row and column orders, cluster assignments, dendrograms and
+cell colours, can be extracted with <code><a href="heat_map_info.html">heat_map_info</a></code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p><code><a href="heat_map_info.html">heat_map_info</a></code>, <code><a href="heat_map_save.html">heat_map_save</a></code></p></div>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -928,6 +1265,39 @@ in inches, set to <code>c(7,7)</code>.</p></dd>
 <span class="r-in"><span> <span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Applying range scaling to each column...</span>
 <span class="r-plt img"><img src="heat_map-1.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Diverging colour scale centred at zero for z-scores</span></span></span>
+<span class="r-in"><span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu">heat_map</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">mtcars</span>,</span></span>
+<span class="r-in"><span>  scale <span class="op">=</span> <span class="st">"column"</span>,</span></span>
+<span class="r-in"><span>  scale_method <span class="op">=</span> <span class="st">"zscore"</span>,</span></span>
+<span class="r-in"><span>  cell_col_scale <span class="op">=</span> <span class="st">"Blue-Red 3"</span>,</span></span>
+<span class="r-in"><span>  cell_col_scale_center <span class="op">=</span> <span class="fl">0</span>,</span></span>
+<span class="r-in"><span>  tree <span class="op">=</span> <span class="st">"both"</span>,</span></span>
+<span class="r-in"><span>  tree_cut_y <span class="op">=</span> <span class="fl">4</span>,</span></span>
+<span class="r-in"><span>  popup <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Applying zscore scaling to each column...</span>
+<span class="r-plt img"><img src="heat_map-2.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Extract cluster assignments and display order</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="heat_map_info.html">heat_map_info</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span><span class="op">$</span><span class="va">row_clusters</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           Mazda RX4       Mazda RX4 Wag          Datsun 710      Hornet 4 Drive </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   4                   4                   2                   1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Hornet Sportabout             Valiant          Duster 360           Merc 240D </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   3                   1                   3                   1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            Merc 230            Merc 280           Merc 280C          Merc 450SE </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   1                   1                   1                   3 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          Merc 450SL         Merc 450SLC  Cadillac Fleetwood Lincoln Continental </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   3                   3                   3                   3 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   Chrysler Imperial            Fiat 128         Honda Civic      Toyota Corolla </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   3                   2                   2                   2 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       Toyota Corona    Dodge Challenger         AMC Javelin          Camaro Z28 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   1                   3                   3                   3 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Pontiac Firebird           Fiat X1-9       Porsche 914-2        Lotus Europa </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   3                   2                   2                   2 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      Ford Pantera L        Ferrari Dino       Maserati Bora          Volvo 142E </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   4                   4                   4                   2 </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

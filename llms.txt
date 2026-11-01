@@ -1,6 +1,6 @@
 # HeatmapR
 
-**HeatmapR** it a lightweight R package that makes it easy to generate
+**HeatmapR** is a lightweight R package that makes it easy to generate
 high quality, complex heatmaps with minimal data preprocessing or manual
 customization. Visit the **HeatmapR** website to get started
 <https://dillonhammill.github.io/HeatmapR/>.
@@ -29,27 +29,43 @@ these layout issues using solely a base graphics approach.
 
 - **HeatmapR** is built using base graphics to remove the need for
   familiarity with `ggplot2` or `plotly`.
-- **HeatmapR** is extremely lighweight and therefore there are no
+- **HeatmapR** is extremely lightweight and therefore there are no
   external dependencies that need to be installed.
 - **HeatmapR** is designed under ROpenSci naming guidelines for a
   consistent and intuitive user experience.
 - Unlike other heatmap packages that use base graphics, **HeatmapR**
   actually returns the plot object instead of an image. This makes it
   easy to arrange multiple plots in complex layouts without sacrificing
-  resolution.
+  resolution, and
+  [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
+  returns the row/column order and cluster assignments for use in
+  downstream analyses.
 - **HeatmapR** is fully customizable and comes with useful saving API
   ([`heat_map_save()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md))
   to export high resolution images.
 - **HeatmapR** handles datasets that contain non-numeric or missing
   data, which means you don’t have to spend ages formatting and
   pre-processing the data beforehand.
+- **HeatmapR** shows sample or feature metadata as annotation tracks
+  (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
+  labels and bar plots, and adapts the layout so that labels and legends
+  don’t overlap. Dendrograms, bar plots, legends and margins are sized
+  in inches from their contents, so they look the same whatever the
+  shape of the data.
 - **HeatmapR** generates publication ready images with minimal manual
   customization, making it ideal for users that have limited coding
   experience.
 
 ## Installation
 
-**HeatmapR** can be installed directly from GitHub:
+**HeatmapR** can be installed from CRAN:
+
+``` r
+
+install.packages("HeatmapR")
+```
+
+The development version can be installed directly from GitHub:
 
 ``` r
 
@@ -86,10 +102,10 @@ heat_map(
 ## Acknowledgements
 
 **HeatmapR** relies on statistical methods in the `stats` package to
-compute distance matrices and perform hierarchical clustering.
-**HeatmapR** also uses some modified `stats` code from the
-[ggdendro](https://github.com/andrie/ggdendro) package to get the
-co-ordinates for the dendrogram line segments.
+compute distance matrices and perform hierarchical clustering. The
+dendrogram line segments follow the layout used by the
+[ggdendro](https://github.com/andrie/ggdendro) package, which earlier
+versions of **HeatmapR** used modified code from.
 
 ## Code of Conduct
 
@@ -109,7 +125,7 @@ citation("HeatmapR")
 #> To cite package 'HeatmapR' in publications use:
 #> 
 #>   Hammill D (2026). _HeatmapR: Create Heatmaps Using Base Graphics_. R
-#>   package version 1.1.0, <https://dillonhammill.github.io/HeatmapR/>.
+#>   package version 1.2.0, <https://dillonhammill.github.io/HeatmapR/>.
 #> 
 #> A BibTeX entry for LaTeX users is
 #> 
@@ -117,7 +133,7 @@ citation("HeatmapR")
 #>     title = {HeatmapR: Create Heatmaps Using Base Graphics},
 #>     author = {Dillon Hammill},
 #>     year = {2026},
-#>     note = {R package version 1.1.0},
+#>     note = {R package version 1.2.0},
 #>     url = {https://dillonhammill.github.io/HeatmapR/},
 #>   }
 ```
@@ -126,6 +142,9 @@ citation("HeatmapR")
 
 ## All functions
 
+- [`plot(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
+  [`print(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
+  : Draw a heat_map object
 - [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   : Create a complex heatmap using base graphics
 - [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
@@ -134,6 +153,8 @@ citation("HeatmapR")
   : Indicate when a heatmap is complete and ready for saving
 - [`heat_map_custom()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_custom.md)
   : Create a custom heatmap plot layout
+- [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
+  : Extract information about a constructed heatmap
 - [`heat_map_layout()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.md)
   : Arrange multiple heatmaps
 - [`heat_map_new()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_new.md)
@@ -146,6 +167,8 @@ citation("HeatmapR")
   : Save high resolution images
 - [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)
   : Scale numeric data prior to constructing heat_map
+- [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  : Summarise groups of rows or columns for a heatmap
 
 # Articles
 
