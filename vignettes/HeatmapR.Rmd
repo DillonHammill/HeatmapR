@@ -436,6 +436,49 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-10.png')
 ```
 
+### 4.1 Metadata Annotations
+
+Metadata describing the rows or columns of the heatmap, such as the treatment and sex of each sample, can be shown as coloured tracks beside the heatmap. Supply a `data.frame` with one row per column of `x` to `annotation_x` (or one row per row of `x` to `annotation_y`). Rows are matched to the column (row) names of `x` when the `data.frame` has row names. Each column of the `data.frame` becomes a track: non-numeric columns are coloured by level and numeric columns with a colour ramp, and each track gets its own legend. Colours can be chosen through `annotation_colours`, a named list with one entry per annotation; annotations without an entry get default palettes.
+
+Annotations combine well with manual clustering: supplying a factor to `tree_cut_x` splits the columns into groups and, when `tree_label_x = TRUE`, labels each group with its level.
+
+```{r, eval = FALSE}
+set.seed(123)
+mat <- matrix(
+  rnorm(20 * 24, sd = 1.5),
+  nrow = 20,
+  ncol = 24,
+  dimnames = list(
+    paste0("Gene_", 1:20),
+    paste0("S", sprintf("%02d", 1:24))
+  )
+)
+meta <- data.frame(
+  Treatment = factor(rep(c("Control", "Drug_A", "Drug_B"), each = 8)),
+  Sex = factor(rep(c("Male", "Female"), times = 12), levels = c("Male", "Female")),
+  row.names = colnames(mat)
+)
+heat_map(
+  mat,
+  annotation_x = meta,
+  annotation_colours = list(
+    Treatment = c(Control = "#4E9FD1", Drug_A = "#E07B54", Drug_B = "#6DBF7E"),
+    Sex = c(Male = "#7B5EA7", Female = "#E8A0BF")
+  ),
+  tree_cut_x = meta$Treatment,
+  tree_label_x = TRUE,
+  tree_y = TRUE,
+  cell_col_scale = c("#2C7BB6", "white", "#D7191C"),
+  cell_col_scale_center = 0,
+  legend_title = "z-score",
+  title = "Metadata annotations"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-annotations.png')
+```
+
 ## 5. Hierarchical Clustering
 
 `heat_map()` also supports hierarchical clustering using the conventional `stats::hclust()` to construct dendrograms and `stats::cutree()` to partition the dendrograms into distinct clusters. The `dist_method` and `clust_method` arguments allow for control over the distance metric to use for hierarchical clustering (any method supported by `stats::dist()` or `"cosine"` for cosine distance) and the agglomeration method to use (any method supported by `stats::hclust()`).

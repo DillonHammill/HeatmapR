@@ -35,6 +35,9 @@
 
 ## New features
 
+* Metadata annotation tracks (#3): `annotation_x` and `annotation_y` take a data.frame describing the columns or rows of `x` (matched by name when it has row names), drawn as coloured tracks beside the heatmap with their names and legends. Non-numeric annotations are coloured by level and numeric annotations with a colour ramp; `annotation_colours` sets colours per annotation (named vectors, palettes or functions). `annotation_size_*`, `annotation_text_*` and `annotation_legend` control their appearance.
+* When `tree_cut_x`/`tree_cut_y` is a factor or character vector and cluster labels are shown, the clusters are labelled with their levels by default.
+* `heat_map_info()$layout` gives the bounding box of every component of the heatmap (axis text, dendrograms, bars, legends, titles) in inches, so layouts can be checked programmatically.
 * `heat_map()` now returns a `heat_map` object (still a `recordedplot`) that can be redrawn with `print()`/`plot()` (with optional argument overrides) and saved with `heat_map_save(file, x = hm)`.
 * New `heat_map_info()` extracts the data, row/column order, cluster assignments, dendrograms, cell colours/sizes and scale limits from a heatmap.
 * Opt-in colour options: `cell_col_scale` and `cell_col_palette` accept palette names from `hcl.pals()` (e.g. `cell_col_scale = "viridis"`), and `cell_col_scale_center` centres the colour scale on a value for diverging palettes (e.g. z-scores centred at 0).
@@ -44,6 +47,15 @@
 
 ## Improvements
 
+* Layouts adapt to the space available instead of overlapping. Text is measured on the device and:
+  - axis, cell and cluster label text is shrunk when it would overlap (`fit_text = TRUE`), and axis labels that still don't fit at half size are thinned to every second, third, ... label;
+  - cluster label strips are sized to fit their text (previously 0.1 cells, so they vanished on larger heatmaps);
+  - size and levels legend shapes stay inside the legend (they covered the heatmap when it had fewer than 10 columns), legend titles never extend over the heatmap, and legend labels shrink to fit;
+  - margins grow to fit long labels, legends and bar graph axes, and shrink the text rather than failing with "figure margins too large" on small devices;
+  - bar graph axis labels are placed beyond their tick labels, and a gap is added between the heatmap and a bar graph only when their labels would touch.
+  Heatmaps that already fit are drawn exactly as before.
+* Levels and annotation legends are stacked with space in proportion to their contents.
+* Arguments passed through `...` that neither `dist()` nor `hclust()` use now give a warning, catching misspelled argument names that were previously ignored.
 * Much faster rendering: cell properties are computed and drawn with vectorised graphics calls, and dendrogram segments are computed directly from the `hclust` merge matrix (no recursion). A 2000 x 50 heatmap now draws in ~0.1 s instead of ~13 s. Apart from the fixes listed above, default output is unchanged.
 * Removed unused and commented-out code, including the modified `ggdendro` functions and unused internal helpers.
 * The test suite now checks the output of each feature (through `heat_map_info()` and the recorded drawing calls) rather than only that no error occurs, and covers over 99% of the code.

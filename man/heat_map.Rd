@@ -123,6 +123,15 @@ heat_map(
   title_text_size = 1.5,
   title_text_col = "black",
   title_text_col_alpha = 1,
+  annotation_x = NULL,
+  annotation_y = NULL,
+  annotation_colours = NULL,
+  annotation_size_x = 0.2,
+  annotation_size_y = 0.2,
+  annotation_text_size = 0.9,
+  annotation_text_font = 1,
+  annotation_text_col = "black",
+  annotation_legend = TRUE,
   legend = TRUE,
   legend_size = 1,
   legend_col_scale_size = 1,
@@ -135,6 +144,7 @@ heat_map(
   legend_text_size = 1,
   legend_text_col = "black",
   legend_text_col_alpha = 1,
+  fit_text = TRUE,
   popup = TRUE,
   popup_size = c(7, 7),
   ...
@@ -625,6 +635,35 @@ title, set to 1.5 by default.}
 transparency of text in heatmap title, set to 1 by default for solid
 colours.}
 
+\item{annotation_x}{a data.frame of metadata describing the columns of
+\code{x} (e.g. the treatment and sex of each sample), drawn as coloured
+tracks beside the heatmap opposite the x axis text. Rows are matched to the
+column names of \code{x} when the data.frame has row names, otherwise one
+row per column of \code{x} in the original order. Non-numeric columns are
+coloured by level and numeric columns with a colour ramp. A single vector
+is treated as one annotation.}
+
+\item{annotation_y}{a data.frame of metadata describing the rows of
+\code{x}, drawn as tracks opposite the y axis text (see
+\code{annotation_x}).}
+
+\item{annotation_colours}{a named list of colours for the annotations, e.g.
+\code{list(Treatment = c(Control = "grey", Drug = "red"))}. Discrete
+annotations accept a named vector (one colour per level), an unnamed vector,
+a palette function or an \code{hcl.pals()} name; numeric annotations accept
+colours for a ramp, a \code{colorRamp()} function or an \code{hcl.pals()}
+name. Annotations without an entry get default palettes.}
+
+\item{annotation_size_x, annotation_size_y}{height (width) of each annotation
+track in inches, set to 0.2 by default.}
+
+\item{annotation_text_size, annotation_text_font, annotation_text_col}{size,
+font and colour of the annotation names, which are written beside the
+tracks on the side of the axis text.}
+
+\item{annotation_legend}{logical indicating whether legends should be drawn
+for the annotations, set to TRUE by default.}
+
 \item{legend}{logical indicating whether to include a legend in the heatmap,
 set to TRUE by default to include colour and size legends.
 Alternatively, a character vector containing any of \code{"colour"},
@@ -670,6 +709,11 @@ set to 1 by default.}
 \item{legend_text_col_alpha}{numeric to control the transparency of text in
 the legend, set to 1 by default to use solid colours.}
 
+\item{fit_text}{logical indicating whether axis text, cell text and cluster
+label text should be shrunk to fit the available space when it would
+otherwise overlap, set to TRUE by default. Axis labels that still don't
+fit at half their size are thinned to every second, third, ... label.}
+
 \item{popup}{logical indicating whether the heatmap should be constructed in
 a popup window, set to TRUE by default.}
 
@@ -677,7 +721,11 @@ a popup window, set to TRUE by default.}
 in inches, set to \code{c(7,7)}.}
 
 \item{...}{additional arguments passed to \code{\link{heat_map_clust}} (and
-on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}).}
+on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other
+arguments are ignored with a warning, which catches misspelled argument
+names. Note that \code{p} (for Minkowski distances) is partially matched
+to \code{popup_size}, so cluster with \code{heat_map_clust()} and supply
+the result to \code{tree_x} or \code{tree_y} instead.}
 }
 \value{
 an object of class \code{heat_map} returned invisibly. The object

@@ -28,6 +28,11 @@ display.}
 right and from top to bottom respectively.}
 \item{\code{colours}, \code{sizes}: the fill colour and relative size of
 each cell, in the orientation of the original data.}
+\item{\code{annotations}: lists \code{x} and \code{y} with the colour of
+each row/column for every annotation, in the original order.}
+\item{\code{layout}: a data.frame with the bounding box (\code{xmin},
+\code{xmax}, \code{ymin}, \code{ymax}) of each component of the heatmap
+in inches from the bottom left corner of the device.}
 \item{\code{col_limits}, \code{size_limits}: limits of the colour and
 size scales.}
 }
