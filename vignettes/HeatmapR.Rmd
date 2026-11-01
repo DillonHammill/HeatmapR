@@ -1998,6 +1998,38 @@ heat_map_complete()
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-16.png')
 ```
 
+## 9. Describing a Heatmap
+
+Readers who use screen readers can't see a heatmap, so figures need alternative text that says what they show. `heat_map_describe()` writes this description in plain language from the heatmap itself: its size and scaling, what the colours show, the most extreme values, how the rows and columns are clustered and what sets each cluster apart, and any annotations, bars, labels or panels. Pass it to the `fig.alt` chunk option in R Markdown or Quarto, or use it as a starting point for a figure legend.
+
+```{r, eval = FALSE}
+hm <- heat_map(
+  mtcars,
+  scale = "zscore",
+  tree = "both",
+  tree_cut_y = 3,
+  legend_title = "z-score",
+  title = "mtcars"
+)
+heat_map_describe(hm)
+```
+
+```
+Heatmap titled "mtcars" of 32 rows by 11 columns, converted to z-scores within
+each column. Colours show z-score, from dark purple (-1.87) through yellow
+green to dark red (3.21). The highest value is 3.21 (Maserati Bora, carb) and
+the lowest is -1.87 (Ford Pantera L, qsec). Rows are ordered by hierarchical
+clustering (euclidean distance, complete linkage). Rows are split into 3
+groups, numbered from the bottom: group 1 (15 rows, e.g. Datsun 710 and Hornet
+4 Drive) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows,
+e.g. Hornet Sportabout and Duster 360) is highest in disp and cyl and lowest in
+gear and drat; group 3 (5 rows, e.g. Mazda RX4 and Mazda RX4 Wag) is highest in
+carb and gear and lowest in qsec and vs. Columns are ordered by hierarchical
+clustering (euclidean distance, complete linkage).
+```
+
+In a chunk that draws the heatmap, compute the description in an earlier chunk and refer to it, e.g. `fig.alt = as.character(heat_map_describe(hm))`. Clusters are described by the columns in which their mean is highest and lowest (rows, for clusters of columns), and `max_groups` limits how many clusters are described one by one.
+
 ## 10. Summary
 
 `HeatmapR` is a lightweight R package built on base graphics that allows for the creation of high resolution complex heatmaps that can be arranged in sophisticated layouts with other plot objects. 

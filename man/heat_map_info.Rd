@@ -35,8 +35,9 @@ to right) and rows (from top to bottom) enlarged in a zoom panel
 right and from top to bottom respectively.}
 \item{\code{colours}, \code{sizes}: the fill colour and relative size of
 each cell, in the orientation of the original data.}
-\item{\code{split_colours}: the fill colour of the lower right half of
-each cell (\code{cell_split}) in the orientation of the original data, or
+\item{\code{split_colours}, \code{split_data}: the fill colour and
+value (after scaling) of the lower right half of each cell
+(\code{cell_split}) in the orientation of the original data, or
 \code{NULL}.}
 \item{\code{annotations}: lists \code{x} and \code{y} with the colour of
 each row/column for every annotation, in the original order.}
