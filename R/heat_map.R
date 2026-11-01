@@ -3018,6 +3018,7 @@ heat_map <- function(x,
     split_colours = if(!is.null(split_fill)) {
       .cell_matrix(split_fill, cell_ind, x)
     },
+    split_data = split_mat,
     sizes = .cell_matrix(cell_sizes, cell_ind, x),
     annotations = list(
       x = annot_x$colours,
