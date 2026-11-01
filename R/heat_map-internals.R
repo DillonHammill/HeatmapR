@@ -145,6 +145,36 @@
   invisible(TRUE)
 }
 
+#' Whether cluster indices are read in the displayed order - unnamed numeric
+#' indices with one value per row or column
+#' @noRd
+.display_indices <- function(cut,
+                             n,
+                             labels = NULL) {
+  is.numeric(cut) && length(cut) == n && n > 1 &&
+    !(!is.null(names(cut)) && !is.null(labels) && !anyDuplicated(names(cut)) &&
+        setequal(names(cut), labels))
+}
+
+#' Cluster indices given as the heatmap is displayed, in the original order
+#'
+#' Unnamed numeric cluster indices with one value per row (column) are read
+#' in the order the heatmap is displayed - rows from the top, columns from the
+#' left (see \code{.display_indices()}). Named indices (matched by name),
+#' labels (factors and text, which usually come from metadata in the original
+#' order) and cluster sizes are not converted.
+#'
+#' @param shown indices of the rows (from the top) or columns (from the left)
+#'   in display order.
+#'
+#' @noRd
+.display_cut <- function(cut,
+                         shown) {
+  out <- unname(cut)
+  out[shown] <- unname(cut)
+  out
+}
+
 #' Resolve manually defined clusters
 #'
 #' @param cut either a vector of cluster sizes (in the displayed order) or a
@@ -158,10 +188,13 @@
 #'   preserve a dendrogram order).
 #' @param labels row/column names of the data, used to match named cluster
 #'   indices.
+#' @param reverse TRUE when \code{ind} runs against the reading order (rows
+#'   are drawn from the bottom but read from the top): the first cluster and
+#'   the first cluster size are then placed at the end of \code{ind}.
 #'
 #' @return list containing the updated display order (\code{ind}) and the
 #'   cluster of each position in the display order (\code{cut}), numbered
-#'   consecutively from 1.
+#'   consecutively from 1 along \code{ind}.
 #'
 #' @noRd
 .manual_clusters <- function(cut,
@@ -170,7 +203,8 @@
                              arg,
                              margin,
                              keep_order = FALSE,
-                             labels = NULL) {
+                             labels = NULL,
+                             reverse = FALSE) {
 
   # MISSING VALUES
   if(anyNA(cut)) {
@@ -200,10 +234,12 @@
     }
     # CLUSTER CODES - FACTOR LEVELS OR SORTED VALUES
     if(is.factor(cut)) {
-      groups <- as.integer(droplevels(cut))
+      codes <- as.integer(droplevels(cut))
     } else {
-      groups <- as.integer(factor(cut))
+      codes <- as.integer(factor(cut))
     }
+    # THE FIRST CLUSTER IS PLACED FIRST IN READING ORDER
+    groups <- if(reverse) max(codes) + 1L - codes else codes
     # CLUSTERS ALREADY CONTIGUOUS IN A DENDROGRAM ORDER - KEEP THE DENDROGRAM
     if(keep_order && !anyDuplicated(rle(groups[ind])$values)) {
       new_ind <- ind
@@ -219,7 +255,7 @@
       } else {
         levels(factor(cut))
       }
-      cluster_labels <- lev[unique(new_cut)]
+      cluster_labels <- lev[unique(codes[new_ind])]
     }
     new_cut <- match(new_cut, unique(new_cut))
   # CLUSTER SIZES - DISPLAY ORDER
@@ -227,8 +263,11 @@
             all(cut %% 1 == 0) &&
             all(cut >= 0) &&
             sum(cut) == n) {
-    # EMPTY CLUSTERS ARE DROPPED
+    # EMPTY CLUSTERS ARE DROPPED - SIZES IN READING ORDER
     cut <- cut[cut > 0]
+    if(reverse) {
+      cut <- rev(cut)
+    }
     new_ind <- ind
     new_cut <- rep(
       seq_along(cut),
@@ -639,7 +678,29 @@
   invisible(NULL)
 }
 
+#' Cell shapes
+#' @noRd
+.SHAPES <- c("rect", "circle", "diamond", "ellipse", "number", "none")
+
+#' Warning for unknown cell shapes
+#' @noRd
+.shape_message <- function() {
+  paste0(
+    "'cell_shape' must be one of ",
+    paste0("\"", .SHAPES[-length(.SHAPES)], "\"", collapse = ", "),
+    " or \"", .SHAPES[length(.SHAPES)], "\" - using \"rect\"."
+  )
+}
+
 #' Draw heatmap cells with one graphics call per shape
+#'
+#' Circles, diamonds and ellipses stay round on cells that aren't square -
+#' their size is set by the shorter side of the cells, as in the size legend.
+#' Cells drawn as numbers or left empty ("none") are skipped.
+#'
+#' @param cell_in width and height of the cells (inches).
+#' @param value values between -1 and 1 shown by the ellipses.
+#'
 #' @importFrom graphics rect polygon
 #' @noRd
 .draw_cells <- function(x,
@@ -649,10 +710,15 @@
                         fill,
                         border,
                         line_type = 1,
-                        line_width = 1) {
+                        line_width = 1,
+                        cell_in = c(1, 1),
+                        value = NULL) {
 
   # CELLS WITH MISSING SIZES ARE NOT DRAWN
   keep <- !is.na(size) & !is.na(x) & !is.na(y)
+
+  # SHORTER SIDE OF THE CELLS ALONG X AND Y (FRACTIONS OF THE CELLS)
+  aspect <- min(cell_in) / cell_in
 
   # RECTANGLES
   ind <- keep & shape == "rect"
@@ -677,8 +743,8 @@
       x = x[ind],
       y = y[ind],
       r = 0.5 * size[ind],
-      dx = c(-1, 0, 1, 0),
-      dy = c(0, 1, 0, -1),
+      dx = c(-1, 0, 1, 0) * aspect[1],
+      dy = c(0, 1, 0, -1) * aspect[2],
       fill = fill[ind],
       border = border[ind],
       line_type = line_type,
@@ -694,8 +760,30 @@
       x = x[ind],
       y = y[ind],
       r = 0.5 * size[ind],
-      dx = sin(angles),
-      dy = cos(angles),
+      dx = sin(angles) * aspect[1],
+      dy = cos(angles) * aspect[2],
+      fill = fill[ind],
+      border = border[ind],
+      line_type = line_type,
+      line_width = line_width
+    )
+  }
+
+  # ELLIPSES - THE OUTLINE OF A BIVARIATE NORMAL DISTRIBUTION WITH CORRELATION
+  # r (AS IN ellipse::plotcorr), WITHIN 90% OF THE CELL: A CIRCLE AT 0, RISING
+  # FOR POSITIVE AND FALLING FOR NEGATIVE VALUES, A DIAGONAL LINE AT -1 AND 1
+  ind <- keep & shape == "ellipse"
+  if(any(ind)) {
+    r <- if(is.null(value)) rep(0, sum(ind)) else value[ind]
+    r[is.na(r)] <- 0
+    d <- acos(pmin(pmax(r, -1), 1))
+    angles <- seq(0, 2, 1/25) * pi
+    .draw_polygons(
+      x = x[ind],
+      y = y[ind],
+      r = 0.45 * size[ind],
+      dx = cos(outer(angles, d / 2, "+")) * aspect[1],
+      dy = cos(outer(angles, d / 2, "-")) * aspect[2],
       fill = fill[ind],
       border = border[ind],
       line_type = line_type,
@@ -705,6 +793,123 @@
 
   invisible(NULL)
 
+}
+
+#' Write the numbers of "number" cells in the colours of their cells
+#'
+#' @param cell_in width and height of the cells (inches) to shrink the text to
+#'   fit them, or NULL to keep its size.
+#'
+#' @importFrom graphics text
+#' @noRd
+.draw_cell_numbers <- function(x,
+                               y,
+                               labels,
+                               col,
+                               size,
+                               font,
+                               cell_in = NULL) {
+  if(length(labels) == 0) {
+    return(invisible(NULL))
+  }
+  if(!is.null(cell_in)) {
+    size <- .fit_cell_text(labels, size, font, cell_in)
+  }
+  text(
+    x = x,
+    y = y,
+    labels = labels,
+    col = col,
+    cex = size,
+    font = font
+  )
+  invisible(NULL)
+}
+
+#' Numbers written in cells - a fixed number of decimal places, without
+#' negative zeros
+#' @noRd
+.format_number <- function(x,
+                           digits = 2) {
+  x <- round(x, digits)
+  x[x == 0] <- 0
+  formatC(x, format = "f", digits = digits)
+}
+
+#' Colours dark enough to read as text on white - the lightness (CIELAB) of
+#' lighter colours is lowered to \code{max_l}, keeping their hue
+#' @importFrom grDevices col2rgb convertColor rgb
+#' @noRd
+.readable_col <- function(col,
+                          max_l = 55) {
+  rgba <- col2rgb(col, alpha = TRUE) / 255
+  lab <- convertColor(t(rgba[1:3, , drop = FALSE]), from = "sRGB", to = "Lab")
+  light <- lab[, 1] > max_l
+  if(any(light)) {
+    lab[light, 1] <- max_l
+    srgb <- convertColor(lab[light, , drop = FALSE], from = "Lab", to = "sRGB",
+                         clip = TRUE)
+    rgba[1:3, light] <- t(srgb)
+  }
+  rgb(rgba[1, ], rgba[2, ], rgba[3, ], rgba[4, ])
+}
+
+#' Outlines of cells (no fill)
+#' @importFrom graphics rect
+#' @noRd
+.draw_cell_outlines <- function(x,
+                                y,
+                                col,
+                                line_type = 1,
+                                line_width = 1) {
+  if(length(x) == 0) {
+    return(invisible(NULL))
+  }
+  rect(
+    xleft = x - 0.5,
+    ybottom = y - 0.5,
+    xright = x + 0.5,
+    ytop = y + 0.5,
+    col = NA,
+    border = col,
+    lty = line_type,
+    lwd = line_width
+  )
+  invisible(NULL)
+}
+
+#' Grid lines along the edges of the cells of each block of cells between
+#' cluster gaps
+#' @importFrom graphics segments
+#' @noRd
+.draw_cell_grid <- function(x,
+                            y,
+                            col,
+                            line_type = 1,
+                            line_width = 1) {
+  keep <- !is.na(x) & !is.na(y)
+  xs <- sort(unique(x[keep]))
+  ys <- sort(unique(y[keep]))
+  for(rx in .center_runs(xs)) {
+    for(ry in .center_runs(ys)) {
+      x0 <- min(xs[rx]) - 0.5
+      x1 <- max(xs[rx]) + 0.5
+      y0 <- min(ys[ry]) - 0.5
+      y1 <- max(ys[ry]) + 0.5
+      vx <- x0 + seq(0, length(rx))
+      hy <- y0 + seq(0, length(ry))
+      segments(
+        x0 = c(vx, rep(x0, length(hy))),
+        y0 = c(rep(y0, length(vx)), hy),
+        x1 = c(vx, rep(x1, length(hy))),
+        y1 = c(rep(y1, length(vx)), hy),
+        col = col,
+        lty = line_type,
+        lwd = line_width
+      )
+    }
+  }
+  invisible(NULL)
 }
 
 #' Draw many polygons of the same shape in a few vectorised polygon() calls
@@ -727,13 +932,22 @@
     seq_along(x),
     ceiling(seq_along(x) / chunk)
   )
+  # ONE OUTLINE FOR ALL POLYGONS, OR ONE PER POLYGON (COLUMNS OF MATRICES)
+  offset <- function(d, ind) {
+    if(is.matrix(d)) {
+      d[, ind, drop = FALSE] * rep(r[ind], each = nrow(d))
+    } else {
+      outer(d, r[ind])
+    }
+  }
+  k <- NROW(dx)
   for(ind in chunks) {
     px <- rbind(
-      outer(dx, r[ind]) + rep(x[ind], each = length(dx)),
+      offset(dx, ind) + rep(x[ind], each = k),
       NA
     )
     py <- rbind(
-      outer(dy, r[ind]) + rep(y[ind], each = length(dy)),
+      offset(dy, ind) + rep(y[ind], each = k),
       NA
     )
     polygon(
@@ -794,7 +1008,7 @@
 #'   \item{\code{row_clusters}, \code{col_clusters}: the cluster assigned to
 #'   each row/column in their original order (or \code{NULL} when no clusters
 #'   were defined). Clusters are numbered in the order they are displayed:
-#'   from left to right for columns and from bottom to top for rows.}
+#'   from left to right for columns and from top to bottom for rows.}
 #'   \item{\code{tree_x}, \code{tree_y}: \code{hclust} objects for the x and
 #'   y axis dendrograms (or \code{NULL}). Branch heights are rescaled for
 #'   display.}
@@ -807,8 +1021,13 @@
 #'   (\code{zoom_x}, \code{zoom_y}), or \code{NULL}.}
 #'   \item{\code{axis_text_x}, \code{axis_text_y}: axis labels from left to
 #'   right and from top to bottom respectively.}
-#'   \item{\code{colours}, \code{sizes}: the fill colour and relative size of
-#'   each cell, in the orientation of the original data.}
+#'   \item{\code{colours}, \code{sizes}, \code{shapes}: the fill colour,
+#'   relative size and shape of each cell, in the orientation of the original
+#'   data.}
+#'   \item{\code{centers}: lists \code{x} and \code{y} with the centre of
+#'   each column and row in the original order, in the heatmap's plot
+#'   co-ordinates (one unit per cell, plus any gaps between clusters), for
+#'   drawing on top of a heatmap.}
 #'   \item{\code{split_colours}, \code{split_data}: the fill colour and
 #'   value (after scaling) of the lower right half of each cell
 #'   (\code{cell_split}) in the orientation of the original data, or
@@ -1386,25 +1605,13 @@ print.heat_map <- function(x, ...) {
       return(invisible(TRUE))
     }
     # GRID LINES - ONE PER CELL EDGE IN EACH BLOCK
-    for(rx in runs_x) {
-      for(ry in runs_y) {
-        x0 <- min(xs[rx]) - 0.5
-        x1 <- max(xs[rx]) + 0.5
-        y0 <- min(ys[ry]) - 0.5
-        y1 <- max(ys[ry]) + 0.5
-        vx <- x0 + seq(0, length(rx))
-        hy <- y0 + seq(0, length(ry))
-        segments(
-          x0 = c(vx, rep(x0, length(hy))),
-          y0 = c(rep(y0, length(vx)), hy),
-          x1 = c(vx, rep(x1, length(hy))),
-          y1 = c(rep(y1, length(vx)), hy),
-          col = border,
-          lty = line_type,
-          lwd = line_width
-        )
-      }
-    }
+    .draw_cell_grid(
+      x = x,
+      y = y,
+      col = border,
+      line_type = line_type,
+      line_width = line_width
+    )
   } else {
     # OUTLINES OF CELLS WITH A VISIBLE BORDER
     u <- unique(border)

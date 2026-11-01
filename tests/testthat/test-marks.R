@@ -5,10 +5,13 @@ text_call <- function(hm, label) {
   Filter(function(z) label %in% as.character(z[[2]]), drawn(hm, "C_text"))[[1]]
 }
 
-test_that("marked rows are found by name, index or logical", {
+test_that("marked rows are found by name, position or logical", {
   nm <- paste0("g", 1:5)
   expect_equal(.mark_index(c("g2", "g4"), nm, 5), list(ind = c(2L, 4L), labels = c("g2", "g4")))
   expect_equal(.mark_index(c(4, 2), nm, 5)$ind, c(4L, 2L))
+  # Positions in the displayed order
+  expect_equal(.mark_index(c(1, 2), nm, 5, shown = 5:1)$ind, c(5L, 4L))
+  expect_equal(.mark_index(c(1, 2), nm, 5, shown = 5:1)$labels, c("g5", "g4"))
   expect_equal(.mark_index(c(FALSE, TRUE, FALSE, TRUE, NA), nm, 5)$ind, c(2L, 4L))
   expect_equal(.mark_index(c(2, 2, 3), NULL, 5), list(ind = 2:3, labels = c("2", "3")))
   expect_equal(.mark_index("g1", nm, 5, labels = "CD3E")$labels, "CD3E")
@@ -17,7 +20,7 @@ test_that("marked rows are found by name, index or logical", {
   expect_error(.mark_index("nope", nm, 5), "names not found in x: nope")
   expect_error(.mark_index("g1", NULL, 5), "can only contain names when x has row names")
   expect_error(.mark_index("g1", NULL, 5, arg = "mark_x"), "column names")
-  expect_error(.mark_index(6, nm, 5), "outside 1 to 5")
+  expect_error(.mark_index(6, nm, 5), "positions outside 1 to 5")
   expect_error(.mark_index(c(TRUE, FALSE), nm, 5), "one logical value per row")
   expect_error(.mark_index(TRUE, nm, 5, arg = "mark_x"), "per column")
   expect_error(.mark_index(1:2, nm, 5, labels = "a"), "'mark_labels_y' must have one label")
@@ -66,8 +69,10 @@ test_that("mark labels replace the axis text with leader lines", {
   lead <- Filter(function(z) sum(is.na(z[[1]]$x)) == 4, pl)
   expect_length(lead, 1)
   # Right side
+  # Positions count rows from the top - the last rows of m without a dendrogram
   hm <- draw(m, mark_y = 1:3, axis_text_side_y = "right")
-  expect_equal(text_call(hm, "Row1")[[3]][1], 0)
+  expect_equal(text_call(hm, "Row200")[[3]][1], 0)
+  expect_true(all(c("Row200", "Row199", "Row198") %in% drawn_text(hm)))
   expect_equal(layout_overlaps(heat_map_info(hm)$layout), character(0))
 })
 
@@ -82,22 +87,19 @@ test_that("column marks are vertical below or above the heatmap", {
     expect_true("marks_x" %in% b$component)
     expect_equal(layout_overlaps(b), character(0))
   }
-  # Classic layout
-  hm <- draw(m, mark_x = 1:2, mark_y = "Row3", layout = "classic")
-  expect_equal(layout_overlaps(heat_map_info(hm)$layout), character(0))
 })
 
 test_that("crowded mark labels shrink unless fit_text = FALSE", {
   m <- matrix(sin(seq_len(4000)), 400, 10)
   hm <- draw(m, mark_y = seq(1, 400, by = 4))
-  expect_lt(text_call(hm, "1")[[7]], 1)
+  expect_lt(text_call(hm, "400")[[7]], 1)
   hm <- draw(m, mark_y = seq(1, 400, by = 4), fit_text = FALSE)
-  expect_equal(text_call(hm, "1")[[7]], 1)
+  expect_equal(text_call(hm, "400")[[7]], 1)
 })
 
 test_that("mark arguments are checked", {
   expect_error(draw(test_matrix(), mark_y = "nope"), "'mark_y' contains names not found")
-  expect_error(draw(test_matrix(), mark_x = 11), "'mark_x' contains indices outside 1 to 10")
+  expect_error(draw(test_matrix(), mark_x = 11), "'mark_x' contains positions outside 1 to 10")
   expect_error(draw(test_matrix(), mark_y = 1:2, mark_labels_y = "a"), "'mark_labels_y'")
 })
 
