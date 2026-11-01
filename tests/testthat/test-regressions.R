@@ -203,10 +203,19 @@ test_that("levels legend is opt-in and accepts hcl palettes", {
 
 # COLOURS ----------------------------------------------------------------------
 
-test_that("default colour scale is unchanged", {
+test_that("default colour scale runs from dark purple to dark red", {
   cols <- heat_map_info(draw(matrix(1:4, 2)))$colours
   expect_equal(cols[1, 1], "#440154FF")
-  expect_equal(cols[2, 2], "#8707A6FF")
+  expect_equal(cols[2, 2], "#6E0A0AFF")
+  # Even steps in CIELAB from yellow to dark red, getting darker
+  lab <- grDevices::convertColor(
+    t(grDevices::col2rgb(substr(.default_col_scale()[13:20], 1, 7))) / 255,
+    from = "sRGB",
+    to = "Lab"
+  )
+  steps <- sqrt(rowSums(diff(lab)^2))
+  expect_lt(max(steps) / min(steps), 1.15)
+  expect_true(all(diff(lab[, 1]) < 0))
 })
 
 test_that("opt-in named palettes and centred colour scales", {
