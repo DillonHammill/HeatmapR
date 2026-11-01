@@ -1,13 +1,22 @@
 ## HEAT_MAP_LEGEND -------------------------------------------------------------
 
 #' Add a legend to a heatmap
-#' 
-#' @importFrom grDevices axisTicks colorRamp rgb
-#' @importFrom graphics lines text polygon
-#' 
+#'
+#' @param col limits of the colour scale or NULL for no colour legend.
+#' @param size limits of the size scale or NULL for no size legend.
+#' @param levels list containing \code{labels} and \code{colours} for the
+#'   levels legend or NULL for no levels legend.
+#' @param size_fun function mapping values to relative cell sizes, shared with
+#'   the cells of the heatmap so that the legend matches the cells.
+#'
+#' @importFrom grDevices axisTicks colorRamp rgb adjustcolor
+#' @importFrom graphics lines text polygon rect
+#'
 #' @noRd
 heat_map_legend <- function(col = NULL,
                             size = NULL,
+                            levels = NULL,
+                            size_fun = NULL,
                             xlim,
                             ylim,
                             side = 4,
@@ -27,30 +36,54 @@ heat_map_legend <- function(col = NULL,
                             title_text_font = 2,
                             title_text_col = "black",
                             title_text_col_alpha = 1) {
-  
-  # TODO: ADD LEGEND TITLES
-  # TODO: MOVE LEGENDS NEXT TO EACH OTHER IF NOT ENOUGH VERTICAL SPACE
-  
+
   # ONLY SUPPORT LEGEND ON Y AXIS OPPOSITE AXIS TEXT
-  
-  # LEGEND TITLES
-  if(length(title) == 0) {
-    title <- rep(NA, 2)
+
+  # EMPTY LIMITS -> NO LEGEND
+  if(length(col) < 2) {
+    col <- NULL
   }
-  
-  # TITLE ARGUMENTS
-  title <- c(title, rep(NA, 2))[1:2]
-  title_text_size <- rep(title_text_size, 2)
-  title_text_font <- rep(title_text_font, 2)
-  title_text_col <- rep(title_text_col, 2)
-  title_text_col_alpha <- rep(title_text_col_alpha, 2)
-  
+  if(length(size) < 2) {
+    size <- NULL
+  }
+  if(length(levels$labels) == 0) {
+    levels <- NULL
+  }
+
+  # DEFAULT SIZE MAPPING - LINEAR
+  if(is.null(size_fun)) {
+    size_fun <- function(v) {
+      .size_scale(v, limits = size)
+    }
+  }
+
+  # LEGEND TITLES - COLOUR, SIZE & LEVELS
+  if(length(title) == 0) {
+    title <- rep(NA, 3)
+  }
+  title <- c(title, rep(NA, 3))[1:3]
+  title_text_size <- rep_len(title_text_size, 3)
+  title_text_font <- rep_len(title_text_font, 3)
+  title_text_col <- rep_len(title_text_col, 3)
+  title_text_col_alpha <- rep_len(title_text_col_alpha, 3)
+
   # PRE-COMPUTE REUSED VALUES
   xlim_diff <- diff(xlim)
   ylim_diff <- diff(ylim)
   xlim_mean <- mean(xlim)
   ylim_min <- min(ylim)
-  
+  text_col <- adjustcolor(
+    text_col,
+    text_col_alpha
+  )
+
+  # VERTICAL SPACE ALLOCATED TO EACH LEGEND
+  regions <- .legend_regions(
+    col = !is.null(col),
+    size = !is.null(size),
+    levels = !is.null(levels)
+  )
+
   # COLOUR SCALE LEGEND
   if(!is.null(col)) {
     # COLOUR_SCALE
@@ -60,25 +93,11 @@ heat_map_legend <- function(col = NULL,
       )
     }
     # LEGEND ON LEFT OR RIGHT - COORDINATES ARE SIDE-INDEPENDENT
-    if(side %in% c(2,4)) {
-      xcoords <- c(
-        xlim_mean - col_scale_size * 0.20 * xlim_diff,
-        xlim_mean
-      )
-      # COLOUR LEGEND ABOVE (WHEN SIZE LEGEND ALSO PRESENT)
-      if(!is.null(size)) {
-        ycoords <- c(
-          ylim_min + 0.6 * ylim_diff,
-          ylim_min + 0.9 * ylim_diff
-        )
-      # CENTRAL COLOUR LEGEND (SOLE LEGEND)
-      } else {
-        ycoords <- c(
-          ylim_min + 0.25 * ylim_diff,
-          ylim_min + 0.75 * ylim_diff
-        )
-      }
-    }
+    xcoords <- c(
+      xlim_mean - col_scale_size * 0.20 * xlim_diff,
+      xlim_mean
+    )
+    ycoords <- ylim_min + regions$col * ylim_diff
     # LEGEND BORDER
     rect(
       xleft = min(xcoords),
@@ -87,54 +106,53 @@ heat_map_legend <- function(col = NULL,
       ytop = max(ycoords),
       xpd = TRUE
     )
-    # AXIS LABELS
-    labels <- axisTicks(
-      col,
-      log = FALSE
+    # AXIS LABELS & TICKS
+    if(diff(col) == 0) {
+      # SINGLE VALUE - MIDDLE OF THE SCALE
+      labels <- col[1]
+      ticks <- mean(ycoords)
+    } else {
+      labels <- axisTicks(
+        col,
+        log = FALSE
+      )
+      ticks <- .rescale(
+        labels,
+        limits = range(col),
+        scale = ycoords
+      )
+    }
+    # TICKS
+    tick_x <- if(side %in% 2) {
+      c(min(xcoords), min(xcoords) - 0.017 * xlim_diff)
+    } else {
+      c(max(xcoords), max(xcoords) + 0.017 * xlim_diff)
+    }
+    segments(
+      x0 = tick_x[1],
+      y0 = ticks,
+      x1 = tick_x[2],
+      y1 = ticks,
+      lwd = 1,
+      lty = 1,
+      col = "black",
+      xpd = TRUE
     )
-    # AXIS TICKS
-    ticks <- .rescale(
-      labels,
-      limits = range(col),
-      scale = ycoords
-    )
-    # ANNOTATE LEGEND
-    lapply(
-      seq_along(labels),
-      function(z) {
-        # TICKS
-        lines(
-          x = if(side %in% 2) {
-            c(min(xcoords), min(xcoords) - 0.017 * xlim_diff)
-          } else if(side %in% 4) {
-            c(max(xcoords), max(xcoords) + 0.017 * xlim_diff)
-          },
-          y = c(ticks[z], ticks[z]),
-          lwd = 1,
-          lty = 1,
-          col = "black",
-          xpd = TRUE
-        )
-        # TEXT
-        text(
-          x = if(side %in% 2) {
-            min(xcoords) - 0.045 * xlim_diff
-          } else {
-            max(xcoords) + 0.045 * xlim_diff
-          },
-          y = ticks[z],
-          pos = side,
-          offset = 0,
-          labels = labels[z],
-          font = text_font,
-          cex = text_size,
-          col = adjustcolor(
-            text_col,
-            text_col_alpha
-          ),
-          xpd = TRUE
-        )
-      }
+    # TEXT
+    text(
+      x = if(side %in% 2) {
+        min(xcoords) - 0.045 * xlim_diff
+      } else {
+        max(xcoords) + 0.045 * xlim_diff
+      },
+      y = ticks,
+      pos = side,
+      offset = 0,
+      labels = labels,
+      font = text_font,
+      cex = text_size,
+      col = text_col,
+      xpd = TRUE
     )
     # COLOUR SCALE
     box_n <- 75
@@ -143,28 +161,26 @@ heat_map_legend <- function(col = NULL,
       max(ycoords),
       diff(range(ycoords))/box_n
     )
-    # Vectorized calculation of box midpoints
     box_m <- box_y[-length(box_y)] + 0.5 * diff(box_y)
-    box_cols <- rgb(
-      col_scale(
-        (box_m - min(box_y))/diff(range(box_y))
-      ),
-      maxColorValue = 255
+    box_cols <- col_scale(
+      (box_m - min(box_y))/diff(range(box_y))
     )
-    # COLOURS - vectorized rect() call
+    box_cols <- adjustcolor(
+      rgb(
+        box_cols[, 1],
+        box_cols[, 2],
+        box_cols[, 3],
+        maxColorValue = 255
+      ),
+      col_alpha
+    )
     rect(
       xleft = rep(min(xcoords), box_n),
       ybottom = box_y[-length(box_y)],
       xright = rep(max(xcoords), box_n),
       ytop = box_y[-1],
-      border = adjustcolor(
-        box_cols,
-        col_alpha
-      ),
-      col = adjustcolor(
-        box_cols,
-        col_alpha
-      ),
+      border = box_cols,
+      col = box_cols,
       xpd = TRUE
     )
     # TITLE
@@ -184,147 +200,216 @@ heat_map_legend <- function(col = NULL,
       )
     }
   }
-  
+
   # SIZE LEGEND
   if(!is.null(size)) {
-    # LEGEND ON LEFT OR RIGHT - COORDINATES ARE SIDE-INDEPENDENT
-    if(side %in% c(2,4)) {
-      xcoords <- c(
-        xlim_mean - 1,
-        xlim_mean
+    # SHAPES ARE ONE CELL WIDE TO MATCH THE CELLS IN THE HEATMAP
+    xcoords <- c(
+      xlim_mean - 1,
+      xlim_mean
+    )
+    ycoords <- ylim_min + regions$size * ylim_diff
+    # AXIS LABELS
+    if(diff(size) == 0) {
+      labels <- size[1]
+    } else {
+      labels <- axisTicks(
+        size,
+        log = FALSE,
+        nint = 5
       )
-      # SIZE LEGEND BELOW (WHEN COLOUR LEGEND ALSO PRESENT)
-      if(!is.null(col)) {
-        ycoords <- c(
-          ylim_min + 0.1 * ylim_diff,
-          ylim_min + 0.4 * ylim_diff
-        )
-      # CENTRAL SIZE LEGEND (SOLE LEGEND)
-      } else {
-        ycoords <- c(
-          ylim_min + 0.3 * ylim_diff,
-          ylim_min + 0.6 * ylim_diff
-        )
+      # REMOVE ZERO LABEL
+      if(length(labels) > 5) {
+        labels <- labels[
+          seq(length(labels) - 4, length(labels), 1)
+        ]
       }
     }
-    # SPACE ERROR
+    # SPACE AVAILABLE - REDUCE PADDING & NUMBER OF LABELS TO FIT
+    n_fit <- function(pad) {
+      floor((diff(ycoords) - pad) / (1 + pad))
+    }
+    n_min <- min(2, length(labels))
     ypad <- 0.6
-    n <- (diff(ycoords) - ypad)/(1 + ypad)
-    if(n < 2) {
-      stop(
-        "Insufficent space to add a cell size legend!"
+    if(n_fit(ypad) < n_min) {
+      ypad <- 0.2
+    }
+    if(n_fit(ypad) < n_min) {
+      warning(
+        "Insufficient space to add a cell size legend - increase the ",
+        "number of rows in the heatmap or set legend = \"colour\".",
+        call. = FALSE
       )
-    }
-    # AXIS LABELS
-    labels <- axisTicks(
-      size,
-      log = FALSE,
-      nint = 5
-    )
-    # REMOVE ZERO LABEL
-    if(length(labels) > 5) {
-      labels <- labels[
-        seq(length(labels) - 4, length(labels), 1)
-      ]
-    }
-    # COMPUTE CENTERS - VECTORIZED
-    pad <- diff(ycoords) - ypad - 5 * (1 + ypad)
-    ymin <- min(ycoords) + pad/2
-    ycenters <- ymin + (seq_along(labels) - 1) * (1 + ypad) + 0.5 + ypad
-    # SHAPES & ANNOTATIONS
-    lapply(
-      seq_along(labels),
-      function(z) {
-        # COMPUTE RADIUS
-        r <- ((labels[z] - min(col))/diff(col)) * 1/2 * diff(xcoords)
-        # RECTANGLE
-        if(grepl("^r", shape, ignore.case = TRUE)) {
-          rect(
-            xleft = mean(xcoords) - r,
-            ybottom = ycenters[z] - r,
-            xright = mean(xcoords) + r,
-            ytop = ycenters[z] + r,
-            xpd = TRUE,
-            col = "black"
-          )
-        # DIAMOND
-        } else if(grepl("^d", shape, ignore.case = TRUE)) {
-          polygon(
-            x = c(
-              mean(xcoords) - r,
-              mean(xcoords),
-              mean(xcoords) + r,
-              mean(xcoords)
-            ),
-            y = c(
-              ycenters[z],
-              ycenters[z] + r,
-              ycenters[z],
-              ycenters[z] - r
-            ),
-            col = "black",
-            xpd = TRUE
-          )
-        # CIRCLE
-        } else if(grepl("^c", shape, ignore.case = TRUE)) {
-          # CIRCLE CO-ORDINATES
-          coords <- do.call(
-            "rbind",
-            lapply(
-              seq(0, 2, 1/25), # ANGLES
-              function(w) {
-                c(
-                  "x" = mean(xcoords) + r * sin(w * pi),
-                  "y" = ycenters[z] + r * cos(w * pi)
-                )
-              }
+    } else {
+      # THIN LABELS
+      if(length(labels) > n_fit(ypad)) {
+        labels <- labels[
+          unique(
+            round(
+              seq(1, length(labels), length.out = n_fit(ypad))
             )
           )
-          colnames(coords) <- c("x", "y")
-          # CIRCLE
-          polygon(
-            x = coords[, "x"],
-            y = coords[, "y"],
-            col = "black",
-            xpd = TRUE
-          )
+        ]
+      }
+      # COMPUTE CENTERS - VECTORIZED
+      n <- length(labels)
+      pad <- diff(ycoords) - ypad - n * (1 + ypad)
+      ymin <- min(ycoords) + pad/2
+      ycenters <- ymin + (seq_len(n) - 1) * (1 + ypad) + 0.5 + ypad
+      # RADIUS - SAME MAPPING AS THE CELLS
+      r <- 0.5 * size_fun(labels) * diff(xcoords)
+      # SHAPES
+      xc <- rep(mean(xcoords), n)
+      if(grepl("^r", shape, ignore.case = TRUE)) {
+        rect(
+          xleft = xc - r,
+          ybottom = ycenters - r,
+          xright = xc + r,
+          ytop = ycenters + r,
+          xpd = TRUE,
+          col = "black"
+        )
+      } else {
+        angles <- seq(0, 2, 1/25) * pi
+        if(grepl("^d", shape, ignore.case = TRUE)) {
+          dx <- c(-1, 0, 1, 0)
+          dy <- c(0, 1, 0, -1)
+        } else {
+          dx <- sin(angles)
+          dy <- cos(angles)
         }
-        # TEXT
-        text(
-          x = if(side == 4) {
-            max(xcoords) + 0.2 * diff(xcoords)
-          } else {
-            min(xcoords) - 0.2 * diff(xcoords)
-          },
-          y = ycenters[z],
-          labels = labels[z],
-          font = text_font,
-          cex = text_size,
-          col = adjustcolor(
-            text_col,
-            text_col_alpha
-          ),
-          pos = side,
+        polygon(
+          x = as.vector(rbind(outer(dx, r) + rep(xc, each = length(dx)), NA)),
+          y = as.vector(rbind(outer(dy, r) + rep(ycenters, each = length(dy)), NA)),
+          col = "black",
           xpd = TRUE
         )
       }
+      # TEXT
+      text(
+        x = if(side == 4) {
+          max(xcoords) + 0.2 * diff(xcoords)
+        } else {
+          min(xcoords) - 0.2 * diff(xcoords)
+        },
+        y = ycenters,
+        labels = labels,
+        font = text_font,
+        cex = text_size,
+        col = text_col,
+        pos = side,
+        xpd = TRUE
+      )
+      # TITLE
+      if(!is.na(title[2])) {
+        text(
+          x = max(xcoords),
+          y = max(ycoords) - pad/2,
+          labels = title[2],
+          pos = 3,
+          font = title_text_font[2],
+          cex = title_text_size[2],
+          col = adjustcolor(
+            title_text_col[2],
+            title_text_col_alpha[2]
+          ),
+          xpd = TRUE
+        )
+      }
+    }
+  }
+
+  # LEVELS LEGEND - COLOURS OF NON-NUMERIC VALUES
+  if(!is.null(levels)) {
+    xcoords <- c(
+      xlim_mean - 1,
+      xlim_mean
+    )
+    ycoords <- ylim_min + regions$levels * ylim_diff
+    n <- length(levels$labels)
+    # STEP BETWEEN SWATCHES & SWATCH SIZE (AT MOST ONE CELL)
+    step <- min(1.5, diff(ycoords) / n)
+    box <- min(1, step / 1.5)
+    ycenters <- max(ycoords) - (seq_len(n) - 0.5) * step
+    xc <- mean(xcoords)
+    # SWATCHES
+    rect(
+      xleft = xc - box/2,
+      ybottom = ycenters - box/2,
+      xright = xc + box/2,
+      ytop = ycenters + box/2,
+      col = levels$colours,
+      border = "black",
+      xpd = TRUE
+    )
+    # TEXT
+    text(
+      x = if(side == 4) {
+        max(xcoords) + 0.2 * diff(xcoords)
+      } else {
+        min(xcoords) - 0.2 * diff(xcoords)
+      },
+      y = ycenters,
+      labels = levels$labels,
+      font = text_font,
+      cex = text_size,
+      col = text_col,
+      pos = side,
+      xpd = TRUE
     )
     # TITLE
-    if(!is.na(title[2])) {
+    if(!is.na(title[3])) {
       text(
         x = max(xcoords),
-        y = max(ycoords) - pad/2,
-        labels = title[2],
+        y = max(ycoords),
+        labels = title[3],
         pos = 3,
-        font = title_text_font[2],
-        cex = title_text_size[2],
+        font = title_text_font[3],
+        cex = title_text_size[3],
         col = adjustcolor(
-          title_text_col[2],
-          title_text_col_alpha[2]
+          title_text_col[3],
+          title_text_col_alpha[3]
         ),
         xpd = TRUE
       )
     }
   }
-  
+
+  invisible(NULL)
+
+}
+
+#' Vertical space allocated to each legend as proportions of the y axis
+#'
+#' Colour and size legends keep their original positions. When a levels
+#' legend is requested the legends are stacked in equal slots.
+#'
+#' @noRd
+.legend_regions <- function(col = FALSE,
+                            size = FALSE,
+                            levels = FALSE) {
+  regions <- list(
+    col = NULL,
+    size = NULL,
+    levels = NULL
+  )
+  # COLOUR & SIZE LEGENDS ONLY
+  if(!levels) {
+    if(col) {
+      regions$col <- if(size) c(0.6, 0.9) else c(0.25, 0.75)
+    }
+    if(size) {
+      regions$size <- if(col) c(0.1, 0.4) else c(0.3, 0.6)
+    }
+    return(regions)
+  }
+  # STACKED SLOTS FROM TOP TO BOTTOM
+  present <- c(col = col, size = size, levels = levels)
+  types <- names(present)[present]
+  slot <- 0.9 / length(types)
+  for(z in seq_along(types)) {
+    top <- 0.95 - (z - 1) * slot
+    regions[[types[z]]] <- c(top - slot + 0.1 * slot, top - 0.1 * slot)
+  }
+  regions
 }

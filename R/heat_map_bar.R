@@ -45,8 +45,6 @@ heat_map_bar <- function(x,
                          axis_ticks_length_y = 1,
                          ...) {
   
-  # TODO: ADD AXIS LABEL
-  
   # VERTICAL BARS
   if(!is.null(splits_x)) {
     # TODO: DO WE WANT MIN ZERO IF NO VALUES LESS THAN ZERO?
@@ -139,11 +137,11 @@ heat_map_bar <- function(x,
       tck = -0.02 * axis_ticks_length_y,
       las = axis_text_angle_y,
       padj = axis_text_adjust_y,
-      font.axis = axis_text_font_x[1],
-      cex.axis = axis_text_size_x[1],
+      font.axis = axis_text_font_y[1],
+      cex.axis = axis_text_size_y[1],
       col.axis = adjustcolor(
-        axis_text_col_x[1],
-        axis_text_col_alpha_x[1]
+        axis_text_col_y[1],
+        axis_text_col_alpha_y[1]
       ),
       pos = if(axis_text_side_y %in% 2) {
         min(splits_x[[1]])
@@ -151,52 +149,18 @@ heat_map_bar <- function(x,
         max(splits_x[[length(splits_x)]])
       }
     )
-    # BARS
-    mapply(
-      function(x,
-               centers_x,
-               fill,
-               fill_alpha,
-               line_type,
-               line_width,
-               line_col,
-               line_col_alpha) {
-        # BAR
-        if(!is.na(x)) {
-          rect(
-            xleft = centers_x - 0.35,
-            ybottom = if(x > 0) {
-              h
-            } else {
-              x
-            },
-            xright = centers_x + 0.35,
-            ytop = if(x > 0) {
-              x
-            } else {
-              h
-            },
-            col = adjustcolor(
-              fill,
-              fill_alpha
-            ),
-            border = adjustcolor(
-              line_col,
-              line_col_alpha
-            ),
-            lty = line_type,
-            lwd = line_width
-          )
-        }
-      },
-      x,
-      centers_x,
-      fill,
-      fill_alpha,
-      line_type,
-      line_width,
-      line_col,
-      line_col_alpha
+    # BARS - SPANNING ZERO LINE TO VALUE
+    .draw_bars(
+      values = x,
+      centers = centers_x,
+      zero = h,
+      vertical = TRUE,
+      fill = fill,
+      fill_alpha = fill_alpha,
+      line_type = line_type,
+      line_width = line_width,
+      line_col = line_col,
+      line_col_alpha = line_col_alpha
     )
     # AXIS LABEL
     if(!is.null(axis_label)) {
@@ -319,52 +283,18 @@ heat_map_bar <- function(x,
         max(splits_y[[length(splits_y)]])
       }
     )
-    # BARS
-    mapply(
-      function(x,
-               centers_y,
-               fill,
-               fill_alpha,
-               line_type,
-               line_width,
-               line_col,
-               line_col_alpha) {
-        # BAR
-        if(!is.na(x)) {
-          rect(
-            xleft = if(x > 0) {
-              h
-            } else {
-              x
-            },
-            ybottom = centers_y - 0.35,
-            xright = if(x > 0) {
-              x
-            } else {
-              h
-            },
-            ytop = centers_y + 0.35,
-            col = adjustcolor(
-              fill,
-              fill_alpha
-            ),
-            border = adjustcolor(
-              line_col,
-              line_col_alpha
-            ),
-            lty = line_type,
-            lwd = line_width
-          )
-        }
-      },
-      x,
-      centers_y,
-      fill,
-      fill_alpha,
-      line_type,
-      line_width,
-      line_col,
-      line_col_alpha
+    # BARS - SPANNING ZERO LINE TO VALUE
+    .draw_bars(
+      values = x,
+      centers = centers_y,
+      zero = h,
+      vertical = FALSE,
+      fill = fill,
+      fill_alpha = fill_alpha,
+      line_type = line_type,
+      line_width = line_width,
+      line_col = line_col,
+      line_col_alpha = line_col_alpha
     )
     # AXIS LABEL
     if(!is.null(axis_label)) {
@@ -386,4 +316,67 @@ heat_map_bar <- function(x,
       )
     }
   }
+}
+#' Draw all bars in a single rect() call
+#' 
+#' Bar properties are recycled across bars in display order, matching the
+#' previous per-bar behaviour. Bars with missing values are not drawn.
+#' 
+#' @importFrom graphics rect
+#' @importFrom grDevices adjustcolor
+#' 
+#' @noRd
+.draw_bars <- function(values,
+                       centers,
+                       zero,
+                       vertical = TRUE,
+                       fill = "grey40",
+                       fill_alpha = 1,
+                       line_type = 1,
+                       line_width = 1,
+                       line_col = "black",
+                       line_col_alpha = 1) {
+  n <- length(values)
+  if(n == 0) {
+    return(invisible(NULL))
+  }
+  fill <- rep_len(
+    .alpha_col(fill, fill_alpha),
+    n
+  )
+  border <- rep_len(
+    .alpha_col(line_col, line_col_alpha),
+    n
+  )
+  line_type <- rep_len(line_type, n)
+  line_width <- rep_len(line_width, n)
+  centers <- rep_len(centers, n)
+  ok <- !is.na(values)
+  if(!any(ok)) {
+    return(invisible(NULL))
+  }
+  if(vertical) {
+    rect(
+      xleft = centers[ok] - 0.35,
+      ybottom = zero,
+      xright = centers[ok] + 0.35,
+      ytop = values[ok],
+      col = fill[ok],
+      border = border[ok],
+      lty = line_type[ok],
+      lwd = line_width[ok]
+    )
+  } else {
+    rect(
+      xleft = zero,
+      ybottom = centers[ok] - 0.35,
+      xright = values[ok],
+      ytop = centers[ok] + 0.35,
+      col = fill[ok],
+      border = border[ok],
+      lty = line_type[ok],
+      lwd = line_width[ok]
+    )
+  }
+  invisible(NULL)
 }
