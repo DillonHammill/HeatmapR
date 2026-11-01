@@ -555,6 +555,7 @@ heat_map_bar <- function(x,
 #'
 #' @param v finite values with at least two distinct values.
 #' @param n number of points along the range of the values.
+#' @param from,to range of the positions, the range of the values by default.
 #'
 #' @return list with the positions \code{x} and densities \code{y}.
 #'
@@ -562,9 +563,11 @@ heat_map_bar <- function(x,
 #'
 #' @noRd
 .violin_density <- function(v,
-                            n = 64) {
+                            n = 64,
+                            from = min(v),
+                            to = max(v)) {
   bw <- bw.nrd0(v)
-  grid <- seq(min(v), max(v), length.out = n)
+  grid <- seq(from, to, length.out = n)
   if(length(v) > 2000) {
     edges <- seq(min(v), max(v), length.out = 513)
     w <- tabulate(findInterval(v, edges, all.inside = TRUE), 512)

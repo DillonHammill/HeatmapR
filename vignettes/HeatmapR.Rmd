@@ -1299,6 +1299,90 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-summarise.png')
 ```
 
+#### 5.3.1 Distributions Inside Cells
+
+A summary hides the shape of the values behind it. `cell_values` takes a matrix holding the values behind each cell, such as `heat_map_summarise(fun = "values")`, and draws their distribution inside the cell: a density with a tick at the median by default, or a histogram or box plot with `cell_glyph`. Each column shares one range of values (`cell_glyph_range`), so the curves can be compared down the column. In the example below the "T mixed" cluster has middling CD4 and CD8 medians that look like a dim population; the densities show that it is two populations, one CD4+ and one CD8+.
+
+```{r, eval = FALSE}
+set.seed(8)
+markers <- c("CD3", "CD4", "CD8", "CD19", "CD56", "CD14")
+pops <- list(
+  "CD4 T" = c("CD3", "CD4"),
+  "CD8 T" = c("CD3", "CD8"),
+  "T mixed" = "CD3",
+  "B" = "CD19",
+  "NK" = "CD56",
+  "Monocyte" = "CD14"
+)
+cluster <- sample(names(pops), 6000, replace = TRUE)
+events <- matrix(
+  rnorm(6000 * 6, 0.5, 0.45),
+  ncol = 6,
+  dimnames = list(NULL, markers)
+)
+for (p in names(pops)) {
+  ind <- cluster == p
+  events[ind, pops[[p]]] <- rnorm(sum(ind) * length(pops[[p]]), 4, 0.55)
+}
+# Half of the "T mixed" cluster is CD4+, the other half CD8+
+mixed <- which(cluster == "T mixed")
+cd4 <- mixed[seq_along(mixed) %% 2 == 0]
+events[cd4, "CD4"] <- rnorm(length(cd4), 4, 0.55)
+cd8 <- setdiff(mixed, cd4)
+events[cd8, "CD8"] <- rnorm(length(cd8), 4, 0.55)
+heat_map(
+  heat_map_summarise(events, group_y = cluster, fun = "median"),
+  cell_values = heat_map_summarise(events, group_y = cluster, fun = "values"),
+  legend_title = "Median",
+  title = "Median intensity, with each cluster's distribution"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+set.seed(8)
+markers <- c("CD3", "CD4", "CD8", "CD19", "CD56", "CD14")
+pops <- list(
+  "CD4 T" = c("CD3", "CD4"),
+  "CD8 T" = c("CD3", "CD8"),
+  "T mixed" = "CD3",
+  "B" = "CD19",
+  "NK" = "CD56",
+  "Monocyte" = "CD14"
+)
+cluster <- sample(names(pops), 6000, replace = TRUE)
+events <- matrix(
+  rnorm(6000 * 6, 0.5, 0.45),
+  ncol = 6,
+  dimnames = list(NULL, markers)
+)
+for (p in names(pops)) {
+  ind <- cluster == p
+  events[ind, pops[[p]]] <- rnorm(sum(ind) * length(pops[[p]]), 4, 0.55)
+}
+# Half of the "T mixed" cluster is CD4+, the other half CD8+
+mixed <- which(cluster == "T mixed")
+cd4 <- mixed[seq_along(mixed) %% 2 == 0]
+events[cd4, "CD4"] <- rnorm(length(cd4), 4, 0.55)
+cd8 <- setdiff(mixed, cd4)
+events[cd8, "CD8"] <- rnorm(length(cd8), 4, 0.55)
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-cell-values.png",
+  height = 5.6,
+  width = 7,
+  res = 300
+)
+heat_map(
+  heat_map_summarise(events, group_y = cluster, fun = "median"),
+  cell_values = heat_map_summarise(events, group_y = cluster, fun = "values"),
+  legend_title = "Median",
+  title = "Median intensity, with each cluster's distribution"
+)
+```
+
+```{r echo = FALSE, out.width = '95%', fig.align="center"}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-cell-values.png')
+```
+
 ## 6. Legends
 
 `heat_map()` will automatically add legends for the colour scale and size of the cells in the heatmap. The `legend` argument controls the type(s) of legends to display including `"colour"`, `"size"` or `"both"`, and `"levels"` can be added (e.g. `legend = c("both", "levels")`) to include a legend for the colours of non-numeric columns. The legend is sized from its contents: `legend_size` scales the legend keys (colour bars, swatches and size legend shapes) and `legend_col_scale_size` controls the width of the colour scale. The titles and text displayed in the legend(s) are also fully customisable using the the `legend_title_` and `legend_text_` family of arguments.
