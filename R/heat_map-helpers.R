@@ -3,44 +3,53 @@
 #' Save high resolution images
 #' 
 #' @param save_as name of the file to which the plot should be saved (including
-#'   the file extension). Supported file formats include png, tiff, jpeg, svg
-#'   and pdf.
+#'   the file extension). Supported file formats include png, tiff (or tif),
+#'   jpeg (or jpg), svg and pdf. File extensions are not case sensitive.
 #' @param width numeric indicating the width of exported plot in \code{units},
 #'   set to 7 by default for image with width of 7 inches.
 #' @param height numeric indicating the height of the exported plot in
 #'   \code{units}, set to 7 by default for image with height of 7 inches.
 #' @param units units to be used to set plot size, can be either pixels
-#'   (\code{px}), inches (\code{inches}), centimetres (\code{cm}) or millimetres
-#'   (\code{mm}). Set to \code{"in"} by default. Units cannot be altered for
-#'   \code{svg} and \code{pdf} graphics devices.
+#'   (\code{"px"}), inches (\code{"in"}), centimetres (\code{"cm"}) or
+#'   millimetres (\code{"mm"}). Set to \code{"in"} by default. Units cannot be
+#'   altered for \code{svg} and \code{pdf} graphics devices.
 #' @param res resolution in dpi, set to 300 by default.
 #' @param multiple logical indicating whether multiple pages should be saved to
-#'   separate numbered files, set to \code{TRUE} by default.
+#'   separate numbered files, set to \code{FALSE} by default.
 #' @param layout a vector or matrix defining the custom layout of the plot to be
 #'   created using `heat_map_layout`, set to NULL by default.
+#' @param x optional \code{heat_map} object returned by \code{\link{heat_map}}
+#'   (or a list of \code{heat_map} objects to fill a \code{layout}) to draw and
+#'   save immediately. When supplied, the graphics device is closed once the
+#'   heatmap(s) have been drawn and there is no need to call
+#'   \code{heat_map_complete()}.
 #' @param ... additional arguments for the appropriate \code{png()},
 #'   \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.
 #'
 #' @return No return value, called for side effects.
-#' 
+#'
 #' @importFrom tools file_ext file_path_sans_ext
 #' @importFrom grDevices png tiff jpeg pdf svg
-#' 
+#'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
-#' 
-#' @examples 
+#'
+#' @examples
 #' \donttest{
 #' # Save Heatmap
 #' heat_map_save(file.path(tempdir(), "Heatmap.png"),
-#' height = 7, 
+#' height = 7,
 #' width = 5)
-#' 
+#'
 #' # Construct Heatmap
 #' heat_map(iris[1:10,],
-#' scale = "range",
+#' scale = "column",
 #' title = "Iris Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
+#'
+#' # Save an existing heatmap
+#' hm <- heat_map(mtcars, scale = "column", popup = FALSE)
+#' heat_map_save(file.path(tempdir(), "mtcars.pdf"), x = hm)
 #' }
 #' @export
 heat_map_save <- function(save_as,
@@ -50,25 +59,50 @@ heat_map_save <- function(save_as,
                           res = 300,
                           multiple = FALSE,
                           layout = NULL,
+                          x = NULL,
                           ...) {
-  
+
+  # HEATMAPS TO DRAW
+  if(!is.null(x)) {
+    if(inherits(x, "heat_map")) {
+      x <- list(x)
+    }
+    if(!is.list(x) || !all(vapply(x, inherits, logical(1), "heat_map"))) {
+      stop("'x' must be a heat_map object or a list of heat_map objects!")
+    }
+  }
+
   # File missing extension
   if (file_ext(save_as) == "") {
     # Modify file name to export png by default
     save_as <- paste0(save_as, ".png")
   }
-  
+
+  # FILE FORMAT - CASE INSENSITIVE WITH COMMON ALIASES
+  ext <- tolower(file_ext(save_as))
+  format <- switch(
+    ext,
+    "png" = "png",
+    "tif" = ,
+    "tiff" = "tiff",
+    "jpg" = ,
+    "jpeg" = "jpeg",
+    "pdf" = "pdf",
+    "svg" = "svg",
+    stop(paste("Can't save file to", file_ext(save_as), "format."))
+  )
+
   # Save separate pages to separate number files
-  if (multiple == TRUE & file_ext(save_as) != "pdf") {
+  if (isTRUE(multiple) && format != "pdf") {
     save_as <- paste0(
       file_path_sans_ext(save_as),
       "%03d", ".",
       file_ext(save_as)
     )
   }
-  
+
   # PNG DEVICE
-  if (file_ext(save_as) == "png") {
+  if (format == "png") {
     png(
       filename = save_as,
       width = width,
@@ -78,7 +112,7 @@ heat_map_save <- function(save_as,
       ...
     )
     # TIFF DEVICE
-  } else if (file_ext(save_as) == "tiff") {
+  } else if (format == "tiff") {
     tiff(
       filename = save_as,
       width = width,
@@ -88,7 +122,7 @@ heat_map_save <- function(save_as,
       ...
     )
     # JPEG DEVICE
-  } else if (file_ext(save_as) == "jpeg") {
+  } else if (format == "jpeg") {
     jpeg(
       filename = save_as,
       width = width,
@@ -98,7 +132,7 @@ heat_map_save <- function(save_as,
       ...
     )
     # PDF DEVICE
-  } else if (file_ext(save_as) == "pdf") {
+  } else if (format == "pdf") {
     pdf(
       file = save_as,
       width = width,
@@ -106,36 +140,46 @@ heat_map_save <- function(save_as,
       onefile = multiple,
       ...
     )
-  } else if(file_ext(save_as) == "svg") {
+  } else {
     svg(
       filename = save_as,
       width = width,
       height = height,
       ...
     )
-  } else {
-    stop(paste("Can't save file to", file_ext(save_as), "format."))
   }
-  
+
   # CUSTOM LAYOUT
   if(!is.null(layout)){
     heat_map_layout(layout = layout)
   }
-  
-  # SIGNAL SAVE - DEVICE 
+
+  # SIGNAL SAVE - DEVICE
   options("heat_map_save" = TRUE)
-  
+
+  # DRAW & SAVE SUPPLIED HEATMAPS
+  if(!is.null(x)) {
+    # CLOSE DEVICE ON EXIT - EVEN IF DRAWING FAILS
+    options("heat_map_custom" = TRUE)
+    on.exit(heat_map_complete(), add = TRUE)
+    for(hm in x) {
+      plot(hm)
+    }
+  }
+
+  invisible(NULL)
+
 }
 
 ## HEAT_MAP_CUSTOM -------------------------------------------------------------
 
 #' Create a custom heatmap plot layout
 #'
-#' \code{heat_map_custom()} is similar to \code{cheat_map_save()} with the
+#' \code{heat_map_custom()} is similar to \code{heat_map_save()} with the
 #' exception that it doesn't write the plot to a file. \code{heat_map_custom()}
 #' opens a new graphics device and sets the desired layout in preparation for
 #' the addition of heatmaps and other plot objects. Once the custom plot is full
-#' users MUST run \code{cyto_plot_complete()} to close the graphics device and
+#' users MUST run \code{heat_map_complete()} to close the graphics device and
 #' reset any \code{heat_map()} related settings (see example).
 #'
 #' @param popup logical indicating whether a popup graphics device should be
@@ -257,14 +301,14 @@ heat_map_reset <- function(){
 #' title = "Iris Raw Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
-#' 
+#'
 #' # Construct scaled heatmap
 #' heat_map(iris[1:10,],
-#' scale = "range",
+#' scale = "column",
 #' title = "Iris Scaled Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
-#' 
+#'
 #' # Signal completion
 #' heat_map_complete()
 #' }
@@ -321,7 +365,7 @@ heat_map_complete <- function(){
 #' 
 #' # Construct scaled heatmap
 #' heat_map(iris[1:10,],
-#' scale = "range",
+#' scale = "column",
 #' title = "Iris Scaled Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
@@ -395,7 +439,7 @@ heat_map_layout <- function(layout = NULL){
 #'
 #' # Construct scaled heatmap
 #' heat_map(iris[1:10,],
-#' scale = "range",
+#' scale = "column",
 #' title = "Iris Scaled Heatmap",
 #' axis_label_x = "Plant Parameter",
 #' axis_label_y = "Row ID")
@@ -439,29 +483,15 @@ heat_map_new <- function(popup = FALSE,
   
   # HEAT_MAP_SAVE() ------------------------------------------------------------
   
-  # CYTO_PLOT_SAVE - POPUP -> FALSE
-  if(getOption("heat_map_save")) {
-    popup <- FALSE
+  # HEAT_MAP_SAVE - DRAW ON THE DEVICE OPENED BY HEAT_MAP_SAVE() (PDF MULTIPAGE)
+  if(isTRUE(getOption("heat_map_save"))) {
+    return(invisible(NULL))
   }
-  
+
   # OPEN GRAPHICS DEVICE -------------------------------------------------------
-  
-  # CYTO_PLOT_SAVE
-  if(getOption("heat_map_save")) {
-    # DON'T OPEN NEW DEVICE - USE EXISTING DEVICE (PDF MULTIPAGE)
-    dev_new <- FALSE
-    dev_empty <- dev_empty()
-  # # SHINY - CUSTOM REQUIRES FLAG - DEV_EMPTY() ALWAYS FALSE
-  # } else if(shiny::isRunning()) {
-  #   dev_new <- FALSE
-  #   if(is.null(getOption("heat_map_shiny"))) {
-  #     dev_empty <- TRUE
-  #     cyto_option("heat_map_shiny", TRUE)
-  #   } else {
-  #     dev_empty <- FALSE
-  #   }
+
   # NEW GRAPHICS DEVICE REQUIRED?
-  } else {
+  {
     # NULL -> RSTUDIOGD
     if (dev.cur() == 1) {
       dev.new()
@@ -538,38 +568,17 @@ heat_map_new <- function(popup = FALSE,
         dev_empty <- TRUE
       }
     }
-    # OPEN NEW GRAPHICS DEVICE
-    if (dev_new != FALSE) {
-      # POPUP DEVICE
-      if (dev_new == "popup") {
-        tryCatch(
-          suppressWarnings(
-            dev.new(
-              height = popup_size[1],
-              width = popup_size[2],
-              unit = "in",
-              noRStudioGD = TRUE,
-              ...
-            )
-          )
+    # OPEN NEW POPUP GRAPHICS DEVICE - OTHER DEVICES ARE REUSED
+    if (identical(dev_new, "popup")) {
+      suppressWarnings(
+        dev.new(
+          height = popup_size[1],
+          width = popup_size[2],
+          unit = "in",
+          noRStudioGD = TRUE,
+          ...
         )
-      # NON-POPUP DEVICE - RSTUDIO | SHINY (CAIRO)
-      } else if(dev_new == "rstudio") {
-        # dev_ind <- which(
-        #   grepl(
-        #     dev_new,
-        #     names(dev.list()),
-        #     ignore.case = TRUE
-        #   )
-        # )
-        # if (length(dev_ind) != 0) {
-        #   dev.off(dev.list()[dev_ind])
-        # } else {
-        #   graphics.off()
-        # }
-        # NEW DEVICE
-        # dev.new(noRStudioGD = FALSE)
-      }
+      )
     }
   }
   
