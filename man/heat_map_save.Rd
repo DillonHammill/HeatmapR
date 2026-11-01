@@ -12,13 +12,14 @@ heat_map_save(
   res = 300,
   multiple = FALSE,
   layout = NULL,
+  x = NULL,
   ...
 )
 }
 \arguments{
 \item{save_as}{name of the file to which the plot should be saved (including
-the file extension). Supported file formats include png, tiff, jpeg, svg
-and pdf.}
+the file extension). Supported file formats include png, tiff (or tif),
+jpeg (or jpg), svg and pdf. File extensions are not case sensitive.}
 
 \item{width}{numeric indicating the width of exported plot in \code{units},
 set to 7 by default for image with width of 7 inches.}
@@ -27,17 +28,26 @@ set to 7 by default for image with width of 7 inches.}
 \code{units}, set to 7 by default for image with height of 7 inches.}
 
 \item{units}{units to be used to set plot size, can be either pixels
-(\code{px}), inches (\code{inches}), centimetres (\code{cm}) or millimetres
-(\code{mm}). Set to \code{"in"} by default. Units cannot be altered for
-\code{svg} and \code{pdf} graphics devices.}
+(\code{"px"}), inches (\code{"in"}), centimetres (\code{"cm"}) or
+millimetres (\code{"mm"}). Set to \code{"in"} by default. Units cannot be
+altered for \code{svg} and \code{pdf} graphics devices.}
 
 \item{res}{resolution in dpi, set to 300 by default.}
 
 \item{multiple}{logical indicating whether multiple pages should be saved to
-separate numbered files, set to \code{TRUE} by default.}
+separate numbered files, set to \code{FALSE} by default.}
 
 \item{layout}{a vector or matrix defining the custom layout of the plot to be
 created using \code{heat_map_layout}, set to NULL by default.}
+
+\item{x}{optional \code{heat_map} object returned by \code{\link{heat_map}}
+(or a list of \code{heat_map} objects to fill a \code{layout}) to draw and
+save immediately. When supplied, the graphics device is closed once the
+heatmap(s) have been drawn and there is no need to call
+\code{heat_map_complete()}. Any active \code{heat_map_custom()} layout
+and the current graphics device are left unchanged. Without a
+\code{layout}, each heatmap is drawn on a separate page, so several
+heatmaps require a pdf file or \code{multiple = TRUE}.}
 
 \item{...}{additional arguments for the appropriate \code{png()},
 \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.}
@@ -52,15 +62,19 @@ Save high resolution images
 \donttest{
 # Save Heatmap
 heat_map_save(file.path(tempdir(), "Heatmap.png"),
-height = 7, 
+height = 7,
 width = 5)
 
 # Construct Heatmap
 heat_map(iris[1:10,],
-scale = "range",
+scale = "column",
 title = "Iris Heatmap",
 axis_label_x = "Plant Parameter",
 axis_label_y = "Row ID")
+
+# Save an existing heatmap
+hm <- heat_map(mtcars, scale = "column", popup = FALSE)
+heat_map_save(file.path(tempdir(), "mtcars.pdf"), x = hm)
 }
 }
 \author{

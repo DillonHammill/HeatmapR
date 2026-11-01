@@ -1,0 +1,55 @@
+# SHARED TEST HELPERS ----------------------------------------------------------
+
+# Draw a heatmap on a null device and return the heat_map object
+draw <- function(...) {
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  suppressMessages(heat_map(..., popup = FALSE))
+}
+
+# Deterministic test data with row and column names
+test_matrix <- function(nrow = 6,
+                        ncol = 10) {
+  n <- nrow * ncol
+  matrix(
+    round(10 * sin(seq_len(n)) + seq_len(n) %% 7, 3),
+    nrow = nrow,
+    ncol = ncol,
+    dimnames = list(
+      paste0("Row", seq_len(nrow)),
+      paste0("Col", seq_len(ncol))
+    )
+  )
+}
+
+# Arguments of the graphics calls recorded in a heat_map object, e.g.
+# drawn(hm, "C_rect") returns one list of arguments per rect() call
+drawn <- function(hm,
+                  fun) {
+  calls <- hm[[1]]
+  keep <- vapply(
+    calls,
+    function(z) {
+      identical(z[[2]][[1]]$name, fun)
+    },
+    logical(1)
+  )
+  lapply(
+    calls[keep],
+    function(z) {
+      z[[2]][-1]
+    }
+  )
+}
+
+# All text drawn with text() in a heat_map object
+drawn_text <- function(hm) {
+  unlist(
+    lapply(
+      drawn(hm, "C_text"),
+      function(z) {
+        as.character(z[[2]])
+      }
+    )
+  )
+}

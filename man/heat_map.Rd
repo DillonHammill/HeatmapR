@@ -45,7 +45,10 @@ heat_map(
   cell_col_palette = c("red", "blue", "green", "orange", "magenta", "purple"),
   cell_col_scale,
   cell_col_scale_limits = NULL,
+  cell_col_scale_center = NULL,
   cell_size_scale_limits = NULL,
+  cell_size_scale_method = "linear",
+  cell_size_scale_range = c(0, 1),
   cell_col_alpha = 1,
   cell_col_empty = "white",
   cell_border_line_type = 1,
@@ -141,9 +144,12 @@ heat_map(
 \item{x}{matrix or data.frame containing the data to display in the heatmap.}
 
 \item{scale}{logical indicating whether the data should be scaled prior to
-constructing the heatmap. Addition options include \code{"column"} or
-\code{"row"} to indicate whether scaling should be performed across
-\code{rows} or \code{columns}.}
+constructing the heatmap (\code{TRUE} scales each column). Additional
+options include \code{"column"} or \code{"row"} to indicate whether
+scaling should be performed within each column or each row. For
+convenience, the name of a scaling method (\code{"range"}, \code{"mean"}
+or \code{"zscore"}) can also be supplied to apply that method to each
+column.}
 
 \item{scale_method}{indicates the type of scaling to perform on \code{rows}
 or \code{columns} as indicated by \code{scale}, options include
@@ -164,12 +170,16 @@ by default. See \code{?hclust} for alternatives.}
 decimal places by default}
 
 \item{tree}{options include \code{"row"}, \code{"y"}, \code{"column"},
-\code{"x"} or \code{"both"} to indicate the axes for which dendrograms
-should be constructed, set to FALSE by default. This argument overrides the
-\code{tree_x} and \code{tree_y} arguments.}
+\code{"x"} or \code{"both"} (or \code{TRUE}) to indicate the axes for
+which dendrograms should be constructed, set to FALSE by default. This
+argument overrides the \code{tree_x} and \code{tree_y} arguments.}
 
 \item{tree_x}{logical indicating whether dendrograms should be constructed
-for the x axis (columns), set to NULL by default.}
+for the x axis (columns), set to NULL by default. Alternatively, a
+pre-computed \code{hclust} or \code{dist} object describing the columns of
+\code{x}, such as \code{heat_map_info(hm)$tree_x} from a previous
+heatmap. Clusters stored in the \code{hclust} object are kept unless
+\code{tree_cut_x} is supplied.}
 
 \item{tree_size_x}{numeric to control the height of the dendrogram for the x
 axis, set to 1 by default.}
@@ -184,10 +194,21 @@ or absolute cosine distance threshold when \code{dist_method = "cosine"})
 or an integer indicating the desired number of clusters to obtain by
 cutting the x axis dendrogram.
 Alternatively, clusters can be manually defined by specifying the number of
-columns to include in each cluster (e.g., c(3,4,5)), or a vector of cluster
-indices can be supplied to assign each column to a specific cluster (e.g.,
-c(1,1,1,2,2,2,2,3,3,3) for 10 columns in 3 clusters). When a vector of
-indices is supplied, its length must equal the number of columns in \code{x}.}
+columns to include in each cluster in the displayed order (e.g.,
+c(3,4,5)), or a vector of cluster indices can be supplied to assign each
+column to a specific cluster (e.g., c(1,1,1,2,2,2,2,3,3,3) for 10 columns
+in 3 clusters). Cluster indices are supplied in the original column order
+of \code{x} (like \code{bar_values_x}), may be numeric, character or
+factor, and columns are regrouped so that each cluster is contiguous,
+ordered from left to right. When a vector of indices is supplied, its
+length must equal the number of columns in \code{x}; if its length also
+matches a valid set of cluster sizes, it is treated as cluster indices.
+Named indices are matched to the column names of \code{x}. If a
+dendrogram is requested, clusters that are contiguous in the dendrogram
+order keep that order; otherwise the dendrogram is not drawn. Clusters
+are always numbered, and labelled by \code{tree_label_text_x}, in the
+displayed order from left to right, which may differ from the supplied
+indices when the dendrogram order is kept.}
 
 \item{tree_split_x}{a numeric to control the spacing between x axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
@@ -207,7 +228,7 @@ labels, set to "grey40" by default.}
 axis tree cluster labels, set to 1 by default to use solid colours.}
 
 \item{tree_label_text_x}{a vector of text to include in the x axis tree
-cluster labels, set to NA by default.}
+cluster labels from left to right, set to NA by default.}
 
 \item{tree_label_text_font_x}{a vector of font types to use for text in x
 axis cluster labels, set to 1 by default for plain text. See \code{font} in
@@ -224,7 +245,11 @@ transparency of text in x axis cluster labels, set to 1 by default to use
 solid colours.}
 
 \item{tree_y}{logical indicating whether dendrograms should be constructed
-for the y axis (rows), set to NULL by default.}
+for the y axis (rows), set to NULL by default. Alternatively, a
+pre-computed \code{hclust} or \code{dist} object describing the rows of
+\code{x}, such as \code{heat_map_info(hm)$tree_y} from a previous
+heatmap. Clusters stored in the \code{hclust} object are kept unless
+\code{tree_cut_y} is supplied.}
 
 \item{tree_size_y}{numeric to control the width of the dendrogram for the y
 axis, set to 1 by default.}
@@ -239,10 +264,20 @@ or absolute cosine distance threshold when \code{dist_method = "cosine"})
 or an integer indicating the desired number of clusters to obtain by
 cutting the y axis dendrogram.
 Alternatively, clusters can be manually defined by specifying the number of
-rows to include in each cluster (e.g., c(3,4,5)), or a vector of cluster
-indices can be supplied to assign each row to a specific cluster (e.g.,
-c(1,1,1,2,2,2) for 6 rows in 2 clusters). When a vector of indices is
-supplied, its length must equal the number of rows in \code{x}.}
+rows to include in each cluster in the displayed order, starting from the
+bottom of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
+be supplied to assign each row to a specific cluster (e.g., c(1,1,1,2,2,2)
+for 6 rows in 2 clusters). Cluster indices are supplied in the original
+row order of \code{x} (like \code{bar_values_y}), may be numeric,
+character or factor, and rows are regrouped so that each cluster is
+contiguous, ordered from the bottom of the heatmap to the top. When a
+vector of indices is supplied, its length must equal the number of rows in
+\code{x}, and named indices are matched to the row names of \code{x}. If
+a dendrogram is requested, clusters that are contiguous in the dendrogram
+order keep that order; otherwise the dendrogram is not drawn. Clusters are
+always numbered, and labelled by \code{tree_label_text_y}, in the
+displayed order from the bottom of the heatmap to the top, which may
+differ from the supplied indices when the dendrogram order is kept.}
 
 \item{tree_split_y}{a numeric to control the spacing between y axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
@@ -262,7 +297,8 @@ labels, set to "grey40" by default.}
 axis tree cluster labels, set to 1 by default to use solid colours.}
 
 \item{tree_label_text_y}{a vector of text to include in the y axis tree
-cluster labels, set to NA by default.}
+cluster labels from the bottom of the heatmap to the top, set to NA by
+default.}
 
 \item{tree_label_text_font_y}{a vector of font types to use for text in y
 axis cluster labels, set to 1 by default for plain text. See \code{font} in
@@ -279,7 +315,9 @@ transparency of text in y axis cluster labels, set to 1 by default to use
 solid colours.}
 
 \item{cell_shape}{indicates the shape to use for the cells in the heatmap,
-options include \code{"rect"}, \code{"circle"} or \code{"diamond"}.}
+options include \code{"rect"}, \code{"circle"} or \code{"diamond"}.
+Alternatively, a matrix of the same dimensions as \code{x} containing the
+shape to use for each cell.}
 
 \item{cell_size}{logical indicating whether each cell in the heatmap should
 be scaled by the value in \code{x}, set to FALSE by default. Alternatively,
@@ -287,24 +325,52 @@ a matrix of the same dimensions as \code{x} containing the values by which
 the size of each cell should be scaled.}
 
 \item{cell_col_palette}{a vector of colours from which colours are selected
-for columns containing non-numeric data.}
+for columns containing non-numeric data. Alternatively, the name of a
+palette listed in \code{\link[grDevices]{hcl.pals}} (e.g. \code{"Dark 3"})
+or a function that returns \code{n} colours.}
 
 \item{cell_col_scale}{a vector of colours to use for the colour scale of
 numeric values, set to a hybrid colour-blind friendly viridis colour
-palette by default.}
+palette by default. Alternatively, the name of a palette listed in
+\code{\link[grDevices]{hcl.pals}} (e.g. \code{"viridis"} or
+\code{"Blue-Red 3"}), or a function created by
+\code{\link[grDevices]{colorRamp}}.}
 
 \item{cell_col_scale_limits}{a numeric vector of length 2 specifying custom
-limits for the colour scale as \code{c(min, max)}. If NULL (default), limits
-are computed from the data before rounding. Custom limits allow you to set
-consistent colour scales across multiple heatmaps or override automatic scaling.}
+limits for the colour scale as \code{c(min, max)}. If NULL (default),
+limits are computed from the data before rounding. Custom limits allow you
+to set consistent colour scales across multiple heatmaps or override
+automatic scaling.}
+
+\item{cell_col_scale_center}{optional numeric value at which to centre the
+colour scale, set to NULL by default. When supplied, the colour scale
+limits are made symmetric around this value so that it maps to the middle
+colour of \code{cell_col_scale}. Useful with diverging palettes such as
+\code{"Blue-Red 3"} and \code{scale_method = "zscore"} (\code{center =
+  0}).}
 
 \item{cell_size_scale_limits}{a numeric vector of length 2 specifying custom
 limits for the size scale as \code{c(min, max)}. If NULL (default), limits
 are computed from the data before rounding. Only used when \code{cell_size}
-is not FALSE. Custom limits allow consistent size scales across multiple heatmaps.}
+is not FALSE. Custom limits allow consistent size scales across multiple
+heatmaps.}
+
+\item{cell_size_scale_method}{indicates how values are mapped to cell sizes,
+either \code{"linear"} (default) to scale the width of each cell with its
+value, or \code{"area"} to scale the area of each cell with its value,
+which is perceptually more accurate.}
+
+\item{cell_size_scale_range}{numeric vector of length 2 indicating the
+smallest and largest relative cell sizes (as a proportion of the cell
+width), set to \code{c(0, 1)} by default. Increasing the lower limit (e.g.
+\code{c(0.1, 1)}) ensures cells with the smallest values remain visible.}
 
 \item{cell_col_alpha}{a numeric to control the fill transparency of cells
-within the heatmap, set to 1 by default to use solid colours.}
+within the heatmap, set to 1 by default to use solid colours. A different
+transparency can be used for each cell by supplying a matrix with the same
+dimensions as \code{x}, or a vector that is recycled down the columns of
+\code{x} (as in \code{matrix()}). Legends use solid colours unless all
+cells share the same transparency.}
 
 \item{cell_col_empty}{a colour to use for missing values in \code{x}, set to
 \code{"white"} by default.}
@@ -325,7 +391,7 @@ borders, set to 1 by default to use solid colours.}
 \item{cell_border_mask}{a matrix of the same dimensions as \code{x} containing
 TRUE/FALSE values indicating whether each cell should have a colored border
 (TRUE) or a transparent border (FALSE), set to NULL by default to apply
-border color to all cells.}
+border color to all cells. Missing values are treated as FALSE.}
 
 \item{cell_text}{logical indicating whether the values in \code{x} should be
 displayed in each cell of the heatmap, set to FALSE by default.}
@@ -337,7 +403,7 @@ to 1 by default. See \code{font} in \code{?par} for alternatives.}
 default.}
 
 \item{cell_text_col}{colour to use for cell text, set to \code{"white"} by
-default,}
+default.}
 
 \item{cell_text_col_alpha}{numeric ranging from 0 to 1 to control the
 transparency of cell text, set to 1 by default to use solid colours for
@@ -358,7 +424,7 @@ columns as determined by hierarchical clustering.}
 axis bar graph label relative to the x axis, set to 0 by default.}
 
 \item{bar_axis_label_font_x}{font to use for the axis label of the x axis bar
-plot, set to 2 by default. See \code{font} in \code{?par} for alternatives.}
+plot, set to 1 by default. See \code{font} in \code{?par} for alternatives.}
 
 \item{bar_axis_label_size_x}{numeric to control the size of the axis text in
 x axis bar plots, set to 1 by default.}
@@ -405,7 +471,7 @@ hierarchical clustering.}
 axis bar graph label relative to the y axis, set to 0 by default.}
 
 \item{bar_axis_label_font_y}{font to use for the axis label of the y axis bar
-plot, set to 2 by default. See \code{font} in \code{?par} for alternatives.}
+plot, set to 1 by default. See \code{font} in \code{?par} for alternatives.}
 
 \item{bar_axis_label_size_y}{numeric to control the size of the axis text in
 y axis bar plots, set to 1 by default.}
@@ -437,9 +503,11 @@ to \code{"black"} by default.}
 \item{bar_line_col_alpha_y}{numeric ranging from 0 to 1 to control the
 transparency of bar borders in y axis bar plot, set to 1 by default.}
 
-\item{axis_text_x}{vector of text to use for x axis labels  supplied in the
+\item{axis_text_x}{vector of text to use for x axis labels supplied in the
 order matching the constructed heatmap, set to NULL by default to use the
-column names of \code{x}.}
+column names of \code{x}. Missing values (\code{NA}) are drawn as empty
+labels. An \code{expression} can be supplied for mathematical
+annotation (see \code{?plotmath}).}
 
 \item{axis_text_side_x}{indicates whether the x axis text should be on the
 \code{1 - "bottom"} or \code{3 - "top"} of the heatmap, set to
@@ -485,9 +553,12 @@ colours.}
 \item{axis_ticks_length_x}{numeric to control the length of the x axis ticks,
 set to 1 by default.}
 
-\item{axis_text_y}{vector of text to use for y axis labels  supplied in the
-order matching the constructed heatmap, set to NULL by default to use the
-row names of \code{x}.}
+\item{axis_text_y}{vector of text to use for y axis labels supplied in the
+order matching the constructed heatmap (from bottom to top), set to NULL
+by default to use the row names of \code{x}, or the row indices when
+\code{x} has no row names. Missing values (\code{NA}) are drawn as empty
+labels. An \code{expression} can be supplied for mathematical
+annotation (see \code{?plotmath}).}
 
 \item{axis_text_side_y}{indicates whether the y axis text should be on the
 \code{2 - "left"} or \code{4 - "right"} of the heatmap, set to
@@ -509,7 +580,7 @@ transparency of y axis text labels, set to 1 by default to use solid text
 colours.}
 
 \item{axis_text_angle_y}{integer to control the angle of y axis text labels
-relative to the y axis, set to 3 by default. See \code{las} in \code{?par}
+relative to the y axis, set to 1 by default. See \code{las} in \code{?par}
 for alternatives.}
 
 \item{axis_text_adjust_y}{numeric to adjust position y axis text relative to
@@ -545,7 +616,7 @@ title, set to 2 by default. See \code{font} in \code{?par} for
 alternatives.}
 
 \item{title_text_size}{numeric to control the size of the text in the heatmap
-title, set to 1.2 by default.}
+title, set to 1.5 by default.}
 
 \item{title_text_col}{colour to use for text in heatmap title, set to
 \code{"black"} by default.}
@@ -555,18 +626,23 @@ transparency of text in heatmap title, set to 1 by default for solid
 colours.}
 
 \item{legend}{logical indicating whether to include a legend in the heatmap,
-set to TRUE by default. Alternatively, \code{"size"}, \code{"colour"} or
-\code{"both"} to indicate the type(s) of legends to include in the heatmap.}
+set to TRUE by default to include colour and size legends.
+Alternatively, a character vector containing any of \code{"colour"},
+\code{"size"}, \code{"both"} (colour and size) or \code{"levels"} to
+indicate the type(s) of legends to include in the heatmap. The
+\code{"levels"} legend shows the colours assigned to values in
+non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
+\code{FALSE}, \code{NA} or \code{"none"} to remove the legend.}
 
 \item{legend_size}{numeric to control the amount of space allocated to the
 legend, set to 1 by default.}
 
 \item{legend_col_scale_size}{numeric to control the width of the legend
 colour scale relative to the allocated space for the legend, set to 1 by
-default. legend_title = NULL,}
+default.}
 
-\item{legend_title}{a vector of length two containing text to be displayed
-above the cell colour and size legends respectively.}
+\item{legend_title}{a vector of up to three elements containing text to be
+displayed above the cell colour, size and levels legends respectively.}
 
 \item{legend_title_text_font}{integer to control the font face for the
 heatmap legends, set to 2 by default for bold font. See \code{font} in
@@ -600,10 +676,17 @@ a popup window, set to TRUE by default.}
 \item{popup_size}{vector to control the height and width of the popup window
 in inches, set to \code{c(7,7)}.}
 
-\item{...}{not in use.}
+\item{...}{additional arguments passed to \code{\link{heat_map_clust}} (and
+on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}).}
 }
 \value{
-a recorded heatmap.
+an object of class \code{heat_map} returned invisibly. The object
+is the \code{recordedplot} of the heatmap (so it can still be used with
+\code{\link[grDevices]{replayPlot}}), and can be redrawn with
+\code{print()} or \code{plot()} or saved with
+\code{\link{heat_map_save}}. The data used to construct the heatmap,
+including row and column orders, cluster assignments, dendrograms and
+cell colours, can be extracted with \code{\link{heat_map_info}}.
 }
 \description{
 Create a complex heatmap using base graphics
@@ -624,6 +707,24 @@ heat_map(
   bar_fill_y = rainbow(32)
  )
 
+# Diverging colour scale centred at zero for z-scores
+hm <- heat_map(
+  mtcars,
+  scale = "column",
+  scale_method = "zscore",
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_center = 0,
+  tree = "both",
+  tree_cut_y = 4,
+  popup = FALSE
+)
+
+# Extract cluster assignments and display order
+heat_map_info(hm)$row_clusters
+
+}
+\seealso{
+\code{\link{heat_map_info}}, \code{\link{heat_map_save}}
 }
 \author{
 Dillon Hammill (dillon.hammill21@gmail.com)

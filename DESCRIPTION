@@ -1,8 +1,8 @@
 Package: HeatmapR
 Type: Package
 Title: Create Heatmaps Using Base Graphics
-Version: 1.1.0
-Date: 2026-03-19
+Version: 1.2.0
+Date: 2026-11-01
 Authors@R: 
     person(given = "Dillon",
            family = "Hammill",
@@ -22,7 +22,7 @@ Description: Provides a lightweight framework for creating high quality, complex
 URL: https://dillonhammill.github.io/HeatmapR/
 BugReports: https://github.com/DillonHammill/HeatmapR/issues
 Depends:
-  R (>= 3.5)
+  R (>= 3.6.0)
 Imports:
   methods,
   stats,
@@ -36,7 +36,8 @@ RoxygenNote: 7.3.3
 Language: en-GB
 Suggests: 
     covr,
-    testthat,
+    testthat (>= 3.1.5),
     knitr,
-    rmarkdown
+    rmarkdown,
+    vdiffr (>= 1.0.0)
 VignetteBuilder: knitr

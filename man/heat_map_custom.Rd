@@ -25,11 +25,11 @@ column (2) order, set to row order by default.}
 No return value, called for side effects.
 }
 \description{
-\code{heat_map_custom()} is similar to \code{cheat_map_save()} with the
+\code{heat_map_custom()} is similar to \code{heat_map_save()} with the
 exception that it doesn't write the plot to a file. \code{heat_map_custom()}
 opens a new graphics device and sets the desired layout in preparation for
 the addition of heatmaps and other plot objects. Once the custom plot is full
-users MUST run \code{cyto_plot_complete()} to close the graphics device and
+users MUST run \code{heat_map_complete()} to close the graphics device and
 reset any \code{heat_map()} related settings (see example).
 }
 \examples{

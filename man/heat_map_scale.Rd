@@ -10,13 +10,19 @@ heat_map_scale(x, scale = "column", method = "range")
 \item{x}{matrix-like object to be scaled.}
 
 \item{scale}{indicates whether the data should be scaled by \code{"row"} or
-\code{"column"}, set to \code{"column"} by default.}
+\code{"column"}, set to \code{"column"} by default. Abbreviations such as
+\code{"col"} are accepted, as are \code{"x"} and \code{"y"} as aliases for
+\code{"column"} and \code{"row"}.}
 
 \item{method}{type of scaling to perform, can be either \code{'range'},
-\code{'mean'} or \code{'zscore'}. Range scaling normalizes the data to have
-limits between 0 and 1. Mean scaling subtracts the mean (calculated
-excluding missing values) from each value. Z-score scaling subtracts the
-mean from each value and then divides the result by the standard deviation.}
+\code{'mean'} or \code{'zscore'} (unique abbreviations such as \code{"z"}
+are accepted). Range scaling normalizes the data to have limits between 0
+and 1. Mean scaling subtracts the mean (calculated excluding missing
+values) from each value and divides the result by the range. Z-score
+scaling subtracts the mean from each value and then divides the result by
+the standard deviation. Rows or columns with no variation are mapped to
+0.5 for range scaling and 0 for mean and z-score scaling, rather than
+\code{NaN}.}
 }
 \value{
 a matrix or data.frame containing the scaled data.
@@ -36,6 +42,11 @@ method = "mean")
 
 # Z-score scaling
 mtcars_scale_zscore <- heat_map_scale(mtcars,
+method = "zscore")
+
+# Row-wise z-score scaling
+mtcars_scale_rows <- heat_map_scale(mtcars,
+scale = "row",
 method = "zscore")
 
 }

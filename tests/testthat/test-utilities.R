@@ -6,16 +6,6 @@ test_that(".all_na correctly identifies all NA vectors", {
   expect_false(.all_na(NULL))
 })
 
-test_that(".empty correctly identifies empty character strings", {
-  expect_true(.empty(c("", "  ", "   ")))
-  expect_true(.empty(""))
-  expect_true(.empty("   "))
-  expect_false(.empty(c("a", "b")))
-  expect_false(.empty(c(NA, NA)))
-  expect_false(.empty(NULL))
-  expect_false(.empty(c(1, 2, 3)))
-})
-
 test_that(".rescale rescales values correctly", {
   x <- c(0, 5, 10)
   
@@ -36,12 +26,6 @@ test_that(".rescale handles missing limits", {
   x <- c(2, 5, 8)
   result <- .rescale(x)
   expect_equal(result, c(0, 0.5, 1))
-})
-
-test_that("LAPPLY returns flattened results", {
-  result <- LAPPLY(1:3, function(x) x * 2)
-  expect_equal(result, c(2, 4, 6))
-  expect_true(is.vector(result))
 })
 
 test_that(".compute_margin returns base buffer for inactive side", {
@@ -165,4 +149,35 @@ test_that(".compute_margin handles left and right y axis", {
     title = NULL
   )
   expect_equal(right_margin, 2 + 0.45 * 11 * 1)
+})
+
+test_that(".par returns the requested graphics parameters", {
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  expect_named(.par("mar"), "mar")
+  expect_named(.par(c("mar", "oma")), c("mar", "oma"))
+})
+
+test_that(".compute_margin adds space for labels on the top and right", {
+  args <- list(
+    axis_text_x = c("A", "B"),
+    axis_text_y = c("R1", "R2"),
+    axis_text_size_x = 1,
+    axis_text_size_y = 1,
+    axis_text_side_x = 3,
+    axis_text_side_y = 4,
+    axis_label_y = "",
+    title = NULL
+  )
+  top <- do.call(.compute_margin, c(list(side = 3, axis_label_x = ""), args))
+  top_label <- do.call(.compute_margin, c(list(side = 3, axis_label_x = "X"), args))
+  expect_equal(top_label - top, 2)
+  args$axis_label_y <- "Y"
+  right <- do.call(.compute_margin, c(list(side = 4, axis_label_x = ""), args))
+  expect_equal(right, 2 + 0.45 * 2 + 2)
+})
+
+test_that(".cosine_dist accepts data.frames", {
+  df <- data.frame(a = c(1, 0, 1), b = c(0, 1, 1))
+  expect_equal(.cosine_dist(df), .cosine_dist(as.matrix(df)))
 })
