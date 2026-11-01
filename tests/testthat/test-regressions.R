@@ -256,9 +256,16 @@ test_that("heat_map_save() accepts common extensions in any case", {
   skip_on_cran()
   hm <- draw(mtcars)
   exts <- c("jpg", "JPEG", "PNG", "tif")
-  # svg() requires cairo, which is missing on some systems (e.g. macOS
-  # runners without XQuartz)
-  if (isTRUE(capabilities("cairo"))) {
+  # svg() requires cairo, which can fail to load even when
+  # capabilities("cairo") is TRUE (e.g. macOS runners without XQuartz)
+  svg_works <- tryCatch({
+    f0 <- tempfile(fileext = ".svg")
+    suppressWarnings(grDevices::svg(f0))
+    graphics::plot.new()
+    grDevices::dev.off()
+    file.exists(f0)
+  }, error = function(e) FALSE)
+  if (svg_works) {
     exts <- c(exts, "svg")
   }
   for (ext in exts) {
