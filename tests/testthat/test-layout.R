@@ -170,14 +170,15 @@ test_that("axis text can be hidden or partly missing", {
   m <- test_matrix(4, 3)
   info <- heat_map_info(draw(m, axis_text_x = NA, axis_text_y = c("a", NA, "c", NA)))
   expect_equal(info$axis_text_x, rep("", 3))
-  expect_equal(info$axis_text_y, rev(c("a", "", "c", "")))
+  # Given from the top, as info$axis_text_y lists them
+  expect_equal(info$axis_text_y, c("a", "", "c", ""))
   # Missing labels get no tick mark
   hm <- draw(m, axis_text_x = NA, axis_text_y = c("a", NA, "c", NA))
   axes <- drawn(hm, "C_axis")
   expect_length(Filter(function(z) z[[1]] == 1, axes), 0)
   expect_equal(
     unlist(lapply(Filter(function(z) z[[1]] == 2, axes), function(z) z[[3]])),
-    c("a", "c")
+    c("c", "a")
   )
 })
 

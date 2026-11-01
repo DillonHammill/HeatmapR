@@ -521,7 +521,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 ### 2.7 Labelling Chosen Rows and Columns
 
-When a heatmap has too many rows to label them all, `mark_y` (and `mark_x` for columns) labels just the rows you choose, given as names, indices in the original order of the data or a logical vector. The labels replace the axis text: they are spread out beside the heatmap so that they don't overlap, and leader lines connect each label to its row. `mark_labels_y` supplies other text for the labels (e.g. gene symbols), and `mark_line_col` sets the colour of the leader lines.
+When a heatmap has too many rows to label them all, `mark_y` (and `mark_x` for columns) labels just the rows you choose, given as names, positions in the heatmap (rows from the top) or a logical vector in the order of the data. The labels replace the axis text: they are spread out beside the heatmap so that they don't overlap, and leader lines connect each label to its row. `mark_labels_y` supplies other text for the labels (e.g. gene symbols), and `mark_line_col` sets the colour of the leader lines.
 
 ```{r, eval = FALSE}
 set.seed(2)
@@ -1294,7 +1294,7 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13b.png')
 ```
 
-**Method 2: Specify cluster indices** - Provide a vector where each element indicates which cluster that row/column belongs to. Cluster indices are supplied in the original order of the rows/columns of the data (in the same way as `bar_values_x` and `bar_values_y`), and can be numbers, characters or a factor. The rows/columns are regrouped so that each cluster is contiguous in the heatmap:
+**Method 2: Specify cluster indices** - Provide a vector where each element indicates which cluster that row/column belongs to. Numeric indices are given as the heatmap is displayed - columns from the left, rows from the top, in the dendrogram order when a dendrogram is drawn - so you can draw a heatmap, read it, and assign clusters to what you see. Labels given as characters or a factor (e.g. treatments from sample metadata) follow the original order of the data, and named vectors are matched by name. The rows/columns are regrouped so that each cluster is contiguous in the heatmap:
 
 ```{r, eval = FALSE}
 # Manual clustering by assigning cluster indices
@@ -2128,12 +2128,12 @@ each column. Colours show z-score, from dark purple (-1.87) through yellow
 green to dark red (3.21). The highest value is 3.21 (Maserati Bora, carb) and
 the lowest is -1.87 (Ford Pantera L, qsec). Rows are ordered by hierarchical
 clustering (euclidean distance, complete linkage). Rows are split into 3
-groups, numbered from the bottom: group 1 (15 rows, e.g. Datsun 710 and Hornet
-4 Drive) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows,
-e.g. Hornet Sportabout and Duster 360) is highest in disp and cyl and lowest in
-gear and drat; group 3 (5 rows, e.g. Mazda RX4 and Mazda RX4 Wag) is highest in
-carb and gear and lowest in qsec and vs. Columns are ordered by hierarchical
-clustering (euclidean distance, complete linkage).
+groups, numbered from the top: group 1 (5 rows, e.g. Maserati Bora and Ford
+Pantera L) is highest in carb and gear and lowest in qsec and vs; group 2 (12
+rows, e.g. AMC Javelin and Dodge Challenger) is highest in disp and cyl and
+lowest in gear and drat; group 3 (15 rows, e.g. Toyota Corolla and Fiat 128) is
+highest in vs and mpg and lowest in cyl and hp. Columns are ordered by
+hierarchical clustering (euclidean distance, complete linkage).
 ```
 
 In a chunk that draws the heatmap, compute the description in an earlier chunk and refer to it, e.g. `fig.alt = as.character(heat_map_describe(hm))`. Clusters are described by the columns in which their mean is highest and lowest (rows, for clusters of columns), and `max_groups` limits how many clusters are described one by one.

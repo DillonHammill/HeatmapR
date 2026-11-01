@@ -43,8 +43,8 @@ test_that("a clustered heatmap is described with its groups", {
   expect_match(txt, "Colours show z-score, from dark purple \\(-1\\.87\\) through yellow green to dark red \\(3\\.21\\)\\.")
   expect_match(txt, "The highest value is 3\\.21 \\(Maserati Bora, carb\\) and the lowest is -1\\.87 \\(Ford Pantera L, qsec\\)\\.")
   expect_match(txt, "Rows are ordered by hierarchical clustering \\(euclidean distance, complete linkage\\)\\.")
-  expect_match(txt, "Rows are split into 3 groups, numbered from the bottom: group 1 \\(15 rows, e\\.g\\. ")
-  expect_match(txt, "is highest in vs and mpg and lowest in cyl and hp")
+  expect_match(txt, "Rows are split into 3 groups, numbered from the top: group 1 \\(5 rows, e\\.g\\. ")
+  expect_match(txt, "\\(15 rows, e\\.g\\. [^)]*\\) is highest in vs and mpg and lowest in cyl and hp")
   expect_match(txt, "Columns are ordered by hierarchical clustering")
   # The groups match the clusters of the heatmap
   hm <- draw(mtcars, scale = "zscore", tree_y = TRUE, tree_cut_y = 3)
@@ -55,7 +55,7 @@ test_that("a clustered heatmap is described with its groups", {
   }
   # Many groups - sizes only
   txt <- describe(mtcars, tree_y = TRUE, tree_cut_y = 6, max_groups = 4)
-  expect_match(txt, "Rows are split into 6 groups, numbered from the bottom, of [0-9]+ to [0-9]+ rows each\\.")
+  expect_match(txt, "Rows are split into 6 groups, numbered from the top, of [0-9]+ to [0-9]+ rows each\\.")
   expect_false(grepl("group 1", txt))
   # Printed as wrapped text
   out <- capture.output(print(heat_map_describe(hm), width = 40))
@@ -84,7 +84,7 @@ test_that("groups are named by their labels or the values that define them", {
   # One numeric column - the mean of each group
   txt <- describe(data.frame(v = c(1, 2, 10, 11), row.names = letters[1:4]),
                   tree_cut_y = c(1, 1, 2, 2))
-  expect_match(txt, "group 1 \\(2 rows: a and b\\) averages 1\\.5")
+  expect_match(txt, "group 1 \\(2 rows: d and c\\) averages 10\\.5")
 })
 
 test_that("colours, missing values, sizes and other columns are described", {

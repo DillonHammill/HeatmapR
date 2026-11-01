@@ -20,7 +20,7 @@ they are displayed from left to right.}
 \item{\code{row_clusters}, \code{col_clusters}: the cluster assigned to
 each row/column in their original order (or \code{NULL} when no clusters
 were defined). Clusters are numbered in the order they are displayed:
-from left to right for columns and from bottom to top for rows.}
+from left to right for columns and from top to bottom for rows.}
 \item{\code{tree_x}, \code{tree_y}: \code{hclust} objects for the x and
 y axis dendrograms (or \code{NULL}). Branch heights are rescaled for
 display.}

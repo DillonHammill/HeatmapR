@@ -63,13 +63,14 @@ test_that("heat_map splits rows and columns with k-means", {
   g <- .kmeans_groups(m, 3)
   info <- heat_map_info(draw(m, tree_kmeans_y = 3))
   expect_equal(unname(info$row_clusters), g)
-  # Rows grouped bottom to top, in their original order within each cluster
-  expect_equal(rev(info$row_order), order(g))
+  # Clusters from the top, rows in their original order (drawn from the
+  # bottom) within each cluster
+  expect_equal(rev(info$row_order), order(-g, seq_along(g)))
   # Clustered within each k-means cluster
   info <- heat_map_info(draw(m, tree_kmeans_y = 3, tree_y = TRUE, tree_label_y = TRUE))
   expect_equal(unname(info$row_clusters), g)
   expect_s3_class(info$tree_y, "hclust")
-  expect_equal(sort(unique(g[rev(info$row_order)][1:20])), 1)
+  expect_equal(sort(unique(g[info$row_order][1:20])), 1)
   # Clustered on the scaled data
   info <- heat_map_info(draw(m, scale = "row", tree_kmeans_y = 2))
   expect_equal(unname(info$row_clusters), .kmeans_groups(heat_map_scale(m, scale = "row"), 2))

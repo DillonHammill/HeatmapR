@@ -59,13 +59,16 @@
 #'   columns to include in each cluster in the displayed order (e.g.,
 #'   c(3,4,5)), or a vector of cluster indices can be supplied to assign each
 #'   column to a specific cluster (e.g., c(1,1,1,2,2,2,2,3,3,3) for 10 columns
-#'   in 3 clusters). Cluster indices are supplied in the original column order
-#'   of \code{x} (like \code{bar_values_x}), may be numeric, character or
-#'   factor, and columns are regrouped so that each cluster is contiguous,
-#'   ordered from left to right. When a vector of indices is supplied, its
-#'   length must equal the number of columns in \code{x}; if its length also
-#'   matches a valid set of cluster sizes, it is treated as cluster indices.
-#'   Named indices are matched to the column names of \code{x}. If a
+#'   in 3 clusters). Numeric cluster indices are given column by column from
+#'   the left of the heatmap as it is displayed without them (in the
+#'   dendrogram order when \code{tree_x} is requested), so clusters can be
+#'   assigned by reading a heatmap. Named indices are matched to the column
+#'   names of \code{x}, and labels (character or factor, e.g. treatments from
+#'   metadata) are given in the original column order of \code{x}. Columns
+#'   are regrouped so that each cluster is contiguous, ordered from left to
+#'   right. When a vector of indices is supplied, its length must equal the
+#'   number of columns in \code{x}; if its length also matches a valid set of
+#'   cluster sizes, it is treated as cluster indices. If a
 #'   dendrogram is requested (\code{tree_x = TRUE}), the columns are clustered
 #'   within each cluster and the clusters are joined at the top of the
 #'   dendrogram, so the clusters act as groups (e.g. treatments) with a
@@ -141,21 +144,24 @@
 #'   cutting the y axis dendrogram.
 #'   Alternatively, clusters can be manually defined by specifying the number of
 #'   rows to include in each cluster in the displayed order, starting from the
-#'   bottom of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
+#'   top of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
 #'   be supplied to assign each row to a specific cluster (e.g., c(1,1,1,2,2,2)
-#'   for 6 rows in 2 clusters). Cluster indices are supplied in the original
-#'   row order of \code{x} (like \code{bar_values_y}), may be numeric,
-#'   character or factor, and rows are regrouped so that each cluster is
-#'   contiguous, ordered from the bottom of the heatmap to the top. When a
-#'   vector of indices is supplied, its length must equal the number of rows in
-#'   \code{x}, and named indices are matched to the row names of \code{x}. If
+#'   for 6 rows in 2 clusters). Numeric cluster indices are given row by row
+#'   from the top of the heatmap as it is displayed without them (in the
+#'   dendrogram order when \code{tree_y} is requested; without a dendrogram
+#'   the last row of \code{x} is at the top). Named indices are matched to the
+#'   row names of \code{x}, and labels (character or factor, e.g. cell types
+#'   from metadata) are given in the original row order of \code{x}. Rows are
+#'   regrouped so that each cluster is contiguous, the first cluster at the
+#'   top. When a vector of indices is supplied, its length must equal the
+#'   number of rows in \code{x}. If
 #'   a dendrogram is requested (\code{tree_y = TRUE}), the rows are clustered
 #'   within each cluster and the clusters are joined at the top of the
 #'   dendrogram (e.g. cells grouped by cell type, each with its own
 #'   dendrogram); a supplied \code{hclust} or \code{dist} object is kept only
 #'   when the clusters are contiguous in its order. Clusters are
 #'   always numbered, and labelled by \code{tree_label_text_y}, in the
-#'   displayed order from the bottom of the heatmap to the top, which may
+#'   displayed order from the top of the heatmap to the bottom, which may
 #'   differ from the supplied indices when the dendrogram order is kept.
 #' @param tree_kmeans_y number of k-means clusters to split the rows of
 #'   \code{x} into, an alternative to \code{tree_cut_y} that is quick for many
@@ -185,8 +191,9 @@
 #' @param tree_label_col_alpha_y numeric to control the transparency of the y
 #'   axis tree cluster labels, set to 1 by default to use solid colours.
 #' @param tree_label_text_y a vector of text to include in the y axis tree
-#'   cluster labels from the bottom of the heatmap to the top, set to NA by
-#'   default.
+#'   cluster labels from the top of the heatmap to the bottom, set to NA by
+#'   default. Other settings with one value per row cluster (colours, fonts
+#'   and sizes) are also given from the top.
 #' @param tree_label_text_font_y a vector of font types to use for text in y
 #'   axis cluster labels, set to 1 by default for plain text. See \code{font} in
 #'   \code{?par} for alternatives.
@@ -398,7 +405,8 @@
 #' @param bar_line_col_alpha_y numeric ranging from 0 to 1 to control the
 #'   transparency of bar borders in y axis bar plot, set to 1 by default.
 #' @param axis_text_x vector of text to use for x axis labels supplied in the
-#'   order matching the constructed heatmap, set to NULL by default to use the
+#'   order matching the constructed heatmap (from left to right), set to NULL
+#'   by default to use the
 #'   column names of \code{x}. Missing values (\code{NA}) are drawn as empty
 #'   labels without a tick mark, so \code{NA} removes the x axis text. An \code{expression} can be supplied for mathematical
 #'   annotation (see \code{?plotmath}).
@@ -440,11 +448,13 @@
 #' @param axis_ticks_length_x numeric to control the length of the x axis ticks,
 #'   set to 1 by default.
 #' @param axis_text_y vector of text to use for y axis labels supplied in the
-#'   order matching the constructed heatmap (from bottom to top), set to NULL
+#'   order matching the constructed heatmap (from top to bottom), set to NULL
 #'   by default to use the row names of \code{x}, or the row indices when
 #'   \code{x} has no row names. Missing values (\code{NA}) are drawn as empty
-#'   labels without a tick mark, so \code{NA} removes the y axis text. An \code{expression} can be supplied for mathematical
-#'   annotation (see \code{?plotmath}).
+#'   labels without a tick mark, so \code{NA} removes the y axis text. An
+#'   \code{expression} can be supplied for mathematical annotation (see
+#'   \code{?plotmath}). Axis text settings with one value per row (e.g.
+#'   \code{axis_text_col_y}) are also given from the top.
 #' @param axis_text_side_y indicates whether the y axis text should be on the
 #'   \code{2 - "left"} or \code{4 - "right"} of the heatmap, set to
 #'   \code{"left"} by default. All other heatmap components, including the tree,
@@ -514,9 +524,10 @@
 #'   tracks on the side of the axis text.
 #' @param annotation_legend logical indicating whether legends should be drawn
 #'   for the annotations, set to TRUE by default.
-#' @param mark_x,mark_y columns or rows to label, as names, indices in the
-#'   original order of \code{x}, or a logical vector with one value per
-#'   column or row. The labels replace the axis text on that axis: they are
+#' @param mark_x,mark_y columns or rows to label, as names, positions in the
+#'   heatmap as it is displayed (columns from the left, rows from the top), or
+#'   a logical vector with one value per column or row in the original order
+#'   of \code{x}. The labels replace the axis text on that axis: they are
 #'   spread out beside the heatmap so that they don't overlap, and leader
 #'   lines connect each label to its column or row. This names a few rows of
 #'   a large heatmap (e.g. marker genes) when there is no room to label every
@@ -527,9 +538,10 @@
 #'   to use the column or row names.
 #' @param mark_line_col colour of the leader lines connecting mark labels to
 #'   their rows or columns, set to \code{"grey40"} by default.
-#' @param zoom_x,zoom_y columns or rows to enlarge, as names, indices in the
-#'   original order of \code{x}, or a logical vector with one value per column
-#'   or row. Every row from the first to the last of these in the displayed
+#' @param zoom_x,zoom_y columns or rows to enlarge, as names, positions in the
+#'   heatmap as it is displayed (columns from the left, rows from the top), or
+#'   a logical vector with one value per column or row in the original order
+#'   of \code{x}. Every row from the first to the last of these in the displayed
 #'   order is enlarged, so giving the first and last rows of a band is enough
 #'   (e.g. a cluster from \code{tree_cut_y}). The band is outlined on the
 #'   heatmap and drawn again in a larger panel on the axis text side, joined to
@@ -895,6 +907,9 @@ heat_map <- function(x,
   # ARGUMENTS PASSED THROUGH ... ARE ONLY USED BY dist() AND hclust()
   .check_dots(list(...))
 
+  # ROW CLUSTER LABELS SUPPLIED BY THE USER (READ FROM THE TOP)
+  label_text_user_y <- !.all_na(tree_label_text_y)
+
   # RASTER CELLS
   if(!(isTRUE(cell_raster) || isFALSE(cell_raster) ||
        identical(cell_raster, "auto"))) {
@@ -1122,6 +1137,25 @@ heat_map <- function(x,
 
   # X MANUAL CLUSTERING
   if(length(tree_cut_x) > 1) {
+    # CLUSTER INDICES ARE GIVEN COLUMN BY COLUMN FROM THE LEFT OF THE HEATMAP
+    # AS IT IS SHOWN WITHOUT THEM (K-MEANS CLUSTERS ARE IN THE DATA ORDER)
+    if(is.null(tree_kmeans_x) &&
+       .display_indices(tree_cut_x, ncol(x), colnames(x))) {
+      shown <- if(group_x) {
+        num_cols[heat_map_clust(
+          x[, num_cols, drop = FALSE],
+          tree = 2,
+          dist = dist_method,
+          method = clust_method,
+          scale = tree_scale_x,
+          order = tree_order_x,
+          ...
+        )$order]
+      } else {
+        col_ind
+      }
+      tree_cut_x <- .display_cut(tree_cut_x, shown)
+    }
     manual <- .manual_clusters(
       tree_cut_x,
       ind = col_ind,
@@ -1201,6 +1235,26 @@ heat_map <- function(x,
 
   # Y MANUAL CLUSTERING
   if(length(tree_cut_y) > 1) {
+    # CLUSTER INDICES ARE GIVEN ROW BY ROW FROM THE TOP OF THE HEATMAP AS IT
+    # IS SHOWN WITHOUT THEM (K-MEANS CLUSTERS ARE IN THE DATA ORDER)
+    if(is.null(tree_kmeans_y) &&
+       .display_indices(tree_cut_y, nrow(x), rownames(x))) {
+      shown <- if(group_y) {
+        heat_map_clust(
+          x[, num_cols, drop = FALSE],
+          tree = 1,
+          dist = dist_method,
+          method = clust_method,
+          scale = tree_scale_y,
+          order = tree_order_y,
+          ...
+        )$order
+      } else {
+        row_ind
+      }
+      tree_cut_y <- .display_cut(tree_cut_y, rev(shown))
+    }
+    # ROWS ARE DRAWN FROM THE BOTTOM BUT CLUSTERS ARE READ FROM THE TOP
     manual <- .manual_clusters(
       tree_cut_y,
       ind = row_ind,
@@ -1208,7 +1262,8 @@ heat_map <- function(x,
       arg = "tree_cut_y",
       margin = "rows",
       keep_order = inherits(tree_y, "hclust"),
-      labels = rownames(x)
+      labels = rownames(x),
+      reverse = TRUE
     )
     # NAMES OF NON-NUMERIC CLUSTERS LABEL THE CLUSTERS BY DEFAULT
     if(.all_na(tree_label_text_y) && !is.null(manual$labels)) {
@@ -1280,6 +1335,23 @@ heat_map <- function(x,
   # CLUSTER ASSIGNMENTS IN DISPLAY ORDER
   cut_x <- if(is.list(tree_x)) tree_x$cut else NULL
   cut_y <- if(is.list(tree_y)) tree_y$cut else NULL
+
+  # SETTINGS FOR EACH ROW CLUSTER ARE GIVEN FROM THE TOP - DRAWN FROM THE
+  # BOTTOM (DEFAULT LABELS FROM tree_cut_y ARE ALREADY IN DRAWING ORDER)
+  if(!is.null(cut_y)) {
+    flip_y <- function(v) {
+      if(length(v) == max(cut_y) && length(v) > 1) rev(v) else v
+    }
+    if(label_text_user_y) {
+      tree_label_text_y <- flip_y(tree_label_text_y)
+    }
+    tree_label_col_y <- flip_y(tree_label_col_y)
+    tree_label_col_alpha_y <- flip_y(tree_label_col_alpha_y)
+    tree_label_text_font_y <- flip_y(tree_label_text_font_y)
+    tree_label_text_size_y <- flip_y(tree_label_text_size_y)
+    tree_label_text_col_y <- flip_y(tree_label_text_col_y)
+    tree_label_text_col_alpha_y <- flip_y(tree_label_text_col_alpha_y)
+  }
 
   # NUMERIC & CHARACTER DATA ---------------------------------------------------
 
@@ -1808,14 +1880,26 @@ heat_map <- function(x,
   # HEATMAP YLIM
   heatmap_ylim <- c(min(y_centers) - 0.5, max(y_centers) + 0.5)
 
+  # Y AXIS TEXT AND ITS SETTINGS ARE GIVEN FROM THE TOP - DRAWN FROM THE BOTTOM
+  flip_rows <- function(v) {
+    if(length(v) == n_row && n_row > 1) rev(v) else v
+  }
+  if(!is.null(axis_text_y)) {
+    axis_text_y <- flip_rows(axis_text_y)
+  }
+  axis_text_font_y <- flip_rows(axis_text_font_y)
+  axis_text_size_y <- flip_rows(axis_text_size_y)
+  axis_text_col_y <- flip_rows(axis_text_col_y)
+  axis_text_col_alpha_y <- flip_rows(axis_text_col_alpha_y)
+
   # ZOOM LENS - A BAND OF COLUMNS/ROWS ENLARGED IN A PANEL ON THE AXIS TEXT
   # SIDE, LABELLED WITH THE AXIS TEXT (OR THEIR NAMES WHEN IT IS HIDDEN)
   .check_zoom_size(zoom_size_x, "zoom_size_x")
   .check_zoom_size(zoom_size_y, "zoom_size_y")
   zoom_x <- .zoom_index(zoom_x, colnames(x), ncol(x), col_ind, axis_text_x,
-                        "zoom_x")
+                        "zoom_x", shown = col_ind)
   zoom_y <- .zoom_index(zoom_y, rownames(x), nrow(x), row_ind, axis_text_y,
-                        "zoom_y")
+                        "zoom_y", shown = rev(row_ind))
   for(ax in c("x", "y")) {
     if(!is.null(get(paste0("zoom_", ax))) &&
        length(get(paste0("mark_", ax))) > 0) {
@@ -2007,8 +2091,10 @@ heat_map <- function(x,
   plot.new()
 
   # MARK LABELS - CHOSEN ROWS/COLUMNS LABELLED ON THE AXIS TEXT SIDE
-  marks_x <- .mark_index(mark_x, colnames(x), ncol(x), mark_labels_x, "mark_x")
-  marks_y <- .mark_index(mark_y, rownames(x), nrow(x), mark_labels_y, "mark_y")
+  marks_x <- .mark_index(mark_x, colnames(x), ncol(x), mark_labels_x, "mark_x",
+                         shown = col_ind)
+  marks_y <- .mark_index(mark_y, rownames(x), nrow(x), mark_labels_y, "mark_y",
+                         shown = rev(row_ind))
   if(!is.null(marks_x)) {
     marks_x$at <- x_centers[match(marks_x$ind, col_ind)]
   }
@@ -2920,7 +3006,7 @@ heat_map <- function(x,
     col_order = col_ind,
     row_clusters = if(!is.null(cut_y)) {
       structure(
-        as.integer(cut_y[match(seq_len(n_row), row_ind)]),
+        max(cut_y) + 1L - as.integer(cut_y[match(seq_len(n_row), row_ind)]),
         names = rownames(x)
       )
     } else {
