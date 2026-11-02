@@ -246,11 +246,11 @@ heat_map_data <- function(x,
     return(NULL)
   }
   seg <- .tree_segments(tree)
-  # CENTRES OF THE LEAVES IN DISPLAY ORDER (LEFT TO RIGHT, BOTTOM TO TOP)
+  # CENTRES OF THE LEAVES IN DISPLAY ORDER (LEFT TO RIGHT, TOP TO BOTTOM)
   centers <- if(axis == "x") {
     unname(info$centers$x[info$col_order])
   } else {
-    unname(info$centers$y[rev(info$row_order)])
+    unname(info$centers$y[info$row_order])
   }
   along <- .map_centers(seg$x, centers)
   along_end <- .map_centers(seg$xend, centers)

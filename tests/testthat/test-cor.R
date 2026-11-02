@@ -64,7 +64,7 @@ test_that("the triangles take any shape", {
   # Kept in the order of the data, the first variable at the top left
   expect_equal(cells$row[cells$display_row == 1][1], "Sepal.Length")
   expect_equal(cells$column[cells$display_col == 1][1], "Sepal.Length")
-  expect_equal(rownames(info$data), rev(colnames(iris)[1:4]))
+  expect_equal(rownames(info$data), colnames(iris)[1:4])
   expect_null(info$tree_x)
   # Arguments in ... replace the defaults
   hm <- draw_cor(mtcars[, 1:4], cell_col_scale = "viridis", legend_title = "cor",

@@ -43,7 +43,7 @@ test_that("a clustered heatmap is described with its groups", {
   expect_match(txt, "Colours show z-score, from dark purple \\(-1\\.87\\) through yellow green to dark red \\(3\\.21\\)\\.")
   expect_match(txt, "The highest value is 3\\.21 \\(Maserati Bora, carb\\) and the lowest is -1\\.87 \\(Ford Pantera L, qsec\\)\\.")
   expect_match(txt, "Rows are ordered by hierarchical clustering \\(euclidean distance, complete linkage\\)\\.")
-  expect_match(txt, "Rows are split into 3 groups, numbered from the top: group 1 \\(5 rows, e\\.g\\. ")
+  expect_match(txt, "Rows are split into 3 groups, numbered from the top: group 1 \\(15 rows, e\\.g\\. ")
   expect_match(txt, "\\(15 rows, e\\.g\\. [^)]*\\) is highest in vs and mpg and lowest in cyl and hp")
   expect_match(txt, "Columns are ordered by hierarchical clustering")
   # The groups match the clusters of the heatmap
@@ -84,7 +84,7 @@ test_that("groups are named by their labels or the values that define them", {
   # One numeric column - the mean of each group
   txt <- describe(data.frame(v = c(1, 2, 10, 11), row.names = letters[1:4]),
                   tree_cut_y = c(1, 1, 2, 2))
-  expect_match(txt, "group 1 \\(2 rows: d and c\\) averages 10\\.5")
+  expect_match(txt, "group 1 \\(2 rows: a and b\\) averages 1\\.5")
 })
 
 test_that("colours, missing values, sizes and other columns are described", {
@@ -150,7 +150,7 @@ test_that("annotations, bars, labels, zoom panels and distributions are describe
   expect_match(txt, "Box plots beside the heatmap show the distribution of the values for each column\\.")
   expect_match(txt, "Bars beside the heatmap show Reads for each row\\.")
   expect_match(txt, "Labelled columns: Col1 and Col2\\.")
-  expect_match(txt, "Rows Row8 to Row3 \\(6 rows\\) are enlarged in a panel beside the heatmap\\.")
+  expect_match(txt, "Rows Row3 to Row8 \\(6 rows\\) are enlarged in a panel beside the heatmap\\.")
   txt <- describe(m, bar_values_x = 1:6, bar_values_y = TRUE, bar_type_y = "violin", zoom_x = 2)
   expect_match(txt, "Bars beside the heatmap show a value for each column\\.")
   expect_match(txt, "Violins beside the heatmap show the distribution of the values for each row\\.")

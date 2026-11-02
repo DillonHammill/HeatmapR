@@ -69,10 +69,11 @@ test_that("mark labels replace the axis text with leader lines", {
   lead <- Filter(function(z) sum(is.na(z[[1]]$x)) == 4, pl)
   expect_length(lead, 1)
   # Right side
-  # Positions count rows from the top - the last rows of m without a dendrogram
+  # Positions count rows from the top - the first rows of m without a
+  # dendrogram
   hm <- draw(m, mark_y = 1:3, axis_text_side_y = "right")
-  expect_equal(text_call(hm, "Row200")[[3]][1], 0)
-  expect_true(all(c("Row200", "Row199", "Row198") %in% drawn_text(hm)))
+  expect_equal(text_call(hm, "Row1")[[3]][1], 0)
+  expect_true(all(c("Row1", "Row2", "Row3") %in% drawn_text(hm)))
   expect_equal(layout_overlaps(heat_map_info(hm)$layout), character(0))
 })
 
@@ -92,9 +93,9 @@ test_that("column marks are vertical below or above the heatmap", {
 test_that("crowded mark labels shrink unless fit_text = FALSE", {
   m <- matrix(sin(seq_len(4000)), 400, 10)
   hm <- draw(m, mark_y = seq(1, 400, by = 4))
-  expect_lt(text_call(hm, "400")[[7]], 1)
+  expect_lt(text_call(hm, "397")[[7]], 1)
   hm <- draw(m, mark_y = seq(1, 400, by = 4), fit_text = FALSE)
-  expect_equal(text_call(hm, "400")[[7]], 1)
+  expect_equal(text_call(hm, "397")[[7]], 1)
 })
 
 test_that("mark arguments are checked", {

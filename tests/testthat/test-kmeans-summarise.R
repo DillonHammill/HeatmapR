@@ -63,9 +63,8 @@ test_that("heat_map splits rows and columns with k-means", {
   g <- .kmeans_groups(m, 3)
   info <- heat_map_info(draw(m, tree_kmeans_y = 3))
   expect_equal(unname(info$row_clusters), g)
-  # Clusters from the top, rows in their original order (drawn from the
-  # bottom) within each cluster
-  expect_equal(rev(info$row_order), order(-g, seq_along(g)))
+  # Clusters from the top, rows in their original order within each cluster
+  expect_equal(info$row_order, order(g, seq_along(g)))
   # Clustered within each k-means cluster
   info <- heat_map_info(draw(m, tree_kmeans_y = 3, tree_y = TRUE, tree_label_y = TRUE))
   expect_equal(unname(info$row_clusters), g)

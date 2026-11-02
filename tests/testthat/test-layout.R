@@ -115,8 +115,9 @@ test_that("bar values follow the columns and rows they describe", {
     bar_fill_y = setNames(c("red", "blue", "red", "blue", "red", "blue"), rownames(m))
   )
   by <- bar_rects(hm, "y")
-  expect_equal(rank(by[[3]]), 1:6)
-  expect_equal(by[[5]], rep(grDevices::adjustcolor(c("red", "blue")), 3))
+  # Drawn from the bottom row (Row6) up
+  expect_equal(rank(by[[3]]), 6:1)
+  expect_equal(by[[5]], rep(grDevices::adjustcolor(c("blue", "red")), 3))
 })
 
 test_that("legends are drawn on the side opposite the y axis text", {

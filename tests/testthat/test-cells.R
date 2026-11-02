@@ -10,8 +10,8 @@ test_that("cell_border_mask selects the cells with borders", {
   m <- test_matrix(2, 3)
   mask <- matrix(c(TRUE, FALSE, FALSE, TRUE, TRUE, FALSE), 2)
   hm <- draw(m, cell_border_mask = mask, cell_border_line_col = "red", legend = FALSE)
-  # Cells are drawn column by column from the top row (row 2) down
-  drawn_mask <- mask[cbind(rep(2:1, 3), rep(1:3, each = 2))]
+  # Cells are drawn column by column from the top row (row 1) down
+  drawn_mask <- mask[cbind(rep(1:2, 3), rep(1:3, each = 2))]
   expect_equal(
     cell_rects(hm, 6)[[6]],
     ifelse(drawn_mask, grDevices::adjustcolor("red"), "transparent")
