@@ -23,8 +23,9 @@
 #' The panel holds every row from the first to the last of the chosen rows in
 #' the display order, so that it enlarges one band of the heatmap.
 #'
-#' @param zoom row/column names, indices in the original order of \code{x}, or
-#'   a logical vector with one value per row/column.
+#' @param zoom row/column names, positions in the displayed order (rows from
+#'   the top, columns from the left), or a logical vector with one value per
+#'   row/column in the original order of \code{x}.
 #' @param names row/column names of \code{x} (or NULL).
 #' @param n number of rows/columns.
 #' @param order data indices in display order (\code{row_ind} or
@@ -32,6 +33,8 @@
 #' @param labels axis text supplied by the user in display order, or NULL to
 #'   label the rows/columns with their names (or indices).
 #' @param arg argument name for error messages.
+#' @param shown indices of the rows (from the top) or columns (from the left)
+#'   in display order, used to resolve positions.
 #'
 #' @return NULL, or a list with the display positions (\code{pos}), data
 #'   indices (\code{ind}) and labels of the enlarged rows/columns.
@@ -42,8 +45,9 @@
                         n,
                         order,
                         labels = NULL,
-                        arg = "zoom_y") {
-  mk <- .mark_index(zoom, names, n, NULL, arg)
+                        arg = "zoom_y",
+                        shown = order) {
+  mk <- .mark_index(zoom, names, n, NULL, arg, shown = shown)
   if(is.null(mk)) {
     return(NULL)
   }

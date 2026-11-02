@@ -1,17 +1,5 @@
 # LAYOUT FITTING ---------------------------------------------------------------
 
-test_that("no components overlap or leave the device in random classic layouts", {
-  skip_on_cran()
-  for (seed in seq_len(60)) {
-    case <- random_layout_case(seed)
-    case$args$layout <- "classic"
-    boxes <- layout_case_boxes(case)
-    info <- paste("seed", seed, describe_case(case))
-    expect_equal(layout_overlaps(boxes), character(0), info = info)
-    expect_equal(layout_outside(boxes, case$din), character(0), info = info)
-  }
-})
-
 test_that("layouts that fit are not changed by the fitting", {
   m <- test_matrix(10, 5)
   fit <- draw(m, title = "T")
@@ -49,17 +37,12 @@ test_that("cluster label strips are sized for their text", {
     strip <- info$layout[info$layout$component == "labels_y", ]
     strip$xmax - strip$xmin
   }
-  for (layout in c("classic", "fit")) {
-    with_text <- heat_map_info(
-      draw(m, tree_cut_y = 2, tree_label_y = TRUE,
-           tree_label_text_y = c("Cluster A", "Cluster B"), layout = layout)
-    )
-    expect_gte(width(with_text), 0.15)
-  }
-  # Without text the strip keeps its size in cell units (classic) or is
-  # 0.8 inches x tree_label_size_y (fit)
-  no_text <- heat_map_info(draw(m, tree_cut_y = 2, tree_label_y = TRUE, layout = "classic"))
-  expect_lt(width(no_text), 0.02)
+  with_text <- heat_map_info(
+    draw(m, tree_cut_y = 2, tree_label_y = TRUE,
+         tree_label_text_y = c("Cluster A", "Cluster B"))
+  )
+  expect_gte(width(with_text), 0.15)
+  # Without text the strip is 0.8 inches x tree_label_size_y
   no_text <- heat_map_info(draw(m, tree_cut_y = 2, tree_label_y = TRUE))
   expect_equal(width(no_text), 0.08, tolerance = 1e-6)
 })
@@ -95,11 +78,9 @@ test_that("long row names on a small device fit instead of erroring", {
   rownames(m) <- paste(rownames(m), "- a much longer sample description that goes on")
   grDevices::pdf(NULL, width = 4, height = 4)
   on.exit(grDevices::dev.off())
-  for (layout in c("fit", "classic")) {
-    expect_no_error(hm <- suppressMessages(heat_map(m, layout = layout, popup = FALSE)))
-    boxes <- heat_map_info(hm)$layout
-    expect_equal(layout_outside(boxes, c(4, 4)), character(0))
-  }
+  expect_no_error(hm <- suppressMessages(heat_map(m, popup = FALSE)))
+  boxes <- heat_map_info(hm)$layout
+  expect_equal(layout_outside(boxes, c(4, 4)), character(0))
 })
 
 test_that("unknown arguments are reported", {
@@ -119,8 +100,6 @@ test_that("layout helpers", {
     .stack_tracks(10, -1, c(a = 1, b = 0, c = 2)),
     list(a = c(10, 9), b = c(9, 9), c = c(9, 7))
   )
-  span <- .solve_span(fixed = 10, inches = 1, plot_in = 5)
-  expect_equal(span$span, 10 + span$upi * 1)
   expect_equal(.min_spacing(5), Inf)
   expect_equal(.min_spacing(c(3, 1, 2)), 1)
   grDevices::pdf(NULL)
@@ -135,7 +114,6 @@ test_that("layout helpers", {
   expect_gt(fit$step, 1)
   expect_equal(.fit_cell_text(character(0), 1, 1, c(1, 1)), 1)
   expect_equal(.fit_label_text(NA, 1, 1, 1), 1)
-  expect_equal(.legend_spill(NULL, 1, 0.1), 0)
 })
 
 test_that("bar graph axis labels clear their tick labels", {

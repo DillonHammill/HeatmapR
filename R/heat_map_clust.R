@@ -28,9 +28,24 @@
 #' @param order how the branches of the dendrogram are ordered:
 #'   \code{"default"} keeps the order from \code{hclust}, \code{"olo"} flips
 #'   branches to minimise the distances between neighbouring leaves (optimal
-#'   leaf ordering; this takes a few seconds for 1000 leaves and grows with the
-#'   cube of the number of leaves) and \code{"mean"} orders branches by their
-#'   mean values as in \code{\link[stats]{heatmap}}.
+#'   leaf ordering) and \code{"mean"} orders branches by their mean values as
+#'   in \code{\link[stats]{heatmap}}. Optimal leaf ordering is exact for up to
+#'   1000 leaves, which takes about a second; its time grows with the cube of
+#'   the number of leaves, so larger trees are ordered in blocks (of 1000
+#'   leaves, down to 100 for the largest trees), each ordered exactly, with the
+#'   blocks then ordered and turned to meet their neighbours. 50,000 leaves
+#'   take about 10 seconds.
+#' @param max the largest number of rows (or columns) clustered exactly, set
+#'   to 5000 by default. Exact clustering needs the distances between every
+#'   pair of rows, so its memory and time grow with the square of their
+#'   number. Larger data is clustered in two stages: a sample of \code{max}
+#'   rows (drawn with a fixed seed, so the result is the same each time) is
+#'   clustered exactly and its dendrogram split into groups of about 200 rows
+#'   of the data, every row joins the group of its nearest group medoid, and
+#'   each group is clustered exactly beneath the sample's dendrogram. The
+#'   dendrogram then shows the structure of the whole data down to the groups,
+#'   and within each group: 100,000 rows take about 5 seconds. Set to
+#'   \code{Inf} to always cluster exactly.
 #' @param ... additional arguments passed to \code{\link{dist}} or
 #'   \code{\link{hclust}}.
 #'
@@ -38,7 +53,9 @@
 #'   the clustering process. Branch heights are rescaled to the range
 #'   \code{[0, 1]} for display. When \code{cut} is supplied, the returned object
 #'   also contains a \code{cut} element holding the cluster assigned to each
-#'   leaf in dendrogram order.
+#'   leaf in dendrogram order. A tree clustered in two stages (more than
+#'   \code{max} rows) has a \code{two_stage} element giving the size of the
+#'   sample and the number of groups.
 #'
 #' @importFrom stats dist hclust as.dist cutree
 #' @importFrom methods formalArgs
@@ -57,10 +74,12 @@ heat_map_clust <- function(x,
                            scale = FALSE,
                            cut = NULL,
                            order = "default",
+                           max = 5000,
                            ...) {
 
   # ARGUMENTS
   .check_order(order)
+  .check_clust_max(max, "max")
   args <- .args_list(...)
 
   # DISTANCE MATRIX -> HCLUST (DIST OBJECTS ARE NUMERIC SO CHECK THEM FIRST)
@@ -111,18 +130,25 @@ heat_map_clust <- function(x,
       )
     }
 
-    # DISTANCE MATRIX
-    d <- .dist_matrix(args[["x"]], dist, ...)
+    # MANY ROWS - CLUSTERED IN TWO STAGES
+    if(nrow(args[["x"]]) > max) {
+      tree <- .hclust_large(args[["x"]], dist = dist, method = method,
+                            max = max, ...)
+      tree <- .tree_order(tree, args[["x"]], order = order, dist = dist, ...)
+    } else {
+      # DISTANCE MATRIX
+      d <- .dist_matrix(args[["x"]], dist, ...)
 
-    # CLUSTERING
-    dots <- list(...)
-    tree <- do.call(
-      "hclust",
-      c(list(d = d, method = method), dots[names(dots) %in% "members"])
-    )
+      # CLUSTERING
+      dots <- list(...)
+      tree <- do.call(
+        "hclust",
+        c(list(d = d, method = method), dots[names(dots) %in% "members"])
+      )
 
-    # LEAF ORDER
-    tree <- .tree_order(tree, args[["x"]], order = order, dist = dist, d = d)
+      # LEAF ORDER
+      tree <- .tree_order(tree, args[["x"]], order = order, dist = dist, d = d)
+    }
     rm(list = "args")
 
   } else {
@@ -240,6 +266,8 @@ heat_map_clust <- function(x,
 #' Hierarchical clustering of the rows of a matrix with unscaled heights
 #'
 #' @param x numeric matrix - rows are clustered.
+#' @param max the largest number of rows clustered exactly - more rows are
+#'   clustered in two stages (see \code{.hclust_large()}).
 #' @param ... arguments passed to \code{dist()} (e.g. \code{p}) or
 #'   \code{hclust()} (\code{members}).
 #'
@@ -249,7 +277,12 @@ heat_map_clust <- function(x,
                         dist = "euclidean",
                         method = "complete",
                         order = "default",
+                        max = Inf,
                         ...) {
+  if(nrow(x) > max) {
+    tree <- .hclust_large(x, dist = dist, method = method, max = max, ...)
+    return(.tree_order(tree, x, order = order, dist = dist, ...))
+  }
   d <- .dist_matrix(x, dist, ...)
   tree <- hclust(d, method = method)
   .tree_order(tree, x, order = order, dist = dist, d = d)
@@ -265,6 +298,8 @@ heat_map_clust <- function(x,
 #' @param x numeric matrix - rows are clustered.
 #' @param groups group of each row, numbered 1, 2, ... in display order.
 #' @param scale passed to \code{.tree_heights()}.
+#' @param max the largest group clustered exactly (see \code{.hclust_raw()}).
+#' @param raw TRUE to keep the heights unscaled.
 #'
 #' @return \code{hclust} object with the cluster of each leaf in display order
 #'   (\code{cut}) and heights scaled for display.
@@ -276,18 +311,21 @@ heat_map_clust <- function(x,
                         method = "complete",
                         scale = FALSE,
                         order = "default",
+                        max = Inf,
+                        raw = FALSE,
                         ...) {
   x <- as.matrix(x)
   n_groups <- max(groups)
-  merge <- matrix(integer(0), ncol = 2)
-  height <- numeric(0)
-  ord <- integer(0)
-  roots <- integer(0)
+  merges <- vector("list", n_groups)
+  heights <- vector("list", n_groups)
+  orders <- vector("list", n_groups)
+  roots <- integer(n_groups)
+  offset <- 0L
   for(g in seq_len(n_groups)) {
     idx <- which(groups == g)
     if(length(idx) == 1) {
-      roots <- c(roots, -idx)
-      ord <- c(ord, idx)
+      roots[g] <- -idx
+      orders[[g]] <- idx
       next
     }
     h <- .hclust_raw(
@@ -295,40 +333,39 @@ heat_map_clust <- function(x,
       dist = dist,
       method = method,
       order = order,
+      max = max,
       ...
     )
     m <- h$merge
-    offset <- nrow(merge)
     leaf <- m < 0
     m[leaf] <- -idx[-m[leaf]]
     m[!leaf] <- m[!leaf] + offset
-    merge <- rbind(merge, m)
-    height <- c(height, h$height)
-    roots <- c(roots, offset + nrow(m))
-    ord <- c(ord, idx[h$order])
+    merges[[g]] <- m
+    heights[[g]] <- h$height
+    orders[[g]] <- idx[h$order]
+    offset <- offset + nrow(m)
+    roots[g] <- offset
   }
+  merge <- do.call(rbind, c(list(matrix(integer(0), ncol = 2)), merges))
+  height <- unlist(heights, use.names = FALSE)
+  ord <- unlist(orders, use.names = FALSE)
   # JOIN THE GROUPS LEFT TO RIGHT AT ONE HEIGHT ABOVE EVERY GROUP
   top <- if(length(height) > 0 && max(height) > 0) 1.1 * max(height) else 1
-  node <- roots[1]
-  for(g in seq_len(n_groups)[-1]) {
-    merge <- rbind(merge, c(node, roots[g]))
-    height <- c(height, top)
-    node <- nrow(merge)
-  }
-  # MERGES IN ORDER OF HEIGHT (AS IN hclust) WHEN CHILDREN STAY BEFORE PARENTS
-  o <- order(height, seq_along(height))
-  rank <- order(o)
-  sorted <- merge[o, , drop = FALSE]
-  sorted[sorted > 0] <- rank[sorted[sorted > 0]]
-  if(all(sorted < seq_len(nrow(sorted)))) {
-    merge <- sorted
-    height <- height[o]
+  if(n_groups > 1) {
+    chain <- matrix(0L, n_groups - 1, 2)
+    node <- roots[1]
+    for(g in seq_len(n_groups)[-1]) {
+      chain[g - 1, ] <- c(node, roots[g])
+      node <- nrow(merge) + g - 1
+    }
+    merge <- rbind(merge, chain)
+    height <- c(height, rep(top, n_groups - 1))
   }
   storage.mode(merge) <- "integer"
   tree <- structure(
     list(
       merge = merge,
-      height = .tree_heights(height, scale = scale),
+      height = height,
       order = ord,
       labels = rownames(x),
       method = method,
@@ -336,6 +373,12 @@ heat_map_clust <- function(x,
     ),
     class = "hclust"
   )
+  # MERGES IN ORDER OF HEIGHT (AS IN hclust) WHEN CHILDREN STAY BEFORE PARENTS
+  tree <- .sort_merges(tree)
+  tree$order <- ord
+  if(!raw) {
+    tree$height <- .tree_heights(tree$height, scale = scale)
+  }
   tree$cut <- structure(
     as.integer(groups[ord]),
     names = rownames(x)[ord]
@@ -377,6 +420,12 @@ heat_map_clust <- function(x,
   if(method == "cosine") {
     return(.cosine_dist(x))
   }
+  # CORRELATIONS AS CROSS-PRODUCTS OF SCALED ROWS - MUCH FASTER THAN cor()
+  # WITH PAIRWISE COMPLETE OBSERVATIONS, WHICH IS ONLY NEEDED WITH MISSING
+  # VALUES
+  if(method %in% c("pearson", "spearman") && !anyNA(x)) {
+    return(.cross_dist(.unit_rows(x, method), method))
+  }
   if(method %in% c("pearson", "spearman", "kendall")) {
     # ONE MINUS THE CORRELATION - ROWS WITHOUT VARIATION ARE UNCORRELATED
     r <- suppressWarnings(
@@ -401,25 +450,38 @@ heat_map_clust <- function(x,
 ## LEAF ORDER ------------------------------------------------------------------
 
 #' Leaf order of an hclust merge matrix (left branches first)
+#'
+#' @param node the merge to start from (the root by default).
+#' @param n_leaves the number of leaves below \code{node}, or more.
+#'
 #' @noRd
-.merge_order <- function(merge) {
+.merge_order <- function(merge,
+                         node = nrow(merge),
+                         n_leaves = nrow(merge) + 1) {
   m <- nrow(merge)
   if(m == 0) {
     return(1L)
   }
-  out <- integer(0)
-  stack <- m
-  while(length(stack) > 0) {
-    node <- stack[length(stack)]
-    stack <- stack[-length(stack)]
-    if(node < 0) {
-      out <- c(out, -node)
+  # PREALLOCATED STACK AND OUTPUT - LINEAR IN THE NUMBER OF LEAVES
+  out <- integer(n_leaves)
+  n_out <- 0L
+  stack <- integer(n_leaves + 1)
+  top <- 1L
+  stack[1] <- node
+  while(top > 0) {
+    z <- stack[top]
+    top <- top - 1L
+    if(z < 0) {
+      n_out <- n_out + 1L
+      out[n_out] <- -z
     } else {
       # RIGHT PUSHED FIRST SO THAT THE LEFT BRANCH IS VISITED FIRST
-      stack <- c(stack, merge[node, 2], merge[node, 1])
+      stack[top + 1L] <- merge[z, 2]
+      stack[top + 2L] <- merge[z, 1]
+      top <- top + 2L
     }
   }
-  out
+  out[seq_len(n_out)]
 }
 
 #' Flip the branches of a tree to give a leaf order
@@ -475,11 +537,23 @@ heat_map_clust <- function(x,
 #' @noRd
 .min_plus <- function(a,
                       b) {
-  out <- matrix(Inf, nrow(a), ncol(b))
-  for(k in seq_len(ncol(a))) {
-    out <- pmin(out, outer(a[, k], b[k, ], "+"))
+  # PLAIN VECTORS IN THE LOOP - pmin() ON MATRICES COPIES ATTRIBUTES EACH TIME
+  r <- nrow(a)
+  times <- rep.int(r, ncol(b))
+  out <- a[, 1] + rep.int(b[1, ], times)
+  for(k in seq_len(ncol(a))[-1]) {
+    out <- pmin.int(out, a[, k] + rep.int(b[k, ], times))
   }
+  dim(out) <- c(r, ncol(b))
   out
+}
+
+#' Row and column of the first smallest value of a matrix (in column-major
+#' order, as which(arr.ind = TRUE))
+#' @noRd
+.first_min <- function(m) {
+  w <- which.min(m) - 1L
+  c((w %% nrow(m)) + 1L, (w %/% nrow(m)) + 1L)
 }
 
 #' Optimal leaf ordering of a tree
@@ -555,7 +629,7 @@ heat_map_clust <- function(x,
     }
   }
   # TRACE BACK FROM THE BEST PAIR OF END LEAVES OF THE ROOT
-  best <- which(cost[[m]] == min(cost[[m]]), arr.ind = TRUE)[1, ]
+  best <- .first_min(cost[[m]])
   root_a <- leaves_of(merge[m, 1])
   root_b <- leaves_of(merge[m, 2])
   out <- integer(0)
@@ -580,7 +654,7 @@ heat_map_clust <- function(x,
     lj <- leaves_of(kids[2])
     total <- outer(cost_from(kids[1], i), cost_from(kids[2], j), "+") +
       D[li, lj, drop = FALSE]
-    km <- which(total == min(total), arr.ind = TRUE)[1, ]
+    km <- .first_min(total)
     stack[[length(stack) + 1]] <- c(kids[2], lj[km[2]], j)
     stack[[length(stack) + 1]] <- c(kids[1], i, li[km[1]])
   }
@@ -608,6 +682,12 @@ heat_map_clust <- function(x,
   }
   if(order == "mean") {
     return(.mean_order(tree, rowMeans(as.matrix(x), na.rm = TRUE)))
+  }
+  # TOO MANY LEAVES TO ORDER EXACTLY - IN BLOCKS
+  if(nrow(tree$merge) + 1 > .OLO_MAX) {
+    n <- nrow(tree$merge) + 1
+    ord <- .olo_large(tree$merge, x, dist = dist, max = .olo_block(n), ...)
+    return(.apply_order(tree, ord))
   }
   if(is.null(d)) {
     d <- .dist_matrix(x, dist, ...)

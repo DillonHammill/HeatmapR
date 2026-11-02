@@ -83,11 +83,10 @@ test_that("heat_map_new opens a new device only when the current one is used", {
   options("heat_map_save" = FALSE)
   grDevices::dev.off()
   # No device open - the default device is opened
-  if (is.null(grDevices::dev.list())) {
-    heat_map_new(popup = FALSE)
-    expect_false(is.null(grDevices::dev.list()))
-    grDevices::dev.off()
-  }
+  grDevices::graphics.off()
+  heat_map_new(popup = FALSE)
+  expect_false(is.null(grDevices::dev.list()))
+  grDevices::dev.off()
   options(old)
 })
 
