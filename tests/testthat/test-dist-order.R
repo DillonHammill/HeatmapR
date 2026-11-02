@@ -131,6 +131,10 @@ test_that("heat_map_clust and heat_map reorder leaves", {
   expect_s3_class(info$tree_y, "hclust")
   expect_error(draw(m, tree_order_y = "best"), "'tree_order_y' must be")
   # Correlation distances in heat_map()
+  # (THE DISTANCES MATCH cor(), BUT TIED DISTANCES - COMMON WITH RANKS - CAN BE
+  # MERGED IN EITHER ORDER, DEPENDING ON THE LAST BITS OF THE ARITHMETIC)
   info <- heat_map_info(draw(m, tree_y = TRUE, dist_method = "spearman"))
-  expect_equal(info$row_order, hclust(as.dist(1 - cor(t(m), method = "spearman")))$order)
+  d <- .dist_matrix(m, "spearman")
+  expect_equal(as.vector(d), as.vector(as.dist(1 - cor(t(m), method = "spearman"))))
+  expect_equal(info$row_order, hclust(d)$order)
 })
