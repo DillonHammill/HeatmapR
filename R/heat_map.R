@@ -39,7 +39,7 @@
 #'   heatmap. Clusters stored in the \code{hclust} object are kept unless
 #'   \code{tree_cut_x} is supplied.
 #' @param tree_size_x numeric to control the height of the dendrogram for the x
-#'   axis, set to 1 by default (0.6 inches in the default fit layout).
+#'   axis, set to 1 by default (0.6 inches).
 #' @param tree_scale_x logical indicating whether the branch heights of the x
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
@@ -59,13 +59,16 @@
 #'   columns to include in each cluster in the displayed order (e.g.,
 #'   c(3,4,5)), or a vector of cluster indices can be supplied to assign each
 #'   column to a specific cluster (e.g., c(1,1,1,2,2,2,2,3,3,3) for 10 columns
-#'   in 3 clusters). Cluster indices are supplied in the original column order
-#'   of \code{x} (like \code{bar_values_x}), may be numeric, character or
-#'   factor, and columns are regrouped so that each cluster is contiguous,
-#'   ordered from left to right. When a vector of indices is supplied, its
-#'   length must equal the number of columns in \code{x}; if its length also
-#'   matches a valid set of cluster sizes, it is treated as cluster indices.
-#'   Named indices are matched to the column names of \code{x}. If a
+#'   in 3 clusters). Numeric cluster indices are given column by column from
+#'   the left of the heatmap as it is displayed without them (in the
+#'   dendrogram order when \code{tree_x} is requested), so clusters can be
+#'   assigned by reading a heatmap. Named indices are matched to the column
+#'   names of \code{x}, and labels (character or factor, e.g. treatments from
+#'   metadata) are given in the original column order of \code{x}. Columns
+#'   are regrouped so that each cluster is contiguous, ordered from left to
+#'   right. When a vector of indices is supplied, its length must equal the
+#'   number of columns in \code{x}; if its length also matches a valid set of
+#'   cluster sizes, it is treated as cluster indices. If a
 #'   dendrogram is requested (\code{tree_x = TRUE}), the columns are clustered
 #'   within each cluster and the clusters are joined at the top of the
 #'   dendrogram, so the clusters act as groups (e.g. treatments) with a
@@ -79,16 +82,14 @@
 #'   \code{tree_kmeans_x = 3}). See \code{tree_kmeans_y}.
 #' @param tree_split_x a numeric to control the spacing between x axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove axis
-#'   tree splits. Each unit is 0.08 inches in the default fit layout and half
-#'   a column in the classic layout.
+#'   tree splits. Each unit is 0.08 inches.
 #' @param tree_label_x logical indicating whether a label should be added for
 #'   each cluster within the x axis tree when \code{tree_cut_x} is specified,
 #'   set to FALSE by default.
 #' @param tree_label_size_x numeric to control the height of the tree cluster
 #'   labels for the x axis tree, set to 0.1 by default. Strips holding label
-#'   text are made tall enough for the text. In the default fit layout the
-#'   strip is at least 0.8 inches x \code{tree_label_size_x} tall, in the
-#'   classic layout \code{tree_label_size_x} cells.
+#'   text are made tall enough for the text; the strip is at least 0.8 inches
+#'   x \code{tree_label_size_x} tall.
 #' @param tree_label_col_x vector of colours to use for x axis tree cluster
 #'   labels, set to "grey40" by default.
 #' @param tree_label_col_alpha_x numeric to control the transparency of the x
@@ -106,13 +107,15 @@
 #'   transparency of text in x axis cluster labels, set to 1 by default to use
 #'   solid colours.
 #' @param tree_y logical indicating whether dendrograms should be constructed
-#'   for the y axis (rows), set to NULL by default. Alternatively, a
+#'   for the y axis (rows), set to NULL by default. Rows are drawn from the
+#'   top in the dendrogram order (as columns are from the left), or in the
+#'   order of \code{x} without a dendrogram. Alternatively, a
 #'   pre-computed \code{hclust} or \code{dist} object describing the rows of
 #'   \code{x}, such as \code{heat_map_info(hm)$tree_y} from a previous
 #'   heatmap. Clusters stored in the \code{hclust} object are kept unless
 #'   \code{tree_cut_y} is supplied.
 #' @param tree_size_y numeric to control the width of the dendrogram for the y
-#'   axis, set to 1 by default (0.6 inches in the default fit layout).
+#'   axis, set to 1 by default (0.6 inches).
 #' @param tree_scale_y logical indicating whether the branch heights of the y
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
@@ -143,21 +146,24 @@
 #'   cutting the y axis dendrogram.
 #'   Alternatively, clusters can be manually defined by specifying the number of
 #'   rows to include in each cluster in the displayed order, starting from the
-#'   bottom of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
+#'   top of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
 #'   be supplied to assign each row to a specific cluster (e.g., c(1,1,1,2,2,2)
-#'   for 6 rows in 2 clusters). Cluster indices are supplied in the original
-#'   row order of \code{x} (like \code{bar_values_y}), may be numeric,
-#'   character or factor, and rows are regrouped so that each cluster is
-#'   contiguous, ordered from the bottom of the heatmap to the top. When a
-#'   vector of indices is supplied, its length must equal the number of rows in
-#'   \code{x}, and named indices are matched to the row names of \code{x}. If
+#'   for 6 rows in 2 clusters). Numeric cluster indices are given row by row
+#'   from the top of the heatmap as it is displayed without them (in the
+#'   dendrogram order when \code{tree_y} is requested; without a dendrogram
+#'   in the order of \code{x}). Named indices are matched to the
+#'   row names of \code{x}, and labels (character or factor, e.g. cell types
+#'   from metadata) are given in the original row order of \code{x}. Rows are
+#'   regrouped so that each cluster is contiguous, the first cluster at the
+#'   top. When a vector of indices is supplied, its length must equal the
+#'   number of rows in \code{x}. If
 #'   a dendrogram is requested (\code{tree_y = TRUE}), the rows are clustered
 #'   within each cluster and the clusters are joined at the top of the
 #'   dendrogram (e.g. cells grouped by cell type, each with its own
 #'   dendrogram); a supplied \code{hclust} or \code{dist} object is kept only
 #'   when the clusters are contiguous in its order. Clusters are
 #'   always numbered, and labelled by \code{tree_label_text_y}, in the
-#'   displayed order from the bottom of the heatmap to the top, which may
+#'   displayed order from the top of the heatmap to the bottom, which may
 #'   differ from the supplied indices when the dendrogram order is kept.
 #' @param tree_kmeans_y number of k-means clusters to split the rows of
 #'   \code{x} into, an alternative to \code{tree_cut_y} that is quick for many
@@ -174,23 +180,22 @@
 #'   the clusters.
 #' @param tree_split_y a numeric to control the spacing between y axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove axis
-#'   tree splits. Each unit is 0.08 inches in the default fit layout and half
-#'   a row in the classic layout.
+#'   tree splits. Each unit is 0.08 inches.
 #' @param tree_label_y logical indicating whether a label should be added for
 #'   each cluster within the y axis tree when \code{tree_cut_y} is specified,
 #'   set to FALSE by default.
 #' @param tree_label_size_y numeric to control the width of the tree cluster
 #'   labels for the y axis tree, set to 0.1 by default. Strips holding label
-#'   text are made wide enough for the text. In the default fit layout the
-#'   strip is at least 0.8 inches x \code{tree_label_size_y} wide, in the
-#'   classic layout \code{tree_label_size_y} cells.
+#'   text are made wide enough for the text; the strip is at least 0.8 inches
+#'   x \code{tree_label_size_y} wide.
 #' @param tree_label_col_y vector of colours to use for y axis tree cluster
 #'   labels, set to "grey40" by default.
 #' @param tree_label_col_alpha_y numeric to control the transparency of the y
 #'   axis tree cluster labels, set to 1 by default to use solid colours.
 #' @param tree_label_text_y a vector of text to include in the y axis tree
-#'   cluster labels from the bottom of the heatmap to the top, set to NA by
-#'   default.
+#'   cluster labels from the top of the heatmap to the bottom, set to NA by
+#'   default. Other settings with one value per row cluster (colours, fonts
+#'   and sizes) are also given from the top.
 #' @param tree_label_text_font_y a vector of font types to use for text in y
 #'   axis cluster labels, set to 1 by default for plain text. See \code{font} in
 #'   \code{?par} for alternatives.
@@ -202,9 +207,21 @@
 #'   transparency of text in y axis cluster labels, set to 1 by default to use
 #'   solid colours.
 #' @param cell_shape indicates the shape to use for the cells in the heatmap,
-#'   options include \code{"rect"}, \code{"circle"} or \code{"diamond"}.
-#'   Alternatively, a matrix of the same dimensions as \code{x} containing the
-#'   shape to use for each cell.
+#'   options include \code{"rect"}, \code{"circle"}, \code{"diamond"},
+#'   \code{"ellipse"}, \code{"number"} or \code{"none"}. Circles, diamonds and
+#'   ellipses stay round on cells that aren't square, sized by the shorter
+#'   side of the cells. Ellipses show values between -1 and 1, such as
+#'   correlations, by their shape - the outline of a bivariate normal
+#'   distribution with that correlation, rising to the right for positive
+#'   values, falling for negative values, and narrower the closer the value is
+#'   to -1 or 1 (a circle at 0); values beyond -1 and 1 are drawn as -1 or 1
+#'   with a warning. \code{"number"} writes the value of each cell (or its
+#'   \code{cell_text}) in the colour of the cell instead of filling it,
+#'   darkened where the colour is too light to read, and \code{"none"} leaves
+#'   the cell empty apart from its \code{cell_text}. Alternatively, a matrix of
+#'   the same dimensions as \code{x} containing the shape to use for each
+#'   cell, e.g. ellipses below the diagonal of a correlation matrix and numbers
+#'   above it (see \code{\link{heat_map_cor}}).
 #' @param cell_size logical indicating whether each cell in the heatmap should
 #'   be scaled by the value in \code{x}, set to FALSE by default. Alternatively,
 #'   a matrix of the same dimensions as \code{x} containing the values by which
@@ -269,7 +286,7 @@
 #'   uses 8 colours across the scale (with the default 4 levels), the next 4,
 #'   then 2, and the most uncertain level a single, nearly grey colour.
 #'   Missing uncertainties are treated as the most uncertain. The colour
-#'   legend becomes a key with one row per uncertainty level (fit layout).
+#'   legend becomes a key with one row per uncertainty level.
 #' @param cell_uncertainty_breaks 1 to 5 increasing thresholds between the
 #'   uncertainty levels, set to NULL by default for thresholds at a quarter,
 #'   half and three quarters of the largest uncertainty (4 levels).
@@ -302,6 +319,14 @@
 #'   \code{cell_border_mask} is supplied.
 #' @param cell_border_line_col_alpha numeric to control the transparency of cell
 #'   borders, set to 1 by default to use solid colours.
+#' @param cell_grid_line_col colour of grid lines drawn around every cell
+#'   (apart from empty cells, see \code{cell_shape = "none"}), behind the
+#'   cells, set to \code{NA} by default to draw no grid. A light
+#'   grid (e.g. \code{"grey85"}) keeps the rows and columns visible when cells
+#'   are drawn as shapes that don't fill them, such as circles, ellipses or
+#'   numbers. The grid uses \code{cell_border_line_type} and
+#'   \code{cell_border_line_width} and is left out, like cell borders, when
+#'   the cells are too small.
 #' @param cell_border_mask a matrix of the same dimensions as \code{x} containing
 #'   TRUE/FALSE values indicating whether each cell should have a colored border
 #'   (TRUE) or a transparent border (FALSE), set to NULL by default to apply
@@ -318,7 +343,7 @@
 #'   transparency of cell text, set to 1 by default to use solid colours for
 #'   cell text.
 #' @param bar_size_x numeric to control the height of x axis bar plot, set to 1
-#'   by default (0.6 inches in the default fit layout).
+#'   by default (0.6 inches).
 #' @param bar_values_x a vector of values to display in x axis bar plot,
 #'   supplied in the order matching the original columns of \code{x} or named
 #'   with the column names of \code{x}. The values supplied to
@@ -364,7 +389,7 @@
 #' @param bar_line_col_alpha_x numeric ranging from 0 to 1 to control the
 #'   transparency of bar borders in x axis bar plot, set to 1 by default.
 #' @param bar_size_y numeric to control the width of y axis bar plot, set to 1
-#'   by default (0.6 inches in the default fit layout).
+#'   by default (0.6 inches).
 #' @param bar_values_y a vector of values to display in y axis bar plot,
 #'   supplied in the order matching the original rownames of \code{x} or named
 #'   with the row names of \code{x}. The values supplied to \code{bar_values_y}
@@ -402,7 +427,8 @@
 #' @param bar_line_col_alpha_y numeric ranging from 0 to 1 to control the
 #'   transparency of bar borders in y axis bar plot, set to 1 by default.
 #' @param axis_text_x vector of text to use for x axis labels supplied in the
-#'   order matching the constructed heatmap, set to NULL by default to use the
+#'   order matching the constructed heatmap (from left to right), set to NULL
+#'   by default to use the
 #'   column names of \code{x}. Missing values (\code{NA}) are drawn as empty
 #'   labels without a tick mark, so \code{NA} removes the x axis text. An \code{expression} can be supplied for mathematical
 #'   annotation (see \code{?plotmath}).
@@ -444,11 +470,13 @@
 #' @param axis_ticks_length_x numeric to control the length of the x axis ticks,
 #'   set to 1 by default.
 #' @param axis_text_y vector of text to use for y axis labels supplied in the
-#'   order matching the constructed heatmap (from bottom to top), set to NULL
+#'   order matching the constructed heatmap (from top to bottom), set to NULL
 #'   by default to use the row names of \code{x}, or the row indices when
 #'   \code{x} has no row names. Missing values (\code{NA}) are drawn as empty
-#'   labels without a tick mark, so \code{NA} removes the y axis text. An \code{expression} can be supplied for mathematical
-#'   annotation (see \code{?plotmath}).
+#'   labels without a tick mark, so \code{NA} removes the y axis text. An
+#'   \code{expression} can be supplied for mathematical annotation (see
+#'   \code{?plotmath}). Axis text settings with one value per row (e.g.
+#'   \code{axis_text_col_y}) are also given from the top.
 #' @param axis_text_side_y indicates whether the y axis text should be on the
 #'   \code{2 - "left"} or \code{4 - "right"} of the heatmap, set to
 #'   \code{"left"} by default. All other heatmap components, including the tree,
@@ -518,9 +546,10 @@
 #'   tracks on the side of the axis text.
 #' @param annotation_legend logical indicating whether legends should be drawn
 #'   for the annotations, set to TRUE by default.
-#' @param mark_x,mark_y columns or rows to label, as names, indices in the
-#'   original order of \code{x}, or a logical vector with one value per
-#'   column or row. The labels replace the axis text on that axis: they are
+#' @param mark_x,mark_y columns or rows to label, as names, positions in the
+#'   heatmap as it is displayed (columns from the left, rows from the top), or
+#'   a logical vector with one value per column or row in the original order
+#'   of \code{x}. The labels replace the axis text on that axis: they are
 #'   spread out beside the heatmap so that they don't overlap, and leader
 #'   lines connect each label to its column or row. This names a few rows of
 #'   a large heatmap (e.g. marker genes) when there is no room to label every
@@ -531,16 +560,17 @@
 #'   to use the column or row names.
 #' @param mark_line_col colour of the leader lines connecting mark labels to
 #'   their rows or columns, set to \code{"grey40"} by default.
-#' @param zoom_x,zoom_y columns or rows to enlarge, as names, indices in the
-#'   original order of \code{x}, or a logical vector with one value per column
-#'   or row. Every row from the first to the last of these in the displayed
+#' @param zoom_x,zoom_y columns or rows to enlarge, as names, positions in the
+#'   heatmap as it is displayed (columns from the left, rows from the top), or
+#'   a logical vector with one value per column or row in the original order
+#'   of \code{x}. Every row from the first to the last of these in the displayed
 #'   order is enlarged, so giving the first and last rows of a band is enough
 #'   (e.g. a cluster from \code{tree_cut_y}). The band is outlined on the
 #'   heatmap and drawn again in a larger panel on the axis text side, joined to
 #'   the band by a wedge, and the enlarged rows are named beside the panel in
 #'   place of the axis text. This shows the detail of a few rows of a large
-#'   heatmap together with the whole. Requires \code{layout = "fit"}; can't be
-#'   combined with \code{mark_x} or \code{mark_y} on the same axis.
+#'   heatmap together with the whole. Can't be combined with \code{mark_x} or
+#'   \code{mark_y} on the same axis.
 #' @param zoom_size_x,zoom_size_y size of the zoom panel relative to the
 #'   heatmap - its height for \code{zoom_x} and its width for \code{zoom_y} -
 #'   between 0.2 and 5, set to 1 by default. Along the band the panel is as long
@@ -580,19 +610,6 @@
 #'   label text should be shrunk to fit the available space when it would
 #'   otherwise overlap, set to TRUE by default. Axis labels that still don't
 #'   fit at half their size are thinned to every second, third, ... label.
-#' @param layout how space is shared between the heatmap and everything around
-#'   it, either \code{"fit"} (the default) or \code{"classic"}. The fit layout
-#'   sizes dendrograms, bar graphs, annotation tracks, the legend and the
-#'   margins in inches from their contents - dendrograms and bar graphs keep
-#'   the same size whatever the shape of the data, the legend is as wide as its
-#'   text, the margins are as wide as the axis text, labels and title, and the
-#'   heatmap body takes the remaining space. In the fit layout
-#'   \code{tree_size_x}, \code{tree_size_y}, \code{bar_size_x} and
-#'   \code{bar_size_y} are multiples of 0.6 inches and \code{legend_size}
-#'   scales the legend keys (colour bars, swatches and size legend shapes). The
-#'   classic layout of HeatmapR 1.1.0 and earlier sizes dendrograms, bar graphs
-#'   and the legend as fractions of the heatmap, so they grow and shrink with
-#'   the number of rows and columns.
 #' @param legend logical indicating whether to include a legend in the heatmap,
 #'   set to TRUE by default to include colour and size legends.
 #'   Alternatively, a character vector containing any of \code{"colour"},
@@ -602,9 +619,9 @@
 #'   non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
 #'   \code{FALSE}, \code{NA} or \code{"none"} to remove the legend.
 #' @param legend_size numeric to control the amount of space allocated to the
-#'   legend, set to 1 by default. In the fit layout (the default) the legend is
-#'   sized from its contents and \code{legend_size} scales the legend keys
-#'   instead.
+#'   legend, set to 1 by default. The legend is sized from its contents and
+#'   \code{legend_size} scales the legend keys (colour bars, swatches and size
+#'   legend shapes).
 #' @param legend_col_scale_size numeric to control the width of the legend
 #'   colour scale relative to the allocated space for the legend, set to 1 by
 #'   default.
@@ -621,7 +638,7 @@
 #'   default) beside the heatmap, opposite the y axis text, or
 #'   \code{"bottom"} below the heatmap with horizontal colour bars and the
 #'   legends side by side (wrapping into rows when they don't fit across the
-#'   figure). \code{"bottom"} requires \code{layout = "fit"}.
+#'   figure).
 #' @param legend_title a vector of up to three elements containing text to be
 #'   displayed above the cell colour, size and levels legends respectively.
 #' @param legend_title_text_font integer to control the font face for the
@@ -770,6 +787,7 @@ heat_map <- function(x,
                      cell_border_line_width = 1,
                      cell_border_line_col = "black",
                      cell_border_line_col_alpha = 1,
+                     cell_grid_line_col = NA,
                      cell_border_mask = NULL,
                      cell_text = FALSE,
                      cell_text_font = 1,
@@ -880,7 +898,6 @@ heat_map <- function(x,
                      cell_glyph_col = "grey10",
                      cell_glyph_fill = "#FFFFFF8C",
                      fit_text = TRUE,
-                     layout = "fit",
                      popup = TRUE,
                      popup_size = c(7,7),
                      ...) {
@@ -913,6 +930,9 @@ heat_map <- function(x,
   # ARGUMENTS PASSED THROUGH ... ARE ONLY USED BY dist() AND hclust()
   .check_dots(list(...))
 
+  # ROW CLUSTER LABELS SUPPLIED BY THE USER (READ FROM THE TOP)
+  label_text_user_y <- !.all_na(tree_label_text_y)
+
   # RASTER CELLS
   if(!(isTRUE(cell_raster) || isFALSE(cell_raster) ||
        identical(cell_raster, "auto"))) {
@@ -930,24 +950,7 @@ heat_map <- function(x,
       call. = FALSE
     )
   }
-  if(legend_side == "bottom" && identical(layout, "classic")) {
-    warning(
-      "legend_side = \"bottom\" requires layout = \"fit\" - the legend is ",
-      "drawn beside the heatmap.",
-      call. = FALSE
-    )
-    legend_side <- "auto"
-  }
   legend_bottom <- legend_side == "bottom"
-
-  # LAYOUT
-  if(!is.character(layout) || length(layout) != 1 ||
-     !layout %in% c("classic", "fit")) {
-    stop(
-      "'layout' must be either \"classic\" or \"fit\".",
-      call. = FALSE
-    )
-  }
 
   # X AXIS TEXT ANGLE - las CODES OR AN ANGLE IN DEGREES
   rot_x <- .axis_rotation(axis_text_angle_x)
@@ -975,7 +978,8 @@ heat_map <- function(x,
   # COLUMN INDICES - DISPLAY ORDER FROM LEFT TO RIGHT
   col_ind <- c(num_cols, char_cols)
 
-  # ROW INDICES - DISPLAY ORDER FROM BOTTOM TO TOP
+  # ROW INDICES - DISPLAY ORDER FROM TOP TO BOTTOM (REVERSED FOR DRAWING ONCE
+  # THE ROWS ARE ORDERED AND CLUSTERED)
   row_ind <- seq_len(nrow(x))
 
   # SCALING --------------------------------------------------------------------
@@ -1157,6 +1161,25 @@ heat_map <- function(x,
 
   # X MANUAL CLUSTERING
   if(length(tree_cut_x) > 1) {
+    # CLUSTER INDICES ARE GIVEN COLUMN BY COLUMN FROM THE LEFT OF THE HEATMAP
+    # AS IT IS SHOWN WITHOUT THEM (K-MEANS CLUSTERS ARE IN THE DATA ORDER)
+    if(is.null(tree_kmeans_x) &&
+       .display_indices(tree_cut_x, ncol(x), colnames(x))) {
+      shown <- if(group_x) {
+        num_cols[heat_map_clust(
+          x[, num_cols, drop = FALSE],
+          tree = 2,
+          dist = dist_method,
+          method = clust_method,
+          scale = tree_scale_x,
+          order = tree_order_x,
+          ...
+        )$order]
+      } else {
+        col_ind
+      }
+      tree_cut_x <- .display_cut(tree_cut_x, shown)
+    }
     manual <- .manual_clusters(
       tree_cut_x,
       ind = col_ind,
@@ -1236,6 +1259,25 @@ heat_map <- function(x,
 
   # Y MANUAL CLUSTERING
   if(length(tree_cut_y) > 1) {
+    # CLUSTER INDICES ARE GIVEN ROW BY ROW FROM THE TOP OF THE HEATMAP AS IT
+    # IS SHOWN WITHOUT THEM (K-MEANS CLUSTERS ARE IN THE DATA ORDER)
+    if(is.null(tree_kmeans_y) &&
+       .display_indices(tree_cut_y, nrow(x), rownames(x))) {
+      shown <- if(group_y) {
+        heat_map_clust(
+          x[, num_cols, drop = FALSE],
+          tree = 1,
+          dist = dist_method,
+          method = clust_method,
+          scale = tree_scale_y,
+          order = tree_order_y,
+          ...
+        )$order
+      } else {
+        row_ind
+      }
+      tree_cut_y <- .display_cut(tree_cut_y, shown)
+    }
     manual <- .manual_clusters(
       tree_cut_y,
       ind = row_ind,
@@ -1312,9 +1354,34 @@ heat_map <- function(x,
     list("Branch support" = .support_key())
   }
 
-  # CLUSTER ASSIGNMENTS IN DISPLAY ORDER
+  # ROWS ARE ORDERED AND CLUSTERED FROM THE TOP, AS THE COLUMNS ARE FROM THE
+  # LEFT, BUT DRAWN FROM THE BOTTOM - THE ROW ORDER, ROW CLUSTERS AND
+  # DENDROGRAM ARE REVERSED FOR DRAWING (heat_map_info() RETURNS THE TREE AS
+  # COMPUTED, ITS FIRST LEAF AT THE TOP)
+  row_ind <- rev(row_ind)
+  tree_y_info <- tree_y
+  tree_y <- .flip_tree(tree_y)
+
+  # CLUSTER ASSIGNMENTS IN DISPLAY ORDER (ROWS FROM THE BOTTOM)
   cut_x <- if(is.list(tree_x)) tree_x$cut else NULL
   cut_y <- if(is.list(tree_y)) tree_y$cut else NULL
+
+  # SETTINGS FOR EACH ROW CLUSTER ARE GIVEN FROM THE TOP - DRAWN FROM THE
+  # BOTTOM (DEFAULT LABELS FROM tree_cut_y ARE ALREADY IN DRAWING ORDER)
+  if(!is.null(cut_y)) {
+    flip_y <- function(v) {
+      if(length(v) == max(cut_y) && length(v) > 1) rev(v) else v
+    }
+    if(label_text_user_y) {
+      tree_label_text_y <- flip_y(tree_label_text_y)
+    }
+    tree_label_col_y <- flip_y(tree_label_col_y)
+    tree_label_col_alpha_y <- flip_y(tree_label_col_alpha_y)
+    tree_label_text_font_y <- flip_y(tree_label_text_font_y)
+    tree_label_text_size_y <- flip_y(tree_label_text_size_y)
+    tree_label_text_col_y <- flip_y(tree_label_text_col_y)
+    tree_label_text_col_alpha_y <- flip_y(tree_label_text_col_alpha_y)
+  }
 
   # NUMERIC & CHARACTER DATA ---------------------------------------------------
 
@@ -1474,19 +1541,11 @@ heat_map <- function(x,
   unc_key <- NULL
   if(!is.null(unc_mat)) {
     unc_breaks <- .uncertainty_breaks(unc_mat, cell_uncertainty_breaks)
-    if(identical(layout, "classic")) {
-      warning(
-        "The uncertainty legend requires layout = \"fit\" - the colour ",
-        "legend shows the colours of certain values.",
-        call. = FALSE
-      )
-    } else {
-      unc_key <- list(
-        n_levels = length(unc_breaks) + 1,
-        labels = .uncertainty_labels(unc_breaks),
-        title = cell_uncertainty_title
-      )
-    }
+    unc_key <- list(
+      n_levels = length(unc_breaks) + 1,
+      labels = .uncertainty_labels(unc_breaks),
+      title = cell_uncertainty_title
+    )
   }
 
   # DISTRIBUTIONS INSIDE THE CELLS - VALUES IN THE ORIENTATION OF x
@@ -1557,27 +1616,23 @@ heat_map <- function(x,
   }
 
   # CELL_SHAPE
-  shapes <- c("circle", "rect", "diamond")
   shape_mat <- NULL
   if(!is.null(dim(cell_shape))) {
     .check_dims(cell_shape, x, "cell_shape")
     shape_mat <- as.matrix(cell_shape)
-    bad <- !shape_mat %in% shapes
+    bad <- !shape_mat %in% .SHAPES
     if(any(bad)) {
-      warning(
-        "'cell_shape' must be either circle, rect or diamond!",
-        call. = FALSE
-      )
+      warning(.shape_message(), call. = FALSE)
       shape_mat[bad] <- "rect"
     }
   } else {
-    if(length(cell_shape) != 1 || !cell_shape %in% shapes) {
-      warning(
-        "'cell_shape' must be either circle, rect or diamond!",
-        call. = FALSE
-      )
+    if(length(cell_shape) != 1 || !cell_shape %in% .SHAPES) {
+      warning(.shape_message(), call. = FALSE)
       cell_shape <- "rect"
     }
+  }
+  if(length(cell_grid_line_col) != 1) {
+    stop("'cell_grid_line_col' must be a single colour or NA.", call. = FALSE)
   }
 
   # CELL_BORDER_MASK
@@ -1777,6 +1832,16 @@ heat_map <- function(x,
       call. = FALSE
     )
   }
+  # ELLIPSES SHOW VALUES FROM -1 TO 1
+  cell_r <- ifelse(cell_num, cell_num_val, NA_real_)
+  if(any(abs(cell_r[cell_shapes == "ellipse"]) > 1 + 1e-8, na.rm = TRUE)) {
+    warning(
+      "Ellipses show values between -1 and 1 (e.g. correlations) - larger ",
+      "values are drawn as -1 or 1.",
+      call. = FALSE
+    )
+  }
+  cell_r <- pmin(pmax(cell_r, -1), 1)
 
   # BORDERS
   border_col_adjusted <- adjustcolor(
@@ -1798,6 +1863,24 @@ heat_map <- function(x,
     rep(NA_character_, length(cell_row))
   } else {
     text_mat[cell_ind]
+  }
+
+  # NUMBERS - THE CELL TEXT (OR THE VALUE) OF EACH "number" CELL, WRITTEN IN
+  # THE COLOUR OF THE CELL
+  cell_number <- cell_shapes == "number" & !cell_missing
+  number_texts <- rep(NA_character_, length(cell_row))
+  number_cols <- rep(NA_character_, length(cell_row))
+  if(any(cell_number)) {
+    number_texts[cell_number] <- ifelse(
+      is.na(cell_texts[cell_number]),
+      ifelse(
+        cell_num[cell_number],
+        .format_number(cell_num_val[cell_number], round),
+        cell_chr_val[cell_number]
+      ),
+      cell_texts[cell_number]
+    )
+    number_cols[cell_number] <- .readable_col(cell_fill[cell_number])
   }
 
   # AXES SIDES -----------------------------------------------------------------
@@ -1851,14 +1934,26 @@ heat_map <- function(x,
   # HEATMAP YLIM
   heatmap_ylim <- c(min(y_centers) - 0.5, max(y_centers) + 0.5)
 
+  # Y AXIS TEXT AND ITS SETTINGS ARE GIVEN FROM THE TOP - DRAWN FROM THE BOTTOM
+  flip_rows <- function(v) {
+    if(length(v) == n_row && n_row > 1) rev(v) else v
+  }
+  if(!is.null(axis_text_y)) {
+    axis_text_y <- flip_rows(axis_text_y)
+  }
+  axis_text_font_y <- flip_rows(axis_text_font_y)
+  axis_text_size_y <- flip_rows(axis_text_size_y)
+  axis_text_col_y <- flip_rows(axis_text_col_y)
+  axis_text_col_alpha_y <- flip_rows(axis_text_col_alpha_y)
+
   # ZOOM LENS - A BAND OF COLUMNS/ROWS ENLARGED IN A PANEL ON THE AXIS TEXT
   # SIDE, LABELLED WITH THE AXIS TEXT (OR THEIR NAMES WHEN IT IS HIDDEN)
   .check_zoom_size(zoom_size_x, "zoom_size_x")
   .check_zoom_size(zoom_size_y, "zoom_size_y")
   zoom_x <- .zoom_index(zoom_x, colnames(x), ncol(x), col_ind, axis_text_x,
-                        "zoom_x")
+                        "zoom_x", shown = col_ind)
   zoom_y <- .zoom_index(zoom_y, rownames(x), nrow(x), row_ind, axis_text_y,
-                        "zoom_y")
+                        "zoom_y", shown = rev(row_ind))
   for(ax in c("x", "y")) {
     if(!is.null(get(paste0("zoom_", ax))) &&
        length(get(paste0("mark_", ax))) > 0) {
@@ -1868,14 +1963,6 @@ heat_map <- function(x,
         call. = FALSE
       )
     }
-  }
-  if((!is.null(zoom_x) || !is.null(zoom_y)) && identical(layout, "classic")) {
-    warning(
-      "The zoom lens requires layout = \"fit\" - nothing is enlarged.",
-      call. = FALSE
-    )
-    zoom_x <- NULL
-    zoom_y <- NULL
   }
   zoom_x <- .zoom_geom(zoom_x, x_centers)
   zoom_y <- .zoom_geom(zoom_y, y_centers)
@@ -2058,8 +2145,10 @@ heat_map <- function(x,
   plot.new()
 
   # MARK LABELS - CHOSEN ROWS/COLUMNS LABELLED ON THE AXIS TEXT SIDE
-  marks_x <- .mark_index(mark_x, colnames(x), ncol(x), mark_labels_x, "mark_x")
-  marks_y <- .mark_index(mark_y, rownames(x), nrow(x), mark_labels_y, "mark_y")
+  marks_x <- .mark_index(mark_x, colnames(x), ncol(x), mark_labels_x, "mark_x",
+                         shown = col_ind)
+  marks_y <- .mark_index(mark_y, rownames(x), nrow(x), mark_labels_y, "mark_y",
+                         shown = rev(row_ind))
   if(!is.null(marks_x)) {
     marks_x$at <- x_centers[match(marks_x$ind, col_ind)]
   }
@@ -2165,7 +2254,6 @@ heat_map <- function(x,
       legend_bottom = legend_bottom,
       legend_spec = legend_spec,
       fit = fit_text,
-      mode = layout,
       title_size = title_text_size,
       axis_label_size_x = axis_label_size_x,
       axis_label_size_y = axis_label_size_y
@@ -2173,12 +2261,11 @@ heat_map <- function(x,
   }
   lay <- .heat_map_layout(layout_inputs())
 
-  # FIT LAYOUT - GAPS BETWEEN CLUSTERS ARE 0.08 INCHES PER UNIT OF tree_split_*,
-  # WHICH NEEDS THE CELL SIZE FROM THE LAYOUT
+  # GAPS BETWEEN CLUSTERS ARE 0.08 INCHES PER UNIT OF tree_split_*, WHICH
+  # NEEDS THE CELL SIZE FROM THE LAYOUT
   split_in <- 0.08
-  if(layout == "fit" &&
-     ((length(unique(cut_x)) > 1 && tree_split_x > 0) ||
-      (length(unique(cut_y)) > 1 && tree_split_y > 0))) {
+  if((length(unique(cut_x)) > 1 && tree_split_x > 0) ||
+     (length(unique(cut_y)) > 1 && tree_split_y > 0)) {
     split_x <- tree_split_x
     split_y <- tree_split_y
     for(pass in seq_len(4)) {
@@ -2366,26 +2453,24 @@ heat_map <- function(x,
     )
   }
 
-  # HEATMAP BORDER
-  heat_map_border(
-    x_splits,
-    y_splits
-  )
-
-  # TITLE & AXIS LABELS - CENTRED ON THE HEATMAP BUT KEPT ON THE DEVICE IN
-  # THE FIT LAYOUT
-  fit_layout <- layout == "fit"
-  title_at <- NA
-  axis_label_x_at <- NA
-  axis_label_y_at <- NA
-  if(fit_layout) {
-    title_at <- .mtext_at(title, title_text_size, title_text_font,
-                          mean(heatmap_xlim), "x")
-    axis_label_x_at <- .mtext_at(axis_label_x, axis_label_size_x,
-                                 axis_label_font_x, mean(heatmap_xlim), "x")
-    axis_label_y_at <- .mtext_at(axis_label_y, axis_label_size_y,
-                                 axis_label_font_y, mean(heatmap_ylim), "y")
+  # HEATMAP BORDER - THE GRID OUTLINES THE CELLS INSTEAD WHEN IT IS DRAWN, SO
+  # THAT EMPTY CELLS (cell_shape = "none") ARE LEFT OPEN
+  grid_drawn <- !is.na(cell_grid_line_col) &&
+    min(lay$cell_in) >= 3 * max(cell_border_line_width) / 96
+  if(!grid_drawn) {
+    heat_map_border(
+      x_splits,
+      y_splits
+    )
   }
+
+  # TITLE & AXIS LABELS - CENTRED ON THE HEATMAP BUT KEPT ON THE DEVICE
+  title_at <- .mtext_at(title, title_text_size, title_text_font,
+                        mean(heatmap_xlim), "x")
+  axis_label_x_at <- .mtext_at(axis_label_x, axis_label_size_x,
+                               axis_label_font_x, mean(heatmap_xlim), "x")
+  axis_label_y_at <- .mtext_at(axis_label_y, axis_label_size_y,
+                               axis_label_font_y, mean(heatmap_ylim), "y")
 
   # TITLE
   if (!is.null(title)) {
@@ -2401,11 +2486,7 @@ heat_map <- function(x,
       ),
       las = 0,
       at = title_at,
-      adj = if(fit_layout) {
-        0.5
-      } else {
-        (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
-      }
+      adj = 0.5
     )
   }
 
@@ -2424,11 +2505,7 @@ heat_map <- function(x,
       ),
       las = 0,
       at = axis_label_x_at,
-      adj = if(fit_layout) {
-        0.5
-      } else {
-        (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
-      }
+      adj = 0.5
     )
   }
 
@@ -2446,11 +2523,7 @@ heat_map <- function(x,
       ),
       las = 0,
       at = axis_label_y_at,
-      adj = if(fit_layout) {
-        0.5
-      } else {
-        (mean(heatmap_ylim) - min(ylim))/diff(range(ylim))
-      }
+      adj = 0.5
     )
   }
 
@@ -2467,6 +2540,18 @@ heat_map <- function(x,
     border_col_cells <- NA_character_
   } else {
     border_col_cells <- border_col_adjusted
+  }
+
+  # GRID LINES AROUND EVERY CELL THAT ISN'T EMPTY, BEHIND THE CELLS
+  cell_gridded <- cell_shapes != "none" | !is.na(cell_texts)
+  if(grid_drawn) {
+    .draw_cell_outlines(
+      x = cell_x[cell_gridded],
+      y = cell_y[cell_gridded],
+      col = cell_grid_line_col,
+      line_type = cell_border_line_type,
+      line_width = cell_border_line_width
+    )
   }
 
   # HEATMAP CELLS - RASTER IMAGES FOR LARGE HEATMAPS OF FULL-SIZE RECTANGLES,
@@ -2495,7 +2580,9 @@ heat_map <- function(x,
       fill = cell_fill,
       border = cell_borders,
       line_type = cell_border_line_type,
-      line_width = cell_border_line_width
+      line_width = cell_border_line_width,
+      cell_in = lay$cell_in,
+      value = cell_r
     )
   }
 
@@ -2527,7 +2614,7 @@ heat_map <- function(x,
   }
 
   # CELL TEXT - SHRUNK TO FIT INSIDE THE CELLS
-  ind <- !is.na(cell_texts)
+  ind <- !is.na(cell_texts) & !cell_number
   if(any(ind)) {
     if(fit_text) {
       cell_text_size <- .fit_cell_text(
@@ -2550,6 +2637,17 @@ heat_map <- function(x,
     )
   }
 
+  # NUMBERS IN THE COLOURS OF THEIR CELLS - SHRUNK TO FIT INSIDE THE CELLS
+  .draw_cell_numbers(
+    x = cell_x[cell_number],
+    y = cell_y[cell_number],
+    labels = number_texts[cell_number],
+    col = number_cols[cell_number],
+    size = cell_text_size_all,
+    font = cell_text_font,
+    cell_in = if(fit_text) lay$cell_in
+  )
+
   # ZOOM LENS - THE BAND, THE WEDGE AND THE ENLARGED CELLS, DRAWN WITH USER
   # CO-ORDINATES THAT PUT THE CELLS OF THE BAND IN THE PANEL
   for(ax in c("x", "y")) {
@@ -2568,6 +2666,15 @@ heat_map <- function(x,
       usr = .zoom_usr(z, ax, heatmap_xlim, heatmap_ylim),
       xpd = NA
     )
+    if(!is.na(cell_grid_line_col) && min(panel_in) >= border_min_in) {
+      .draw_cell_outlines(
+        x = cell_x[panel & cell_gridded],
+        y = cell_y[panel & cell_gridded],
+        col = cell_grid_line_col,
+        line_type = cell_border_line_type,
+        line_width = cell_border_line_width
+      )
+    }
     .draw_cells(
       x = cell_x[panel],
       y = cell_y[panel],
@@ -2580,7 +2687,9 @@ heat_map <- function(x,
         cell_borders_all[panel]
       },
       line_type = cell_border_line_type,
-      line_width = cell_border_line_width
+      line_width = cell_border_line_width,
+      cell_in = panel_in,
+      value = cell_r[panel]
     )
     if(!is.null(split_fill)) {
       .draw_split_cells(
@@ -2609,7 +2718,7 @@ heat_map <- function(x,
         fill = cell_glyph_fill
       )
     }
-    ind <- panel & !is.na(cell_texts)
+    ind <- panel & !is.na(cell_texts) & !cell_number
     if(any(ind)) {
       text(
         x = cell_x[ind],
@@ -2628,10 +2737,22 @@ heat_map <- function(x,
         )
       )
     }
-    if(ax == "x") {
-      heat_map_border(.zoom_splits(x_splits, z$lim), y_splits)
-    } else {
-      heat_map_border(x_splits, .zoom_splits(y_splits, z$lim))
+    ind <- panel & cell_number
+    .draw_cell_numbers(
+      x = cell_x[ind],
+      y = cell_y[ind],
+      labels = number_texts[ind],
+      col = number_cols[ind],
+      size = cell_text_size_all,
+      font = cell_text_font,
+      cell_in = if(fit_text) panel_in
+    )
+    if(is.na(cell_grid_line_col) || min(panel_in) < border_min_in) {
+      if(ax == "x") {
+        heat_map_border(.zoom_splits(x_splits, z$lim), y_splits)
+      } else {
+        heat_map_border(x_splits, .zoom_splits(y_splits, z$lim))
+      }
     }
     par(old_par)
   }
@@ -2992,7 +3113,7 @@ heat_map <- function(x,
     col_order = col_ind,
     row_clusters = if(!is.null(cut_y)) {
       structure(
-        as.integer(cut_y[match(seq_len(n_row), row_ind)]),
+        max(cut_y) + 1L - as.integer(cut_y[match(seq_len(n_row), row_ind)]),
         names = rownames(x)
       )
     } else {
@@ -3007,7 +3128,7 @@ heat_map <- function(x,
       NULL
     },
     tree_x = .info_tree(tree_x),
-    tree_y = .info_tree(tree_y),
+    tree_y = .info_tree(tree_y_info),
     support_x = support_x,
     support_y = support_y,
     zoom_x = zoom_x$ind,
@@ -3020,6 +3141,17 @@ heat_map <- function(x,
     },
     split_data = split_mat,
     sizes = .cell_matrix(cell_sizes, cell_ind, x),
+    shapes = .cell_matrix(cell_shapes, cell_ind, x),
+    centers = list(
+      x = stats::setNames(
+        x_centers[match(seq_len(n_col), col_ind)],
+        colnames(x)
+      ),
+      y = stats::setNames(
+        y_centers[match(seq_len(n_row), row_ind)],
+        rownames(x)
+      )
+    ),
     annotations = list(
       x = annot_x$colours,
       y = annot_y$colours
