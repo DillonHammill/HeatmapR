@@ -752,20 +752,33 @@ as.character.heat_map_description <- function(x,
                              .describe_list(mk$labels, 10), "."))
       }
     }
-    # ZOOM PANELS
+    # ZOOM PANELS - ONE BAND, OR A LIST OF THEM
     zoom <- info[[paste0("zoom_", axis)]]
     if(length(zoom) > 0) {
+      bands <- if(is.list(zoom)) zoom else list(zoom)
+      parts <- vapply(
+        bands,
+        function(z) {
+          if(length(z) == 1) {
+            paste0(what, " ", names[z])
+          } else {
+            paste0(what, "s ", names[z[1]], " to ", names[z[length(z)]],
+                   " (", length(z), " ", what, "s)")
+          }
+        },
+        character(1)
+      )
+      text <- .describe_list(parts, length(parts))
+      text <- paste0(toupper(substr(text, 1, 1)), substring(text, 2))
+      single <- length(bands) == 1 && length(bands[[1]]) == 1
       out <- c(
         out,
         paste0(
-          if(length(zoom) == 1) {
-            paste0(if(axis == "y") "Row " else "Column ", names[zoom], " is")
-          } else {
-            paste0(Whats, " ", names[zoom[1]], " to ",
-                   names[zoom[length(zoom)]], " (", length(zoom), " ",
-                   what, "s) are")
-          },
-          " enlarged in a panel beside the heatmap."
+          text,
+          if(single) " is" else " are",
+          " enlarged in ",
+          if(length(bands) == 1) "a panel" else paste(length(bands), "panels"),
+          " beside the heatmap."
         )
       )
     }
