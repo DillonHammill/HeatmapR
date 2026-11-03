@@ -12,3 +12,6 @@
 vignettes/HeatmapR/
 man/figures/HeatmapR/
 ^GEMINI\.md$
+^src/.*\.o$
+^src/.*\.so$
+^src/.*\.dll$

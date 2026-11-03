@@ -95,14 +95,6 @@ test_that("mean ordering matches stats::heatmap", {
   expect_identical(.tree_order(h, x, "default"), h)
 })
 
-test_that("min-plus products", {
-  set.seed(5)
-  a <- matrix(runif(12), 3)
-  b <- matrix(runif(20), 4)
-  ref <- outer(seq_len(3), seq_len(5), Vectorize(function(i, j) min(a[i, ] + b[, j])))
-  expect_equal(.min_plus(a, b), ref)
-})
-
 test_that("heat_map_clust and heat_map reorder leaves", {
   x <- as.matrix(mtcars)
   d <- dist(scale(x))

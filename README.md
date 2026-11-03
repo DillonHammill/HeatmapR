@@ -57,6 +57,10 @@ graphics approach.
 - **HeatmapR** handles datasets that contain non-numeric or missing
   data, which means you don’t have to spend ages formatting and
   pre-processing the data beforehand.
+- **HeatmapR** clusters large datasets quickly: distances, linkage and
+  optimal leaf ordering run in compiled C++ code, and rows or columns
+  beyond `clust_max` are clustered in two stages, so 100,000 rows take
+  about 2 seconds.
 - **HeatmapR** shows sample or feature metadata as annotation tracks
   (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
   labels and bar plots, and adapts the layout so that labels and legends
@@ -144,6 +148,11 @@ The development version can be installed directly from GitHub:
 ``` r
 devtools::install_github("DillonHammill/HeatmapR")
 ```
+
+The development version contains C++ code, so installing it from GitHub
+needs a compiler:
+[Rtools](https://cran.r-project.org/bin/windows/Rtools/) on Windows or
+the Xcode command line tools on macOS.
 
 ## Usage
 

@@ -36,6 +36,7 @@ As the dimensionality of datasets continues to increase there is a need for visu
 * Unlike other heatmap packages that use base graphics, **HeatmapR** actually returns the plot object instead of an image. This makes it easy to arrange multiple plots in complex layouts without sacrificing resolution, and `heat_map_info()` returns the row/column order and cluster assignments for use in downstream analyses.
 * **HeatmapR** is fully customizable and comes with useful saving API (`heat_map_save()`) to export high resolution images.
 * **HeatmapR** handles datasets that contain non-numeric or missing data, which means you don't have to spend ages formatting and pre-processing the data beforehand.
+* **HeatmapR** clusters large datasets quickly: distances, linkage and optimal leaf ordering run in compiled C++ code, and rows or columns beyond `clust_max` are clustered in two stages, so 100,000 rows take about 2 seconds.
 * **HeatmapR** shows sample or feature metadata as annotation tracks (`annotation_x`, `annotation_y`), alongside dendrograms, cluster labels and bar plots, and adapts the layout so that labels and legends don't overlap. Dendrograms, bar plots, legends and margins are sized in inches from their contents, so they look the same whatever the shape of the data.
 * **HeatmapR** generates publication ready images with minimal manual customization, making it ideal for users that have limited coding experience.
 
@@ -78,6 +79,8 @@ The development version can be installed directly from GitHub:
 ```{r, eval = FALSE, echo = TRUE}
 devtools::install_github("DillonHammill/HeatmapR")
 ```
+
+The development version contains C++ code, so installing it from GitHub needs a compiler: [Rtools](https://cran.r-project.org/bin/windows/Rtools/) on Windows or the Xcode command line tools on macOS.
 
 ## Usage
 

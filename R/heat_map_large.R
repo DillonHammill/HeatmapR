@@ -2,26 +2,28 @@
 
 # Exact hierarchical clustering needs the distances between every pair of
 # rows: memory and time grow with the square of the number of rows (about
-# 800 MB and 7 seconds for 10,000 rows). Above a size limit, rows are
+# 400 MB and 3 seconds for 10,000 rows). Above a size limit, rows are
 # clustered in two stages instead: a sample is clustered exactly, its
 # dendrogram is split into groups, every row joins the group of its nearest
 # group medoid and each group is clustered exactly beneath the sample's
 # dendrogram. Optimal leaf ordering, which grows with the cube of the number
 # of leaves, is exact up to a size limit and works on blocks of the tree
-# above it.
+# above it. Distances, linkage, medoids, the nearest-medoid search and leaf
+# ordering run in compiled code (src/linkage.cpp, src/olo.cpp).
 
 # Largest number of leaves ordered exactly by optimal leaf ordering
-.OLO_MAX <- 1000
+.OLO_MAX <- 2000
 
 #' Block size for the optimal leaf ordering of a tree with n leaves
 #'
-#' Ordering a block of b leaves exactly takes time growing with b^3, so the
-#' n / b blocks of a large tree take time growing with n * b^2. Larger trees
-#' get smaller blocks (down to 100 leaves) to keep the time to seconds.
+#' Ordering a block of b leaves exactly takes time growing with b^3 (about
+#' 0.2 seconds for 1000 leaves), so the n / b blocks of a large tree take time
+#' growing with n * b^2. Larger trees get smaller blocks (down to 100 leaves)
+#' to keep the time to about 3 seconds.
 #'
 #' @noRd
 .olo_block <- function(n) {
-  as.integer(max(100, min(.OLO_MAX, floor(sqrt(3e9 / n)))))
+  as.integer(max(100, min(.OLO_MAX, floor(sqrt(1.5e10 / n)))))
 }
 
 #' Evaluate an expression with a fixed random seed, restoring the caller's
@@ -321,6 +323,172 @@
   )
 }
 
+#' Distances the compiled code computes itself
+#'
+#' Euclidean, Manhattan, maximum and Minkowski distances, and one minus the
+#' correlation (pearson, spearman) or cosine similarity from rows scaled by
+#' \code{.unit_rows()}, for data without missing or infinite values.
+#'
+#' @return list with the matrix to pass (\code{x}), the metric's number
+#'   (\code{code}) and the Minkowski power (\code{q}), or NULL for other
+#'   distances.
+#'
+#' @noRd
+.compiled_metric <- function(x,
+                             dist,
+                             ...) {
+  # (MISSING OR INFINITE VALUES - stats::dist() AND stats::hclust() HANDLE
+  # THEM AS BEFORE)
+  x <- as.matrix(x)
+  if(!is.character(dist) || length(dist) != 1 || !is.numeric(x) ||
+     length(x) == 0 || anyNA(x) || !all(is.finite(range(x)))) {
+    return(NULL)
+  }
+  method <- tolower(dist)
+  q <- list(...)$p
+  if(is.null(q)) {
+    q <- 2
+  }
+  code <- c(euclidean = 1L, manhattan = 2L, maximum = 3L, minkowski = 4L,
+            pearson = 5L, spearman = 5L, cosine = 5L)[method]
+  if(is.na(code) || !is.numeric(q) || length(q) != 1 || !is.finite(q) ||
+     q <= 0) {
+    return(NULL)
+  }
+  if(code == 5L) {
+    x <- .unit_rows(x, method)
+  }
+  if(!is.double(x)) {
+    storage.mode(x) <- "double"
+  }
+  list(
+    x = x,
+    code = code,
+    q = as.double(q),
+    # (dist.method AS THE dist OBJECT WOULD HAVE IT)
+    name = if(method == "cosine") NULL else method
+  )
+}
+
+#' The metric for some of the rows
+#' @noRd
+.metric_rows <- function(metric,
+                         rows) {
+  metric$x <- metric$x[rows, , drop = FALSE]
+  metric
+}
+
+#' Medoid of each group of rows, from distances computed in compiled code
+#'
+#' @param metric from \code{.compiled_metric()}.
+#' @param groups group of each row, numbered 1 to k.
+#'
+#' @return row of the medoid of each group.
+#'
+#' @noRd
+.group_medoids <- function(metric,
+                           groups) {
+  members <- split(
+    seq_along(groups),
+    factor(groups, levels = seq_len(max(groups)))
+  )
+  pos <- group_medoids_cpp(
+    metric$x,
+    lapply(members, as.integer),
+    metric$code,
+    metric$q
+  )
+  vapply(
+    seq_along(members),
+    function(g) members[[g]][pos[g]],
+    integer(1)
+  )
+}
+
+#' Group of each row: the index of its nearest medoid
+#'
+#' Metric distances (\code{.compiled_metric()}) use a search in compiled code
+#' that the triangle inequality lets skip most medoids when the data have
+#' structure. A first chunk of rows shows whether it does: if more than a
+#' quarter of the medoids still need to be visited, the rest are compared
+#' with every medoid by matrix products (\code{.nearest()}), which a fast BLAS
+#' does quickly.
+#'
+#' @param rows the rows of \code{x} to assign.
+#' @param med the rows of \code{x} that are medoids.
+#' @param metric from \code{.compiled_metric()}, or NULL.
+#'
+#' @noRd
+.assign_rows <- function(x,
+                         rows,
+                         med,
+                         metric,
+                         dist = "euclidean",
+                         ...) {
+  k <- length(med)
+  out <- integer(length(rows))
+  done <- 0L
+  prune <- !is.null(metric) && !(metric$code == 4L && metric$q < 1)
+  if(prune && metric$code == 5L) {
+    # (A ROW OF ZEROS AS A MEDOID - THE DISTANCES DON'T ORDER IT CORRECTLY)
+    prune <- all(rowSums(metric$x[med, , drop = FALSE]^2) > 0)
+  }
+  if(prune) {
+    centres <- metric$x[med, , drop = FALSE]
+    probe <- rows[seq_len(min(length(rows), 2000L))]
+    a <- nearest_medoid_cpp(metric$x[probe, , drop = FALSE], centres,
+                            metric$code, metric$q)
+    out[seq_along(probe)] <- a
+    done <- length(probe)
+    if(attr(a, "evaluations") / length(probe) <= k / 4 &&
+       done < length(rows)) {
+      i <- (done + 1):length(rows)
+      out[i] <- nearest_medoid_cpp(metric$x[rows[i], , drop = FALSE],
+                                   centres, metric$code, metric$q)
+      done <- length(rows)
+    }
+  }
+  # EVERY MEDOID, BY MATRIX PRODUCTS (ROWS ALREADY SCALED FOR CORRELATIONS:
+  # THE LARGEST CROSS-PRODUCT)
+  if(done < length(rows)) {
+    scaled <- !is.null(metric) && metric$code == 5L
+    xx <- if(scaled) metric$x else x
+    chunk <- max(1L, floor(2e6 / k))
+    for(start in seq(done + 1, length(rows), by = chunk)) {
+      j <- start:min(length(rows), start + chunk - 1)
+      out[j] <- .nearest(
+        xx[rows[j], , drop = FALSE],
+        xx[med, , drop = FALSE],
+        if(scaled) "cosine" else dist,
+        ...
+      )
+    }
+  }
+  out
+}
+
+#' Each group of rows clustered on its own by the compiled code
+#'
+#' @param metric from \code{.compiled_metric()}.
+#' @param groups list of the rows in each group.
+#' @param method a linkage in \code{.NN_CHAIN}.
+#'
+#' @return list of trees with merge, height and order (leaves numbered
+#'   within each group), as \code{hclust()} gives for the group's rows.
+#'
+#' @noRd
+.cluster_groups <- function(metric,
+                            groups,
+                            method = "complete") {
+  cluster_groups_cpp(
+    metric$x,
+    lapply(groups, as.integer),
+    metric$code,
+    metric$q,
+    .NN_CHAIN[[method]]
+  )
+}
+
 #' Hierarchical clustering of many rows in two stages
 #'
 #' A sample of \code{max} rows (drawn with a fixed seed) is clustered exactly
@@ -348,30 +516,45 @@
   m <- min(n, max)
   # STAGE 1 - AN EXACT TREE OF A SAMPLE, SPLIT INTO GROUPS
   sample_rows <- .with_seed(2357, sort(sample.int(n, m)))
-  ds <- .dist_matrix(x[sample_rows, , drop = FALSE], dist, ...)
-  hs <- hclust(ds, method = method)
+  # (DISTANCES IN COMPILED CODE WHEN IT HANDLES THE DISTANCE AND LINKAGE)
+  metric <- if(!is.na(.NN_CHAIN[method])) .compiled_metric(x, dist, ...)
+  ds <- NULL
+  if(!is.null(metric)) {
+    sample_metric <- .metric_rows(metric, sample_rows)
+    hs <- .hclust_rows(x[sample_rows, , drop = FALSE], sample_metric, method)
+  } else {
+    ds <- .dist_matrix(x[sample_rows, , drop = FALSE], dist, ...)
+    hs <- .hclust_dist(ds, method = method)
+  }
   tg <- .tree_groups(
     hs,
     k = min(m %/% 2, max(2, ceiling(n / 200))),
     cap = max(2, floor(max / 4 * m / n))
   )
   k <- tg$n
-  med <- sample_rows[.medoids(ds, tg$groups)]
-  rm(ds)
+  med <- sample_rows[if(is.null(ds)) {
+    .group_medoids(sample_metric, tg$groups)
+  } else {
+    .medoids(ds, tg$groups)
+  }]
+  ds <- NULL
   # EVERY OTHER ROW JOINS THE GROUP OF ITS NEAREST MEDOID
   groups <- integer(n)
   groups[sample_rows] <- tg$groups
   rest <- setdiff(seq_len(n), sample_rows)
   if(length(rest) > 0) {
-    chunk <- max(1L, floor(2e6 / k))
-    for(start in seq(1, length(rest), by = chunk)) {
-      i <- rest[start:min(length(rest), start + chunk - 1)]
-      groups[i] <- .nearest(x[i, , drop = FALSE], x[med, , drop = FALSE],
-                            dist, ...)
-    }
+    groups[rest] <- .assign_rows(x, rest, med, metric, dist, ...)
   }
   # STAGE 2 - EACH GROUP CLUSTERED ON ITS OWN, BELOW THE MERGE ABOVE IT
   members <- split(seq_len(n), factor(groups, levels = seq_len(k)))
+  size <- lengths(members)
+  # (GROUPS UP TO max ROWS IN ONE CALL TO THE COMPILED CODE WHEN IT COMPUTES
+  # THE DISTANCE AND THE LINKAGE)
+  trees <- vector("list", k)
+  small <- which(size >= 2 & size <= max & size <= n / 2)
+  if(!is.null(metric) && length(small) > 0) {
+    trees[small] <- .cluster_groups(metric, members[small], method)
+  }
   merges <- vector("list", k)
   heights <- vector("list", k)
   orders <- vector("list", k)
@@ -384,7 +567,9 @@
       orders[[g]] <- idx
       next
     }
-    tree <- if(length(idx) <= n / 2) {
+    tree <- if(!is.null(trees[[g]])) {
+      trees[[g]]
+    } else if(length(idx) <= n / 2) {
       .hclust_raw(x[idx, , drop = FALSE], dist = dist, method = method,
                   max = max, ...)
     } else {
@@ -486,14 +671,7 @@
 #' Number of leaves below each merge
 #' @noRd
 .merge_sizes <- function(merge) {
-  k <- nrow(merge)
-  size <- integer(k)
-  for(z in seq_len(k)) {
-    a <- merge[z, 1]
-    b <- merge[z, 2]
-    size[z] <- (if(a < 0) 1L else size[a]) + (if(b < 0) 1L else size[b])
-  }
-  size
+  merge_sizes_cpp(.int_merge(merge))
 }
 
 #' Leaves below a node (a merge, or a leaf when negative), left to right
@@ -530,40 +708,26 @@
   size <- .merge_sizes(merge)
   size_of <- function(z) if(z < 0) 1L else size[z]
   # BLOCKS (LEFT TO RIGHT) AND THE MERGES ABOVE THEM
-  blocks <- integer(0)
-  above <- integer(0)
-  stack <- k
-  while(length(stack) > 0) {
-    node <- stack[length(stack)]
-    stack <- stack[-length(stack)]
-    if(size_of(node) <= max) {
-      blocks <- c(blocks, node)
-    } else {
-      above <- c(above, node)
-      stack <- c(stack, merge[node, 2], merge[node, 1])
-    }
-  }
+  merge <- .int_merge(merge)
+  split_tree <- olo_blocks_cpp(merge, as.integer(min(max, .Machine$integer.max)))
+  blocks <- split_tree$blocks
+  above <- split_tree$above
   # EACH BLOCK ORDERED EXACTLY
   block_order <- lapply(blocks, function(node) {
     leaves <- .node_leaves(merge, node, size_of(node))
     if(length(leaves) < 3) {
       return(leaves)
     }
-    sub <- .sub_merge(merge, node, leaves)
+    sub <- .sub_merge(merge, node)
     d <- .dist_matrix(x[leaves, , drop = FALSE], dist, ...)
     leaves[.olo_order(sub, d)]
   })
-  # THE TREE ABOVE THE BLOCKS, WITH EACH BLOCK AS A LEAF
-  above <- sort(above)
-  top <- merge[above, , drop = FALSE]
-  code <- function(r) {
-    b <- match(r, blocks)
-    if(!is.na(b)) -b else match(r, above)
-  }
-  top <- matrix(
-    vapply(as.vector(top), function(r) as.integer(code(r)), integer(1)),
-    ncol = 2
-  )
+  # THE TREE ABOVE THE BLOCKS, WITH EACH BLOCK AS A LEAF (-b) AND THE OTHER
+  # MERGES NUMBERED AMONG THEMSELVES
+  v <- as.vector(merge[above, , drop = FALSE])
+  block <- match(v, blocks)
+  top <- matrix(ifelse(is.na(block), match(v, above), -block), ncol = 2)
+  storage.mode(top) <- "integer"
   reps <- do.call(rbind, lapply(block_order, function(l) {
     colMeans(x[l, , drop = FALSE], na.rm = TRUE)
   }))
@@ -574,48 +738,32 @@
     .olo_order(top, .dist_matrix(reps, dist, ...))
   }
   # TURN EACH BLOCK TO MEET THE BLOCK BEFORE IT
-  out <- block_order[[top_order[1]]]
-  if(length(top_order) > 1) {
-    nxt <- block_order[[top_order[2]]]
-    ends <- out[c(1, length(out))]
-    d <- .dist_to(x[ends, , drop = FALSE], x[nxt[c(1, length(nxt))], , drop = FALSE],
-                  dist, ...)
+  turned <- block_order[top_order]
+  if(length(turned) > 1) {
+    first <- turned[[1]]
+    nxt <- turned[[2]]
+    d <- .dist_to(x[first[c(1, length(first))], , drop = FALSE],
+                  x[nxt[c(1, length(nxt))], , drop = FALSE], dist, ...)
     if(min(d[1, ]) < min(d[2, ])) {
-      out <- rev(out)
+      turned[[1]] <- rev(first)
+    }
+    for(t in seq_along(turned)[-1]) {
+      prev <- turned[[t - 1]]
+      l <- turned[[t]]
+      d <- .dist_to(x[prev[length(prev)], , drop = FALSE],
+                    x[l[c(1, length(l))], , drop = FALSE], dist, ...)
+      if(d[1, 2] < d[1, 1]) {
+        turned[[t]] <- rev(l)
+      }
     }
   }
-  for(b in top_order[-1]) {
-    l <- block_order[[b]]
-    d <- .dist_to(x[out[length(out)], , drop = FALSE], x[l[c(1, length(l))], , drop = FALSE],
-                  dist, ...)
-    if(d[1, 2] < d[1, 1]) {
-      l <- rev(l)
-    }
-    out <- c(out, l)
-  }
-  out
+  unlist(turned, use.names = FALSE)
 }
 
 #' Merge matrix of the branch below a node, with its leaves numbered by their
 #' position in leaves
 #' @noRd
 .sub_merge <- function(merge,
-                       node,
-                       leaves) {
-  nodes <- integer(0)
-  stack <- node
-  while(length(stack) > 0) {
-    z <- stack[length(stack)]
-    stack <- stack[-length(stack)]
-    if(z > 0) {
-      nodes <- c(nodes, z)
-      stack <- c(stack, merge[z, ])
-    }
-  }
-  nodes <- sort(nodes)
-  sub <- merge[nodes, , drop = FALSE]
-  leaf <- sub < 0
-  sub[leaf] <- -match(-sub[leaf], leaves)
-  sub[!leaf] <- match(sub[!leaf], nodes)
-  sub
+                       node) {
+  sub_merge_cpp(.int_merge(merge), as.integer(node))
 }
