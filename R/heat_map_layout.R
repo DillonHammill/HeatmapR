@@ -896,19 +896,24 @@
   zoom_gap <- function(heat_in, k) {
     if(k < 2) 0 else min(.ZOOM$gap, 0.25 * heat_in / (k - 1))
   }
+  # ROWS AND CLUSTER GAPS OF A BAND (CELL UNITS) - IN A PANEL THE ROWS ARE
+  # ENLARGED AND THE GAPS KEEP THEIR SIZE
+  zoom_extent <- function(b) .zoom_extent(b$centers)
   # ENLARGED CELLS (INCHES PER CELL UNIT) - THE SAME IN EVERY PANEL OF AN
-  # AXIS, NO LARGER THAN .ZOOM$cell_max, SO THAT THE PANELS OF EACH SIDE FIT
-  # ALONG THE HEATMAP
-  zoom_cell <- function(z, heat_in) {
+  # AXIS, AT LEAST AS LARGE AS THE HEATMAP'S CELLS AND OTHERWISE NO LARGER
+  # THAN .ZOOM$cell_max, SO THAT THE PANELS OF EACH SIDE FIT ALONG THE
+  # HEATMAP
+  zoom_cell <- function(z, heat_in, upi_along) {
     if(is.null(z)) {
       return(0)
     }
-    cell <- .ZOOM$cell_max
+    cell <- max(.ZOOM$cell_max, 1 / upi_along)
     for(s in unique(vapply(z$bands, `[[`, numeric(1), "side"))) {
       b <- .zoom_on(z$bands, s)
-      cells <- sum(vapply(b, function(v) diff(v$lim), numeric(1)))
-      cell <- min(cell, (heat_in - (length(b) - 1) * zoom_gap(heat_in, length(b))) /
-                    cells)
+      ext <- vapply(b, zoom_extent, numeric(2))
+      room <- heat_in - (length(b) - 1) * zoom_gap(heat_in, length(b)) -
+        sum(ext["gaps", ]) / upi_along
+      cell <- min(cell, room / sum(ext["rows", ]))
     }
     cell
   }
@@ -918,16 +923,17 @@
       return(list())
     }
     heat_in <- diff(range(hlim)) / upi_along
+    ext <- vapply(bands, zoom_extent, numeric(2))
     .zoom_arrange(
       lapply(bands, `[[`, "lim"),
       hlim,
-      vapply(bands, function(b) diff(b$lim), numeric(1)) * cell_in * upi_along,
+      ext["rows", ] * cell_in * upi_along + ext["gaps", ],
       zoom_gap(heat_in, length(bands)) * upi_along
     )
   }
   # POSITIONS OF THE LABELS OF THE BANDS OF ONE SIDE IN THEIR PANELS
   zoom_at <- function(bands, along) {
-    unlist(Map(function(b, a) .zoom_map(b$centers, b$lim, a), bands, along))
+    unlist(Map(function(b, a) .zoom_map_band(b$centers, b$centers, a), bands, along))
   }
   # LABELS OF THE PANELS BEYOND THE TRACKS
   far_text <- function(bands, axis) {
@@ -1184,8 +1190,8 @@
     free_y <- pw - sum(tracks_x) - legend_in - far_in_y
     zoom_y_in <- zoom_depth(zy, free_y)
     upi_x <- wx / (free_y - zoom_used(zoom_y_in))
-    cell_x_in <- zoom_cell(zx, wx / upi_x)
-    cell_y_in <- zoom_cell(zy, hh / upi_y)
+    cell_x_in <- zoom_cell(zx, wx / upi_x, upi_x)
+    cell_y_in <- zoom_cell(zy, hh / upi_y, upi_y)
     # SPACE FOR EACH AXIS LABEL (INCHES) - THE ENLARGED CELLS OF THE ZOOM
     # PANELS ON THE AXIS TEXT SIDE
     space_x <- if(length(zoom_on(zx, p$side_x)) == 0) {

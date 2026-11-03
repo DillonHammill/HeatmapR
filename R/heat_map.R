@@ -2174,14 +2174,8 @@ heat_map <- function(x,
     popup_size = popup_size
   )
 
-  # RESET MARGINS ON THE DRAWING DEVICE (IF IT IS STILL OPEN)
-  old_mar <- par("mar")
-  hm_dev <- dev.cur()
-  on.exit({
-    if(dev.cur() == hm_dev) {
-      par("mar" = old_mar)
-    }
-  }, add = TRUE)
+  # (THE HEATMAP'S MARGINS STAY SET ON THE DEVICE, SO THAT BASE GRAPHICS DRAWN
+  # AFTERWARDS LAND ON THE HEATMAP AND AREN'T CLIPPED)
 
   # RECORD DRAWING ON ALL DEVICES - FILE DEVICES DON'T KEEP A DISPLAY LIST BY
   # DEFAULT, WHICH WOULD RETURN AN EMPTY RECORDED PLOT
@@ -2385,7 +2379,7 @@ heat_map <- function(x,
   zoom_at <- list(x = NULL, y = NULL)
   for(ax in c("x", "y")) {
     zoom_at[[ax]] <- Map(
-      function(b, z) .zoom_map(b$centers, b$lim, z$along),
+      function(b, z) .zoom_map_band(b$centers, b$centers, z$along),
       get(paste0("zoom_", ax)),
       lay[[paste0("zoom_", ax)]]
     )
@@ -2761,100 +2755,107 @@ heat_map <- function(x,
     } else {
       cell_row %in% zp$band$ind
     }
-    panel_in <- .zoom_cell_in(z, ax, heatmap_xlim, heatmap_ylim, lay$upi)
-    old_par <- par(
-      usr = .zoom_usr(z, ax, heatmap_xlim, heatmap_ylim),
-      xpd = NA
-    )
-    if(!is.na(cell_grid_line_col) && min(panel_in) >= border_min_in) {
-      .draw_cell_outlines(
-        x = cell_x[panel & cell_gridded],
-        y = cell_y[panel & cell_gridded],
-        col = cell_grid_line_col,
-        line_type = cell_border_line_type,
-        line_width = cell_border_line_width
+    # EACH RUN OF ROWS BETWEEN CLUSTER GAPS ON ITS OWN, SO THAT THE GAPS KEEP
+    # THEIR SIZE IN THE PANEL
+    in_band <- panel
+    along_cells <- if(ax == "x") cell_x else cell_y
+    for(z in .zoom_pieces(z, zp$band$centers)) {
+      panel <- in_band & along_cells > z$lim[1] & along_cells < z$lim[2]
+      panel_in <- .zoom_cell_in(z, ax, heatmap_xlim, heatmap_ylim, lay$upi)
+      old_par <- par(
+        usr = .zoom_usr(z, ax, heatmap_xlim, heatmap_ylim),
+        xpd = NA
       )
-    }
-    .draw_cells(
-      x = cell_x[panel],
-      y = cell_y[panel],
-      size = cell_sizes[panel],
-      shape = cell_shapes[panel],
-      fill = cell_fill[panel],
-      border = if(min(panel_in) < border_min_in && is.null(mask_mat)) {
-        rep(NA_character_, sum(panel))
-      } else {
-        cell_borders_all[panel]
-      },
-      line_type = cell_border_line_type,
-      line_width = cell_border_line_width,
-      cell_in = panel_in,
-      value = cell_r[panel]
-    )
-    if(!is.null(split_fill)) {
-      .draw_split_cells(
+      if(!is.na(cell_grid_line_col) && min(panel_in) >= border_min_in) {
+        .draw_cell_outlines(
+          x = cell_x[panel & cell_gridded],
+          y = cell_y[panel & cell_gridded],
+          col = cell_grid_line_col,
+          line_type = cell_border_line_type,
+          line_width = cell_border_line_width
+        )
+      }
+      .draw_cells(
         x = cell_x[panel],
         y = cell_y[panel],
-        fill = split_fill[panel],
+        size = cell_sizes[panel],
+        shape = cell_shapes[panel],
+        fill = cell_fill[panel],
         border = if(min(panel_in) < border_min_in && is.null(mask_mat)) {
-          NA_character_
+          rep(NA_character_, sum(panel))
         } else {
           cell_borders_all[panel]
         },
         line_type = cell_border_line_type,
         line_width = cell_border_line_width,
-        diag = min(panel_in) >= border_min_in
+        cell_in = panel_in,
+        value = cell_r[panel]
       )
-    }
-    if(!is.null(cell_values)) {
-      .draw_cell_glyphs(
-        values = cell_values[cell_ind[panel, , drop = FALSE]],
-        x = cell_x[panel],
-        y = cell_y[panel],
-        lo = glyph_range$lo[cell_ind[panel, , drop = FALSE]],
-        hi = glyph_range$hi[cell_ind[panel, , drop = FALSE]],
-        glyph = cell_glyph,
-        col = cell_glyph_col,
-        fill = cell_glyph_fill
-      )
-    }
-    ind <- panel & !is.na(cell_texts) & !cell_number
-    if(any(ind)) {
-      text(
+      if(!is.null(split_fill)) {
+        .draw_split_cells(
+          x = cell_x[panel],
+          y = cell_y[panel],
+          fill = split_fill[panel],
+          border = if(min(panel_in) < border_min_in && is.null(mask_mat)) {
+            NA_character_
+          } else {
+            cell_borders_all[panel]
+          },
+          line_type = cell_border_line_type,
+          line_width = cell_border_line_width,
+          diag = min(panel_in) >= border_min_in
+        )
+      }
+      if(!is.null(cell_values)) {
+        .draw_cell_glyphs(
+          values = cell_values[cell_ind[panel, , drop = FALSE]],
+          x = cell_x[panel],
+          y = cell_y[panel],
+          lo = glyph_range$lo[cell_ind[panel, , drop = FALSE]],
+          hi = glyph_range$hi[cell_ind[panel, , drop = FALSE]],
+          glyph = cell_glyph,
+          col = cell_glyph_col,
+          fill = cell_glyph_fill
+        )
+      }
+      ind <- panel & !is.na(cell_texts) & !cell_number
+      if(any(ind)) {
+        text(
+          x = cell_x[ind],
+          y = cell_y[ind],
+          labels = cell_texts[ind],
+          font = cell_text_font,
+          cex = if(fit_text) {
+            .fit_cell_text(cell_texts[ind], cell_text_size_all, cell_text_font,
+                           panel_in)
+          } else {
+            cell_text_size_all
+          },
+          col = adjustcolor(
+            cell_text_col,
+            cell_text_col_alpha
+          )
+        )
+      }
+      ind <- panel & cell_number
+      .draw_cell_numbers(
         x = cell_x[ind],
         y = cell_y[ind],
-        labels = cell_texts[ind],
+        labels = number_texts[ind],
+        col = number_cols[ind],
+        size = cell_text_size_all,
         font = cell_text_font,
-        cex = if(fit_text) {
-          .fit_cell_text(cell_texts[ind], cell_text_size_all, cell_text_font,
-                         panel_in)
-        } else {
-          cell_text_size_all
-        },
-        col = adjustcolor(
-          cell_text_col,
-          cell_text_col_alpha
-        )
+        cell_in = if(fit_text) panel_in
       )
-    }
-    ind <- panel & cell_number
-    .draw_cell_numbers(
-      x = cell_x[ind],
-      y = cell_y[ind],
-      labels = number_texts[ind],
-      col = number_cols[ind],
-      size = cell_text_size_all,
-      font = cell_text_font,
-      cell_in = if(fit_text) panel_in
-    )
-    if(is.na(cell_grid_line_col) || min(panel_in) < border_min_in) {
-      if(ax == "x") {
-        heat_map_border(.zoom_splits(x_splits, z$lim), y_splits)
-      } else {
-        heat_map_border(x_splits, .zoom_splits(y_splits, z$lim))
+      if(is.na(cell_grid_line_col) || min(panel_in) < border_min_in) {
+        if(ax == "x") {
+          heat_map_border(.zoom_splits(x_splits, z$lim), y_splits)
+        } else {
+          heat_map_border(x_splits, .zoom_splits(y_splits, z$lim))
+        }
       }
+      par(old_par)
     }
-    par(old_par)
   }
 
   # ANNOTATIONS ----------------------------------------------------------------

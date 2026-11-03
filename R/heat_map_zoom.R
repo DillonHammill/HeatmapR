@@ -335,6 +335,100 @@
   along[1] + (at - lim[1]) * diff(along) / diff(lim)
 }
 
+#' Runs of rows (columns) without a cluster gap between them, which split a
+#' band
+#'
+#' @param centers centres of the band's rows in cell units.
+#'
+#' @return list of the limits of each run in cell units, in order.
+#'
+#' @noRd
+.zoom_segments <- function(centers) {
+  centers <- sort(centers)
+  gap <- which(diff(centers) > 1 + 1e-8)
+  first <- c(1, gap + 1)
+  last <- c(gap, length(centers))
+  lapply(seq_along(first), function(i) {
+    c(centers[first[i]] - 0.5, centers[last[i]] + 0.5)
+  })
+}
+
+#' The rows (cell units) and cluster gaps (cell units) of a band
+#' @noRd
+.zoom_extent <- function(centers) {
+  seg <- .zoom_segments(centers)
+  rows <- sum(vapply(seg, diff, numeric(1)))
+  c(rows = rows, gaps = diff(range(unlist(seg))) - rows)
+}
+
+#' Where each run of a band's rows goes in its panel - the rows enlarged
+#' evenly, the cluster gaps between them kept at the size they have on the
+#' heatmap
+#'
+#' @param segments runs of rows from \code{.zoom_segments()}.
+#' @param along limits of the panel along the band.
+#'
+#' @noRd
+.zoom_segment_along <- function(segments,
+                                along) {
+  k <- length(segments)
+  rows <- vapply(segments, diff, numeric(1))
+  gaps <- if(k > 1) {
+    vapply(seq_len(k - 1), function(i) segments[[i + 1]][1] - segments[[i]][2],
+           numeric(1))
+  } else {
+    numeric(0)
+  }
+  # (A PANEL NO LONGER THAN THE BAND - EVERYTHING SCALED ALIKE)
+  if(diff(along) < sum(rows) + sum(gaps)) {
+    scale <- diff(along) / (sum(rows) + sum(gaps))
+    gaps <- gaps * scale
+  } else {
+    scale <- (diff(along) - sum(gaps)) / sum(rows)
+  }
+  out <- vector("list", k)
+  pos <- along[1]
+  for(i in seq_len(k)) {
+    out[[i]] <- c(pos, pos + rows[i] * scale)
+    pos <- out[[i]][2] + if(i < k) gaps[i] else 0
+  }
+  out
+}
+
+#' Positions of a band's rows in its panel (cell units)
+#'
+#' @param at positions in the band (cell units).
+#' @param centers centres of the band's rows.
+#' @param along limits of the panel along the band.
+#'
+#' @noRd
+.zoom_map_band <- function(at,
+                           centers,
+                           along) {
+  seg <- .zoom_segments(centers)
+  to <- .zoom_segment_along(seg, along)
+  out <- at
+  for(i in seq_along(seg)) {
+    inside <- at >= seg[[i]][1] & at <= seg[[i]][2]
+    out[inside] <- .zoom_map(at[inside], seg[[i]], to[[i]])
+  }
+  out
+}
+
+#' The pieces of a panel - one for each run of rows of its band, with the
+#' limits of the run (\code{lim}) and of its place in the panel (\code{along})
+#' @noRd
+.zoom_pieces <- function(z,
+                         centers) {
+  seg <- .zoom_segments(centers)
+  to <- .zoom_segment_along(seg, z$along)
+  lapply(seq_along(seg), function(i) {
+    z$lim <- seg[[i]]
+    z$along <- to[[i]]
+    z
+  })
+}
+
 #' Cluster gaps within the band, as splits for \code{heat_map_border()}
 #' @noRd
 .zoom_splits <- function(splits,
