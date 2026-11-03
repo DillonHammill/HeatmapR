@@ -55,8 +55,8 @@ test_that("rows and columns are clustered within groups in heat_map()", {
     rep(levels(d$meta$Treatment), each = 8)
   )
   expect_true(all(c("Control", "Drug_A", "Drug_B") %in% drawn_text(hm)))
-  # Rows grouped too (row_order runs from the top, the first group is at the bottom)
-  expect_equal(rep(c("a", "b"), 10)[info$row_order], rep(c("b", "a"), each = 10))
+  # Rows grouped too (row_order runs from the top, the first group is at the top)
+  expect_equal(rep(c("a", "b"), 10)[info$row_order], rep(c("a", "b"), each = 10))
   # Non-numeric columns can't be clustered within groups - previous behaviour
   df <- data.frame(a = 1:4, b = c(2, 1, 4, 3), c = letters[1:4], d = 4:1)
   expect_warning(
@@ -65,7 +65,7 @@ test_that("rows and columns are clustered within groups in heat_map()", {
   )
 })
 
-test_that("cluster gaps are sized in inches in the fit layout", {
+test_that("cluster gaps are sized in inches", {
   cell_call <- function(hm, n) {
     Filter(function(z) length(z[[1]]) == n, drawn(hm, "C_rect"))[[1]]
   }
@@ -84,8 +84,4 @@ test_that("cluster gaps are sized in inches in the fit layout", {
     hm <- draw(m, tree_cut_x = 2, tree_split_x = 2.5, cell_raster = FALSE)
     expect_equal(gap_in(hm, 10 * n), 0.2, tolerance = 1e-3)
   }
-  # Classic gaps are half a cell per unit of tree_split_x
-  hm <- draw(test_matrix(10, 6), tree_cut_x = 2, cell_raster = FALSE, layout = "classic")
-  cells <- cell_call(hm, 60)
-  expect_equal(max(diff(sort(unique(cells[[1]])))), 1.5)
 })

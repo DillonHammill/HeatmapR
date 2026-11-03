@@ -285,6 +285,65 @@ as.character.heat_map_description <- function(x,
   out
 }
 
+#' Cells drawn as ellipses, numbers or left empty
+#' @param text matrix of cell text, or NULL.
+#' @noRd
+.describe_shapes <- function(shapes,
+                             text = NULL) {
+  if(is.null(shapes)) {
+    return(character(0))
+  }
+  n <- length(shapes)
+  count <- function(shape) sum(shapes == shape, na.rm = TRUE)
+  some <- function(k) {
+    if(k == n) "All cells" else .describe_count(k, "cell")
+  }
+  out <- character(0)
+  k <- count("ellipse")
+  if(k > 0) {
+    out <- c(
+      out,
+      paste0(
+        some(k), if(k == 1) " is" else " are",
+        " drawn as ellipses that also show the values (from -1 to 1) by ",
+        "their shape: rising to the right for positive values, falling for ",
+        "negative values, and narrower the closer a value is to -1 or 1."
+      )
+    )
+  }
+  k <- count("number")
+  if(k > 0) {
+    out <- c(
+      out,
+      paste0(
+        some(k), if(k == 1) " shows its value" else " show their values",
+        " as numbers in the colours of the cells."
+      )
+    )
+  }
+  none <- shapes == "none"
+  labelled <- if(is.null(text)) {
+    0
+  } else {
+    sum(none & !is.na(as.matrix(text)), na.rm = TRUE)
+  }
+  if(labelled > 0) {
+    out <- c(
+      out,
+      paste0(some(labelled), if(labelled == 1) " shows" else " show",
+             " only text.")
+    )
+  }
+  k <- sum(none, na.rm = TRUE) - labelled
+  if(k > 0) {
+    out <- c(
+      out,
+      paste0(some(k), if(k == 1) " is" else " are", " left empty.")
+    )
+  }
+  out
+}
+
 #' What the colours, sizes and missing cells show
 #' @importFrom grDevices rgb
 #' @noRd
@@ -369,6 +428,9 @@ as.character.heat_map_description <- function(x,
       )
     )
   }
+  # SHAPES THAT SHOW MORE THAN COLOUR
+  text <- arg("cell_text")
+  out <- c(out, .describe_shapes(info$shapes, if(!is.null(dim(text))) text))
   # MISSING VALUES
   missing <- sum(is.na(as.matrix(data)))
   if(missing > 0) {
@@ -458,14 +520,53 @@ as.character.heat_map_description <- function(x,
   Whats <- if(axis == "y") "Rows" else "Columns"
   out <- character(0)
   tree <- info[[paste0("tree_", axis)]]
-  if(!is.null(tree)) {
+  given <- arg(paste0("tree_", axis))
+  if(!is.null(tree) && inherits(given, "hclust")) {
+    # A SUPPLIED DENDROGRAM - DESCRIBED BY ITS OWN METHODS
+    how <- c(
+      if(length(given$dist.method) == 1 && !is.na(given$dist.method)) {
+        paste(given$dist.method, "distance")
+      },
+      if(length(given$method) == 1 && !is.na(given$method)) {
+        paste(given$method, "linkage")
+      }
+    )
+    out <- c(
+      out,
+      paste0(
+        Whats, " are ordered by a supplied dendrogram",
+        if(length(how) > 0) paste0(" (", paste(how, collapse = ", "), ")"),
+        "."
+      )
+    )
+  } else if(!is.null(tree)) {
     dist <- arg("dist_method")
     out <- c(
       out,
       paste0(
         Whats, " are ordered by hierarchical clustering (",
-        if(is.character(dist)) paste(dist, "distance") else "a custom distance",
+        if(inherits(given, "dist")) {
+          "supplied distances"
+        } else if(is.character(dist)) {
+          paste(dist, "distance")
+        } else {
+          "a custom distance"
+        },
         ", ", arg("clust_method"), " linkage)."
+      )
+    )
+  }
+  # TOO MANY LEAVES TO CLUSTER EXACTLY (clust_max)
+  two_stage <- tree$two_stage
+  if(!is.null(two_stage)) {
+    out <- c(
+      out,
+      paste0(
+        "There were too many ", what, "s to cluster exactly, so a sample of ",
+        format(two_stage[["sample"]], big.mark = ","), " ", what,
+        "s was clustered and every other ", what, " joined the nearest of its ",
+        format(two_stage[["groups"]], big.mark = ","),
+        " groups, each then clustered on its own."
       )
     )
   }
@@ -493,7 +594,7 @@ as.character.heat_map_description <- function(x,
       paste0(
         Whats, " are split into ", k,
         if(kmeans) " k-means clusters" else " groups",
-        ", numbered from the ", if(axis == "y") "bottom" else "left",
+        ", numbered from the ", if(axis == "y") "top" else "left",
         if(k > max_groups) {
           paste0(
             ", of ", min(sizes), " to ", max(sizes), " ", what, "s each."
@@ -509,7 +610,9 @@ as.character.heat_map_description <- function(x,
       groups <- vapply(
         seq_len(k),
         function(g) {
-          members <- which(cl == g)
+          # MEMBERS IN DISPLAY ORDER - ROWS FROM THE TOP, COLUMNS FROM THE LEFT
+          shown <- if(axis == "y") info$row_order else info$col_order
+          members <- shown[cl[shown] == g]
           means <- if(axis == "y") {
             colMeans(values[members, , drop = FALSE], na.rm = TRUE)
           } else {
@@ -643,7 +746,8 @@ as.character.heat_map_description <- function(x,
         if(axis == "y") rownames(data) else colnames(data),
         length(names),
         arg(paste0("mark_labels_", axis)),
-        paste0("mark_", axis)
+        paste0("mark_", axis),
+        shown = if(axis == "y") info$row_order else info$col_order
       )
       if(!is.null(mk)) {
         out <- c(out, paste0("Labelled ", what, "s: ",

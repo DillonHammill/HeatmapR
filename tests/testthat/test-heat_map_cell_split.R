@@ -1,27 +1,55 @@
 # MANUAL CLUSTERS --------------------------------------------------------------
 
-test_that("cluster indices are read in the original column order", {
+test_that("cluster indices are read in the displayed column order", {
   m <- test_matrix(6, 10)
   cut <- c(2, 1, 1, 3, 2, 2, 3, 1, 3, 3)
   info <- heat_map_info(draw(m, tree_cut_x = cut))
+  # Without a dendrogram the columns are displayed in their original order
   expect_equal(unname(info$col_clusters), cut)
   # Columns are regrouped so that each cluster is contiguous
   expect_equal(info$col_order, c(2, 3, 8, 1, 5, 6, 4, 7, 9, 10))
+  # With a dendrogram - the indices follow the columns as the heatmap shows
+  # them without the clusters
+  shown <- heat_map_info(draw(m, tree_x = TRUE))$col_order
+  info <- heat_map_info(draw(m, tree_x = TRUE, tree_cut_x = rep(1:2, each = 5)))
+  expect_equal(unname(info$col_clusters[shown]), rep(1:2, each = 5))
+  expect_s3_class(info$tree_x, "hclust")
 })
 
-test_that("cluster indices are read in the original row order", {
+test_that("cluster indices are read in the displayed row order, from the top", {
+  m <- test_matrix(6, 4)
+  # Without a dendrogram the rows are shown in their original order
+  info <- heat_map_info(draw(m, tree_cut_y = c(1, 1, 2, 2, 2, 3)))
+  expect_equal(unname(info$row_clusters[info$row_order]), c(1, 1, 2, 2, 2, 3))
+  expect_equal(unname(info$row_clusters), c(1, 1, 2, 2, 2, 3))
+  expect_equal(info$row_order, 1:6)
+  # With a dendrogram - as the heatmap shows them without the clusters
+  shown <- heat_map_info(draw(m, tree_y = TRUE))$row_order
+  info <- heat_map_info(draw(m, tree_y = TRUE, tree_cut_y = c(1, 1, 1, 2, 2, 2)))
+  expect_equal(unname(info$row_clusters[shown]), c(1, 1, 1, 2, 2, 2))
+  expect_equal(info$row_order, shown)
+  # Named indices are matched by name
+  cut <- stats::setNames(c(1, 1, 2, 2, 2, 2), rownames(m))
+  info <- heat_map_info(draw(m, tree_cut_y = rev(cut)))
+  expect_equal(info$row_clusters, cut)
+})
+
+test_that("cluster labels are read in the original row order, the first at the top", {
   m <- test_matrix(6, 4)
   info <- heat_map_info(draw(m, tree_cut_y = c("b", "a", "b", "a", "a", "b")))
   expect_equal(unname(info$row_clusters), c(2L, 1L, 2L, 1L, 1L, 2L))
-  # Cluster 1 is drawn at the bottom (row_order lists rows from the top)
-  expect_equal(info$row_order, rev(c(2, 4, 5, 1, 3, 6)))
+  # Cluster 1 ("a") is drawn at the top (row_order lists rows from the top)
+  expect_equal(info$row_order, c(2, 4, 5, 1, 3, 6))
 })
 
 test_that("cluster sizes follow the displayed order", {
   m <- test_matrix(6, 10)
   info <- heat_map_info(draw(m, tree_cut_x = c(3, 4, 3), tree_cut_y = c(2, 4)))
   expect_equal(unname(info$col_clusters), rep(1:3, c(3, 4, 3)))
+  # Rows from the top - the first two rows are shown first
+  expect_equal(unname(info$row_clusters[info$row_order]), rep(1:2, c(2, 4)))
   expect_equal(unname(info$row_clusters), rep(1:2, c(2, 4)))
+  expect_equal(info$row_order, 1:6)
   expect_equal(info$col_order, 1:10)
 })
 
@@ -85,7 +113,7 @@ test_that("non-contiguous clusters drop the dendrogram with a warning", {
   cut_x <- integer(10)
   cut_x[tr_x$order] <- rep(1:2, 5)
   expect_warning(
-    info <- heat_map_info(draw(m, tree_x = tr_x, tree_cut_x = cut_x)),
+    info <- heat_map_info(draw(m, tree_x = tr_x, tree_cut_x = rep(1:2, 5))),
     "not contiguous"
   )
   expect_null(info$tree_x)
@@ -94,7 +122,7 @@ test_that("non-contiguous clusters drop the dendrogram with a warning", {
   cut_y <- integer(6)
   cut_y[tr_y$order] <- rep(1:2, 3)
   expect_warning(
-    info <- heat_map_info(draw(m, tree_y = tr_y, tree_cut_y = cut_y)),
+    info <- heat_map_info(draw(m, tree_y = tr_y, tree_cut_y = rep(1:2, 3))),
     "not contiguous"
   )
   expect_null(info$tree_y)
