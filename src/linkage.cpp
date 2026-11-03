@@ -59,35 +59,66 @@ Rows gather_rows(const double* x, int n_total, int p, const int* idx, int s) {
 
 // Distance between two rows. Metrics: 1 euclidean, 2 manhattan, 3 maximum,
 // 4 minkowski (power q), 5 one minus the cross-product clipped to [0, 2]
-// (rows scaled by .unit_rows()). Sums run over the columns in order, as in
-// stats::dist().
+// (rows scaled by .unit_rows()). Sums are kept in four parts, so that each
+// addition needn't wait for the one before: the result can differ from
+// stats::dist() in the last bit, which matters only for exactly tied
+// distances (and not for integer data, whose sums are exact).
 inline double row_dist(const double* a, const double* b, int p, int metric,
                        double q) {
-  double v = 0;
+  double s0 = 0, s1 = 0, s2 = 0, s3 = 0;
+  int k = 0;
   switch (metric) {
     case 1:
-      for (int k = 0; k < p; ++k) {
-        double dev = a[k] - b[k];
-        v += dev * dev;
+      for (; k + 4 <= p; k += 4) {
+        double d0 = a[k] - b[k], d1 = a[k + 1] - b[k + 1];
+        double d2 = a[k + 2] - b[k + 2], d3 = a[k + 3] - b[k + 3];
+        s0 += d0 * d0;
+        s1 += d1 * d1;
+        s2 += d2 * d2;
+        s3 += d3 * d3;
       }
-      return std::sqrt(v);
+      for (; k < p; ++k) {
+        double d = a[k] - b[k];
+        s0 += d * d;
+      }
+      return std::sqrt((s0 + s1) + (s2 + s3));
     case 2:
-      for (int k = 0; k < p; ++k) v += std::fabs(a[k] - b[k]);
-      return v;
-    case 3:
-      v = -INF;
-      for (int k = 0; k < p; ++k) {
+      for (; k + 4 <= p; k += 4) {
+        s0 += std::fabs(a[k] - b[k]);
+        s1 += std::fabs(a[k + 1] - b[k + 1]);
+        s2 += std::fabs(a[k + 2] - b[k + 2]);
+        s3 += std::fabs(a[k + 3] - b[k + 3]);
+      }
+      for (; k < p; ++k) s0 += std::fabs(a[k] - b[k]);
+      return (s0 + s1) + (s2 + s3);
+    case 3: {
+      double v = -INF;
+      for (; k < p; ++k) {
         double dev = std::fabs(a[k] - b[k]);
         if (dev > v) v = dev;
       }
       return v;
+    }
     case 4:
-      for (int k = 0; k < p; ++k) v += std::pow(std::fabs(a[k] - b[k]), q);
-      return std::pow(v, 1.0 / q);
-    default:
-      for (int k = 0; k < p; ++k) v += a[k] * b[k];
-      v = 1 - v;
+      for (; k + 4 <= p; k += 4) {
+        s0 += std::pow(std::fabs(a[k] - b[k]), q);
+        s1 += std::pow(std::fabs(a[k + 1] - b[k + 1]), q);
+        s2 += std::pow(std::fabs(a[k + 2] - b[k + 2]), q);
+        s3 += std::pow(std::fabs(a[k + 3] - b[k + 3]), q);
+      }
+      for (; k < p; ++k) s0 += std::pow(std::fabs(a[k] - b[k]), q);
+      return std::pow((s0 + s1) + (s2 + s3), 1.0 / q);
+    default: {
+      for (; k + 4 <= p; k += 4) {
+        s0 += a[k] * b[k];
+        s1 += a[k + 1] * b[k + 1];
+        s2 += a[k + 2] * b[k + 2];
+        s3 += a[k + 3] * b[k + 3];
+      }
+      for (; k < p; ++k) s0 += a[k] * b[k];
+      double v = 1 - ((s0 + s1) + (s2 + s3));
       return v < 0 ? 0 : (v > 2 ? 2 : v);
+    }
   }
 }
 

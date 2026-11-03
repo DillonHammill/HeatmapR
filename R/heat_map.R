@@ -933,6 +933,9 @@ heat_map <- function(x,
   # DRAWN WITHIN A CUSTOM LAYOUT
   hm_custom <- isTRUE(getOption("heat_map_custom"))
 
+  # SLOW STEPS KEPT FOR REDRAWS (AND REUSED FROM THE HEATMAP BEING REDRAWN)
+  memo <- .memo_start()
+
   # CAPTURE SUPPLIED ARGUMENTS - USED TO REDRAW THE HEATMAP
   hm_args <- .capture_args(
     environment(),
@@ -1083,12 +1086,12 @@ heat_map <- function(x,
       )
     }
     tree_cut_x <- integer(ncol(x))
-    tree_cut_x[num_cols] <- .kmeans_groups(
-      t(data.matrix(x[, num_cols, drop = FALSE])),
-      tree_kmeans_x,
-      "tree_kmeans_x",
-      "numeric columns"
-    )
+    tree_cut_x[num_cols] <- .memo_call(memo, ".kmeans_groups", list(
+      m = t(data.matrix(x[, num_cols, drop = FALSE])),
+      k = tree_kmeans_x,
+      arg = "tree_kmeans_x",
+      what = "numeric columns"
+    ))
     # NON-NUMERIC COLUMNS AS AN EXTRA CLUSTER
     tree_cut_x[char_cols] <- tree_kmeans_x + 1
   }
@@ -1099,12 +1102,12 @@ heat_map <- function(x,
         call. = FALSE
       )
     }
-    tree_cut_y <- .kmeans_groups(
-      data.matrix(x[, num_cols, drop = FALSE]),
-      tree_kmeans_y,
-      "tree_kmeans_y",
-      "rows"
-    )
+    tree_cut_y <- .memo_call(memo, ".kmeans_groups", list(
+      m = data.matrix(x[, num_cols, drop = FALSE]),
+      k = tree_kmeans_y,
+      arg = "tree_kmeans_y",
+      what = "rows"
+    ))
   }
 
   # TREE_CUT - SINGLE VALUE REQUIRES HIERARCHICAL CLUSTERING
@@ -1139,8 +1142,8 @@ heat_map <- function(x,
       )
       tree_x <- NULL
     } else {
-      tree_x <- heat_map_clust(
-        x[, num_cols, drop = FALSE],
+      tree_x <- .memo_call(memo, "heat_map_clust", c(list(
+        x = x[, num_cols, drop = FALSE],
         tree = if(inherits(tree_x, c("dist", "hclust"))) {
           tree_x
         } else {
@@ -1151,9 +1154,8 @@ heat_map <- function(x,
         max = clust_max,
         scale = tree_scale_x,
         order = tree_order_x,
-        cut = if(length(tree_cut_x) == 1) tree_cut_x else NULL,
-        ...
-      )
+        cut = if(length(tree_cut_x) == 1) tree_cut_x else NULL
+      ), list(...)))
       .check_tree(tree_x, length(num_cols), "tree_x", "numeric columns")
       # ADD CHARACTER COLUMNS AS AN EXTRA CLUSTER
       if(!is.null(tree_x$cut) && length(char_cols) > 0) {
@@ -1180,16 +1182,15 @@ heat_map <- function(x,
     if(is.null(tree_kmeans_x) &&
        .display_indices(tree_cut_x, ncol(x), colnames(x))) {
       shown <- if(group_x) {
-        num_cols[heat_map_clust(
-          x[, num_cols, drop = FALSE],
+        num_cols[.memo_call(memo, "heat_map_clust", c(list(
+          x = x[, num_cols, drop = FALSE],
           tree = 2,
           dist = dist_method,
           method = clust_method,
           max = clust_max,
           scale = tree_scale_x,
-          order = tree_order_x,
-          ...
-        )$order]
+          order = tree_order_x
+        ), list(...)))$order]
       } else {
         col_ind
       }
@@ -1213,16 +1214,15 @@ heat_map <- function(x,
       groups <- integer(ncol(x))
       groups[manual$ind] <- manual$cut
       support_groups_x <- groups[num_cols]
-      tree_x <- .group_tree(
-        t(x[, num_cols, drop = FALSE]),
+      tree_x <- .memo_call(memo, ".group_tree", c(list(
+        x = t(x[, num_cols, drop = FALSE]),
         groups = groups[num_cols],
         dist = dist_method,
         method = clust_method,
         max = clust_max,
         scale = tree_scale_x,
-        order = tree_order_x,
-        ...
-      )
+        order = tree_order_x
+      ), list(...)))
       manual$ind <- num_cols[tree_x$order]
     # DENDROGRAM REQUIRES UNCHANGED ORDER OF NUMERIC COLUMNS
     } else if(inherits(tree_x, "hclust")) {
@@ -1253,8 +1253,8 @@ heat_map <- function(x,
       )
       tree_y <- NULL
     } else {
-      tree_y <- heat_map_clust(
-        x[, num_cols, drop = FALSE],
+      tree_y <- .memo_call(memo, "heat_map_clust", c(list(
+        x = x[, num_cols, drop = FALSE],
         tree = if(inherits(tree_y, c("dist", "hclust"))) {
           tree_y
         } else {
@@ -1265,9 +1265,8 @@ heat_map <- function(x,
         max = clust_max,
         scale = tree_scale_y,
         order = tree_order_y,
-        cut = if(length(tree_cut_y) == 1) tree_cut_y else NULL,
-        ...
-      )
+        cut = if(length(tree_cut_y) == 1) tree_cut_y else NULL
+      ), list(...)))
       .check_tree(tree_y, nrow(x), "tree_y", "rows")
       # UPDATE ROW INDICES
       row_ind <- row_ind[tree_y$order]
@@ -1281,16 +1280,15 @@ heat_map <- function(x,
     if(is.null(tree_kmeans_y) &&
        .display_indices(tree_cut_y, nrow(x), rownames(x))) {
       shown <- if(group_y) {
-        heat_map_clust(
-          x[, num_cols, drop = FALSE],
+        .memo_call(memo, "heat_map_clust", c(list(
+          x = x[, num_cols, drop = FALSE],
           tree = 1,
           dist = dist_method,
           method = clust_method,
           max = clust_max,
           scale = tree_scale_y,
-          order = tree_order_y,
-          ...
-        )$order
+          order = tree_order_y
+        ), list(...)))$order
       } else {
         row_ind
       }
@@ -1314,16 +1312,15 @@ heat_map <- function(x,
       groups <- integer(nrow(x))
       groups[manual$ind] <- manual$cut
       support_groups_y <- groups
-      tree_y <- .group_tree(
-        x[, num_cols, drop = FALSE],
+      tree_y <- .memo_call(memo, ".group_tree", c(list(
+        x = x[, num_cols, drop = FALSE],
         groups = groups,
         dist = dist_method,
         method = clust_method,
         max = clust_max,
         scale = tree_scale_y,
-        order = tree_order_y,
-        ...
-      )
+        order = tree_order_y
+      ), list(...)))
       manual$ind <- tree_y$order
     # DENDROGRAM REQUIRES UNCHANGED ROW ORDER
     } else if(inherits(tree_y, "hclust")) {
@@ -1366,26 +1363,24 @@ heat_map <- function(x,
     support_n_y <- NULL
   }
   if(!is.null(support_n_x) && inherits(tree_x, "hclust")) {
-    support_x <- .tree_support(
-      t(data.matrix(x[, num_cols, drop = FALSE])),
-      tree_x,
+    support_x <- .memo_call(memo, ".tree_support", c(list(
+      data = t(data.matrix(x[, num_cols, drop = FALSE])),
+      tree = tree_x,
       B = support_n_x,
       dist = dist_method,
       method = clust_method,
-      groups = support_groups_x,
-      ...
-    )
+      groups = support_groups_x
+    ), list(...)))
   }
   if(!is.null(support_n_y) && inherits(tree_y, "hclust")) {
-    support_y <- .tree_support(
-      data.matrix(x[, num_cols, drop = FALSE]),
-      tree_y,
+    support_y <- .memo_call(memo, ".tree_support", c(list(
+      data = data.matrix(x[, num_cols, drop = FALSE]),
+      tree = tree_y,
       B = support_n_y,
       dist = dist_method,
       method = clust_method,
-      groups = support_groups_y,
-      ...
-    )
+      groups = support_groups_y
+    ), list(...)))
   }
   legend_keys <- if(!.legend_off(legend) &&
                     (!is.null(support_x) || !is.null(support_y))) {
@@ -1771,13 +1766,7 @@ heat_map <- function(x,
   if(any(ind)) {
     k <- col_k(cell_num_val[ind])
     if(is.null(unc_mat)) {
-      rgb_mat <- cell_col_scale(k)
-      cell_fill[ind] <- rgb(
-        rgb_mat[, 1],
-        rgb_mat[, 2],
-        rgb_mat[, 3],
-        maxColorValue = 255
-      )
+      cell_fill[ind] <- .ramp_colours(k, cell_col_scale)
     } else {
       # FEWER, GREYER COLOURS FOR MORE UNCERTAIN VALUES
       cell_fill[ind] <- .vsup_colour(
@@ -1803,12 +1792,9 @@ heat_map <- function(x,
     split_fill <- rep(NA_character_, length(cell_row))
     split_ind <- cell_num & !is.na(split_val)
     if(any(split_ind)) {
-      rgb_mat <- cell_col_scale(col_k(split_val[split_ind]))
-      split_fill[split_ind] <- rgb(
-        rgb_mat[, 1],
-        rgb_mat[, 2],
-        rgb_mat[, 3],
-        maxColorValue = 255
+      split_fill[split_ind] <- .ramp_colours(
+        col_k(split_val[split_ind]),
+        cell_col_scale
       )
     }
     split_fill[cell_num & is.na(split_val)] <- cell_col_empty
@@ -2607,7 +2593,12 @@ heat_map <- function(x,
       fill = cell_fill,
       border = if(is.null(mask_mat)) border_col_cells else cell_borders,
       line_type = cell_border_line_type,
-      line_width = cell_border_line_width
+      line_width = cell_border_line_width,
+      grid = if(!anyNA(x_centers) && !anyNA(y_centers) &&
+                !is.unsorted(x_centers, strictly = TRUE) &&
+                !is.unsorted(y_centers, strictly = TRUE)) {
+        c(n_row, n_col)
+      }
     )
   } else {
     .draw_cells(
@@ -3205,7 +3196,8 @@ heat_map <- function(x,
     heat_map_record(),
     info = hm_info,
     args = hm_args,
-    custom = hm_custom
+    custom = hm_custom,
+    memo = memo$record
   )
 
   # SAVE HEATMAP

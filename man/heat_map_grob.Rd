@@ -22,7 +22,8 @@ a grob that draws the heatmap.
 \pkg{cowplot} or \pkg{gridExtra} layouts, or be drawn with
 \code{grid::grid.draw()}. The grob draws the heatmap again whenever its
 space changes, so the layout sizes the dendrograms, legends and text
-for the space the heatmap is given.
+for the space the heatmap is given. The dendrograms are kept in the
+heatmap, so drawing it again doesn't cluster it again.
 }
 \details{
 The heatmap is drawn with base graphics and converted to \pkg{grid} by the
