@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 **HeatmapR** is a lightweight R package that uses base graphics to facilitate the creation of high quality complex heatmaps that can be easily arranged with other plots. In this vignette, we will explore the key features of `HeatmapR` and describe the usage of each of the key functions in `HeatmapR` as summarised below:
 
 -   `heat_map()` convenient wrapper around all `HeatmapR` functions providing an intuitive way to create complex heatmaps using base graphics.
--   `heat_map_clust()` is used inside `heat_map()` to perform hierarchical clustering on the dataset using `stats::hclust()`.
+-   `heat_map_clust()` is used inside `heat_map()` to perform hierarchical clustering on the dataset, in compiled code that builds the same trees as `stats::hclust()`.
 -   `heat_map_scale()` is used inside `heat_map()` to apply column- or row-wise mean, z-score or range scaling to the dataset prior to constructing the heatmap.
 -   `heat_map_summarise()` reduces groups of rows or columns to one summary each (e.g. the mean expression of each cell type), or keeps the values of each group for distributions inside the cells.
 -   `heat_map_info()` returns the data, row and column order, clusters, colours and layout of a heatmap for downstream analyses.
@@ -760,11 +760,11 @@ For other layouts, the shapes can be set cell by cell in `heat_map()` with a mat
 
 ## 3. Data Scaling
 
-In the above heatmap, it is very clear that each of the columns of the input matrix are on completely different scales, making it difficult to visualise differences in columns with very small values. In order to represent each column on the same scale, we can apply a form of data scaling through the `scale_method` argument either to each row or column as specified by the `scale` argument. Currently, `heat_map()` has internal support for `"mean"`, `"range"` and `"z-score"` scaling methods that can be applied to either the rows or columns of the input matrix.
+In the above heatmap, it is very clear that each of the columns of the input matrix are on completely different scales, making it difficult to visualise differences in columns with very small values. In order to represent each column on the same scale, we can apply a form of data scaling through the `scale_method` argument either to each row or column as specified by the `scale` argument. Currently, `heat_map()` has internal support for `"mean"`, `"range"` and `"zscore"` scaling methods that can be applied to either the rows or columns of the input matrix.
 
 ### 3.1 Scaling Columns
 
-To scale the values in every column, simply set `scale = "column` and specify the scaling method through the `scale_method` argument. For example, to apply range scaling to every column in the `mtcars` dataset:
+To scale the values in every column, simply set `scale = "column"` and specify the scaling method through the `scale_method` argument. For example, to apply range scaling to every column in the `mtcars` dataset:
 
 ```{r, eval = FALSE}
 heat_map(
@@ -1048,7 +1048,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 ## 5. Hierarchical Clustering
 
-`heat_map()` also supports hierarchical clustering using the conventional `stats::hclust()` to construct dendrograms and `stats::cutree()` to partition the dendrograms into distinct clusters. The `dist_method` and `clust_method` arguments allow for control over the distance metric to use for hierarchical clustering (any method supported by `stats::dist()`, `"cosine"` for cosine distance, `"pearson"`, `"spearman"` or `"kendall"` for correlation distances, or a function) and the agglomeration method to use (any method supported by `stats::hclust()`).
+`heat_map()` also supports hierarchical clustering to construct dendrograms, and `stats::cutree()` to partition the dendrograms into distinct clusters. Distances and linkage are computed in compiled code using the nearest-neighbour chain algorithm, which builds the same trees as `stats::hclust()` (when distances are tied, as they often are for integer data, the tree can make a different but equally valid choice between the tied merges). The `dist_method` and `clust_method` arguments allow for control over the distance metric to use for hierarchical clustering (any method supported by `stats::dist()`, `"cosine"` for cosine distance, `"pearson"`, `"spearman"` or `"kendall"` for correlation distances, or a function) and the agglomeration method to use (any method supported by `stats::hclust()`).
 
 ### 5.1 Dendrograms
 

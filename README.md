@@ -60,7 +60,7 @@ graphics approach.
 - **HeatmapR** clusters large datasets quickly: distances, linkage and
   optimal leaf ordering run in compiled C++ code shared between threads
   (`heat_map_threads()`), and rows or columns beyond `clust_max` are
-  clustered in two stages, so 100,000 rows take about a second on two
+  clustered in two stages, so 100,000 rows take about 2 seconds on two
   cores.
 - **HeatmapR** shows sample or feature metadata as annotation tracks
   (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
@@ -134,7 +134,7 @@ annotations</a>
 
 See the
 [changelog](https://dillonhammill.github.io/HeatmapR/news/index.html)
-for everything new in **HeatmapR** 1.2.0.
+for everything new in **HeatmapR** 2.0.0.
 
 ## Installation
 
@@ -150,10 +150,10 @@ The development version can be installed directly from GitHub:
 devtools::install_github("DillonHammill/HeatmapR")
 ```
 
-The development version contains C++ code, so installing it from GitHub
-needs a compiler:
-[Rtools](https://cran.r-project.org/bin/windows/Rtools/) on Windows or
-the Xcode command line tools on macOS.
+**HeatmapR** contains C++ code: CRAN provides ready-built binaries for
+Windows and macOS, but installing from GitHub (or from source) needs a
+compiler - [Rtools](https://cran.r-project.org/bin/windows/Rtools/) on
+Windows or the Xcode command line tools on macOS.
 
 ## Usage
 
@@ -181,11 +181,12 @@ heat_map(
 
 ## Acknowledgements
 
-**HeatmapR** relies on statistical methods in the `stats` package to
-compute distance matrices and perform hierarchical clustering. The
-dendrogram line segments follow the layout used by the
-[ggdendro](https://github.com/andrie/ggdendro) package, which earlier
-versions of **HeatmapR** used modified code from.
+**HeatmapR** computes distances and hierarchical clustering in compiled
+code that follows the methods of the `stats` package (`stats::dist()`
+and `stats::hclust()`), which it still uses for the methods the compiled
+code doesn’t cover. The dendrogram line segments follow the layout used
+by the [ggdendro](https://github.com/andrie/ggdendro) package, which
+earlier versions of **HeatmapR** used modified code from.
 
 ## Code of Conduct
 
@@ -204,7 +205,7 @@ citation("HeatmapR")
 #> To cite package 'HeatmapR' in publications use:
 #> 
 #>   Hammill D (2026). _HeatmapR: Create Heatmaps Using Base Graphics_. R
-#>   package version 1.2.0, <https://dillonhammill.github.io/HeatmapR/>.
+#>   package version 2.0.0, <https://dillonhammill.github.io/HeatmapR/>.
 #> 
 #> A BibTeX entry for LaTeX users is
 #> 
@@ -212,7 +213,7 @@ citation("HeatmapR")
 #>     title = {HeatmapR: Create Heatmaps Using Base Graphics},
 #>     author = {Dillon Hammill},
 #>     year = {2026},
-#>     note = {R package version 1.2.0},
+#>     note = {R package version 2.0.0},
 #>     url = {https://dillonhammill.github.io/HeatmapR/},
 #>   }
 ```
