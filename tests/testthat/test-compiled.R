@@ -155,21 +155,16 @@ test_that("groups are clustered in one call with the same distances", {
   expect_equal(heat_map_clust(mtcars)$order, hclust(dist(mtcars))$order)
 })
 
-test_that("many leaves keep only the lower triangle of the distances", {
+test_that("distances from rows give the trees of dist objects", {
   set.seed(6)
-  x <- matrix(rnorm(300), 60, dimnames = list(paste0("r", 1:60), NULL))
-  d <- dist(x)
-  for (method in names(.NN_CHAIN)) {
-    full <- .hclust_dist(d, method)
-    tri <- .hclust_dist(d, method, max_bytes = 0)
-    expect_identical(tri$merge, full$merge, info = method)
-    expect_identical(tri$height, full$height, info = method)
-    metric <- .compiled_metric(x, "manhattan")
-    expect_identical(
-      .hclust_rows(x, metric, method, max_bytes = 0)[c("merge", "height", "order")],
-      .hclust_rows(x, metric, method)[c("merge", "height", "order")],
-      info = method
-    )
+  x <- matrix(sample(0:9, 300, TRUE), 60, dimnames = list(paste0("r", 1:60), NULL))
+  for (d in c("euclidean", "manhattan", "maximum")) {
+    for (method in names(.NN_CHAIN)) {
+      rows <- .hclust_rows(x, .compiled_metric(x, d), method)
+      from_dist <- .hclust_dist(dist(x, d), method)
+      expect_identical(rows[c("merge", "height", "order")],
+                       from_dist[c("merge", "height", "order")], info = paste(d, method))
+    }
   }
   expect_identical(.hclust_rows(x, .compiled_metric(x, "euclidean"))$labels, rownames(x))
 })

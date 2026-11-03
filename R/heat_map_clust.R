@@ -302,10 +302,6 @@ heat_map_clust <- function(x,
   ward.D2 = 8L
 )
 
-# Largest full matrix of distances (both halves, so a nearest neighbour is
-# found by reading one row in order); more leaves keep the lower triangle only
-.FULL_BYTES <- 512 * 1024^2
-
 #' Hierarchical clustering of a dist object
 #'
 #' Single, complete, average, McQuitty and Ward linkage are computed by the
@@ -316,15 +312,12 @@ heat_map_clust <- function(x,
 #' stats::hclust().
 #'
 #' @param members initial cluster sizes, as for \code{hclust()}.
-#' @param max_bytes the largest full matrix of distances (see
-#'   \code{.FULL_BYTES}).
 #'
 #' @importFrom stats hclust
 #' @noRd
 .hclust_dist <- function(d,
                          method = "complete",
-                         members = NULL,
-                         max_bytes = .FULL_BYTES) {
+                         members = NULL) {
   n <- attr(d, "Size")
   code <- .NN_CHAIN[method]
   if(is.na(code) || is.null(n) || n < 2 || anyNA(d) ||
@@ -335,8 +328,7 @@ heat_map_clust <- function(x,
   if(!is.double(d)) {
     storage.mode(d) <- "double"
   }
-  r <- hclust_cpp(d, n, code, if(is.null(members)) NULL else as.double(members),
-                  as.double(max_bytes))
+  r <- hclust_cpp(d, n, code, if(is.null(members)) NULL else as.double(members))
   structure(
     list(
       merge = r$merge,
@@ -358,16 +350,12 @@ heat_map_clust <- function(x,
 #'
 #' @param metric from \code{.compiled_metric()}.
 #' @param method a linkage in \code{.NN_CHAIN}.
-#' @param max_bytes the largest full matrix of distances (see
-#'   \code{.FULL_BYTES}).
 #'
 #' @noRd
 .hclust_rows <- function(x,
                          metric,
-                         method = "complete",
-                         max_bytes = .FULL_BYTES) {
-  r <- hclust_rows_cpp(metric$x, metric$code, metric$q, .NN_CHAIN[[method]],
-                       as.double(max_bytes))
+                         method = "complete") {
+  r <- hclust_rows_cpp(metric$x, metric$code, metric$q, .NN_CHAIN[[method]])
   structure(
     list(
       merge = r$merge,
