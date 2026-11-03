@@ -6,10 +6,10 @@
 #include <R_ext/Visibility.h>
 
 // colour.cpp
-cpp11::strings ramp_colours_cpp(cpp11::doubles k, cpp11::doubles knots, cpp11::doubles_matrix<> rgb, int alpha);
-extern "C" SEXP _HeatmapR_ramp_colours_cpp(SEXP k, SEXP knots, SEXP rgb, SEXP alpha) {
+SEXP rgb_strings_cpp(cpp11::doubles_matrix<> rgb, int alpha);
+extern "C" SEXP _HeatmapR_rgb_strings_cpp(SEXP rgb, SEXP alpha) {
   BEGIN_CPP11
-    return cpp11::as_sexp(ramp_colours_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(k), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(knots), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb), cpp11::as_cpp<cpp11::decay_t<int>>(alpha)));
+    return cpp11::as_sexp(rgb_strings_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb), cpp11::as_cpp<cpp11::decay_t<int>>(alpha)));
   END_CPP11
 }
 // colour.cpp
@@ -156,7 +156,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_nearest_medoid_cpp",    (DL_FUNC) &_HeatmapR_nearest_medoid_cpp,    4},
     {"_HeatmapR_olo_blocks_cpp",        (DL_FUNC) &_HeatmapR_olo_blocks_cpp,        2},
     {"_HeatmapR_olo_order_cpp",         (DL_FUNC) &_HeatmapR_olo_order_cpp,         3},
-    {"_HeatmapR_ramp_colours_cpp",      (DL_FUNC) &_HeatmapR_ramp_colours_cpp,      4},
+    {"_HeatmapR_rgb_strings_cpp",       (DL_FUNC) &_HeatmapR_rgb_strings_cpp,       2},
     {"_HeatmapR_structural_clades_cpp", (DL_FUNC) &_HeatmapR_structural_clades_cpp, 2},
     {"_HeatmapR_sub_merge_cpp",         (DL_FUNC) &_HeatmapR_sub_merge_cpp,         2},
     {"_HeatmapR_tree_segments_cpp",     (DL_FUNC) &_HeatmapR_tree_segments_cpp,     3},

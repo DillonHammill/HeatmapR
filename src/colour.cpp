@@ -1,15 +1,17 @@
 // Cell colours
 //
-// Numeric cells are coloured along a ramp of colours. grDevices::colorRamp()
-// interpolates each channel linearly between evenly spaced colours
-// (stats::approxfun()), clamps it to [0, 1] and multiplies by 255, and
-// rgb(maxColorValue = 255) truncates the result to an integer and writes
-// "#RRGGBB". The same arithmetic here gives the same colours without
-// building three interpolating functions, a matrix and a string per cell in
-// R. Raster images are passed to the graphics device as packed integers
-// (a nativeRaster), so their colours are never parsed from strings.
+// Numeric cells are coloured by a colour ramp in R (colorRamp()), whose
+// channels rgb(maxColorValue = 255) truncates to integers and writes as
+// "#RRGGBB". Writing the strings here (each colour once) gives the same
+// colours without rgb(), toupper() and paste0() over every cell. The channels
+// are left to R because a value can sit within rounding of a whole number,
+// so a different order of floating-point operations (e.g. a fused
+// multiply-add) could truncate it differently. Raster images are passed to
+// the graphics device as packed integers (a nativeRaster), so their colours
+// are never parsed from strings.
 
 #include <cpp11.hpp>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <unordered_map>
@@ -18,26 +20,6 @@
 namespace {
 
 const char* HEX = "0123456789ABCDEF";
-
-// One channel of colorRamp(): approx1() of stats (linear, values in [0, 1])
-inline double approx_channel(double v, const double* x, const double* y, int n) {
-  int i = 0, j = n - 1;
-  if (v < x[i] || v > x[j]) return NA_REAL;
-  while (i < j - 1) {
-    int ij = (i + j) / 2;
-    if (v < x[ij]) j = ij; else i = ij;
-  }
-  if (v == x[j]) return y[j];
-  if (v == x[i]) return y[i];
-  return y[i] + (y[j] - y[i]) * ((v - x[i]) / (x[j] - x[i]));
-}
-
-// roundcolor() of colorRamp() and the integer coercion of rgb()
-inline int channel_byte(double a) {
-  if (a > 1) a = 1;
-  if (a < 0) a = 0;
-  return static_cast<int>(a * 255);
-}
 
 inline int hex_value(char c) {
   if (c >= '0' && c <= '9') return c - '0';
@@ -56,18 +38,18 @@ inline int pack(int r, int g, int b, int a) {
 
 }  // namespace
 
-// "#RRGGBB" (or "#RRGGBBAA" when alpha is 0 to 255) for each position k on a
-// ramp through the colours whose channels (in [0, 1]) are the rows of rgb at
-// the positions knots
+// "#RRGGBB" (or "#RRGGBBAA" when alpha is 0 to 255) for the rows of a matrix
+// of red, green and blue intensities in [0, 255], truncated to integers as
+// rgb(maxColorValue = 255) does. NULL if any intensity is missing or outside
+// what rgb() accepts, so that R reports it.
 [[cpp11::register]]
-cpp11::strings ramp_colours_cpp(cpp11::doubles k, cpp11::doubles knots,
-                                cpp11::doubles_matrix<> rgb, int alpha) {
-  R_xlen_t n = k.size();
-  int nc = knots.size();
-  const double* x = REAL(knots);
-  const double* ch = REAL(rgb.data());
-  const double* kv = REAL(k);
+SEXP rgb_strings_cpp(cpp11::doubles_matrix<> rgb, int alpha) {
   if (alpha > 255) cpp11::stop("alpha must be from 0 to 255");
+  R_xlen_t n = rgb.nrow();
+  const double* v = REAL(rgb.data());
+  for (R_xlen_t i = 0; i < 3 * n; ++i) {
+    if (ISNAN(v[i]) || v[i] <= -1 || v[i] >= 256) return R_NilValue;
+  }
   cpp11::writable::strings out(n);
   SEXP s = out;
   // EACH COLOUR'S STRING IS MADE ONCE
@@ -76,25 +58,8 @@ cpp11::strings ramp_colours_cpp(cpp11::doubles k, cpp11::doubles knots,
   buf[0] = '#';
   int len = alpha >= 0 ? 9 : 7;
   for (R_xlen_t i = 0; i < n; ++i) {
-    double v = kv[i];
-    if (ISNAN(v)) {
-      SET_STRING_ELT(s, i, NA_STRING);
-      continue;
-    }
     int c[3];
-    bool ok = true;
-    for (int j = 0; j < 3; ++j) {
-      double a = approx_channel(v, x, ch + static_cast<size_t>(j) * nc, nc);
-      if (ISNAN(a)) {
-        ok = false;
-        break;
-      }
-      c[j] = channel_byte(a);
-    }
-    if (!ok) {
-      SET_STRING_ELT(s, i, NA_STRING);
-      continue;
-    }
+    for (int j = 0; j < 3; ++j) c[j] = static_cast<int>(v[i + j * n]);
     uint32_t key = static_cast<uint32_t>(c[0]) | (static_cast<uint32_t>(c[1]) << 8) |
                    (static_cast<uint32_t>(c[2]) << 16);
     auto it = made.find(key);

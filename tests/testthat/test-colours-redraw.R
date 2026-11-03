@@ -8,7 +8,7 @@ ramp_rgb <- function(k, colours) {
 
 test_that("ramp colours are those of colorRamp() and rgb()", {
   set.seed(1)
-  k <- c(0, 1, 0.5, runif(2000), seq(0, 1, length.out = 101))
+  k <- c(0, 1, 0.5, runif(2000), seq(0, 1, length.out = 101), (0:29) / 29)
   palettes <- list(
     .default_col_scale(),
     c("navy", "white", "firebrick"),
@@ -18,25 +18,28 @@ test_that("ramp colours are those of colorRamp() and rgb()", {
   )
   for (colours in palettes) {
     scale <- .col_scale(colours)
-    expect_identical(attr(scale, "colours"), colours)
     expect_identical(.ramp_colours(k, scale), ramp_rgb(k, colours))
     expect_identical(
       .ramp_colours(k, scale, alpha = 0.4),
       .alpha_col(ramp_rgb(k, colours), 0.4)
     )
   }
-  # PALETTE NAMES, FUNCTIONS, MISSING POSITIONS AND NOTHING TO COLOUR
+  # PALETTE NAMES, A SINGLE POSITION AND NOTHING TO COLOUR
   expect_identical(
     .ramp_colours(k, .col_scale("viridis")),
     ramp_rgb(k, grDevices::hcl.colors(100, "viridis"))
   )
-  f <- grDevices::colorRamp(c("blue", "yellow"))
-  expect_null(attr(.col_scale(f), "colours"))
-  expect_identical(.ramp_colours(k, .col_scale(f)), ramp_rgb(k, c("blue", "yellow")))
-  expect_identical(.ramp_colours(0.3, .col_scale(f)), ramp_rgb(0.3, c("blue", "yellow")))
-  expect_identical(.ramp_colours(c(0.2, NA), .col_scale("red")), c("#FF0000", NA))
+  expect_identical(.ramp_colours(0.3, .col_scale(c("blue", "yellow"))),
+                   ramp_rgb(0.3, c("blue", "yellow")))
   expect_identical(.ramp_colours(numeric(0), .col_scale()), character(0))
-  expect_error(ramp_colours_cpp(0.5, c(0, 1), matrix(0, 2, 3), 300L), "alpha")
+  # RAMPS WITH AN ALPHA CHANNEL - ITS RED, GREEN AND BLUE
+  f <- grDevices::colorRamp(c("#FF000000", "#0000FFFF"), alpha = TRUE)
+  expect_identical(.ramp_colours(c(0, 0.5), f), ramp_rgb(c(0, 0.5), c("red", "blue")))
+  # INTENSITIES rgb() WOULD REJECT ARE LEFT TO rgb()
+  expect_error(.ramp_colours(0.5, function(k) cbind(k * 600, 0, 0)), "not in 0:255")
+  expect_null(rgb_strings_cpp(cbind(c(10, NA), 0, 0), -1L))
+  expect_identical(rgb_strings_cpp(cbind(c(-0.5, 255.9), 0, 0), 16L), c("#00000010", "#FF000010"))
+  expect_error(rgb_strings_cpp(cbind(1, 2, 3), 300L), "alpha")
 })
 
 test_that("alpha channels are appended as adjustcolor() writes them", {

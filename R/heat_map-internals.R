@@ -446,10 +446,6 @@
 }
 
 #' Resolve the colour scale for numeric values into a colorRamp function
-#'
-#' Ramps built here from colours keep them as the attribute "colours", so
-#' that cells can be coloured in compiled code (\code{.ramp_colours()}).
-#'
 #' @importFrom grDevices colorRamp hcl.colors
 #' @noRd
 .col_scale <- function(x = NULL) {
@@ -462,16 +458,15 @@
   if(.is_hcl_palette(x)) {
     x <- hcl.colors(100, x)
   }
-  ramp <- colorRamp(x)
-  attr(ramp, "colours") <- x
-  ramp
+  colorRamp(x)
 }
 
 #' Colours of positions along a colour scale
 #'
-#' Ramps from \code{.col_scale()} are evaluated in compiled code with the
-#' arithmetic of \code{colorRamp()} and \code{rgb(maxColorValue = 255)}, so
-#' the colours are the same; other functions are called as they are.
+#' The scale gives each position's red, green and blue intensities, which are
+#' written as colours in compiled code exactly as \code{rgb(maxColorValue =
+#' 255)} writes them (intensities \code{rgb()} would reject go to
+#' \code{rgb()}, which reports them).
 #'
 #' @param k positions along the scale, in [0, 1].
 #' @param scale a function from \code{.col_scale()}.
@@ -480,30 +475,29 @@
 #'
 #' @return "#RRGGBB" colours (or "#RRGGBBAA" with \code{alpha}).
 #'
-#' @importFrom grDevices col2rgb rgb
+#' @importFrom grDevices rgb
 #' @noRd
 .ramp_colours <- function(k,
                           scale,
                           alpha = NULL) {
-  colours <- attr(scale, "colours")
-  if(is.null(colours) || length(k) == 0 ||
-     (!is.null(alpha) && is.na(.alpha_byte(alpha)))) {
-    rgb_mat <- matrix(scale(k), ncol = 3)
+  if(length(k) == 0) {
+    return(character(0))
+  }
+  rgb_mat <- scale(k)
+  if(is.null(dim(rgb_mat))) {
+    rgb_mat <- matrix(rgb_mat, nrow = 1)
+  }
+  rgb_mat <- rgb_mat[, 1:3, drop = FALSE]
+  storage.mode(rgb_mat) <- "double"
+  byte <- if(is.null(alpha)) -1L else .alpha_byte(alpha)
+  out <- if(!is.na(byte)) rgb_strings_cpp(rgb_mat, byte)
+  if(is.null(out)) {
     out <- rgb(rgb_mat[, 1], rgb_mat[, 2], rgb_mat[, 3], maxColorValue = 255)
-    return(if(is.null(alpha)) out else .alpha_col(out, alpha))
+    if(!is.null(alpha)) {
+      out <- .alpha_col(out, alpha)
+    }
   }
-  # THE KNOTS AND CHANNELS OF colorRamp()
-  channels <- t(col2rgb(colours) / 255)
-  if(nrow(channels) == 1) {
-    channels <- channels[c(1, 1), , drop = FALSE]
-  }
-  knots <- as.double(seq.int(0, 1, length.out = nrow(channels)))
-  ramp_colours_cpp(
-    as.double(k),
-    knots,
-    channels,
-    if(is.null(alpha)) -1L else .alpha_byte(alpha)
-  )
+  out
 }
 
 #' Alpha channel of a transparency in [0, 1], as .alpha_col() writes it
