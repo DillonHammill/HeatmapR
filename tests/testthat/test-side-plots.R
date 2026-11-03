@@ -109,14 +109,12 @@ test_that("violins are densities as wide as a bar with a median line", {
 
 test_that("heat_map draws box plots and violins beside the heatmap", {
   m <- test_matrix(8, 6)
-  for (layout in c("fit", "classic")) {
-    hm <- draw(m, bar_values_x = TRUE, bar_values_y = TRUE, bar_type_y = "violin",
-               tree = "both", layout = layout, bar_axis_label_x = "Values")
-    b <- heat_map_info(hm)$layout
-    expect_equal(layout_overlaps(b), character(0))
-    expect_true(all(c("bar_x", "bar_y", "bar_axis_x", "bar_axis_y") %in% b$component))
-    expect_length(drawn(hm, "C_polygon"), 1)
-  }
+  hm <- draw(m, bar_values_x = TRUE, bar_values_y = TRUE, bar_type_y = "violin",
+             tree = "both", bar_axis_label_x = "Values")
+  b <- heat_map_info(hm)$layout
+  expect_equal(layout_overlaps(b), character(0))
+  expect_true(all(c("bar_x", "bar_y", "bar_axis_x", "bar_axis_y") %in% b$component))
+  expect_length(drawn(hm, "C_polygon"), 1)
   # Distributions follow the columns into display order
   info <- heat_map_info(hm)
   vals <- as.list(seq_len(6))

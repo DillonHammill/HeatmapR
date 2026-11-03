@@ -145,6 +145,36 @@
   invisible(TRUE)
 }
 
+#' Whether cluster indices are read in the displayed order - unnamed numeric
+#' indices with one value per row or column
+#' @noRd
+.display_indices <- function(cut,
+                             n,
+                             labels = NULL) {
+  is.numeric(cut) && length(cut) == n && n > 1 &&
+    !(!is.null(names(cut)) && !is.null(labels) && !anyDuplicated(names(cut)) &&
+        setequal(names(cut), labels))
+}
+
+#' Cluster indices given as the heatmap is displayed, in the original order
+#'
+#' Unnamed numeric cluster indices with one value per row (column) are read
+#' in the order the heatmap is displayed - rows from the top, columns from the
+#' left (see \code{.display_indices()}). Named indices (matched by name),
+#' labels (factors and text, which usually come from metadata in the original
+#' order) and cluster sizes are not converted.
+#'
+#' @param shown indices of the rows (from the top) or columns (from the left)
+#'   in display order.
+#'
+#' @noRd
+.display_cut <- function(cut,
+                         shown) {
+  out <- unname(cut)
+  out[shown] <- unname(cut)
+  out
+}
+
 #' Resolve manually defined clusters
 #'
 #' @param cut either a vector of cluster sizes (in the displayed order) or a
@@ -161,7 +191,7 @@
 #'
 #' @return list containing the updated display order (\code{ind}) and the
 #'   cluster of each position in the display order (\code{cut}), numbered
-#'   consecutively from 1.
+#'   consecutively from 1 along \code{ind}.
 #'
 #' @noRd
 .manual_clusters <- function(cut,
@@ -200,10 +230,12 @@
     }
     # CLUSTER CODES - FACTOR LEVELS OR SORTED VALUES
     if(is.factor(cut)) {
-      groups <- as.integer(droplevels(cut))
+      codes <- as.integer(droplevels(cut))
     } else {
-      groups <- as.integer(factor(cut))
+      codes <- as.integer(factor(cut))
     }
+    # THE FIRST CLUSTER IS PLACED FIRST
+    groups <- codes
     # CLUSTERS ALREADY CONTIGUOUS IN A DENDROGRAM ORDER - KEEP THE DENDROGRAM
     if(keep_order && !anyDuplicated(rle(groups[ind])$values)) {
       new_ind <- ind
@@ -219,7 +251,7 @@
       } else {
         levels(factor(cut))
       }
-      cluster_labels <- lev[unique(new_cut)]
+      cluster_labels <- lev[unique(codes[new_ind])]
     }
     new_cut <- match(new_cut, unique(new_cut))
   # CLUSTER SIZES - DISPLAY ORDER
@@ -414,7 +446,12 @@
 }
 
 #' Resolve the colour scale for numeric values into a colorRamp function
-#' @importFrom grDevices colorRamp hcl.colors
+#'
+#' Ramps through colours keep the positions and channels that
+#' \code{colorRamp()} interpolates between (attribute \code{"ramp"}), so that
+#' \code{.ramp_packed()} can interpolate them in compiled code.
+#'
+#' @importFrom grDevices colorRamp col2rgb hcl.colors
 #' @noRd
 .col_scale <- function(x = NULL) {
   if(is.null(x)) {
@@ -426,7 +463,91 @@
   if(.is_hcl_palette(x)) {
     x <- hcl.colors(100, x)
   }
-  colorRamp(x)
+  ramp <- colorRamp(x)
+  # AS colorRamp() - CHANNELS IN [0, 1], A SINGLE COLOUR TWICE
+  channels <- t(col2rgb(x) / 255)
+  if(nrow(channels) == 1) {
+    channels <- channels[c(1, 1), , drop = FALSE]
+  }
+  attr(ramp, "ramp") <- list(
+    knots = as.double(seq.int(0, 1, length.out = nrow(channels))),
+    channels = channels
+  )
+  ramp
+}
+
+#' Colours of positions along a colour scale, as packed integers
+#'
+#' Ramps from \code{.col_scale()} are interpolated in compiled code with the
+#' arithmetic of \code{colorRamp()} and \code{rgb(maxColorValue = 255)}; other
+#' scales give red, green and blue intensities, which are truncated as
+#' \code{rgb()} truncates them (intensities \code{rgb()} would reject go to
+#' \code{rgb()}, which reports them).
+#'
+#' @param k positions along the scale, in [0, 1].
+#' @param scale a function from \code{.col_scale()}.
+#'
+#' @return opaque colours as packed integers (see \code{.native_colours()}).
+#'
+#' @importFrom grDevices rgb
+#' @noRd
+.ramp_packed <- function(k,
+                         scale) {
+  if(length(k) == 0) {
+    return(integer(0))
+  }
+  ramp <- attr(scale, "ramp")
+  if(!is.null(ramp)) {
+    out <- ramp_packed_cpp(as.double(k), ramp$knots, ramp$channels)
+    if(!is.null(out)) {
+      return(out)
+    }
+  }
+  rgb_mat <- scale(k)
+  if(is.null(dim(rgb_mat))) {
+    rgb_mat <- matrix(rgb_mat, nrow = 1)
+  }
+  rgb_mat <- rgb_mat[, 1:3, drop = FALSE]
+  storage.mode(rgb_mat) <- "double"
+  out <- rgb_packed_cpp(rgb_mat)
+  if(is.null(out)) {
+    out <- .native_colours(
+      rgb(rgb_mat[, 1], rgb_mat[, 2], rgb_mat[, 3], maxColorValue = 255)
+    )
+  }
+  out
+}
+
+#' Colours of positions along a colour scale
+#'
+#' @param k positions along the scale, in [0, 1].
+#' @param scale a function from \code{.col_scale()}.
+#' @param alpha NULL, or transparency in [0, 1] (as \code{.alpha_col()}
+#'   applies it).
+#'
+#' @return "#RRGGBB" colours as \code{rgb(maxColorValue = 255)} writes them (or
+#'   "#RRGGBBAA" with \code{alpha}).
+#'
+#' @noRd
+.ramp_colours <- function(k,
+                          scale,
+                          alpha = NULL) {
+  packed <- .ramp_packed(k, scale)
+  if(is.null(alpha)) {
+    return(packed_strings_cpp(packed, FALSE))
+  }
+  packed_strings_cpp(.alpha_packed(packed, alpha), TRUE)
+}
+
+#' Transparency applied to packed colours as adjustcolor() applies it (the
+#' alpha channel times alpha, recycled)
+#' @noRd
+.alpha_packed <- function(packed,
+                          alpha) {
+  if(length(alpha) == 0) {
+    stop("'alpha' must have at least one value.", call. = FALSE)
+  }
+  adjust_alpha_cpp(packed, as.double(alpha))
 }
 
 #' Resolve the colour palette for non-numeric values into a function of n
@@ -574,7 +695,8 @@
                             col_alpha,
                             keep = NULL,
                             rotate = NULL,
-                            slant = 2) {
+                            slant = 2,
+                            pos = NULL) {
   n <- length(at)
   if(n == 0) {
     return(invisible(NULL))
@@ -600,16 +722,22 @@
   }
   # LABELS ROTATED BY AN ANGLE (DEGREES) - EACH ENDS ONE LINE BEYOND ITS TICK
   # AND SLANTS TOWARDS THE Y AXIS TEXT (SIDE slant)
+  axis_pos <- if(is.null(pos)) NA else pos
   if(!is.null(rotate)) {
     for(z in keep) {
-      axis(side, at = at[z], labels = FALSE, tck = tck)
+      axis(side, at = at[z], labels = FALSE, tck = tck, pos = axis_pos)
     }
     if(length(keep) > 0) {
       usr <- par("usr")
       off <- .line_in() / par("pin")[2] * diff(usr[3:4])
+      edge <- if(is.null(pos)) {
+        if(side == 1) usr[3] else usr[4]
+      } else {
+        pos
+      }
       text(
         x = at[keep],
-        y = if(side == 1) usr[3] - off else usr[4] + off,
+        y = if(side == 1) edge - off else edge + off,
         labels = labels[keep],
         srt = if((side == 1) == (slant == 2)) rotate else -rotate,
         adj = c(if(slant == 2) 1 else 0, 0.5),
@@ -633,13 +761,36 @@
       tck = tck,
       font.axis = font[z],
       cex.axis = size[z],
-      col.axis = cols[z]
+      col.axis = cols[z],
+      pos = axis_pos
     )
   }
   invisible(NULL)
 }
 
+#' Cell shapes
+#' @noRd
+.SHAPES <- c("rect", "circle", "diamond", "ellipse", "number", "none")
+
+#' Warning for unknown cell shapes
+#' @noRd
+.shape_message <- function() {
+  paste0(
+    "'cell_shape' must be one of ",
+    paste0("\"", .SHAPES[-length(.SHAPES)], "\"", collapse = ", "),
+    " or \"", .SHAPES[length(.SHAPES)], "\" - using \"rect\"."
+  )
+}
+
 #' Draw heatmap cells with one graphics call per shape
+#'
+#' Circles, diamonds and ellipses stay round on cells that aren't square -
+#' their size is set by the shorter side of the cells, as in the size legend.
+#' Cells drawn as numbers or left empty ("none") are skipped.
+#'
+#' @param cell_in width and height of the cells (inches).
+#' @param value values between -1 and 1 shown by the ellipses.
+#'
 #' @importFrom graphics rect polygon
 #' @noRd
 .draw_cells <- function(x,
@@ -649,10 +800,15 @@
                         fill,
                         border,
                         line_type = 1,
-                        line_width = 1) {
+                        line_width = 1,
+                        cell_in = c(1, 1),
+                        value = NULL) {
 
   # CELLS WITH MISSING SIZES ARE NOT DRAWN
   keep <- !is.na(size) & !is.na(x) & !is.na(y)
+
+  # SHORTER SIDE OF THE CELLS ALONG X AND Y (FRACTIONS OF THE CELLS)
+  aspect <- min(cell_in) / cell_in
 
   # RECTANGLES
   ind <- keep & shape == "rect"
@@ -677,8 +833,8 @@
       x = x[ind],
       y = y[ind],
       r = 0.5 * size[ind],
-      dx = c(-1, 0, 1, 0),
-      dy = c(0, 1, 0, -1),
+      dx = c(-1, 0, 1, 0) * aspect[1],
+      dy = c(0, 1, 0, -1) * aspect[2],
       fill = fill[ind],
       border = border[ind],
       line_type = line_type,
@@ -694,8 +850,30 @@
       x = x[ind],
       y = y[ind],
       r = 0.5 * size[ind],
-      dx = sin(angles),
-      dy = cos(angles),
+      dx = sin(angles) * aspect[1],
+      dy = cos(angles) * aspect[2],
+      fill = fill[ind],
+      border = border[ind],
+      line_type = line_type,
+      line_width = line_width
+    )
+  }
+
+  # ELLIPSES - THE OUTLINE OF A BIVARIATE NORMAL DISTRIBUTION WITH CORRELATION
+  # r (AS IN ellipse::plotcorr), WITHIN 90% OF THE CELL: A CIRCLE AT 0, RISING
+  # FOR POSITIVE AND FALLING FOR NEGATIVE VALUES, A DIAGONAL LINE AT -1 AND 1
+  ind <- keep & shape == "ellipse"
+  if(any(ind)) {
+    r <- if(is.null(value)) rep(0, sum(ind)) else value[ind]
+    r[is.na(r)] <- 0
+    d <- acos(pmin(pmax(r, -1), 1))
+    angles <- seq(0, 2, 1/25) * pi
+    .draw_polygons(
+      x = x[ind],
+      y = y[ind],
+      r = 0.45 * size[ind],
+      dx = cos(outer(angles, d / 2, "+")) * aspect[1],
+      dy = cos(outer(angles, d / 2, "-")) * aspect[2],
       fill = fill[ind],
       border = border[ind],
       line_type = line_type,
@@ -705,6 +883,123 @@
 
   invisible(NULL)
 
+}
+
+#' Write the numbers of "number" cells in the colours of their cells
+#'
+#' @param cell_in width and height of the cells (inches) to shrink the text to
+#'   fit them, or NULL to keep its size.
+#'
+#' @importFrom graphics text
+#' @noRd
+.draw_cell_numbers <- function(x,
+                               y,
+                               labels,
+                               col,
+                               size,
+                               font,
+                               cell_in = NULL) {
+  if(length(labels) == 0) {
+    return(invisible(NULL))
+  }
+  if(!is.null(cell_in)) {
+    size <- .fit_cell_text(labels, size, font, cell_in)
+  }
+  text(
+    x = x,
+    y = y,
+    labels = labels,
+    col = col,
+    cex = size,
+    font = font
+  )
+  invisible(NULL)
+}
+
+#' Numbers written in cells - a fixed number of decimal places, without
+#' negative zeros
+#' @noRd
+.format_number <- function(x,
+                           digits = 2) {
+  x <- round(x, digits)
+  x[x == 0] <- 0
+  formatC(x, format = "f", digits = digits)
+}
+
+#' Colours dark enough to read as text on white - the lightness (CIELAB) of
+#' lighter colours is lowered to \code{max_l}, keeping their hue
+#' @importFrom grDevices col2rgb convertColor rgb
+#' @noRd
+.readable_col <- function(col,
+                          max_l = 55) {
+  rgba <- col2rgb(col, alpha = TRUE) / 255
+  lab <- convertColor(t(rgba[1:3, , drop = FALSE]), from = "sRGB", to = "Lab")
+  light <- lab[, 1] > max_l
+  if(any(light)) {
+    lab[light, 1] <- max_l
+    srgb <- convertColor(lab[light, , drop = FALSE], from = "Lab", to = "sRGB",
+                         clip = TRUE)
+    rgba[1:3, light] <- t(srgb)
+  }
+  rgb(rgba[1, ], rgba[2, ], rgba[3, ], rgba[4, ])
+}
+
+#' Outlines of cells (no fill)
+#' @importFrom graphics rect
+#' @noRd
+.draw_cell_outlines <- function(x,
+                                y,
+                                col,
+                                line_type = 1,
+                                line_width = 1) {
+  if(length(x) == 0) {
+    return(invisible(NULL))
+  }
+  rect(
+    xleft = x - 0.5,
+    ybottom = y - 0.5,
+    xright = x + 0.5,
+    ytop = y + 0.5,
+    col = NA,
+    border = col,
+    lty = line_type,
+    lwd = line_width
+  )
+  invisible(NULL)
+}
+
+#' Grid lines along the edges of the cells of each block of cells between
+#' cluster gaps
+#' @importFrom graphics segments
+#' @noRd
+.draw_cell_grid <- function(x,
+                            y,
+                            col,
+                            line_type = 1,
+                            line_width = 1) {
+  keep <- !is.na(x) & !is.na(y)
+  xs <- sort(unique(x[keep]))
+  ys <- sort(unique(y[keep]))
+  for(rx in .center_runs(xs)) {
+    for(ry in .center_runs(ys)) {
+      x0 <- min(xs[rx]) - 0.5
+      x1 <- max(xs[rx]) + 0.5
+      y0 <- min(ys[ry]) - 0.5
+      y1 <- max(ys[ry]) + 0.5
+      vx <- x0 + seq(0, length(rx))
+      hy <- y0 + seq(0, length(ry))
+      segments(
+        x0 = c(vx, rep(x0, length(hy))),
+        y0 = c(rep(y0, length(vx)), hy),
+        x1 = c(vx, rep(x1, length(hy))),
+        y1 = c(rep(y1, length(vx)), hy),
+        col = col,
+        lty = line_type,
+        lwd = line_width
+      )
+    }
+  }
+  invisible(NULL)
 }
 
 #' Draw many polygons of the same shape in a few vectorised polygon() calls
@@ -727,13 +1022,22 @@
     seq_along(x),
     ceiling(seq_along(x) / chunk)
   )
+  # ONE OUTLINE FOR ALL POLYGONS, OR ONE PER POLYGON (COLUMNS OF MATRICES)
+  offset <- function(d, ind) {
+    if(is.matrix(d)) {
+      d[, ind, drop = FALSE] * rep(r[ind], each = nrow(d))
+    } else {
+      outer(d, r[ind])
+    }
+  }
+  k <- NROW(dx)
   for(ind in chunks) {
     px <- rbind(
-      outer(dx, r[ind]) + rep(x[ind], each = length(dx)),
+      offset(dx, ind) + rep(x[ind], each = k),
       NA
     )
     py <- rbind(
-      outer(dy, r[ind]) + rep(y[ind], each = length(dy)),
+      offset(dy, ind) + rep(y[ind], each = k),
       NA
     )
     polygon(
@@ -746,6 +1050,32 @@
     )
   }
   invisible(NULL)
+}
+
+#' Reverse the order of a dendrogram and its clusters
+#'
+#' Rows are ordered from the top (as columns are from the left) but drawn from
+#' the bottom, so the dendrogram of the rows (and the clusters given in its
+#' order) is reversed for drawing, to put its first leaf at the top.
+#' Clusters are numbered again from 1 in the new order. Lists that only hold
+#' clusters (\code{cut}) are reversed in the same way; NULL is returned as is.
+#'
+#' @noRd
+.flip_tree <- function(tree) {
+  if(!is.list(tree)) {
+    return(tree)
+  }
+  if(!is.null(tree$order)) {
+    tree$order <- rev(tree$order)
+  }
+  if(!is.null(tree$cut)) {
+    cut <- rev(tree$cut)
+    tree$cut <- structure(
+      max(cut) + 1L - as.integer(cut),
+      names = names(cut)
+    )
+  }
+  tree
 }
 
 #' Dendrogram returned by heat_map_info() - one cluster per leaf so that it can
@@ -761,15 +1091,81 @@
   tree
 }
 
+## REDRAWING -------------------------------------------------------------------
+
+# The slow steps of heat_map() - clustering, k-means and branch support - are
+# kept in the heat_map object with their inputs, so that redrawing it
+# (print(), plot(), heat_map_grob(), heat_map_save(x = )) reuses them when the
+# inputs haven't changed. plot.heat_map() leaves the kept results in .memo
+# for the heat_map() call it makes.
+.memo <- new.env(parent = emptyenv())
+
+#' Start the record of slow steps for a heat_map() call, taking the results a
+#' redraw left for it
+#' @noRd
+.memo_start <- function() {
+  memo <- new.env(parent = emptyenv())
+  memo$use <- .memo$pending
+  .memo$pending <- NULL
+  memo$record <- list()
+  memo
+}
+
+#' Call fun with args, or reuse its result from the heatmap being redrawn
+#'
+#' @param memo from \code{.memo_start()}.
+#' @param fun name of a HeatmapR function.
+#' @param args named list of its arguments.
+#'
+#' @noRd
+.memo_call <- function(memo,
+                       fun,
+                       args) {
+  key <- list(fun, .memo_key(args))
+  for(e in memo$use) {
+    if(identical(e$key, key)) {
+      memo$record[[length(memo$record) + 1]] <- e
+      return(e$value)
+    }
+  }
+  # (A CALL THAT NAMES THE ARGUMENTS, NOT THEIR VALUES, FOR ERROR MESSAGES)
+  call <- as.call(c(
+    as.name(fun),
+    lapply(seq_along(args), function(i) call("[[", as.name("args"), i))
+  ))
+  names(call) <- c("", names(args))
+  value <- eval(call)
+  memo$record[[length(memo$record) + 1]] <- list(key = key, value = value)
+  value
+}
+
+#' Inputs of a slow step as a key: long numeric, integer and logical vectors
+#' (data, groups, trees) are replaced by a hash of their values
+#' @noRd
+.memo_key <- function(x) {
+  if(is.list(x)) {
+    return(list(class(x), names(x), attr(x, "row.names"), lapply(unclass(x), .memo_key)))
+  }
+  if((is.numeric(x) || is.logical(x)) && length(x) > 64) {
+    return(list(typeof(x), dim(x), dimnames(x), hash_cpp(x)))
+  }
+  x
+}
+
 #' Convert a recorded plot into a heat_map object
+#'
+#' @param memo results of the slow steps (see \code{.memo_call()}).
+#'
 #' @noRd
 .as_heat_map <- function(x,
                          info,
                          args,
-                         custom = FALSE) {
+                         custom = FALSE,
+                         memo = NULL) {
   attr(x, "heat_map_info") <- info
   attr(x, "heat_map_args") <- args
   attr(x, "heat_map_custom") <- custom
+  attr(x, "heat_map_memo") <- memo
   class(x) <- unique(c("heat_map", class(x)))
   x
 }
@@ -794,7 +1190,7 @@
 #'   \item{\code{row_clusters}, \code{col_clusters}: the cluster assigned to
 #'   each row/column in their original order (or \code{NULL} when no clusters
 #'   were defined). Clusters are numbered in the order they are displayed:
-#'   from left to right for columns and from bottom to top for rows.}
+#'   from left to right for columns and from top to bottom for rows.}
 #'   \item{\code{tree_x}, \code{tree_y}: \code{hclust} objects for the x and
 #'   y axis dendrograms (or \code{NULL}). Branch heights are rescaled for
 #'   display.}
@@ -804,11 +1200,17 @@
 #'   groups, or \code{NULL}.}
 #'   \item{\code{zoom_x}, \code{zoom_y}: indices of the columns (from left
 #'   to right) and rows (from top to bottom) enlarged in a zoom panel
-#'   (\code{zoom_x}, \code{zoom_y}), or \code{NULL}.}
+#'   (\code{zoom_x}, \code{zoom_y}) - a list with the indices of each band
+#'   when several were given as a list - or \code{NULL}.}
 #'   \item{\code{axis_text_x}, \code{axis_text_y}: axis labels from left to
 #'   right and from top to bottom respectively.}
-#'   \item{\code{colours}, \code{sizes}: the fill colour and relative size of
-#'   each cell, in the orientation of the original data.}
+#'   \item{\code{colours}, \code{sizes}, \code{shapes}: the fill colour,
+#'   relative size and shape of each cell, in the orientation of the original
+#'   data.}
+#'   \item{\code{centers}: lists \code{x} and \code{y} with the centre of
+#'   each column and row in the original order, in the heatmap's plot
+#'   co-ordinates (one unit per cell, plus any gaps between clusters), for
+#'   drawing on top of a heatmap.}
 #'   \item{\code{split_colours}, \code{split_data}: the fill colour and
 #'   value (after scaling) of the lower right half of each cell
 #'   (\code{cell_split}) in the orientation of the original data, or
@@ -855,6 +1257,10 @@ heat_map_info <- function(x) {
 #' supplied through \code{...} override the original arguments, for example
 #' \code{plot(hm, title = "New title")}. Use \code{data} to redraw the heatmap
 #' with new data, as \code{x} refers to the \code{heat_map} object itself.
+#' The dendrograms, k-means clusters and branch support of the heatmap are
+#' kept in it and reused when the arguments they depend on (the data,
+#' scaling, distance, linkage and tree arguments) haven't changed, so a
+#' redraw only draws.
 #'
 #' \code{print()} also redraws the heatmap, unless it was drawn within a custom
 #' layout (see \code{\link{heat_map_custom}}), in which case the recorded page
@@ -894,6 +1300,9 @@ plot.heat_map <- function(x, ...) {
   if(!"popup" %in% names(dots)) {
     args[["popup"]] <- FALSE
   }
+  # REUSE THE SLOW STEPS WHOSE INPUTS ARE UNCHANGED
+  .memo$pending <- attr(x, "heat_map_memo")
+  on.exit(.memo$pending <- NULL, add = TRUE)
   suppressMessages(
     do.call(
       heat_map,
@@ -918,9 +1327,10 @@ print.heat_map <- function(x, ...) {
 #' Vectorised adjustcolor() over both colours and alpha values
 #' 
 #' \code{adjustcolor()} only accepts a single \code{alpha.f}, so colours and
-#' alpha values are recycled together here.
+#' alpha values are recycled together here. Colours are converted once per
+#' distinct colour and their alpha channels multiplied in compiled code, with
+#' the arithmetic of \code{adjustcolor()} - the same "#RRGGBBAA" colours.
 #' 
-#' @importFrom grDevices adjustcolor
 #' @noRd
 .alpha_col <- function(col,
                        alpha = 1) {
@@ -928,33 +1338,8 @@ print.heat_map <- function(x, ...) {
     return(character(0))
   }
   n <- max(length(col), length(alpha))
-  col <- rep_len(col, n)
-  alpha <- rep_len(alpha, n)
-  if(all(alpha == alpha[1])) {
-    # FAST PATH FOR OPAQUE "#RRGGBB" COLOURS (FROM rgb()) - THE SAME RESULT AS
-    # adjustcolor(), WHICH APPENDS THE ALPHA CHANNEL; OTHER COLOURS ARE
-    # ADJUSTED ONCE PER UNIQUE COLOUR
-    out <- character(n)
-    hex <- !is.na(col) & nchar(col) == 7 & startsWith(col, "#")
-    if(any(hex)) {
-      out[hex] <- paste0(
-        toupper(col[hex]),
-        sprintf("%02X", as.integer(255 * min(1, max(0, alpha[1])) + 0.5))
-      )
-    }
-    if(any(!hex)) {
-      u <- unique(col[!hex])
-      out[!hex] <- adjustcolor(u, alpha[1])[match(col[!hex], u)]
-    }
-    return(out)
-  }
-  vapply(
-    seq_len(n),
-    function(z) {
-      adjustcolor(col[z], alpha[z])
-    },
-    character(1)
-  )
+  packed <- .alpha_packed(.native_colours(rep_len(col, n)), alpha)
+  packed_strings_cpp(packed, TRUE)
 }
 
 ## ANNOTATIONS -----------------------------------------------------------------
@@ -1296,6 +1681,37 @@ print.heat_map <- function(x, ...) {
   )
 }
 
+#' Colours as packed integers, as the graphics engine stores them
+#'
+#' Red in the lowest byte, then green, blue and alpha (so NA_integer_ is
+#' "#00000080"). Hex colours (and NA, transparent) are converted in compiled
+#' code, others once per distinct colour with \code{col2rgb()}.
+#'
+#' @importFrom grDevices col2rgb
+#' @noRd
+.native_colours <- function(col) {
+  out <- native_colours_cpp(as.character(col))
+  other <- attr(out, "other")
+  if(!is.null(other)) {
+    attr(out, "other") <- NULL
+    u <- unique(col[other])
+    out[other] <- pack_channels_cpp(col2rgb(u, alpha = TRUE))[match(col[other], u)]
+  }
+  out
+}
+
+#' A matrix of packed colours (from .native_colours()) as a nativeRaster,
+#' which stores the pixels row by row
+#' @noRd
+.native_raster <- function(m) {
+  structure(
+    as.vector(t(m)),
+    dim = dim(m),
+    class = "nativeRaster",
+    channels = 4L
+  )
+}
+
 #' Draw full-size rectangular cells as raster images
 #'
 #' Each block of cells between cluster splits is drawn with one
@@ -1309,9 +1725,14 @@ print.heat_map <- function(x, ...) {
 #' @param border border colour shared by all cells, or one per cell.
 #' @param res smallest resolution of the images (pixels per inch).
 #' @param max_px largest number of pixels in each image.
+#' @param grid the numbers of rows and columns when the cells fill a grid
+#'   column by column from the top left, with centres increasing to the right
+#'   and decreasing downwards (as heat_map() lays them out); NULL to work the
+#'   grid out from the centres.
+#' @param packed the fill colours as packed integers (from
+#'   \code{.native_colours()}), if known.
 #'
 #' @importFrom graphics rasterImage segments rect par
-#' @importFrom grDevices as.raster
 #' @noRd
 .draw_cells_raster <- function(x,
                                y,
@@ -1320,21 +1741,32 @@ print.heat_map <- function(x, ...) {
                                line_type = 1,
                                line_width = 1,
                                res = 150,
-                               max_px = 2e6) {
+                               max_px = 2e6,
+                               grid = NULL,
+                               packed = NULL) {
 
-  keep <- !is.na(x) & !is.na(y)
-  xs <- sort(unique(x[keep]))
-  ys <- sort(unique(y[keep]), decreasing = TRUE)
-
-  # CELL COLOURS IN DISPLAY ORDER - ROW 1 AT THE TOP
-  fill <- fill[keep]
-  fill[is.na(fill)] <- "transparent"
-  img <- matrix(
-    "transparent",
-    nrow = length(ys),
-    ncol = length(xs)
-  )
-  img[match(y[keep], ys) + (match(x[keep], xs) - 1L) * length(ys)] <- fill
+  # CELL COLOURS IN DISPLAY ORDER - ROW 1 AT THE TOP (AS PACKED INTEGERS)
+  if(is.null(packed)) {
+    packed <- .native_colours(fill)
+  }
+  if(!is.null(grid)) {
+    # A FULL GRID - COLUMNS LEFT TO RIGHT, EACH FROM THE TOP ROW DOWN
+    keep <- TRUE
+    xs <- x[seq(1, by = grid[1], length.out = grid[2])]
+    ys <- y[seq_len(grid[1])]
+    img <- matrix(packed, nrow = grid[1], ncol = grid[2])
+  } else {
+    keep <- !is.na(x) & !is.na(y)
+    xs <- sort(unique(x[keep]))
+    ys <- sort(unique(y[keep]), decreasing = TRUE)
+    img <- matrix(
+      .native_colours("transparent"),
+      nrow = length(ys),
+      ncol = length(xs)
+    )
+    img[match(y[keep], ys) + (match(x[keep], xs) - 1L) * length(ys)] <-
+      packed[keep]
+  }
 
   # INCHES PER PLOT UNIT
   usr <- par("usr")
@@ -1367,7 +1799,7 @@ print.heat_map <- function(x, ...) {
         ]
       }
       rasterImage(
-        as.raster(block),
+        .native_raster(block),
         xleft = min(xs[rx]) - 0.5,
         ybottom = min(ys[ry]) - 0.5,
         xright = max(xs[rx]) + 0.5,
@@ -1386,25 +1818,13 @@ print.heat_map <- function(x, ...) {
       return(invisible(TRUE))
     }
     # GRID LINES - ONE PER CELL EDGE IN EACH BLOCK
-    for(rx in runs_x) {
-      for(ry in runs_y) {
-        x0 <- min(xs[rx]) - 0.5
-        x1 <- max(xs[rx]) + 0.5
-        y0 <- min(ys[ry]) - 0.5
-        y1 <- max(ys[ry]) + 0.5
-        vx <- x0 + seq(0, length(rx))
-        hy <- y0 + seq(0, length(ry))
-        segments(
-          x0 = c(vx, rep(x0, length(hy))),
-          y0 = c(rep(y0, length(vx)), hy),
-          x1 = c(vx, rep(x1, length(hy))),
-          y1 = c(rep(y1, length(vx)), hy),
-          col = border,
-          lty = line_type,
-          lwd = line_width
-        )
-      }
-    }
+    .draw_cell_grid(
+      x = x,
+      y = y,
+      col = border,
+      line_type = line_type,
+      line_width = line_width
+    )
   } else {
     # OUTLINES OF CELLS WITH A VISIBLE BORDER
     u <- unique(border)

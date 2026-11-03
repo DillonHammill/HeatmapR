@@ -56,23 +56,20 @@ test_that("the lower right halves are drawn over the cells", {
 test_that("heat_map colours both halves on a shared scale with a legend key", {
   d <- split_data()
   lim <- range(d$ctrl, d$trt)
-  for (layout in c("fit", "classic")) {
-    for (side in c("auto", "bottom")) {
-      if (layout == "classic" && side == "bottom") next
-      hm <- draw(d$ctrl, cell_split = d$trt, cell_split_labels = c("Control", "Treated"),
-                 layout = layout, legend_side = side, tree_y = TRUE)
-      info <- heat_map_info(hm)
-      expect_equal(info$col_limits, lim)
-      ramp <- .col_scale(NULL)
-      k <- (d$trt - lim[1]) / diff(lim)
-      expected <- grDevices::rgb(ramp(as.vector(k)), maxColorValue = 255)
-      expect_equal(as.vector(info$split_colours), paste0(expected, "FF"))
-      expect_true(all(c("Control", "Treated") %in% drawn_text(hm)))
-      expect_equal(layout_overlaps(info$layout), character(0))
-      # The halves - one triangle per cell
-      halves <- Filter(function(z) length(z[[3]]) == 30, drawn(hm, "C_polygon"))
-      expect_length(halves, 1)
-    }
+  for (side in c("auto", "bottom")) {
+    hm <- draw(d$ctrl, cell_split = d$trt, cell_split_labels = c("Control", "Treated"),
+               legend_side = side, tree_y = TRUE)
+    info <- heat_map_info(hm)
+    expect_equal(info$col_limits, lim)
+    ramp <- .col_scale(NULL)
+    k <- (d$trt - lim[1]) / diff(lim)
+    expected <- grDevices::rgb(ramp(as.vector(k)), maxColorValue = 255)
+    expect_equal(as.vector(info$split_colours), paste0(expected, "FF"))
+    expect_true(all(c("Control", "Treated") %in% drawn_text(hm)))
+    expect_equal(layout_overlaps(info$layout), character(0))
+    # The halves - one triangle per cell
+    halves <- Filter(function(z) length(z[[3]]) == 30, drawn(hm, "C_polygon"))
+    expect_length(halves, 1)
   }
   # Robust limits and stepped scales cover both values
   hm <- draw(d$ctrl, cell_split = d$trt, cell_col_scale_limits = "robust")
