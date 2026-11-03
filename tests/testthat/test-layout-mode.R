@@ -1,4 +1,4 @@
-# FIT LAYOUT -------------------------------------------------------------------
+# LAYOUT -----------------------------------------------------------------------
 
 # Bounding box (inches) of a component of a heatmap's layout
 box <- function(hm, component) {
@@ -17,7 +17,6 @@ test_that("no components overlap or leave the device in random fit layouts", {
   skip_on_cran()
   for (seed in seq_len(60)) {
     case <- random_layout_case(seed)
-    case$args$layout <- "fit"
     boxes <- layout_case_boxes(case)
     info <- paste("seed", seed, describe_case(case))
     expect_equal(layout_overlaps(boxes), character(0), info = info)
@@ -25,21 +24,9 @@ test_that("no components overlap or leave the device in random fit layouts", {
   }
 })
 
-test_that("layout must be classic or fit", {
-  m <- test_matrix()
-  expect_error(draw(m, layout = "tight"), "'layout' must be")
-  expect_error(draw(m, layout = c("fit", "classic")), "'layout' must be")
-  expect_error(draw(m, layout = 1), "'layout' must be")
-  # FIT IS THE DEFAULT
-  expect_equal(
-    heat_map_info(draw(m))$layout,
-    heat_map_info(draw(m, layout = "fit"))$layout
-  )
-})
-
 test_that("dendrograms and bar graphs have the same size whatever the data", {
-  small <- draw(test_matrix(5, 4), tree = "both", bar_values_x = 1:4, layout = "fit")
-  large <- draw(test_matrix(60, 30), tree = "both", bar_values_x = 1:30, layout = "fit")
+  small <- draw(test_matrix(5, 4), tree = "both", bar_values_x = 1:4)
+  large <- draw(test_matrix(60, 30), tree = "both", bar_values_x = 1:30)
   height <- function(hm, cmp) {
     b <- box(hm, cmp)
     b$ymax - b$ymin
@@ -55,23 +42,14 @@ test_that("dendrograms and bar graphs have the same size whatever the data", {
   expect_equal(height(small, "bar_x"), 0.6, tolerance = 1e-6)
   expect_equal(height(large, "bar_x"), 0.6, tolerance = 1e-6)
   # SIZES ARE MULTIPLES OF 0.6 INCHES
-  hm <- draw(test_matrix(5, 4), tree = "both", tree_size_x = 0.5, tree_size_y = 2, layout = "fit")
+  hm <- draw(test_matrix(5, 4), tree = "both", tree_size_x = 0.5, tree_size_y = 2)
   expect_equal(height(hm, "tree_x"), 0.3, tolerance = 1e-6)
   expect_equal(width(hm, "tree_y"), 1.2, tolerance = 1e-6)
-  # CLASSIC TRACKS ARE A FRACTION OF THE HEATMAP
-  small <- draw(test_matrix(5, 4), tree = "both", layout = "classic")
-  large <- draw(test_matrix(60, 4), tree = "both", layout = "classic")
-  expect_equal(
-    height(small, "tree_x") / height(small, "heatmap"),
-    height(large, "tree_x") / height(large, "heatmap"),
-    tolerance = 1e-6
-  )
 })
 
 test_that("tracks are shrunk on small devices, dendrograms and bars first", {
   tiny <- draw_on(3, 3, test_matrix(5, 4), tree = "both", bar_values_y = 1:5,
-                  annotation_y = data.frame(g = c("a", "b", "a", "b", "a")),
-                  layout = "fit")
+                  annotation_y = data.frame(g = c("a", "b", "a", "b", "a")))
   b <- box(tiny, "tree_y")
   expect_lt(b$xmax - b$xmin, 0.6)
   # ANNOTATION TRACK KEEPS ITS SIZE (0.2 INCHES PLUS A 0.05 INCH GAP)
@@ -91,8 +69,8 @@ test_that("tracks are shrunk on small devices, dendrograms and bars first", {
 
 test_that("the legend is sized from its contents", {
   m <- test_matrix(10, 6)
-  short <- draw(m, legend_title = "z", layout = "fit")
-  long <- draw(m, legend_title = "A much longer legend title", layout = "fit")
+  short <- draw(m, legend_title = "z")
+  long <- draw(m, legend_title = "A much longer legend title")
   w <- function(hm) {
     b <- box(hm, "legend")
     b$xmax - b$xmin
@@ -113,8 +91,8 @@ test_that("the legend is sized from its contents", {
 
 test_that("the legend is drawn beside the heatmap opposite the axis text", {
   m <- test_matrix(10, 6)
-  right <- draw(m, cell_size = TRUE, layout = "fit")
-  left <- draw(m, cell_size = TRUE, axis_text_side_y = "right", layout = "fit")
+  right <- draw(m, cell_size = TRUE)
+  left <- draw(m, cell_size = TRUE, axis_text_side_y = "right")
   expect_gt(box(right, "legend")$xmin, box(right, "heatmap")$xmax)
   expect_lt(box(left, "legend")$xmax, box(left, "heatmap")$xmin)
   # LABELS ARE LEFT ALIGNED ON THE RIGHT AND RIGHT ALIGNED ON THE LEFT
@@ -132,28 +110,25 @@ test_that("fit legends draw every kind of key", {
   ann <- data.frame(dose = seq_len(6), group = rep(c("a", "b"), 3))
   for (shape in c("rect", "circle", "diamond")) {
     hm <- draw(m, cell_size = TRUE, cell_shape = shape, annotation_x = ann,
-               legend_title = c("Colour", "Size"), layout = "fit")
+               legend_title = c("Colour", "Size"))
     expect_true(all(c("Colour", "Size", "dose", "group", "a", "b") %in% drawn_text(hm)))
   }
   # LEVELS LEGEND
   d <- data.frame(a = c("x", "y", "z", "x"), b = 1:4)
-  hm <- draw(d, legend = c("colour", "levels"), legend_title = c(NA, NA, "Levels"),
-             layout = "fit")
+  hm <- draw(d, legend = c("colour", "levels"), legend_title = c(NA, NA, "Levels"))
   expect_true(all(c("Levels", "x", "y", "z") %in% drawn_text(hm)))
   # SINGLE VALUE COLOUR SCALE
-  for (layout in c("fit", "classic")) {
-    hm <- draw(matrix(1, 3, 3), layout = layout)
-    expect_true("1" %in% drawn_text(hm))
-  }
+  hm <- draw(matrix(1, 3, 3))
+  expect_true("1" %in% drawn_text(hm))
   # NO LEGEND
-  hm <- draw(m, legend = FALSE, layout = "fit")
+  hm <- draw(m, legend = FALSE)
   expect_false("legend" %in% heat_map_info(hm)$layout$component)
 })
 
 test_that("a legend taller than the plot is shrunk to fit", {
   m <- test_matrix(4, 4)
   ann <- data.frame(g = paste("level", 1:4), h = paste("other", 1:4))
-  hm <- draw_on(4, 2.5, m, annotation_x = ann, cell_size = TRUE, layout = "fit")
+  hm <- draw_on(4, 2.5, m, annotation_x = ann, cell_size = TRUE)
   b <- heat_map_info(hm)$layout
   expect_equal(layout_outside(b, c(4, 2.5)), character(0))
   expect_equal(layout_overlaps(b), character(0))
@@ -173,16 +148,15 @@ test_that("legend_size scales the legend keys", {
     b <- box(hm, "legend")
     b$ymax - b$ymin
   }
-  small <- draw(m, annotation_x = ann, legend_size = 0.5, layout = "fit")
-  large <- draw(m, annotation_x = ann, legend_size = 1.5, layout = "fit")
+  small <- draw(m, annotation_x = ann, legend_size = 0.5)
+  large <- draw(m, annotation_x = ann, legend_size = 1.5)
   expect_gt(key(large), key(small))
 })
 
 test_that("margins fit the axis text, axis labels and title", {
   m <- test_matrix(10, 6)
   rownames(m) <- paste("A very long row name", seq_len(10))
-  hm <- draw(m, title = "Title", axis_label_x = "Columns", axis_label_y = "Rows",
-             layout = "fit")
+  hm <- draw(m, title = "Title", axis_label_x = "Columns", axis_label_y = "Rows")
   b <- heat_map_info(hm)$layout
   expect_equal(layout_overlaps(b), character(0))
   # TEXT BEYOND THE AXIS TEXT, CLOSE TO IT
@@ -199,13 +173,12 @@ test_that("margins fit the axis text, axis labels and title", {
   expect_gt(ti$ymin, box(hm, "heatmap")$ymax)
   expect_lt(7 - ti$ymax, 0.2)
   # TITLE & AXIS LABEL ON TOP
-  hm <- draw(m, title = "Title", axis_label_x = "Columns", axis_text_side_x = "top",
-             layout = "fit")
+  hm <- draw(m, title = "Title", axis_label_x = "Columns", axis_text_side_x = "top")
   b <- heat_map_info(hm)$layout
   expect_equal(layout_overlaps(b), character(0))
   expect_gt(box(hm, "title")$ymin, box(hm, "axis_label_x")$ymax)
   # USER MARGINS WIN
-  hm <- draw(m, margins = c(NA, 10, NA, NA), layout = "fit")
+  hm <- draw(m, margins = c(NA, 10, NA, NA))
   b <- box(hm, "heatmap")
   expect_gt(b$xmin, 10 * 0.2 - 0.01)
 })
@@ -213,12 +186,11 @@ test_that("margins fit the axis text, axis labels and title", {
 test_that("titles wider than the heatmap stay on the device", {
   m <- test_matrix(3, 2)
   rownames(m) <- paste("A very long row name", 1:3)
-  hm <- draw_on(4, 4, m, title = "A long title for a small heatmap", legend = FALSE,
-                layout = "fit")
+  hm <- draw_on(4, 4, m, title = "A long title for a small heatmap", legend = FALSE)
   b <- heat_map_info(hm)$layout
   expect_equal(layout_outside(b, c(4, 4)), character(0))
   # CENTRED ON THE HEATMAP WHEN THERE IS ROOM
-  hm <- draw(test_matrix(), title = "T", layout = "fit")
+  hm <- draw(test_matrix(), title = "T")
   ti <- box(hm, "title")
   hb <- box(hm, "heatmap")
   expect_equal((ti$xmin + ti$xmax) / 2, (hb$xmin + hb$xmax) / 2, tolerance = 1e-6)
@@ -233,7 +205,7 @@ test_that("annotation names shrink with annotation tracks", {
   hm <- draw_on(4, 8, m, tree_y = TRUE, tree_cut_y = 2, tree_label_y = TRUE,
                 bar_values_y = 1:12, bar_axis_label_y = "Value",
                 annotation_y = data.frame(Batch = rep(c("b1", "b2"), 6)),
-                legend = "colour", layout = "fit")
+                legend = "colour")
   b <- heat_map_info(hm)$layout
   expect_equal(layout_overlaps(b), character(0))
   cex <- vapply(
@@ -310,7 +282,6 @@ test_that("fit layout snapshots", {
       cell_size = TRUE,
       cell_shape = "circle",
       title = "mtcars",
-      layout = "fit",
       popup = FALSE
     ))
   )
@@ -327,7 +298,6 @@ test_that("fit layout snapshots", {
       cell_col_scale = c("#2C7BB6", "white", "#D7191C"),
       cell_col_scale_center = 0,
       legend_title = "z-score",
-      layout = "fit",
       popup = FALSE
     ))
   )
@@ -338,8 +308,7 @@ test_that("fit layout edge cases", {
   m <- test_matrix(4, 3)
   rownames(m) <- paste("An extremely long row name that cannot fit", 1:4)
   colnames(m) <- paste("An extremely long column name", 1:3)
-  hm <- draw_on(2, 2, m, title = "Title", axis_label_x = "X", axis_label_y = "Y",
-                layout = "fit")
+  hm <- draw_on(2, 2, m, title = "Title", axis_label_x = "X", axis_label_y = "Y")
   expect_s3_class(hm, "heat_map")
   b <- box(hm, "heatmap")
   expect_gt(b$xmax - b$xmin, 0.1)
@@ -361,5 +330,4 @@ test_that("fit layout edge cases", {
   expect_named(out, c("x", "y"))
   expect_gte(min(out$x), 6)
   # CLASSIC LEGEND WITHOUT TITLES
-  expect_null(heat_map_legend(col = c(0, 1), xlim = c(6, 9), ylim = c(0, 10), title = character(0)))
 })

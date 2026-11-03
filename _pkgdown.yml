@@ -6,6 +6,7 @@ reference:
 - title: Draw heatmaps
   contents:
   - heat_map
+  - heat_map_cor
   - heat_map-methods
 - title: Inspect and describe heatmaps
   desc: >
@@ -15,6 +16,12 @@ reference:
   - heat_map_info
   - heat_map_describe
   - print.heat_map_description
+- title: Use heatmaps with other tools
+  desc: >
+    Combine heatmaps with ggplot2 plots, or export their contents as tidy data.
+  contents:
+  - heat_map_grob
+  - heat_map_data
 - title: Prepare data
   desc: >
     Scale, summarise and cluster data before (or while) drawing a heatmap.
