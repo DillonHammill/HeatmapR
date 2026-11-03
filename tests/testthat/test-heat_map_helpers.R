@@ -65,6 +65,7 @@ test_that(".new_device opens popups only when required", {
 
 test_that("heat_map_new opens a new device only when the current one is used", {
   skip_on_cran()
+  local_mocked_bindings(.is_interactive = function() TRUE)
   old <- options(device = function(...) grDevices::pdf(NULL))
   grDevices::pdf(NULL)
   n <- length(grDevices::dev.list())
@@ -83,12 +84,21 @@ test_that("heat_map_new opens a new device only when the current one is used", {
   options("heat_map_save" = FALSE)
   grDevices::dev.off()
   # No device open - the default device is opened
-  if (is.null(grDevices::dev.list())) {
-    heat_map_new(popup = FALSE)
-    expect_false(is.null(grDevices::dev.list()))
-    grDevices::dev.off()
-  }
+  grDevices::graphics.off()
+  heat_map_new(popup = FALSE)
+  expect_false(is.null(grDevices::dev.list()))
+  grDevices::dev.off()
   options(old)
+})
+
+test_that("popups are only opened in interactive sessions", {
+  local_mocked_bindings(.is_interactive = function() FALSE)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  graphics::plot.new()
+  n <- length(grDevices::dev.list())
+  heat_map_new(popup = TRUE)
+  expect_equal(length(grDevices::dev.list()), n)
 })
 
 test_that("heat_map_record returns graphics state", {

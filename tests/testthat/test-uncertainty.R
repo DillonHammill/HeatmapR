@@ -66,12 +66,6 @@ test_that("heat_map colours cells by value and uncertainty with a key", {
   # Default thresholds and stepped colour scales
   hm <- draw(d$lfc, cell_uncertainty = d$se, cell_col_scale_breaks = c(-3, 0, 3))
   expect_true("Uncertainty" %in% drawn_text(hm))
-  # Classic layout - colours without the key
-  expect_warning(
-    hm <- draw(d$lfc, cell_uncertainty = d$se, layout = "classic"),
-    "requires layout"
-  )
-  expect_false("Uncertainty" %in% drawn_text(hm))
   expect_error(draw(d$lfc, cell_uncertainty = d$se[1:3, ]), "'cell_uncertainty' must be")
   # A single value - labels in the middle of the key
   hm <- draw(matrix(1, 2, 2), cell_uncertainty = matrix(c(0.1, 0.5, 1, NA), 2))

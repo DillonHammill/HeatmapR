@@ -52,14 +52,7 @@
 #' @noRd
 .clade_hash <- function(merge,
                         w) {
-  k <- nrow(merge)
-  h <- matrix(0, k, 2)
-  for(z in seq_len(k)) {
-    for(j in 1:2) {
-      m <- merge[z, j]
-      h[z, ] <- h[z, ] + if(m < 0) w[-m, ] else h[m, ]
-    }
-  }
+  h <- clade_hash_cpp(.int_merge(merge), w)
   sprintf("%.0f:%.0f", h[, 1], h[, 2])
 }
 
@@ -72,20 +65,16 @@
   if(is.null(groups)) {
     return(seq_len(k) == k)
   }
-  n_groups <- max(groups)
-  size <- tabulate(groups, n_groups)
-  counts <- matrix(0, k, n_groups)
-  for(z in seq_len(k)) {
-    for(j in 1:2) {
-      m <- merge[z, j]
-      if(m < 0) {
-        counts[z, groups[-m]] <- counts[z, groups[-m]] + 1
-      } else {
-        counts[z, ] <- counts[z, ] + counts[m, ]
-      }
-    }
-  }
-  apply(counts, 1, function(r) all(r == 0 | r == size))
+  structural_clades_cpp(.int_merge(merge), as.integer(groups))
+}
+
+#' A merge matrix with the children of each merge in a fixed order, so that
+#' trees that differ only by flipped branches (leaf order) give the same key
+#' @noRd
+.clade_merge <- function(merge) {
+  out <- cbind(pmin(merge[, 1], merge[, 2]), pmax(merge[, 1], merge[, 2]))
+  storage.mode(out) <- "integer"
+  out
 }
 
 #' Bootstrap support of each branch of a tree
@@ -111,34 +100,78 @@
   data <- as.matrix(data)
   n <- nrow(data)
   w <- .leaf_weights(n)
-  keys <- .clade_hash(tree$merge, w)
-  # FIXED SEED - RESTORE THE CALLER'S RANDOM NUMBER GENERATOR
-  env <- globalenv()
-  if(exists(".Random.seed", envir = env, inherits = FALSE)) {
-    seed <- get(".Random.seed", envir = env, inherits = FALSE)
-    on.exit(assign(".Random.seed", seed, envir = env), add = TRUE)
-  } else {
-    on.exit(
-      if(exists(".Random.seed", envir = env, inherits = FALSE)) {
-        rm(".Random.seed", envir = env)
-      },
-      add = TRUE
-    )
+  # (CLADES AS TWO EXACT SUMS - COMPARED AS NUMBERS IN COMPILED CODE)
+  keys <- clade_hash_cpp(.int_merge(tree$merge), w)
+  # FIXED SEED - THE CALLER'S RANDOM NUMBER GENERATOR IS RESTORED
+  samples <- .with_seed(1066, {
+    lapply(seq_len(B), function(b) sample.int(ncol(data), replace = TRUE))
+  })
+  hits <- numeric(nrow(keys))
+  # RESAMPLES CLUSTERED SEVERAL AT ONCE IN COMPILED CODE WHEN IT COMPUTES THE
+  # DISTANCES AND THE LINKAGE (AS .hclust_raw() WOULD)
+  metric <- if(!is.na(.NN_CHAIN[method]) && is.null(list(...)$members)) {
+    .compiled_metric(data, dist, ...)
   }
-  set.seed(1066)
-  hits <- numeric(length(keys))
-  for(b in seq_len(B)) {
-    xb <- data[, sample.int(ncol(data), replace = TRUE), drop = FALSE]
-    hb <- if(is.null(groups)) {
-      .hclust_raw(xb, dist = dist, method = method, ...)
-    } else {
-      .group_tree(xb, groups = groups, dist = dist, method = method, ...)
+  if(!is.null(metric)) {
+    # WITHIN GROUPS - THE CLADES OF EACH GROUP (THE MERGES JOINING GROUPS ARE
+    # FIXED BY THEM)
+    members <- if(!is.null(groups)) {
+      m <- split(seq_len(n), factor(groups, levels = seq_len(max(groups))))
+      m[lengths(m) >= 2]
     }
-    hits <- hits + (keys %in% .clade_hash(hb$merge, w))
+    threads <- .threads()
+    # (A FEW RESAMPLES PER THREAD AT A TIME, WITHIN ABOUT 256 MB)
+    chunk <- max(1, min(B, 4 * threads, floor(2^28 / (8 * n * ncol(data)))))
+    for(start in seq(1, B, by = chunk)) {
+      batch <- samples[start:min(B, start + chunk - 1)]
+      xs <- lapply(batch, function(s) {
+        .compiled_metric(data[, s, drop = FALSE], dist, ...)$x
+      })
+      trees <- .cluster_batch(xs, metric, members, method)
+      for(tb in trees) {
+        hb <- if(is.null(members)) {
+          clade_hash_cpp(tb[[1]]$merge, w)
+        } else {
+          do.call(rbind, lapply(seq_along(members), function(g) {
+            clade_hash_cpp(tb[[g]]$merge, w[members[[g]], , drop = FALSE])
+          }))
+        }
+        if(!is.null(hb) && nrow(hb) > 0) {
+          hits <- hits + clade_in_cpp(keys, hb)
+        }
+      }
+    }
+  } else {
+    for(s in samples) {
+      xb <- data[, s, drop = FALSE]
+      hb <- if(is.null(groups)) {
+        .hclust_raw(xb, dist = dist, method = method, ...)
+      } else {
+        .group_tree(xb, groups = groups, dist = dist, method = method, ...)
+      }
+      hits <- hits + clade_in_cpp(keys, clade_hash_cpp(.int_merge(hb$merge), w))
+    }
   }
   support <- hits / B
   support[.structural_clades(tree$merge, groups)] <- NA
   support
+}
+
+#' The distance and linkage a supplied tree was built with, when HeatmapR can
+#' compute them (NULL otherwise)
+#' @noRd
+.tree_methods <- function(tree) {
+  dists <- c("euclidean", "maximum", "manhattan", "canberra", "binary",
+             "minkowski", "pearson", "spearman", "kendall", "cosine")
+  methods <- c("ward.D", "ward.D2", "single", "complete", "average",
+               "mcquitty", "median", "centroid")
+  d <- tree$dist.method
+  m <- tree$method
+  if(!is.character(d) || length(d) != 1 || !tolower(d) %in% dists ||
+     !is.character(m) || length(m) != 1 || !m %in% methods) {
+    return(NULL)
+  }
+  list(dist = tolower(d), method = m)
 }
 
 #' Line styles of each merge from its support (NA - a plain line)
@@ -157,15 +190,7 @@
 #' Number of leaves below each merge
 #' @noRd
 .clade_sizes <- function(merge) {
-  k <- nrow(merge)
-  size <- numeric(k)
-  for(z in seq_len(k)) {
-    for(j in 1:2) {
-      m <- merge[z, j]
-      size[z] <- size[z] + if(m < 0) 1 else size[m]
-    }
-  }
-  size
+  as.numeric(.merge_sizes(merge))
 }
 
 #' Legend key for the support styles

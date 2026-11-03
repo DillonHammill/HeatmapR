@@ -219,7 +219,8 @@ heat_map_save <- function(save_as,
 #' reset any \code{heat_map()} related settings (see example).
 #'
 #' @param popup logical indicating whether a popup graphics device should be
-#'   opened.
+#'   opened, set to TRUE by default. Popups are only opened in interactive
+#'   sessions.
 #' @param popup_size indicates the size of the popup graphics device in inches,
 #'   set to \code{c(8,8)} by default.
 #' @param layout either a vector of the form c(nrow, ncol) defining the
@@ -490,10 +491,15 @@ heat_map_record <- function(){
 
 ## HEAT_MAP_NEW ----------------------------------------------------------------
 
-#' Open a pop-up graphics device for heatmaps
+#' Open a popup graphics device for heatmaps
+#'
+#' Opens a new graphics device when a popup is requested and the current
+#' device already holds a plot. Popups are only opened in interactive
+#' sessions: in scripts, R Markdown and other non-interactive sessions the
+#' current device is used.
 #'
 #' @param popup logical indicating whether a popup graphics device should be
-#'   opened.
+#'   opened, set to FALSE by default.
 #' @param popup_size indicates the size of the popup graphics device in inches,
 #'   set to \code{c(8,8)} by default.
 #' @param ... additional arguments passed to
@@ -525,6 +531,10 @@ heat_map_new <- function(popup = FALSE,
   }
 
   # OPEN GRAPHICS DEVICE -------------------------------------------------------
+
+  # POPUPS ONLY IN INTERACTIVE SESSIONS - A SCRIPT WOULD OPEN A NEW FILE DEVICE
+  # (E.G. Rplots1.pdf) FOR EVERY HEATMAP
+  popup <- isTRUE(popup) && .is_interactive()
 
   # NULL DEVICE -> OPEN THE DEFAULT DEVICE (E.G. RSTUDIOGD)
   if (dev.cur() == 1) {
@@ -605,6 +615,12 @@ heat_map_new <- function(popup = FALSE,
   }
   # NEW DEVICE
   "popup"
+}
+
+#' Whether R is running interactively (a binding the tests can replace)
+#' @noRd
+.is_interactive <- function() {
+  interactive()
 }
 
 ## DEV_EMPTY -------------------------------------------------------------------

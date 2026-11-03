@@ -12,3 +12,9 @@
 vignettes/HeatmapR/
 man/figures/HeatmapR/
 ^GEMINI\.md$
+^src/.*\.o$
+^src/.*\.so$
+^src/.*\.dll$
+^man/figures/logo\.html$
+^cran-comments\.md$
+^\.git$

@@ -2,10 +2,11 @@
 
 # The heatmap is drawn in cell units: each row and column is one unit wide and
 # annotations (bars, cluster labels, dendrograms, legends) are placed beside it
-# as tracks. Tracks that hold text, annotation tracks and margins are sized in
-# inches by measuring the text on the current device, and axis and cell text is
-# shrunk (or thinned) only when it would otherwise overlap. Layouts that fit
-# are therefore drawn exactly as before, while crowded layouts are adjusted.
+# as tracks. Every track, the legend and the margins are sized in inches from
+# their contents, measured on the current device, and the heatmap body takes
+# the remaining space. Dendrograms and bar graphs therefore look the same
+# whatever the number of rows and columns, and axis and cell text is shrunk
+# (or thinned) only when it would otherwise overlap.
 
 #' Height of a line of margin text in inches
 #' @importFrom graphics par
@@ -275,108 +276,6 @@
   out
 }
 
-#' Solve the span of an axis when some tracks have a physical size
-#'
-#' @param fixed size of the heatmap and tracks sized in cell units.
-#' @param inches physical size of the remaining tracks in inches.
-#' @param plot_in size of the plot region along the axis in inches.
-#' @param min_units minimum size (cell units) of the strip track, if any.
-#' @param strip_in physical size of the strip track in inches.
-#'
-#' @return list with the span (cell units), units per inch and the strip size.
-#'
-#' @noRd
-.solve_span <- function(fixed,
-                        inches,
-                        plot_in,
-                        min_units = 0,
-                        strip_in = 0) {
-  span <- fixed + min_units
-  strip <- min_units
-  for(z in seq_len(50)) {
-    upi <- span / plot_in
-    strip <- max(min_units, strip_in * upi)
-    new <- fixed + strip + inches * upi
-    if(abs(new - span) <= 1e-10 * new) {
-      span <- new
-      break
-    }
-    span <- new
-  }
-  list(
-    span = span,
-    upi = span / plot_in,
-    strip = strip
-  )
-}
-
-#' Space a legend needs beyond the outer edge of its region (inches)
-#'
-#' Mirrors the geometry used by \code{heat_map_legend()}: labels are drawn
-#' beside the colour bar and shapes, and titles are centred on the legend but
-#' never extend over the heatmap.
-#'
-#' @param spec list describing the legend (see \code{heat_map()}).
-#' @param width_in width of the legend region in inches.
-#' @param shape_in width of the size and levels legend shapes in inches.
-#'
-#' @noRd
-.legend_spill <- function(spec,
-                          width_in,
-                          shape_in) {
-  if(is.null(spec) || length(spec$types) == 0) {
-    return(0)
-  }
-  half <- width_in / 2
-  pad <- 0.5 * .text_in("m", spec$text_size, spec$text_font)
-  spill <- 0
-  # COLOUR LEGEND LABELS
-  if("colour" %in% spec$types) {
-    lab <- .text_in(spec$col_labels, spec$text_size, spec$text_font)
-    bar <- spec$col_scale_size * 0.2 * width_in
-    spill <- max(
-      spill,
-      if(spec$side == 4) {
-        half + 0.045 * width_in + lab - width_in
-      } else {
-        lab + 0.045 * width_in + bar - half
-      }
-    )
-  }
-  # SIZE, LEVELS & ANNOTATION LEGEND LABELS
-  labs <- c(
-    if("size" %in% spec$types) as.character(spec$size_labels),
-    if("levels" %in% spec$types) as.character(spec$levels_labels),
-    as.character(spec$annotation_labels)
-  )
-  if(length(labs) > 0) {
-    lab <- .text_in(labs, spec$text_size, spec$text_font)
-    spill <- max(
-      spill,
-      if(spec$side == 4) {
-        0.2 * shape_in + pad + lab - half
-      } else {
-        1.2 * shape_in + pad + lab - half
-      }
-    )
-  }
-  # TITLES - CENTRED ON THE LEGEND, SHIFTED AWAY FROM THE HEATMAP IF WIDE
-  titles <- spec$titles[!is.na(spec$titles)]
-  if(length(titles) > 0) {
-    tw <- max(
-      vapply(
-        seq_along(titles),
-        function(z) {
-          .text_in(titles[z], spec$title_size[z], spec$title_font[z])
-        },
-        numeric(1)
-      )
-    )
-    spill <- max(spill, max(half, tw / 2) + tw / 2 - width_in)
-  }
-  max(0, spill)
-}
-
 #' Space a bar graph axis needs beyond the edge of the plot region (inches)
 #'
 #' @param ticks tick labels of the bar graph axis.
@@ -408,431 +307,6 @@
     spill = max(tick_ext, label_in + lab / 2),
     label_in = label_in
   )
-}
-
-#' Compute the heatmap layout
-#'
-#' Must be called after \code{plot.new()} so that text can be measured and the
-#' figure size is known.
-#'
-#' @param p list of layout inputs assembled by \code{heat_map()}.
-#'
-#' @return list of track limits, plot limits, margins and fitted text sizes.
-#'
-#' @noRd
-.heat_map_layout <- function(p) {
-
-  # TRACKS, LEGEND & MARGINS SIZED IN INCHES FROM THEIR CONTENTS
-  if(identical(p$mode, "fit")) {
-    return(.heat_map_layout_fit(p))
-  }
-
-  line_in <- .line_in()
-  fin <- p$fin
-  hx <- p$heatmap_xlim
-  hy <- p$heatmap_ylim
-  wx <- diff(range(hx))
-  hh <- diff(range(hy))
-
-  # TRACK SIZES IN CELL UNITS
-  bar_x <- if(p$bar_x) 0.2 * p$bar_size_x * hh else 0
-  tree_x <- if(p$tree_x) 0.2 * p$tree_size_x * hh else 0
-  bar_y <- if(p$bar_y) 0.2 * p$bar_size_y * wx else 0
-  tree_y <- if(p$tree_y) 0.2 * p$tree_size_y * wx else 0
-
-  # PHYSICAL TRACK SIZES IN INCHES
-  strip_text_in <- function(text, cex, font) {
-    if(.all_na(text)) {
-      return(0)
-    }
-    1.5 * .text_in("Mg", cex, font, "height")
-  }
-  strip_x_in <- if(p$label_x) {
-    strip_text_in(p$label_text_x, p$label_size_x, p$label_font_x)
-  } else {
-    0
-  }
-  strip_y_in <- if(p$label_y) {
-    strip_text_in(p$label_text_y, p$label_size_y, p$label_font_y)
-  } else {
-    0
-  }
-  annot_x_in <- if(p$n_annot_x > 0) {
-    p$annot_gap + p$n_annot_x * p$annot_size_x
-  } else {
-    0
-  }
-  annot_y_in <- if(p$n_annot_y > 0) {
-    p$annot_gap + p$n_annot_y * p$annot_size_y
-  } else {
-    0
-  }
-
-  # AXIS TEXT - MEASURED ONCE AT THE REQUESTED SIZE (TEXT SCALES WITH CEX)
-  dims_x <- .axis_text_dims(p$side_x, p$las_x)
-  dims_y <- .axis_text_dims(p$side_y, p$las_y)
-  ext_x <- c(
-    width = .text_in(p$axis_text_x, p$axis_text_size_x, p$axis_text_font_x, "width"),
-    height = .text_in(p$axis_text_x, p$axis_text_size_x, p$axis_text_font_x, "height")
-  )
-  ext_y <- c(
-    width = .text_in(p$axis_text_y, p$axis_text_size_y, p$axis_text_font_y, "width"),
-    height = .text_in(p$axis_text_y, p$axis_text_size_y, p$axis_text_font_y, "height")
-  )
-  # ROTATED X AXIS TEXT - ALONG THE AXIS, THE TEXT NEAREST THE LAST TICK
-  # EXTENDS ITS CORNER BEYOND IT
-  rx <- .layout_rotation(p, ext_x[["height"]])
-  along_x <- if(is.null(rx)) dims_x[["along"]] else rx$what
-  along_ext_x <- if(is.null(rx)) ext_x[[dims_x[["along"]]]] else rx$along
-  near_ext_x <- if(is.null(rx)) {
-    ext_x[[dims_x[["along"]]]]
-  } else {
-    1.5 * ext_x[["height"]] * sin(p$rot_x * pi / 180)
-  }
-  over_x <- 0
-  legend_side <- if(p$side_y == 2) 4 else 2
-
-  # ITERATE - MARGINS DEPEND ON TEXT SIZES & SPILLS, WHICH DEPEND ON THE
-  # SPACE LEFT FOR THE PLOT REGION
-  shrink <- 1
-  fit_x <- list(scale = 1, step = 1)
-  fit_y <- list(scale = 1, step = 1)
-  spill <- rep(0, 4)
-  bar_label_x_in <- p$bar_label_default_x
-  bar_label_y_in <- p$bar_label_default_y
-  gap_x_in <- 0
-  gap_y_in <- 0
-  for(iter in seq_len(12)) {
-
-    sc_x <- min(fit_x$scale, shrink)
-    sc_y <- min(fit_y$scale, shrink)
-    cex_x <- p$axis_text_size_x * sc_x
-    cex_y <- p$axis_text_size_y * sc_y
-
-    # MARGINS (LINES) - ESTIMATE FROM THE NUMBER OF CHARACTERS
-    margins <- vapply(
-      seq_len(4),
-      function(z) {
-        .compute_margin(
-          side = z,
-          axis_text_x = p$axis_text_x,
-          axis_text_y = p$axis_text_y,
-          axis_text_size_x = cex_x * if(is.null(rx)) 1 else sin(p$rot_x * pi / 180),
-          axis_text_size_y = cex_y,
-          axis_text_side_x = p$side_x,
-          axis_text_side_y = p$side_y,
-          axis_label_x = p$axis_label_x,
-          axis_label_y = p$axis_label_y,
-          title = p$title
-        )
-      },
-      numeric(1)
-    )
-    margins[legend_side] <- margins[legend_side] + p$levels_margin
-
-    # MEASURED SPACE FOR AXIS TEXT, ANNOTATION NAMES, BARS & LEGENDS
-    need <- rep(0, 4)
-    need[p$side_x] <- 1.5 +
-      (if(is.null(rx)) ext_x[[dims_x[["out"]]]] else rx$out) *
-      min(fit_x$scale, shrink) / line_in +
-      (if(isTRUE(p$mark_in_x > 0)) p$mark_in_x / line_in else 0) +
-      (if(nzchar(p$axis_label_x)) 2 else 0) +
-      (if(p$side_x == 3 && !is.null(p$title)) 2 else 0)
-    need[p$side_y] <- 1.5 + max(
-      ext_y[[dims_y[["out"]]]] * min(fit_y$scale, shrink) +
-        (if(isTRUE(p$mark_in_y > 0)) p$mark_in_y else 0),
-      .text_in(p$annot_names_x, p$annot_text_size, p$annot_text_font)
-    ) / line_in + (if(nzchar(p$axis_label_y)) 2 else 0)
-    need[p$side_x] <- max(
-      need[p$side_x],
-      .text_in(p$annot_names_y, p$annot_text_size, p$annot_text_font) /
-        line_in + 1.5
-    )
-    # ROTATED X AXIS TEXT BENEATH (OR ABOVE) THE Y AXIS TEXT
-    need[p$side_y] <- max(need[p$side_y], over_x / line_in + 0.5 * (over_x > 0))
-    # SPACE BEYOND THE PLOT REGION (LEGENDS, BAR AXES) PLUS THE OUTER LINES
-    # USED BY THE TITLE AND AXIS LABELS ON THAT SIDE
-    outer_lines <- rep(0, 4)
-    if(nzchar(p$axis_label_x)) {
-      outer_lines[p$side_x] <- outer_lines[p$side_x] + 2
-    }
-    if(nzchar(p$axis_label_y)) {
-      outer_lines[p$side_y] <- outer_lines[p$side_y] + 2
-    }
-    if(!is.null(p$title)) {
-      outer_lines[3] <- outer_lines[3] + 2
-    }
-    need <- pmax(need, (spill > 0) * (spill / line_in + 0.3 + outer_lines))
-    auto <- is.na(p$margins)
-    margins[auto] <- pmax(margins, need)[auto]
-    margins[!auto] <- p$margins[!auto]
-
-    # PLOT REGION (INCHES) - SHRINK TEXT IF THE MARGINS DON'T FIT
-    pw <- fin[1] - (margins[2] + margins[4]) * line_in
-    ph <- fin[2] - (margins[1] + margins[3]) * line_in
-    if((pw < 0.25 * fin[1] || ph < 0.25 * fin[2]) && shrink > 0.5) {
-      shrink <- max(0.5, shrink * 0.8)
-      next
-    }
-    if(pw < 0.25 * fin[1] || ph < 0.25 * fin[2]) {
-      # CAP THE AUTOMATIC MARGINS - KEEPING THE SPACE LEGENDS AND BAR AXES
-      # NEED BEYOND THE PLOT REGION
-      margins <- .cap_margins(
-        margins,
-        keep = (spill > 0) * (spill / line_in + 0.3),
-        fin = fin,
-        line_in = line_in
-      )
-      pw <- fin[1] - (margins[2] + margins[4]) * line_in
-      ph <- fin[2] - (margins[1] + margins[3]) * line_in
-    }
-
-    # PHYSICAL TRACKS MAY TAKE AT MOST HALF THE PLOT REGION
-    scale_y <- min(
-      1,
-      0.5 * ph / max(strip_x_in + annot_x_in + gap_x_in, 1e-12)
-    )
-    scale_x <- min(
-      1,
-      0.5 * pw / max(strip_y_in + annot_y_in + gap_y_in, 1e-12)
-    )
-
-    # SPAN OF EACH AXIS (CELL UNITS)
-    sy <- .solve_span(
-      fixed = hh + bar_x + tree_x,
-      inches = (annot_x_in + gap_x_in) * scale_y,
-      plot_in = ph,
-      min_units = if(p$label_x) p$tree_label_size_x else 0,
-      strip_in = strip_x_in * scale_y
-    )
-    inner_y <- wx + bar_y + tree_y
-    sx_tracks <- .solve_span(
-      fixed = inner_y,
-      inches = (annot_y_in + gap_y_in) * scale_x,
-      plot_in = pw,
-      min_units = if(p$label_y) p$tree_label_size_y else 0,
-      strip_in = strip_y_in * scale_x
-    )
-    # LEGEND - A FRACTION OF THE HEATMAP & Y TRACKS
-    legend_frac <- if(p$legend) 0.2 * p$legend_size else 0
-    legend <- legend_frac * sx_tracks$span
-    upi_x <- sx_tracks$span * (1 + legend_frac) / pw
-    # RE-SOLVE WITH THE LEGEND INCLUDED IN THE SPAN
-    for(z in seq_len(50)) {
-      strip_y <- if(p$label_y) {
-        max(p$tree_label_size_y, strip_y_in * scale_x * upi_x)
-      } else {
-        0
-      }
-      annot_y <- annot_y_in * scale_x * upi_x
-      gap_y <- gap_y_in * scale_x * upi_x
-      tracks <- inner_y + strip_y + annot_y + gap_y
-      legend <- legend_frac * tracks
-      new <- (tracks + legend) / pw
-      if(abs(new - upi_x) <= 1e-10 * new) {
-        upi_x <- new
-        break
-      }
-      upi_x <- new
-    }
-    upi_y <- sy$upi
-    strip_x <- sy$strip
-    annot_x <- annot_x_in * scale_y * upi_y
-    gap_x <- gap_x_in * scale_y * upi_y
-
-    # FIT AXIS TEXT TO THE CELLS
-    if(p$fit) {
-      fit_x <- .fit_text(
-        p$axis_text_x,
-        p$axis_text_size_x,
-        p$axis_text_font_x,
-        along_x,
-        .min_spacing(p$x_centers) / upi_x,
-        ext = along_ext_x
-      )
-      fit_y <- .fit_text(
-        p$axis_text_y,
-        p$axis_text_size_y,
-        p$axis_text_font_y,
-        dims_y[["along"]],
-        .min_spacing(p$y_centers) / upi_y,
-        ext = ext_y[[dims_y[["along"]]]]
-      )
-    }
-
-    # SPACE NEEDED BEYOND THE PLOT REGION BY LEGENDS & BAR AXES
-    new_spill <- rep(0, 4)
-    shape_in <- min(1, legend / 2) / upi_x
-    new_spill[legend_side] <- .legend_spill(
-      p$legend_spec,
-      legend / upi_x,
-      shape_in
-    )
-    if(p$bar_x) {
-      bx <- .bar_spill(
-        ticks = p$bar_ticks_x,
-        label = p$bar_label_x,
-        cex = p$axis_text_size_y[1],
-        font = p$axis_text_font_y[1],
-        label_cex = p$bar_label_size_x,
-        label_font = p$bar_label_font_x,
-        out = dims_y[["out"]],
-        label_out = "width",
-        default_in = p$bar_label_default_x * wx / upi_x
-      )
-      new_spill[p$side_y] <- max(new_spill[p$side_y], bx$spill)
-      bar_label_x_in <- bx$label_in
-    }
-    if(p$bar_y) {
-      by <- .bar_spill(
-        ticks = p$bar_ticks_y,
-        label = p$bar_label_y,
-        cex = p$axis_text_size_x[1],
-        font = p$axis_text_font_x[1],
-        label_cex = p$bar_label_size_y,
-        label_font = p$bar_label_font_y,
-        out = .axis_text_dims(p$side_x, p$las_y)[["out"]],
-        label_out = "height",
-        default_in = p$bar_label_default_y * hh / upi_y
-      )
-      new_spill[p$side_x] <- max(new_spill[p$side_x], by$spill)
-      bar_label_y_in <- by$label_in
-    }
-    # GAP BETWEEN THE HEATMAP (OR ANNOTATIONS) AND A BAR GRAPH WHEN THE TICK
-    # LABEL NEAREST THE HEATMAP WOULD TOUCH THE AXIS TEXT BESIDE IT
-    inner_over <- function(n_annot, annot_size, text_ext, cell_in) {
-      if(n_annot > 0) {
-        0.5 * (.text_in("Mg", p$annot_text_size, p$annot_text_font, "height") -
-                 annot_size)
-      } else {
-        0.5 * (text_ext - cell_in)
-      }
-    }
-    new_gap_x <- 0
-    if(p$bar_x) {
-      tick <- 0.5 * .text_in(
-        as.character(p$bar_ticks_x),
-        p$axis_text_size_y[1],
-        p$axis_text_font_y[1],
-        dims_y[["along"]]
-      ) - 0.05 * bar_x / upi_y
-      over <- tick + inner_over(
-        p$n_annot_x,
-        p$annot_size_x,
-        ext_y[[dims_y[["along"]]]] * min(fit_y$scale, shrink),
-        1 / upi_y
-      )
-      new_gap_x <- if(over > 0) over + 0.02 else 0
-    }
-    new_gap_y <- 0
-    if(p$bar_y) {
-      along_y <- .axis_text_dims(p$side_x, p$las_y)[["along"]]
-      tick <- 0.5 * .text_in(
-        as.character(p$bar_ticks_y),
-        p$axis_text_size_x[1],
-        p$axis_text_font_x[1],
-        along_y
-      ) - 0.05 * bar_y / upi_x
-      over <- tick + inner_over(
-        p$n_annot_y,
-        p$annot_size_y,
-        near_ext_x * min(fit_x$scale, shrink),
-        1 / upi_x
-      )
-      new_gap_y <- if(over > 0) over + 0.02 else 0
-    }
-    # CONVERGED WHEN THE TEXT SIZES, SPILLS & GAPS USED ARE THOSE NEEDED
-    new_over_x <- .rotated_over(
-      rx,
-      p$x_centers,
-      hx,
-      upi_x,
-      p$side_y,
-      min(fit_x$scale, shrink)
-    )
-    converged <- all(abs(new_over_x - over_x) < 1e-4) &&
-      all(abs(new_spill - spill) < 1e-6) &&
-      abs(new_gap_x - gap_x_in) < 1e-6 &&
-      abs(new_gap_y - gap_y_in) < 1e-6 &&
-      abs(min(fit_x$scale, shrink) - sc_x) < 1e-6 &&
-      abs(min(fit_y$scale, shrink) - sc_y) < 1e-6
-    gap_x_in <- new_gap_x
-    gap_y_in <- new_gap_y
-    spill <- new_spill
-    over_x <- new_over_x
-    if(converged && iter > 1) {
-      break
-    }
-  }
-
-  # TRACK LIMITS - STACKED OUTWARDS FROM THE HEATMAP OPPOSITE THE AXIS TEXT
-  dir_x <- if(p$side_x == 1) 1 else -1
-  x_tracks <- .stack_tracks(
-    if(dir_x == 1) max(hy) else min(hy),
-    dir_x,
-    c(
-      annotation = annot_x,
-      gap = gap_x,
-      bar = bar_x,
-      label = strip_x,
-      tree = tree_x
-    )
-  )
-  dir_y <- if(p$side_y == 2) 1 else -1
-  y_tracks <- .stack_tracks(
-    if(dir_y == 1) max(hx) else min(hx),
-    dir_y,
-    c(
-      annotation = annot_y,
-      gap = gap_y,
-      bar = bar_y,
-      label = strip_y,
-      tree = tree_y
-    )
-  )
-  outer_y <- y_tracks$tree[2]
-  legend_xlim <- if(dir_y == 1) {
-    c(outer_y, outer_y + legend)
-  } else {
-    c(outer_y - legend, outer_y)
-  }
-
-  # CELL & CLUSTER LABEL TEXT
-  cell_in <- c(1 / upi_x, 1 / upi_y)
-
-  list(
-    x_tracks = x_tracks,
-    y_tracks = y_tracks,
-    legend_xlim = legend_xlim,
-    xlim = range(c(hx, unlist(y_tracks), legend_xlim)),
-    ylim = range(c(hy, unlist(x_tracks))),
-    margins = margins,
-    # NEVER LARGER THAN THE TEXT THE MARGINS WERE SIZED FOR
-    axis_text_size_x = p$axis_text_size_x * min(fit_x$scale, shrink, sc_x),
-    axis_text_size_y = p$axis_text_size_y * min(fit_y$scale, shrink, sc_y),
-    step_x = fit_x$step,
-    step_y = fit_y$step,
-    upi = c(x = upi_x, y = upi_y),
-    cell_in = cell_in,
-    annot_size_x = p$annot_size_x * scale_y * upi_y,
-    annot_size_y = p$annot_size_y * scale_x * upi_x,
-    annot_gap_x = p$annot_gap * scale_y * upi_y,
-    annot_gap_y = p$annot_gap * scale_x * upi_x,
-    bar_label_x = bar_label_x_in * upi_x,
-    bar_label_y = bar_label_y_in * upi_y,
-    annot_text_size_x = p$annot_text_size,
-    annot_text_size_y = p$annot_text_size,
-    # MARGIN TEXT (mtext LINES)
-    title_line = margins[3] - 2,
-    axis_label_x_line = if(p$side_x == 1 || is.null(p$title)) {
-      margins[p$side_x] - 2
-    } else {
-      margins[p$side_x] - 4
-    },
-    axis_label_y_line = margins[p$side_y] - 2,
-    legend_geom = NULL
-  )
-
 }
 
 #' Scale cell text so that it fits inside the cells
@@ -1041,17 +515,78 @@
       y0 + dir * c(0.1, 0.1 + w)
     )
   }
-  # ZOOM PANELS - FROM THE EDGE OF THE HEATMAP TO THE FAR SIDE OF THE PANEL
-  if(!is.null(g$zoom_x)) {
-    z <- g$zoom_x
-    add("zoom_x", ux(range(z$lim, z$along)), uy(c(z$edge, z$across)))
+  # ZOOM PANELS - THE PANELS OF EACH SIDE, FROM THE EDGE OF THE HEATMAP (OR
+  # OF THE TRACKS THEY ARE BEYOND) TO THE FAR SIDE OF THE PANELS
+  for(ax in c("x", "y")) {
+    panels <- g[[paste0("zoom_", ax)]]
+    for(s in unique(vapply(panels, `[[`, numeric(1), "side"))) {
+      z <- Filter(function(v) v$side == s, panels)
+      along <- range(unlist(lapply(z, function(v) c(v$lim, v$along))))
+      across <- c(z[[1]]$outer, z[[1]]$across)
+      if(ax == "x") {
+        add("zoom_x", ux(along), uy(across))
+      } else {
+        add("zoom_y", ux(across), uy(along))
+      }
+    }
   }
-  if(!is.null(g$zoom_y)) {
-    z <- g$zoom_y
-    add("zoom_y", ux(c(z$edge, z$across)), uy(range(z$lim, z$along)))
+  # LABELS OF THE PANELS BEYOND THE TRACKS - OUTWARDS FROM THE FAR SIDE OF THE
+  # PANELS
+  for(ax in c("x", "y")) {
+    texts <- g[[paste0("zoom_text_", ax)]]
+    if(length(texts) == 0) {
+      next
+    }
+    kept <- function(what) {
+      do.call(c, unname(lapply(texts, function(zt) {
+        rep_len(zt[[what]], length(zt$at))[zt$keep]
+      })))
+    }
+    labels <- kept("labels")
+    at <- kept("at")
+    cex <- kept("size")
+    font <- kept("font")
+    if(length(at) == 0 || .text_in(labels, 1, 1, "width") == 0) {
+      next
+    }
+    side <- texts[[1]]$side
+    from <- if(side %in% c(1, 3)) uy(texts[[1]]$pos) else ux(texts[[1]]$pos)
+    dir <- if(side %in% c(1, 2)) -1 else 1
+    name <- paste0("zoom_text_", ax)
+    rot <- if(ax == "x") g$zoom_rot_x
+    if(!is.null(rot)) {
+      h <- .text_in(labels, cex, font, "height")
+      rx <- .rotated_text(.text_widths(labels, cex, font), h, rot)
+      a <- rot * pi / 180
+      pos <- ux(at)
+      near <- 0.75 * h * sin(a)
+      span <- if(g$side_y == 2) {
+        c(min(pos - rx$over), max(pos) + near)
+      } else {
+        c(min(pos) - near, max(pos + rx$over))
+      }
+      add(name, span,
+          from + dir * c(max(0, line_in - 0.75 * h * cos(a)), line_in + rx$out))
+      next
+    }
+    dims <- .axis_text_dims(side, g[[paste0("las_", ax)]])
+    along <- .text_in(labels, cex, font, dims[["along"]]) / 2
+    out <- .text_in(labels, cex, font, dims[["out"]])
+    pos <- if(ax == "x") ux(at) else uy(at)
+    span <- c(min(pos) - along, max(pos) + along)
+    depth <- from + dir * .axis_text_span(side, dims[["out"]], out)
+    if(side %in% c(1, 3)) {
+      add(name, span, depth)
+    } else {
+      add(name, depth, span)
+    }
   }
   # BAR GRAPH AXES & LABELS - DRAWN AT THE EDGE OF THE HEATMAP, WHICH IS THE
-  # EDGE OF THE PLOT REGION UNLESS A ZOOM PANEL IS BESIDE IT
+  # EDGE OF THE PLOT REGION UNLESS A ZOOM PANEL IS BESIDE IT ON THAT SIDE
+  near_zoom <- function(ax) {
+    any(vapply(g[[paste0("zoom_", ax)]], `[[`, numeric(1), "side") ==
+          g[[paste0("side_", ax)]])
+  }
   from_heatmap <- function(side, from, to) {
     if(side == 1) {
       uy(min(g$heatmap_ylim)) - c(from, to)
@@ -1073,7 +608,7 @@
     }
     add(
       "bar_axis_x",
-      (if(is.null(g$zoom_y)) outward else from_heatmap)(
+      (if(!near_zoom("y")) outward else from_heatmap)(
         g$side_y, 0, max(line_in + out, lab)
       ),
       uy(g$bar_x_ylim)
@@ -1090,27 +625,14 @@
     add(
       "bar_axis_y",
       ux(g$bar_y_xlim),
-      (if(is.null(g$zoom_x)) outward else from_heatmap)(
+      (if(!near_zoom("x")) outward else from_heatmap)(
         g$side_x, 0, max(line_in + out, lab)
       )
     )
   }
-  # LEGEND - THE BOX DRAWN (FIT LAYOUT) OR ITS REGION PLUS ANY TEXT BEYOND IT
+  # LEGEND - THE BOX DRAWN
   if(!is.null(g$legend_box)) {
     add("legend", ux(g$legend_box$x), uy(g$legend_box$y))
-  } else if(diff(range(g$legend_xlim)) > 0) {
-    lx <- ux(g$legend_xlim)
-    spill <- .legend_spill(
-      g$legend_spec,
-      diff(range(lx)),
-      min(1, diff(range(g$legend_xlim)) / 2) / g$upi[["x"]]
-    )
-    if(g$side_y == 2) {
-      lx <- c(min(lx), max(lx) + spill)
-    } else {
-      lx <- c(min(lx) - spill, max(lx))
-    }
-    add("legend", lx, plot_y)
   }
   # TITLE & AXIS LABELS (mtext)
   mtext_box <- function(name, text, side, line, cex, font, centre) {
@@ -1126,34 +648,26 @@
       add(name, depth, centre + c(-w, w) / 2)
     }
   }
-  centre <- function(at, lim, conv) {
-    if(is.null(at) || is.na(at)) mean(conv(lim)) else conv(at)
-  }
   mtext_box(
     "title", g$title, 3, g$title_line, g$title_cex, g$title_font,
-    centre(g$title_at, g$heatmap_xlim, ux)
+    ux(g$title_at)
   )
   mtext_box(
     "axis_label_x", g$axis_label_x, g$side_x, g$axis_label_x_line,
     g$axis_label_cex_x, g$axis_label_font_x,
-    centre(g$axis_label_x_at, g$heatmap_xlim, ux)
+    ux(g$axis_label_x_at)
   )
   mtext_box(
     "axis_label_y", g$axis_label_y, g$side_y, g$axis_label_y_line,
     g$axis_label_cex_y, g$axis_label_font_y,
-    centre(g$axis_label_y_at, g$heatmap_ylim, uy)
+    uy(g$axis_label_y_at)
   )
   out <- do.call(rbind, boxes)
   rownames(out) <- NULL
   out
 }
 
-## FIT LAYOUT ------------------------------------------------------------------
-
-# In the fit layout every track, the legend and the margins are sized in
-# inches from their contents, and the heatmap body takes the remaining space.
-# Dendrograms and bar graphs therefore look the same whatever the number of
-# rows and columns, and nothing is clipped or overlaps on small devices.
+## LAYOUT ---------------------------------------------------------------------
 
 #' Where mtext() draws text, in lines from the edge of the plot region
 #'
@@ -1298,14 +812,18 @@
   conv(at, "inches", "user")
 }
 
-#' Compute the fit layout
+#' Compute the layout of a heatmap
+#'
+#' Every track, the legend and the margins are sized in inches from their
+#' contents, and the heatmap body takes the remaining space.
 #'
 #' @param p list of layout inputs assembled by \code{heat_map()}.
 #'
-#' @return the same structure as \code{.heat_map_layout()}.
+#' @return list of track limits (plot units), the plot window, margins
+#'   (lines), fitted text sizes, the cell size and the legend geometry.
 #'
 #' @noRd
-.heat_map_layout_fit <- function(p) {
+.heat_map_layout <- function(p) {
 
   line_in <- .line_in()
   fin <- p$fin
@@ -1347,22 +865,96 @@
   annot_x_in <- if(p$n_annot_x > 0) p$annot_gap + p$n_annot_x * p$annot_size_x else 0
   annot_y_in <- if(p$n_annot_y > 0) p$annot_gap + p$n_annot_y * p$annot_size_y else 0
 
-  # ZOOM LENS - A PANEL OF ENLARGED COLUMNS (ROWS) BETWEEN THE HEATMAP AND THE
-  # AXIS TEXT, WHICH LABELS THE ENLARGED COLUMNS (ROWS)
+  # ZOOM LENS - PANELS OF ENLARGED COLUMNS (ROWS) BETWEEN THE HEATMAP AND THE
+  # AXIS TEXT, WHICH THEN LABELS THEIR COLUMNS (ROWS), OR ON THE OTHER SIDE
+  # BEYOND THE TRACKS, LABELLED ON THEIR OUTER SIDE
   zx <- p$zoom_x
   zy <- p$zoom_y
-  # DEPTH OF THE PANEL - A SHARE OF THE SPACE LEFT FOR THE HEATMAP (INCHES)
+  other_side <- function(side) c(3, 4, 1, 2)[side]
+  zoom_on <- function(z, side) {
+    if(is.null(z)) list() else .zoom_on(z$bands, side)
+  }
+  far_x <- zoom_on(zx, other_side(p$side_x))
+  far_y <- zoom_on(zy, other_side(p$side_y))
+  # WEDGE AND DEPTH OF THE PANELS ON EACH SIDE WITH PANELS - EACH PANEL A
+  # SHARE OF THE SPACE LEFT FOR THE HEATMAP (INCHES)
   zoom_depth <- function(z, free) {
     if(is.null(z)) {
-      return(c(wedge = 0, depth = 0, len = 0))
+      return(c(wedge = 0, depth = 0, sides = 0))
     }
+    k <- length(unique(vapply(z$bands, `[[`, numeric(1), "side")))
     wedge <- min(.ZOOM$wedge, 0.15 * free)
-    c(wedge = wedge, depth = z$size * (free - wedge) / (1 + z$size), len = 0)
+    c(
+      wedge = wedge,
+      depth = z$size * (free - k * wedge) / (1 + k * z$size),
+      sides = k
+    )
   }
-  # LENGTH OF THE PANEL - ENLARGED CELLS NO LARGER THAN .ZOOM$cell_max
-  zoom_len <- function(z, heat_in) {
-    min(heat_in, .ZOOM$cell_max * diff(z$lim))
+  zoom_used <- function(zin) {
+    zin[["sides"]] * (zin[["wedge"]] + zin[["depth"]])
   }
+  # GAP BETWEEN THE k PANELS OF A SIDE (INCHES)
+  zoom_gap <- function(heat_in, k) {
+    if(k < 2) 0 else min(.ZOOM$gap, 0.25 * heat_in / (k - 1))
+  }
+  # ROWS AND CLUSTER GAPS OF A BAND (CELL UNITS) - IN A PANEL THE ROWS ARE
+  # ENLARGED AND THE GAPS KEEP THEIR SIZE
+  zoom_extent <- function(b) .zoom_extent(b$centers)
+  # ENLARGED CELLS (INCHES PER CELL UNIT) - THE SAME IN EVERY PANEL OF AN
+  # AXIS, AT LEAST AS LARGE AS THE HEATMAP'S CELLS AND OTHERWISE NO LARGER
+  # THAN .ZOOM$cell_max, SO THAT THE PANELS OF EACH SIDE FIT ALONG THE
+  # HEATMAP
+  zoom_cell <- function(z, heat_in, upi_along) {
+    if(is.null(z)) {
+      return(0)
+    }
+    cell <- max(.ZOOM$cell_max, 1 / upi_along)
+    for(s in unique(vapply(z$bands, `[[`, numeric(1), "side"))) {
+      b <- .zoom_on(z$bands, s)
+      ext <- vapply(b, zoom_extent, numeric(2))
+      room <- heat_in - (length(b) - 1) * zoom_gap(heat_in, length(b)) -
+        sum(ext["gaps", ]) / upi_along
+      cell <- min(cell, room / sum(ext["rows", ]))
+    }
+    cell
+  }
+  # PANEL LIMITS ALONG THE HEATMAP (CELL UNITS) FOR THE BANDS OF ONE SIDE
+  zoom_along <- function(bands, hlim, upi_along, cell_in) {
+    if(length(bands) == 0) {
+      return(list())
+    }
+    heat_in <- diff(range(hlim)) / upi_along
+    ext <- vapply(bands, zoom_extent, numeric(2))
+    .zoom_arrange(
+      lapply(bands, `[[`, "lim"),
+      hlim,
+      ext["rows", ] * cell_in * upi_along + ext["gaps", ],
+      zoom_gap(heat_in, length(bands)) * upi_along
+    )
+  }
+  # POSITIONS OF THE LABELS OF THE BANDS OF ONE SIDE IN THEIR PANELS
+  zoom_at <- function(bands, along) {
+    unlist(Map(function(b, a) .zoom_map_band(b$centers, b$centers, a), bands, along))
+  }
+  # LABELS OF THE PANELS BEYOND THE TRACKS
+  far_text <- function(bands, axis) {
+    if(length(bands) == 0) {
+      return(NULL)
+    }
+    labels <- .zoom_join(bands, "labels")
+    size <- .zoom_join(bands, "size")
+    font <- .zoom_join(bands, "font")
+    list(
+      labels = labels,
+      size = size,
+      font = font,
+      centers = .zoom_join(bands, "centers"),
+      width = .text_in(labels, size, font, "width"),
+      height = .text_in(labels, size, font, "height")
+    )
+  }
+  far_text_x <- far_text(far_x, "x")
+  far_text_y <- far_text(far_y, "y")
 
   # AXIS TEXT - MEASURED ONCE (TEXT SCALES WITH CEX)
   dims_x <- .axis_text_dims(p$side_x, p$las_x)
@@ -1385,17 +977,55 @@
   } else {
     1.5 * ext_x[["height"]] * sin(p$rot_x * pi / 180)
   }
+  dims_far_x <- if(is.null(zx)) dims_x else .axis_text_dims(p$side_x, zx$las)
+  dims_far_y <- if(is.null(zy)) dims_y else .axis_text_dims(p$side_y, zy$las)
+  rx_far <- if(!is.null(zx$rot) && !is.null(far_text_x)) {
+    .rotated_text(
+      .text_widths(far_text_x$labels, far_text_x$size, far_text_x$font),
+      far_text_x$height,
+      zx$rot
+    )
+  }
+  fit_far_x <- list(scale = 1, step = 1)
+  fit_far_y <- list(scale = 1, step = 1)
+  # THEIR DEPTH (INCHES) AS c(BASE, PER UNIT OF TEXT SCALE) - AT MOST A
+  # QUARTER OF THE PLOT REGION, THE TEXT SHRUNK (far_shrink_*) TO FIT
+  far_lin <- function(text, side, dims, rx) {
+    if(is.null(text)) {
+      return(c(0, 0))
+    }
+    if(!is.null(rx)) {
+      return(c(1.05 * line_in, rx$out))
+    }
+    out <- text[[dims[["out"]]]]
+    if(out == 0) {
+      return(c(0, 0))
+    }
+    base <- .axis_text_span(side, dims[["out"]], 1e-12)[2]
+    c(base, .axis_text_span(side, dims[["out"]], out)[2] - base)
+  }
+  far_lin_x <- far_lin(far_text_x, other_side(p$side_x), dims_far_x, rx_far)
+  far_lin_y <- far_lin(far_text_y, other_side(p$side_y), dims_far_y, NULL)
+  far_fit <- function(lin, cap) {
+    if(lin[2] <= 0) 1 else (cap - lin[1]) / lin[2]
+  }
   over_x <- 0
   title_cex <- max(p$title_size)
   label_cex_x <- max(p$axis_label_size_x)
   label_cex_y <- max(p$axis_label_size_y)
 
   shrink <- 1
+  um <- c(x = 1, y = 1)
+  um_off <- c(x = FALSE, y = FALSE)
   fit_x <- list(scale = 1, step = 1)
   fit_y <- list(scale = 1, step = 1)
   spill <- rep(0, 4)
   gap_x_in <- 0
   gap_y_in <- 0
+  # (EXTRA SPACE BETWEEN THE HEATMAP AND ITS ANNOTATION TRACKS, SO THAT THE
+  # AXIS TEXT AT THAT EDGE CLEARS THE ANNOTATION NAMES)
+  annot_extra_x <- 0
+  annot_extra_y <- 0
   bar_label_x_in <- 0
   bar_label_y_in <- 0
   shape_in <- 0.25
@@ -1430,8 +1060,11 @@
 
   for(iter in seq_len(12)) {
 
-    sc_x <- min(fit_x$scale, shrink)
-    sc_y <- min(fit_y$scale, shrink)
+    # (AXIS TEXT ALSO SHRUNK TO FIT MARGINS THE USER SUPPLIED - um)
+    shrink_x <- min(shrink, um[["x"]])
+    shrink_y <- min(shrink, um[["y"]])
+    sc_x <- min(fit_x$scale, shrink_x)
+    sc_y <- min(fit_y$scale, shrink_y)
 
     # AXIS TEXT, ANNOTATION NAMES & BAR AXES BESIDE THE PLOT REGION (INCHES)
     near <- rep(0, 4)
@@ -1480,12 +1113,14 @@
     label_x_inner <- NA
     if(nzchar(p$axis_label_x)) {
       label_x_inner <- margins_in[p$side_x] + gap
-      margins_in[p$side_x] <- label_x_inner + 0.75 * label_cex_x * line_in
+      margins_in[p$side_x] <- label_x_inner +
+        0.75 * label_cex_x * um[["x"]] * line_in
     }
     label_y_inner <- NA
     if(nzchar(p$axis_label_y)) {
       label_y_inner <- margins_in[p$side_y] + gap
-      margins_in[p$side_y] <- label_y_inner + 0.75 * label_cex_y * line_in
+      margins_in[p$side_y] <- label_y_inner +
+        0.75 * label_cex_y * um[["y"]] * line_in
     }
     title_inner <- NA
     if(!is.null(p$title)) {
@@ -1505,6 +1140,25 @@
     auto <- is.na(p$margins)
     margins <- margins_in / line_in
     margins[!auto] <- p$margins[!auto]
+    # A USER MARGIN TOO SMALL FOR THE AXIS TEXT, LABEL (AND BOTTOM LEGEND)
+    # BESIDE IT - THE AXIS TEXT AND LABEL SHRINK (TO 40% OF THEIR SIZE AT
+    # MOST) RATHER THAN BEING DRAWN OVER EACH OTHER
+    # (A MARGIN FAR TOO SMALL FOR THE TEXT EVEN THEN KEEPS IT AT ITS SIZE)
+    tight <- !auto & margins * line_in < margins_in - 1e-6
+    sides <- c(x = p$side_x, y = p$side_y)
+    tight_ax <- tight[sides] & !um_off
+    names(tight_ax) <- names(sides)
+    if(any(tight_ax)) {
+      hopeless <- (margins * line_in)[sides] < 0.75 * margins_in[sides]
+      off <- tight_ax & um <= 0.4 & hopeless
+      um[off] <- 1
+      um_off <- um_off | off
+      shrink_ax <- tight_ax & !off & um > 0.4
+      um[shrink_ax] <- pmax(0.4, um[shrink_ax] * 0.85)
+      if(any(off | shrink_ax)) {
+        next
+      }
+    }
 
     # PLOT REGION (INCHES) - SHRINK TEXT IF THE MARGINS DON'T FIT
     pw <- fin[1] - (margins[2] + margins[4]) * line_in
@@ -1524,10 +1178,23 @@
       ph <- fin[2] - (margins[1] + margins[3]) * line_in
     }
 
+    # LABELS BESIDE THE PANELS BEYOND THE TRACKS (INCHES) - LEFT OUT WHEN
+    # THEY WOULDN'T FIT AT A QUARTER OF THEIR SIZE
+    far_shrink <- function(lin, cap) {
+      fit <- far_fit(lin, cap)
+      if(fit < 0.25) 0 else min(1, fit)
+    }
+    far_shrink_x <- far_shrink(far_lin_x, 0.25 * ph)
+    far_shrink_y <- far_shrink(far_lin_y, 0.25 * pw)
+    sc_far_x <- min(fit_far_x$scale, shrink, far_shrink_x)
+    sc_far_y <- min(fit_far_y$scale, shrink, far_shrink_y)
+    far_in_x <- if(sc_far_x > 0) far_lin_x[1] + far_lin_x[2] * sc_far_x else 0
+    far_in_y <- if(sc_far_y > 0) far_lin_y[1] + far_lin_y[2] * sc_far_y else 0
+
     # TRACKS ALONG Y (COLUMN TRACKS) - AT MOST HALF THE PLOT HEIGHT
     tracks_y <- .fit_tracks(
       c(
-        annotation = annot_x_in,
+        annotation = annot_x_in + annot_extra_x,
         gap = gap_x_in,
         bar = bar_x_in,
         label = strip_x_in,
@@ -1535,15 +1202,16 @@
       ),
       0.5 * ph
     )
-    zoom_x_in <- zoom_depth(zx, ph - sum(tracks_y))
-    upi_y <- hh / (ph - sum(tracks_y) - zoom_x_in[["wedge"]] - zoom_x_in[["depth"]])
+    free_x <- ph - sum(tracks_y) - far_in_x
+    zoom_x_in <- zoom_depth(zx, free_x)
+    upi_y <- hh / (free_x - zoom_used(zoom_x_in))
 
     # TRACKS ALONG X (ROW TRACKS & LEGEND) - AT MOST 60% OF THE PLOT WIDTH
     legend_in <- if(p$legend && !bottom) legend$width + 0.15 else 0
     room <- max(0.6 * pw - legend_in, 0.15 * pw)
     tracks_x <- .fit_tracks(
       c(
-        annotation = annot_y_in,
+        annotation = annot_y_in + annot_extra_y,
         gap = gap_y_in,
         bar = bar_y_in,
         label = strip_y_in,
@@ -1552,34 +1220,31 @@
       room
     )
     legend_in <- min(legend_in, 0.6 * pw - sum(tracks_x))
-    zoom_y_in <- zoom_depth(zy, pw - sum(tracks_x) - legend_in)
-    upi_x <- wx / (pw - sum(tracks_x) - legend_in - zoom_y_in[["wedge"]] -
-                     zoom_y_in[["depth"]])
-    if(!is.null(zx)) {
-      zoom_x_in[["len"]] <- zoom_len(zx, wx / upi_x)
-    }
-    if(!is.null(zy)) {
-      zoom_y_in[["len"]] <- zoom_len(zy, hh / upi_y)
-    }
-    # SPACE FOR EACH AXIS LABEL (INCHES) - THE ENLARGED CELLS OF A ZOOM PANEL
-    space_x <- if(is.null(zx)) {
+    free_y <- pw - sum(tracks_x) - legend_in - far_in_y
+    zoom_y_in <- zoom_depth(zy, free_y)
+    upi_x <- wx / (free_y - zoom_used(zoom_y_in))
+    cell_x_in <- zoom_cell(zx, wx / upi_x, upi_x)
+    cell_y_in <- zoom_cell(zy, hh / upi_y, upi_y)
+    # SPACE FOR EACH AXIS LABEL (INCHES) - THE ENLARGED CELLS OF THE ZOOM
+    # PANELS ON THE AXIS TEXT SIDE
+    space_x <- if(length(zoom_on(zx, p$side_x)) == 0) {
       .min_spacing(p$x_centers) / upi_x
     } else {
-      .min_spacing(p$x_centers) * zoom_x_in[["len"]] / diff(zx$lim)
+      .min_spacing(p$x_centers) * cell_x_in
     }
-    space_y <- if(is.null(zy)) {
+    space_y <- if(length(zoom_on(zy, p$side_y)) == 0) {
       .min_spacing(p$y_centers) / upi_y
     } else {
-      .min_spacing(p$y_centers) * zoom_y_in[["len"]] / diff(zy$lim)
+      .min_spacing(p$y_centers) * cell_y_in
     }
 
     # ANNOTATION NAMES - SHRUNK TO FIT ANNOTATION TRACKS THAT WERE SHRUNK
     name_h <- 1.1 * .text_in("Mg", p$annot_text_size, p$annot_text_font, "height")
     new_annot_sc <- c(
       x = min(1, p$annot_size_x * tracks_y[["annotation"]] /
-                max(annot_x_in, 1e-12) / name_h),
+                max(annot_x_in + annot_extra_x, 1e-12) / name_h),
       y = min(1, p$annot_size_y * tracks_x[["annotation"]] /
-                max(annot_y_in, 1e-12) / name_h)
+                max(annot_y_in + annot_extra_y, 1e-12) / name_h)
     )
 
     # FIT AXIS TEXT TO THE CELLS
@@ -1600,6 +1265,26 @@
         space_y,
         ext = ext_y[[dims_y[["along"]]]]
       )
+      if(!is.null(far_text_x)) {
+        fit_far_x <- .fit_text(
+          far_text_x$labels,
+          far_text_x$size,
+          far_text_x$font,
+          if(is.null(rx_far)) dims_far_x[["along"]] else rx_far$what,
+          .min_spacing(far_text_x$centers) * cell_x_in,
+          ext = if(is.null(rx_far)) far_text_x[[dims_far_x[["along"]]]] else rx_far$along
+        )
+      }
+      if(!is.null(far_text_y)) {
+        fit_far_y <- .fit_text(
+          far_text_y$labels,
+          far_text_y$size,
+          far_text_y$font,
+          dims_far_y[["along"]],
+          .min_spacing(far_text_y$centers) * cell_y_in,
+          ext = far_text_y[[dims_far_y[["along"]]]]
+        )
+      }
     }
 
     # SIZE LEGEND SHAPES - ABOUT ONE CELL, BETWEEN 0.15 AND 0.3 INCHES
@@ -1631,7 +1316,7 @@
         font = p$axis_text_font_x[1],
         label_cex = p$bar_label_size_y,
         label_font = p$bar_label_font_y,
-        out = .axis_text_dims(p$side_x, p$las_y)[["out"]],
+        out = .axis_text_dims(p$side_x, 1)[["out"]],
         label_out = "height",
         default_in = 0
       )
@@ -1659,14 +1344,14 @@
       over <- tick + inner_over(
         p$n_annot_x,
         p$annot_size_x,
-        ext_y[[dims_y[["along"]]]] * min(fit_y$scale, shrink),
+        ext_y[[dims_y[["along"]]]] * min(fit_y$scale, shrink_y),
         1 / upi_y
       )
       new_gap_x <- if(over > 0) over + 0.02 else 0
     }
     new_gap_y <- 0
     if(p$bar_y) {
-      along_y <- .axis_text_dims(p$side_x, p$las_y)[["along"]]
+      along_y <- .axis_text_dims(p$side_x, 1)[["along"]]
       tick <- 0.5 * .text_in(
         as.character(p$bar_ticks_y),
         p$axis_text_size_x[1],
@@ -1676,41 +1361,91 @@
       over <- tick + inner_over(
         p$n_annot_y,
         p$annot_size_y,
-        near_ext_x * min(fit_x$scale, shrink),
+        near_ext_x * min(fit_x$scale, shrink_x),
         1 / upi_x
       )
       new_gap_y <- if(over > 0) over + 0.02 else 0
     }
 
+    # SPACE BETWEEN THE HEATMAP AND ITS ANNOTATION TRACKS WHEN THE AXIS TEXT
+    # AT THAT EDGE (E.G. HORIZONTAL OR ROTATED COLUMN LABELS WIDER THAN THEIR
+    # CELLS) WOULD REACH THE ANNOTATION NAMES, WHICH ARE WRITTEN BESIDE THE
+    # TRACKS ON THE AXIS TEXT SIDE (NOT FOR PANELS THAT TAKE THE AXIS TEXT
+    # AWAY FROM THE HEATMAP)
+    annot_clear <- function(n_annot, annot_size, annot_in, track_in, sc,
+                            text_ext, cell_in) {
+      if(n_annot == 0) {
+        return(0)
+      }
+      # (THE TRACKS MAY BE SHRUNK TO FIT - THE EXTRA SPACE WITH THEM)
+      f <- track_in / max(annot_in, 1e-12)
+      name_h <- .text_in("Mg", p$annot_text_size * sc, p$annot_text_font,
+                         "height")
+      over <- 0.5 * (text_ext - cell_in)
+      clear <- p$annot_gap * f + 0.5 * (annot_size * f - name_h)
+      if(over > clear) (over - clear + 0.03) / f else 0
+    }
+    new_annot_extra_y <- if(length(zoom_on(zx, p$side_x)) == 0) {
+      annot_clear(
+        p$n_annot_y, p$annot_size_y, annot_y_in + annot_extra_y,
+        tracks_x[["annotation"]], annot_sc[["y"]],
+        near_ext_x * min(fit_x$scale, shrink_x), 1 / upi_x
+      )
+    } else {
+      0
+    }
+    new_annot_extra_x <- if(length(zoom_on(zy, p$side_y)) == 0) {
+      annot_clear(
+        p$n_annot_x, p$annot_size_x, annot_x_in + annot_extra_x,
+        tracks_y[["annotation"]], annot_sc[["x"]],
+        ext_y[[dims_y[["along"]]]] * min(fit_y$scale, shrink_y), 1 / upi_y
+      )
+    } else {
+      0
+    }
+
     # CONVERGED WHEN THE TEXT SIZES, SPILLS & GAPS USED ARE THOSE NEEDED
-    new_over_x <- .rotated_over(
-      rx,
-      if(is.null(zx)) {
-        p$x_centers
-      } else {
-        .zoom_map(
-          p$x_centers,
-          zx$lim,
-          .zoom_place(zx$lim, hx, zoom_x_in[["len"]] * upi_x)
-        )
-      },
-      hx,
-      upi_x,
-      p$side_y,
-      min(fit_x$scale, shrink)
+    near_x <- zoom_on(zx, p$side_x)
+    new_over_x <- max(
+      .rotated_over(
+        rx,
+        if(length(near_x) == 0) {
+          p$x_centers
+        } else {
+          zoom_at(near_x, zoom_along(near_x, hx, upi_x, cell_x_in))
+        },
+        hx,
+        upi_x,
+        p$side_y,
+        min(fit_x$scale, shrink_x)
+      ),
+      .rotated_over(
+        rx_far,
+        zoom_at(far_x, zoom_along(far_x, hx, upi_x, cell_x_in)),
+        hx,
+        upi_x,
+        p$side_y,
+        min(fit_far_x$scale, shrink)
+      )
     )
     converged <- all(abs(new_over_x - over_x) < 1e-4) &&
+      abs(min(fit_far_x$scale, shrink, far_shrink_x) - sc_far_x) < 1e-6 &&
+      abs(min(fit_far_y$scale, shrink, far_shrink_y) - sc_far_y) < 1e-6 &&
       all(abs(new_spill - spill) < 1e-6) &&
       abs(new_gap_x - gap_x_in) < 1e-6 &&
       abs(new_gap_y - gap_y_in) < 1e-6 &&
-      abs(min(fit_x$scale, shrink) - sc_x) < 1e-6 &&
-      abs(min(fit_y$scale, shrink) - sc_y) < 1e-6 &&
+      abs(new_annot_extra_x - annot_extra_x) < 1e-4 &&
+      abs(new_annot_extra_y - annot_extra_y) < 1e-4 &&
+      abs(min(fit_x$scale, shrink_x) - sc_x) < 1e-6 &&
+      abs(min(fit_y$scale, shrink_y) - sc_y) < 1e-6 &&
       all(abs(new_annot_sc - annot_sc) < 1e-6)
     annot_sc_used <- annot_sc
     annot_sc <- new_annot_sc
     spill <- new_spill
     gap_x_in <- new_gap_x
     gap_y_in <- new_gap_y
+    annot_extra_x <- new_annot_extra_x
+    annot_extra_y <- new_annot_extra_y
     over_x <- new_over_x
     if(converged && iter > 1) {
       break
@@ -1731,6 +1466,15 @@
     tracks_x * upi_x
   )
   outer_y <- y_tracks$tree[2]
+  outer_x <- x_tracks$tree[2]
+  # PANELS BEYOND THE TRACKS, AND THEIR LABELS, BEFORE THE LEGEND
+  far_y_extent <- if(length(far_y) > 0) {
+    zoom_y_in[["wedge"]] + zoom_y_in[["depth"]] + far_in_y
+  } else {
+    0
+  }
+  outer_y_tracks <- outer_y
+  outer_y <- outer_y + dir_y * far_y_extent * upi_x
   legend_xlim <- if(legend_in > 0) {
     lw <- (legend_in - 0.15) * upi_x
     lg <- 0.15 * upi_x
@@ -1742,26 +1486,52 @@
   } else {
     c(outer_y, outer_y)
   }
-  xlim <- range(c(hx, unlist(y_tracks), outer_y + dir_y * legend_in * upi_x))
-  ylim <- range(c(hy, unlist(x_tracks)))
+  xlim <- range(c(hx, unlist(y_tracks), outer_y, outer_y + dir_y * legend_in * upi_x))
+  ylim <- range(c(hy, unlist(x_tracks),
+                  outer_x + dir_x * if(length(far_x) > 0) {
+                    (zoom_x_in[["wedge"]] + zoom_x_in[["depth"]] + far_in_x) * upi_y
+                  } else {
+                    0
+                  }))
 
-  # ZOOM PANELS (CELL UNITS) - ACROSS FROM THE WEDGE OUTWARDS, ALONG CENTRED
-  # ON THE BAND
-  zoom_panel <- function(z, zin, side, hlim, alim, upi_across, upi_along) {
+  # ZOOM PANELS (CELL UNITS) - ACROSS FROM THE WEDGE OUTWARDS (FROM THE EDGE
+  # OF THE HEATMAP, OR OF THE TRACKS ON THE FAR SIDE), ALONG CENTRED ON THEIR
+  # BANDS AND KEPT APART; IN THE ORDER OF THE BANDS
+  zoom_panels <- function(z, zin, text_side, hlim, alim, upi_across, upi_along,
+                          cell_in, tracks_outer) {
     if(is.null(z)) {
       return(NULL)
     }
-    low <- side %in% c(1, 2)
-    z$edge <- if(low) min(hlim) else max(hlim)
-    z$across <- z$edge + (if(low) -1 else 1) *
-      c(zin[["wedge"]], zin[["wedge"]] + zin[["depth"]]) * upi_across
-    z$along <- .zoom_place(z$lim, alim, zin[["len"]] * upi_along)
-    z
+    out <- vector("list", length(z$bands))
+    for(s in c(text_side, other_side(text_side))) {
+      idx <- which(vapply(z$bands, `[[`, numeric(1), "side") == s)
+      if(length(idx) == 0) {
+        next
+      }
+      along <- zoom_along(z$bands[idx], alim, upi_along, cell_in)
+      low <- s %in% c(1, 2)
+      edge <- if(low) min(hlim) else max(hlim)
+      outer <- if(s == text_side) edge else tracks_outer
+      for(j in seq_along(idx)) {
+        out[[idx[j]]] <- list(
+          lim = z$bands[[idx[j]]]$lim,
+          side = s,
+          edge = edge,
+          outer = outer,
+          across = outer + (if(low) -1 else 1) *
+            c(zin[["wedge"]], zin[["wedge"]] + zin[["depth"]]) * upi_across,
+          along = along[[j]]
+        )
+      }
+    }
+    out
   }
-  zoom_x <- zoom_panel(zx, zoom_x_in, p$side_x, hy, hx, upi_y, upi_x)
-  zoom_y <- zoom_panel(zy, zoom_y_in, p$side_y, hx, hy, upi_x, upi_y)
-  xlim <- range(c(xlim, zoom_y$across))
-  ylim <- range(c(ylim, zoom_x$across))
+  zoom_x <- zoom_panels(zx, zoom_x_in, p$side_x, hy, hx, upi_y, upi_x,
+                        cell_x_in, outer_x)
+  zoom_y <- zoom_panels(zy, zoom_y_in, p$side_y, hx, hy, upi_x, upi_y,
+                        cell_y_in, outer_y_tracks)
+  xlim <- range(c(xlim, unlist(lapply(zoom_y, `[[`, "across"))))
+  ylim <- range(c(ylim, unlist(lapply(zoom_x, `[[`, "across"))))
 
   # MARGIN TEXT (mtext LINES) - IN A USER SUPPLIED MARGIN THE TEXT KEEPS ITS
   # DISTANCE FROM THE EDGE OF THE FIGURE
@@ -1781,20 +1551,20 @@
     ylim = ylim,
     margins = margins,
     # NEVER LARGER THAN THE TEXT THE MARGINS WERE SIZED FOR
-    axis_text_size_x = p$axis_text_size_x * min(fit_x$scale, shrink, sc_x),
-    axis_text_size_y = p$axis_text_size_y * min(fit_y$scale, shrink, sc_y),
+    axis_text_size_x = p$axis_text_size_x * min(fit_x$scale, shrink_x, sc_x),
+    axis_text_size_y = p$axis_text_size_y * min(fit_y$scale, shrink_y, sc_y),
     step_x = fit_x$step,
     step_y = fit_y$step,
     upi = c(x = upi_x, y = upi_y),
     cell_in = c(1 / upi_x, 1 / upi_y),
     annot_size_x = p$annot_size_x * upi_y * tracks_y[["annotation"]] /
-      max(annot_x_in, 1e-12),
+      max(annot_x_in + annot_extra_x, 1e-12),
     annot_size_y = p$annot_size_y * upi_x * tracks_x[["annotation"]] /
-      max(annot_y_in, 1e-12),
-    annot_gap_x = p$annot_gap * upi_y * tracks_y[["annotation"]] /
-      max(annot_x_in, 1e-12),
-    annot_gap_y = p$annot_gap * upi_x * tracks_x[["annotation"]] /
-      max(annot_y_in, 1e-12),
+      max(annot_y_in + annot_extra_y, 1e-12),
+    annot_gap_x = (p$annot_gap + annot_extra_x) * upi_y *
+      tracks_y[["annotation"]] / max(annot_x_in + annot_extra_x, 1e-12),
+    annot_gap_y = (p$annot_gap + annot_extra_y) * upi_x *
+      tracks_x[["annotation"]] / max(annot_y_in + annot_extra_y, 1e-12),
     bar_label_x = bar_label_x_in * upi_x,
     bar_label_y = bar_label_y_in * upi_y,
     annot_text_size_x = p$annot_text_size *
@@ -1802,8 +1572,10 @@
     annot_text_size_y = p$annot_text_size *
       min(annot_sc[["y"]], annot_sc_used[["y"]]),
     title_line = mt(3, title_inner, title_cex),
-    axis_label_x_line = mt(p$side_x, label_x_inner, label_cex_x),
-    axis_label_y_line = mt(p$side_y, label_y_inner, label_cex_y),
+    axis_label_x_line = mt(p$side_x, label_x_inner, label_cex_x * um[["x"]]),
+    axis_label_y_line = mt(p$side_y, label_y_inner, label_cex_y * um[["y"]]),
+    # (AXIS LABELS SHRUNK TO FIT A USER SUPPLIED MARGIN)
+    axis_label_scale = um,
     legend_geom = list(
       shape_in = shape_in,
       key = p$legend_size,
@@ -1813,7 +1585,12 @@
       centre = mean(hx)
     ),
     zoom_x = zoom_x,
-    zoom_y = zoom_y
+    zoom_y = zoom_y,
+    # LABELS OF THE PANELS BEYOND THE TRACKS - SCALED, THINNED
+    zoom_text_scale_x = min(fit_far_x$scale, shrink, far_shrink_x, sc_far_x),
+    zoom_text_scale_y = min(fit_far_y$scale, shrink, far_shrink_y, sc_far_y),
+    zoom_step_x = fit_far_x$step,
+    zoom_step_y = fit_far_y$step
   )
 
 }

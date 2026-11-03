@@ -49,18 +49,16 @@ test_that("rotated text geometry", {
 
 test_that("column labels are drawn at an angle, slanting towards the y axis text", {
   m <- test_matrix()
-  for (layout in c("fit", "classic")) {
-    hm <- draw(m, axis_text_angle_x = 45, layout = layout)
-    tx <- rotated_call(hm)
-    expect_equal(tx$srt, 45)
-    expect_equal(tx[[3]], c(1, 0.5))
-    expect_equal(as.character(tx[[2]]), colnames(m))
-    expect_equal(tx[[1]]$x, seq(0.5, 9.5))
-    expect_equal(rotated_call(draw(m, axis_text_angle_x = 45, layout = layout,
-                                   axis_text_side_y = "right"))$srt, -45)
-    # A tick for each label, drawn without labels
-    expect_length(drawn(hm, "C_axis"), 10 + 6)
-  }
+  hm <- draw(m, axis_text_angle_x = 45)
+  tx <- rotated_call(hm)
+  expect_equal(tx$srt, 45)
+  expect_equal(tx[[3]], c(1, 0.5))
+  expect_equal(as.character(tx[[2]]), colnames(m))
+  expect_equal(tx[[1]]$x, seq(0.5, 9.5))
+  expect_equal(rotated_call(draw(m, axis_text_angle_x = 45,
+                                 axis_text_side_y = "right"))$srt, -45)
+  # A tick for each label, drawn without labels
+  expect_length(drawn(hm, "C_axis"), 10 + 6)
   cases <- list(
     list(x = "bottom", y = "left", srt = 45, adj = 1),
     list(x = "bottom", y = "right", srt = -45, adj = 0),
@@ -108,26 +106,24 @@ test_that("column labels are drawn at an angle, slanting towards the y axis text
 test_that("rotated labels are fitted along the axis and given room", {
   m <- test_matrix(5, 40)
   colnames(m) <- paste("A long column name", 1:40)
-  for (layout in c("fit", "classic")) {
-    for (angle in c(10, 30, 60)) {
-      grDevices::pdf(NULL, width = 5, height = 5)
-      hm <- suppressMessages(
-        heat_map(m, axis_text_angle_x = angle, layout = layout, popup = FALSE)
-      )
-      plot.new()
-      tx <- rotated_call(hm)
-      h <- strheight("M", "inches", cex = tx[[7]][1])
-      w <- max(strwidth(tx[[2]], "inches", cex = tx[[7]][1]))
-      grDevices::dev.off()
-      b <- heat_map_info(hm)$layout
-      expect_equal(layout_overlaps(b), character(0))
-      expect_equal(layout_outside(b, c(5, 5)), character(0))
-      # Neighbouring labels are separated across or along their baselines
-      hb <- b[b$component == "heatmap", ]
-      space <- min(diff(tx[[1]]$x)) * (hb$xmax - hb$xmin) / 40
-      a <- angle * pi / 180
-      expect_true(space * sin(a) >= h * 1.1 - 1e-6 || space * cos(a) >= w * 1.05 - 1e-6)
-    }
+  for (angle in c(10, 30, 60)) {
+    grDevices::pdf(NULL, width = 5, height = 5)
+    hm <- suppressMessages(
+      heat_map(m, axis_text_angle_x = angle, popup = FALSE)
+    )
+    plot.new()
+    tx <- rotated_call(hm)
+    h <- strheight("M", "inches", cex = tx[[7]][1])
+    w <- max(strwidth(tx[[2]], "inches", cex = tx[[7]][1]))
+    grDevices::dev.off()
+    b <- heat_map_info(hm)$layout
+    expect_equal(layout_overlaps(b), character(0))
+    expect_equal(layout_outside(b, c(5, 5)), character(0))
+    # Neighbouring labels are separated across or along their baselines
+    hb <- b[b$component == "heatmap", ]
+    space <- min(diff(tx[[1]]$x)) * (hb$xmax - hb$xmin) / 40
+    a <- angle * pi / 180
+    expect_true(space * sin(a) >= h * 1.1 - 1e-6 || space * cos(a) >= w * 1.05 - 1e-6)
   }
 })
 

@@ -12,12 +12,16 @@ heat_map_clust(
   scale = FALSE,
   cut = NULL,
   order = "default",
+  max = 5000,
   ...
 )
 }
 \arguments{
-\item{x}{matrix-like object to cluster. The distance matrix will be computed
-using \code{dist} and passed to \code{hclust} for hierarchical clustering.}
+\item{x}{matrix-like object to cluster - its numeric columns. Distances and
+linkage are computed in compiled code (with \code{\link[stats]{dist}} and
+\code{\link[stats]{hclust}} for the methods it doesn't cover). With a
+supplied \code{hclust} object and \code{order}, the rows of \code{x} (or
+its columns when they don't match) are the leaves of the tree.}
 
 \item{tree}{indicates whether hierarchical clustering should be performed by
 \code{"row"} or \code{"column"}. Optionally a custom object of class
@@ -32,10 +36,14 @@ cosine distance (1 - cosine similarity), \code{"pearson"},
 \code{"spearman"} or \code{"kendall"} for one minus the correlation
 (rows without variation are treated as uncorrelated), or a function that
 takes the matrix being clustered (one row per leaf) and returns a
-\code{dist} object or a square matrix of distances.}
+\code{dist} object or a square matrix of distances. Names ignore case and
+can be abbreviated (e.g. \code{"pear"}).}
 
-\item{method}{agglomeration method passed to \code{\link{hclust}} to perform
-hierarchical clustering, set to \code{"complete"} by default.}
+\item{method}{agglomeration method, one of the methods of
+\code{\link{hclust}} (\code{"ward.D"}, \code{"ward.D2"},
+\code{"single"}, \code{"complete"}, \code{"average"},
+\code{"mcquitty"}, \code{"median"} or \code{"centroid"}, which can be
+abbreviated), set to \code{"complete"} by default.}
 
 \item{scale}{logical indicating whether branch heights should be scaled for
 better visualisation, set to FALSE by default.}
@@ -48,22 +56,55 @@ greater than or equal to 1 indicating the number of desired clusters.}
 \item{order}{how the branches of the dendrogram are ordered:
 \code{"default"} keeps the order from \code{hclust}, \code{"olo"} flips
 branches to minimise the distances between neighbouring leaves (optimal
-leaf ordering; this takes a few seconds for 1000 leaves and grows with the
-cube of the number of leaves) and \code{"mean"} orders branches by their
-mean values as in \code{\link[stats]{heatmap}}.}
+leaf ordering) and \code{"mean"} orders branches by their mean values
+(\code{\link[stats]{heatmap}} orders them by the sum of their leaves'
+means instead, which favours small branches). Optimal leaf ordering is exact for up to
+2000 leaves, which takes about a second; its time grows with the cube of
+the number of leaves, so larger trees are ordered in blocks (of 2000
+leaves, down to 100 for the largest trees), each ordered exactly, with the
+blocks then ordered and turned to meet their neighbours. 200,000 leaves
+take about 3 seconds.}
 
-\item{...}{additional arguments passed to \code{\link{dist}} or
-\code{\link{hclust}}.}
+\item{max}{the largest number of rows (or columns) clustered exactly, set
+to 5000 by default. Exact clustering needs the distances between every
+pair of rows, so its memory and time grow with the square of their
+number. Larger data is clustered in two stages: a sample of \code{max}
+rows (drawn with a fixed seed, so the result is the same each time) is
+clustered exactly and its dendrogram split into groups of about 200 rows
+of the data, every row joins the group of its nearest group medoid, and
+each group is clustered exactly beneath the sample's dendrogram. The
+dendrogram then shows the structure of the whole data down to the groups,
+and within each group: 100,000 rows take about 2 seconds. Set to
+\code{Inf} to always cluster exactly.}
+
+\item{...}{additional arguments passed to \code{\link{dist}} (e.g.
+\code{p}) or \code{\link{hclust}} (\code{members}); others are ignored
+with a warning.}
 }
 \value{
 object of class \code{hclust} which describes the tree produced by
 the clustering process. Branch heights are rescaled to the range
 \code{[0, 1]} for display. When \code{cut} is supplied, the returned object
 also contains a \code{cut} element holding the cluster assigned to each
-leaf in dendrogram order.
+leaf in dendrogram order. A tree clustered in two stages (more than
+\code{max} rows) has a \code{two_stage} element giving the size of the
+sample and the number of groups.
 }
 \description{
 Perform hierarchical clustering for heatmap
+}
+\details{
+Single, complete, average, McQuitty and Ward linkage are computed
+by the nearest-neighbour chain algorithm, which builds the same tree as
+\code{\link[stats]{hclust}} when the distances are distinct. When
+distances are tied (common for integer, binary or rounded data), more
+than one tree is correct and the two can choose differently between tied
+merges, so the tree - and the branches above the tied merges - can
+differ from the one \code{hclust} returns while being equally valid.
+Centroid and median linkage use \code{hclust} itself. Missing and
+infinite values are left out of the distances between rows (as
+\code{\link[stats]{dist}} leaves out missing values); rows that share
+no values can't be clustered.
 }
 \examples{
 # Hierarchical clustering

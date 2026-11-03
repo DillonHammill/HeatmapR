@@ -137,6 +137,31 @@ random_layout_case <- function(seed) {
     args$cell_split <- m + round(rnorm(nr * nc, 0, 0.5), 2)
     args$cell_split_labels <- c("Control", "Treated")
   }
+  # Several zoom bands, with panels on either side - drawn last so that
+  # earlier draws keep their cases
+  far <- function(side) if (side %in% c("left", "right")) {
+    setdiff(c("left", "right"), side)
+  } else {
+    setdiff(c("bottom", "top"), side)
+  }
+  if (nr >= 12 && runif(1) < 0.35) {
+    starts <- sort(sample(seq(1, nr - 3, by = 4), min(3, length(seq(1, nr - 3, by = 4)))))
+    args$zoom_y <- lapply(starts, function(s) c(s, s + sample(0:2, 1)))
+    args$zoom_side_y <- if (is.null(args$mark_y)) {
+      sample(c("left", "right"), length(starts), TRUE)
+    } else {
+      far(args$axis_text_side_y)
+    }
+  }
+  if (nc >= 8 && runif(1) < 0.25) {
+    starts <- sort(sample(seq(1, nc - 3, by = 4), min(2, length(seq(1, nc - 3, by = 4)))))
+    args$zoom_x <- lapply(starts, function(s) c(s, s + sample(0:2, 1)))
+    args$zoom_side_x <- if (is.null(args$mark_x)) {
+      sample(c("bottom", "top"), length(starts), TRUE)
+    } else {
+      far(args$axis_text_side_x)
+    }
+  }
   list(
     args = args,
     din = din
