@@ -43,8 +43,8 @@ test_that("a clustered heatmap is described with its groups", {
   expect_match(txt, "Colours show z-score, from dark purple \\(-1\\.87\\) through yellow green to dark red \\(3\\.21\\)\\.")
   expect_match(txt, "The highest value is 3\\.21 \\(Maserati Bora, carb\\) and the lowest is -1\\.87 \\(Ford Pantera L, qsec\\)\\.")
   expect_match(txt, "Rows are ordered by hierarchical clustering \\(euclidean distance, complete linkage\\)\\.")
-  expect_match(txt, "Rows are split into 3 groups, numbered from the bottom: group 1 \\(15 rows, e\\.g\\. ")
-  expect_match(txt, "is highest in vs and mpg and lowest in cyl and hp")
+  expect_match(txt, "Rows are split into 3 groups, numbered from the top: group 1 \\(15 rows, e\\.g\\. ")
+  expect_match(txt, "\\(15 rows, e\\.g\\. [^)]*\\) is highest in vs and mpg and lowest in cyl and hp")
   expect_match(txt, "Columns are ordered by hierarchical clustering")
   # The groups match the clusters of the heatmap
   hm <- draw(mtcars, scale = "zscore", tree_y = TRUE, tree_cut_y = 3)
@@ -55,7 +55,7 @@ test_that("a clustered heatmap is described with its groups", {
   }
   # Many groups - sizes only
   txt <- describe(mtcars, tree_y = TRUE, tree_cut_y = 6, max_groups = 4)
-  expect_match(txt, "Rows are split into 6 groups, numbered from the bottom, of [0-9]+ to [0-9]+ rows each\\.")
+  expect_match(txt, "Rows are split into 6 groups, numbered from the top, of [0-9]+ to [0-9]+ rows each\\.")
   expect_false(grepl("group 1", txt))
   # Printed as wrapped text
   out <- capture.output(print(heat_map_describe(hm), width = 40))
@@ -150,7 +150,7 @@ test_that("annotations, bars, labels, zoom panels and distributions are describe
   expect_match(txt, "Box plots beside the heatmap show the distribution of the values for each column\\.")
   expect_match(txt, "Bars beside the heatmap show Reads for each row\\.")
   expect_match(txt, "Labelled columns: Col1 and Col2\\.")
-  expect_match(txt, "Rows Row8 to Row3 \\(6 rows\\) are enlarged in a panel beside the heatmap\\.")
+  expect_match(txt, "Rows Row3 to Row8 \\(6 rows\\) are enlarged in a panel beside the heatmap\\.")
   txt <- describe(m, bar_values_x = 1:6, bar_values_y = TRUE, bar_type_y = "violin", zoom_x = 2)
   expect_match(txt, "Bars beside the heatmap show a value for each column\\.")
   expect_match(txt, "Violins beside the heatmap show the distribution of the values for each row\\.")

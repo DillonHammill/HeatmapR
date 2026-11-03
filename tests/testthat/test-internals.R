@@ -48,9 +48,10 @@ test_that("heat_map_legend works with its default size mapping and colours", {
   on.exit(grDevices::dev.off())
   graphics::plot.new()
   graphics::plot.window(c(0, 10), c(0, 30))
-  expect_null(
-    heat_map_legend(col = c(0, 1), size = c(0, 1), xlim = c(8, 10), ylim = c(0, 30))
-  )
+  out <- heat_map_legend(col = c(0, 1), size = c(0, 1), xlim = c(8, 10), ylim = c(0, 30),
+                         geom = list(shape_in = 0.2, key = 1, body = c(0, 30)))
+  expect_named(out, c("x", "y"))
+  expect_gte(min(out$x), 8)
 })
 
 test_that("plot() replays heat_map objects without stored arguments", {

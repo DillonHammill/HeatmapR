@@ -6,6 +6,24 @@ cell_rects <- function(hm) {
   rects[[which.max(vapply(rects, function(z) length(z[[1]]), integer(1)))]]
 }
 
+# A nativeRaster (packed RGBA integers, stored row by row) as a matrix of
+# "#RRGGBBAA" colours
+native_matrix <- function(r) {
+  expect_s3_class(r, "nativeRaster")
+  v <- as.numeric(unclass(r))
+  v[v < 0] <- v[v < 0] + 2^32
+  rgba <- cbind(v %% 256, v %/% 256 %% 256, v %/% 65536 %% 256, v %/% 16777216)
+  m <- matrix(sprintf("#%02X%02X%02X%02X", rgba[, 1], rgba[, 2], rgba[, 3], rgba[, 4]),
+              nrow = dim(r)[1], byrow = TRUE)
+  m
+}
+
+# A colour as "#RRGGBBAA"
+rgba_hex <- function(col) {
+  rgba <- grDevices::col2rgb(col, alpha = TRUE)
+  sprintf("#%02X%02X%02X%02X", rgba[1, ], rgba[2, ], rgba[3, ], rgba[4, ])
+}
+
 # Colour of every cell read back from the raster images in a heat_map object,
 # in the order the vector heatmap draws its cells
 raster_colours <- function(hm) {
@@ -16,7 +34,7 @@ raster_colours <- function(hm) {
   y <- (cells[[2]] + cells[[4]]) / 2
   out <- rep(NA_character_, length(x))
   for (r in rasters) {
-    img <- as.matrix(r[[1]])
+    img <- native_matrix(r[[1]])
     x0 <- r[[2]]; y0 <- r[[3]]; x1 <- r[[4]]; y1 <- r[[5]]
     inside <- x > x0 & x < x1 & y > y0 & y < y1
     col <- ceiling((x[inside] - x0) / (x1 - x0) * ncol(img))
@@ -50,7 +68,7 @@ test_that("raster cells have the colours of the vector cells", {
     attr(ras, "vector") <- vec
     got <- raster_colours(ras)
     expect_equal(
-      ifelse(is.na(fill), "transparent", fill),
+      rgba_hex(ifelse(is.na(fill), "transparent", fill)),
       got,
       info = paste(names(args), collapse = ",")
     )

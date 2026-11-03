@@ -24,6 +24,10 @@ arguments originally supplied to \code{\link{heat_map}}. Any arguments
 supplied through \code{...} override the original arguments, for example
 \code{plot(hm, title = "New title")}. Use \code{data} to redraw the heatmap
 with new data, as \code{x} refers to the \code{heat_map} object itself.
+The dendrograms, k-means clusters and branch support of the heatmap are
+kept in it and reused when the arguments they depend on (the data,
+scaling, distance, linkage and tree arguments) haven't changed, so a
+redraw only draws.
 }
 \details{
 \code{print()} also redraws the heatmap, unless it was drawn within a custom

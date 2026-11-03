@@ -1,3 +1,8 @@
+## COMPILED CODE ---------------------------------------------------------------
+
+#' @useDynLib HeatmapR, .registration = TRUE
+NULL
+
 ## UPDATE GLOBAL OPTIONS ON LOAD -----------------------------------------------
 
 .onLoad <- function(libname, pkgname) {
