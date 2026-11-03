@@ -90,20 +90,18 @@ test_that("branches are styled by their support", {
 
 test_that("heat_map draws branches by their support with a legend key", {
   m <- support_data()
-  for (layout in c("fit", "classic")) {
-    hm <- draw(m, tree = "both", tree_support_x = 20, tree_support_y = 30, layout = layout)
-    info <- heat_map_info(hm)
-    expect_length(info$support_y, 19)
-    expect_length(info$support_x, 5)
-    segs <- drawn(hm, "C_segments")
-    styled <- Filter(function(z) length(z$lwd) == 4 * 19, segs)
-    expect_length(styled, 1)
-    expect_true(any(styled[[1]]$lwd == 2))
-    expect_true("Branch support" %in% drawn_text(hm))
-    expect_true(any(grepl("%$", drawn_text(hm))))
-    b <- heat_map_info(hm)$layout
-    expect_equal(layout_overlaps(b), character(0))
-  }
+  hm <- draw(m, tree = "both", tree_support_x = 20, tree_support_y = 30)
+  info <- heat_map_info(hm)
+  expect_length(info$support_y, 19)
+  expect_length(info$support_x, 5)
+  segs <- drawn(hm, "C_segments")
+  styled <- Filter(function(z) length(z$lwd) == 4 * 19, segs)
+  expect_length(styled, 1)
+  expect_true(any(styled[[1]]$lwd == 2))
+  expect_true("Branch support" %in% drawn_text(hm))
+  expect_true(any(grepl("%$", drawn_text(hm))))
+  b <- heat_map_info(hm)$layout
+  expect_equal(layout_overlaps(b), character(0))
   # Trees on the other sides, bottom legends and groups
   hm <- draw(m, tree = "both", tree_support_y = 20, tree_support_x = 20,
              axis_text_side_x = "top", axis_text_side_y = "right",

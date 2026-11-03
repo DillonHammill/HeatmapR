@@ -126,37 +126,16 @@ heat_map_tree <- function(x,
 #' 
 #' @noRd
 .tree_segments <- function(x) {
-  merge <- x$merge
-  height <- x$height
-  n_merge <- nrow(merge)
-  # LEAF POSITIONS
-  leaf_x <- integer(length(x$order))
-  leaf_x[x$order] <- seq_along(x$order)
-  # NODE POSITIONS - MERGES ONLY REFERENCE EARLIER MERGES
-  node_x <- numeric(n_merge)
-  child_x <- matrix(0, n_merge, 2)
-  child_y <- matrix(0, n_merge, 2)
-  for(k in seq_len(n_merge)) {
-    for(j in 1:2) {
-      m <- merge[k, j]
-      if(m < 0) {
-        child_x[k, j] <- leaf_x[-m]
-        child_y[k, j] <- 0
-      } else {
-        child_x[k, j] <- node_x[m]
-        child_y[k, j] <- height[m]
-      }
-    }
-    node_x[k] <- mean(child_x[k, ])
+  if(nrow(x$merge) == 0) {
+    return(data.frame(x = numeric(0), y = numeric(0), xend = numeric(0),
+                      yend = numeric(0)))
   }
-  # TWO VERTICAL DROPS AND A HORIZONTAL BAR PER MERGE
-  # (HORIZONTAL BAR DRAWN AS TWO HALVES MEETING AT THE NODE, AS IN GGDENDRO)
-  data.frame(
-    x = c(child_x[, 1], node_x, child_x[, 1], child_x[, 2]),
-    y = c(height, height, height, height),
-    xend = c(node_x, child_x[, 2], child_x[, 1], child_x[, 2]),
-    yend = c(height, height, child_y[, 1], child_y[, 2])
+  seg <- tree_segments_cpp(
+    .int_merge(x$merge),
+    as.double(x$height),
+    as.integer(x$order)
   )
+  data.frame(x = seg[, 1], y = seg[, 2], xend = seg[, 3], yend = seg[, 4])
 }
 
 #' Label larger branches with their support

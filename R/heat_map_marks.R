@@ -17,13 +17,16 @@
 
 #' Resolve the rows or columns to label
 #'
-#' @param mark row/column names, indices in the original order of \code{x}, or
-#'   a logical vector with one value per row/column.
+#' @param mark row/column names, positions in the displayed order (rows from
+#'   the top, columns from the left), or a logical vector with one value per
+#'   row/column in the original order of \code{x}.
 #' @param names row/column names of \code{x} (or NULL).
 #' @param n number of rows/columns.
 #' @param labels labels for the marked rows/columns, or NULL to use their
 #'   names.
 #' @param arg argument name for error messages.
+#' @param shown indices of the rows (from the top) or columns (from the left)
+#'   in display order, used to resolve positions.
 #'
 #' @return NULL, or a list with the indices (original order) and labels.
 #'
@@ -32,7 +35,8 @@
                         names,
                         n,
                         labels = NULL,
-                        arg = "mark_y") {
+                        arg = "mark_y",
+                        shown = seq_len(n)) {
   if(is.null(mark) || length(mark) == 0) {
     return(NULL)
   }
@@ -46,13 +50,14 @@
     }
     ind <- which(mark %in% TRUE)
   } else if(is.numeric(mark)) {
-    ind <- as.integer(mark)
-    if(any(is.na(ind) | ind < 1 | ind > n)) {
+    pos <- as.integer(mark)
+    if(any(is.na(pos) | pos < 1 | pos > n)) {
       stop(
-        "'", arg, "' contains indices outside 1 to ", n, ".",
+        "'", arg, "' contains positions outside 1 to ", n, ".",
         call. = FALSE
       )
     }
+    ind <- shown[pos]
   } else {
     mark <- as.character(mark)
     if(is.null(names)) {

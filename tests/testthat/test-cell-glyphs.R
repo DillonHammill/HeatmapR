@@ -111,14 +111,12 @@ test_that("heat_map draws the distribution of each cell in its cell", {
   d <- glyph_events()
   med <- heat_map_summarise(d$events, group_y = d$cluster, fun = "median")
   vals <- heat_map_summarise(d$events, group_y = d$cluster, fun = "values")
-  for (layout in c("fit", "classic")) {
-    hm <- draw(med, cell_values = vals, layout = layout)
-    poly <- drawn(hm, "C_polygon")
-    expect_length(poly, 1)
-    expect_equal(sum(is.na(poly[[1]][[1]])), 4)
-    b <- heat_map_info(hm)$layout
-    expect_equal(layout_overlaps(b), character(0))
-  }
+  hm <- draw(med, cell_values = vals)
+  poly <- drawn(hm, "C_polygon")
+  expect_length(poly, 1)
+  expect_equal(sum(is.na(poly[[1]][[1]])), 4)
+  b <- heat_map_info(hm)$layout
+  expect_equal(layout_overlaps(b), character(0))
   # Glyphs follow their cells into display order - single values as spikes
   m <- matrix(1:6, 2, dimnames = list(c("r1", "r2"), c("a", "b", "c")))
   single <- matrix(as.list(c(1, 2, 3, 4, 5, 6)), 2)

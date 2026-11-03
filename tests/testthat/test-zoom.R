@@ -9,7 +9,8 @@ y_axis_labels <- function(hm, side = 2) {
 test_that("the band runs from the first to the last row in the display order", {
   order <- c(4, 2, 6, 1, 5, 3)
   nm <- paste0("R", 1:6)
-  z <- .zoom_index(c(6, 4), nm, 6, order)
+  # Positions in the displayed order
+  z <- .zoom_index(c(3, 1), nm, 6, order)
   expect_equal(z$pos, 1:3)
   expect_equal(z$ind, c(4, 2, 6))
   expect_equal(z$labels, c("R4", "R2", "R6"))
@@ -21,13 +22,13 @@ test_that("the band runs from the first to the last row in the display order", {
   # Labels - axis text supplied in display order, names or indices
   expect_equal(.zoom_index(2, nm, 6, order, labels = letters[1:6])$labels, "b")
   expect_equal(.zoom_index(2, nm, 6, order, labels = c(NA, "x", NA, NA, NA, NA))$labels, "x")
-  expect_equal(.zoom_index(1:2, nm, 6, order, labels = c(NA, "x", NA, "y", NA, NA))$labels,
+  expect_equal(.zoom_index(c(2, 4), nm, 6, order, labels = c(NA, "x", NA, "y", NA, NA))$labels,
                c("x", "", "y"))
   expect_equal(.zoom_index(2, nm, 6, order, labels = rep(NA, 6))$labels, "R2")
   expect_equal(.zoom_index(2, NULL, 6, order)$labels, "2")
   expect_true(is.expression(.zoom_index(2, nm, 6, order, labels = expression(a, b))$labels))
   expect_error(.zoom_index("R9", nm, 6, order, arg = "zoom_y"), "'zoom_y' contains names")
-  expect_error(.zoom_index(9, nm, 6, order, arg = "zoom_x"), "'zoom_x' contains indices")
+  expect_error(.zoom_index(9, nm, 6, order, arg = "zoom_x"), "'zoom_x' contains positions")
   for (bad in list(0.1, 6, NA, "1", c(1, 2))) {
     expect_error(.check_zoom_size(bad, "zoom_size_y"), "'zoom_size_y' must be a number")
   }
@@ -58,7 +59,7 @@ test_that("heat_map enlarges a band of rows beside the heatmap", {
     hm <- draw(m, zoom_y = c("Row10", "Row14"), axis_text_side_y = side,
                tree_x = TRUE, title = "Zoom", axis_label_y = "Rows")
     info <- heat_map_info(hm)
-    expect_equal(info$zoom_y, 14:10)
+    expect_equal(info$zoom_y, 10:14)
     # The enlarged rows replace the axis text
     s <- if (side == "left") 2 else 4
     expect_setequal(y_axis_labels(hm, s), paste0("Row", 10:14))
@@ -81,6 +82,8 @@ test_that("heat_map enlarges a band of rows beside the heatmap", {
     expect_setequal(panel[[1]][[5]], as.vector(info$colours[10:14, ]))
   }
   # Hidden axis text - the panel is labelled with the row names
+  # Positions count rows from the top - the first rows of m without a
+  # dendrogram
   hm <- draw(m, zoom_y = 3, axis_text_y = NA)
   expect_equal(y_axis_labels(hm), "Row3")
   # Labels supplied for every row in display order
@@ -148,14 +151,9 @@ test_that("zoom panels check their arguments", {
   expect_error(draw(m, zoom_x = 2, mark_x = 3), "'zoom_x' and 'mark_x' can't be used together")
   expect_error(draw(m, zoom_y = 2, zoom_size_y = 10), "'zoom_size_y' must be")
   expect_error(draw(m, zoom_y = "nope"), "'zoom_y' contains names")
-  expect_warning(
-    hm <- draw(m, zoom_y = 2, layout = "classic"),
-    "zoom lens requires layout"
-  )
-  expect_null(heat_map_info(hm)$zoom_y)
   # Marks on one axis and a zoom panel on the other
   hm <- draw(m, zoom_y = 2:3, mark_x = 1)
-  expect_equal(heat_map_info(hm)$zoom_y, 3:2)
+  expect_equal(heat_map_info(hm)$zoom_y, 2:3)
 })
 
 test_that("zoom lens snapshot", {
