@@ -87,9 +87,9 @@ test_that("manual cluster indices use the original column order", {
 test_that("manual cluster indices accept characters and factors", {
   x <- data.frame(a = 1:5, b = 5:1)
   info <- heat_map_info(draw(x, tree_cut_y = c("b", "a", "b", "a", "a")))
-  # Cluster 1 ("a") at the bottom, cluster 2 ("b") at the top
+  # Cluster 1 ("a") at the top, cluster 2 ("b") at the bottom
   expect_equal(unname(info$row_clusters), c(2L, 1L, 2L, 1L, 1L))
-  expect_equal(info$row_order, c(3L, 1L, 5L, 4L, 2L))
+  expect_equal(info$row_order, c(2L, 4L, 5L, 1L, 3L))
   # Factor levels define the cluster order
   info <- heat_map_info(
     draw(x, tree_cut_y = factor(c("b", "a", "b", "a", "a"), levels = c("b", "a")))
@@ -169,12 +169,8 @@ test_that("size legend uses the size scale limits", {
 })
 
 test_that("size legend does not error on small heatmaps", {
-  expect_no_error(draw(iris[1:10, 1:4], cell_size = TRUE, layout = "classic"))
-  expect_warning(
-    draw(iris[1:3, 1:4], cell_size = TRUE, layout = "classic"),
-    "Insufficient space"
-  )
-  # The fit layout sizes the legend from its contents
+  expect_no_error(draw(iris[1:10, 1:4], cell_size = TRUE))
+  # The legend is sized from its contents
   expect_no_warning(hm <- draw(iris[1:3, 1:4], cell_size = TRUE))
   expect_true(all(as.character(.legend_size_labels(heat_map_info(hm)$size_limits)) %in% drawn_text(hm)))
 })
@@ -254,6 +250,7 @@ test_that("heat_map() returns a heat_map object that can be redrawn", {
       "tree_x", "tree_y", "support_x", "support_y", "zoom_x",
       "zoom_y", "axis_text_x",
       "axis_text_y", "colours", "split_colours", "split_data", "sizes",
+      "shapes", "centers",
       "annotations", "layout", "raster", "col_limits", "size_limits")
   )
   expect_equal(sort(info$row_order), seq_len(nrow(mtcars)))
@@ -473,50 +470,46 @@ test_that("heatmap snapshots", {
   # Colour interpolation can round differently (by 1/255) on Apple silicon
   skip_on_os("mac")
   skip_if_not_installed("vdiffr")
-  # Each case in the classic layout (named as in earlier versions) and the
-  # default fit layout
-  for (layout in c("classic", "fit")) {
-    name <- function(x) if (layout == "classic") x else paste(x, "fit")
-    vdiffr::expect_doppelganger(
-      name("readme example"),
-      function() suppressMessages(heat_map(
-        mtcars, scale = "column", tree_x = TRUE, tree_y = TRUE,
-        tree_cut_x = 4, tree_cut_y = 12, cell_size = TRUE,
-        cell_shape = "circle", title = "mtcars", layout = layout, popup = FALSE
-      ))
+  # Named "* fit" since the classic layout of earlier versions was removed
+  name <- function(x) paste(x, "fit")
+  vdiffr::expect_doppelganger(
+    name("readme example"),
+    function() suppressMessages(heat_map(
+      mtcars, scale = "column", tree_x = TRUE, tree_y = TRUE,
+      tree_cut_x = 4, tree_cut_y = 12, cell_size = TRUE,
+      cell_shape = "circle", title = "mtcars", popup = FALSE
+    ))
+  )
+  vdiffr::expect_doppelganger(
+    name("manual clusters and labels"),
+    function() heat_map(
+      matrix(1:30, 5), tree_cut_x = c(1, 2, 1, 2, 1, 3), cell_text = TRUE,
+      round = 0, tree_label_x = TRUE, legend = FALSE,
+      popup = FALSE
     )
-    vdiffr::expect_doppelganger(
-      name("manual clusters and labels"),
-      function() heat_map(
-        matrix(1:30, 5), tree_cut_x = c(1, 2, 1, 2, 1, 3), cell_text = TRUE,
-        round = 0, tree_label_x = TRUE, legend = FALSE, layout = layout,
-        popup = FALSE
-      )
+  )
+  vdiffr::expect_doppelganger(
+    name("named bar fills"),
+    function() heat_map(
+      matrix(1:9, 3, dimnames = list(NULL, c("A", "B", "C"))),
+      bar_values_x = c(C = 3, A = 1, B = 2),
+      bar_fill_x = c(B = "red", C = "green", A = "blue"),
+      legend = FALSE, popup = FALSE
     )
-    vdiffr::expect_doppelganger(
-      name("named bar fills"),
-      function() heat_map(
-        matrix(1:9, 3, dimnames = list(NULL, c("A", "B", "C"))),
-        bar_values_x = c(C = 3, A = 1, B = 2),
-        bar_fill_x = c(B = "red", C = "green", A = "blue"),
-        legend = FALSE, layout = layout, popup = FALSE
-      )
-    )
-    # Size legend layout matches v1.1.0 on medium height heatmaps (classic)
-    vdiffr::expect_doppelganger(
-      name("size legend medium height"),
-      function() suppressMessages(heat_map(
-        mtcars[1:16, ], scale = "column", cell_size = TRUE, layout = layout,
-        popup = FALSE
-      ))
-    )
-    vdiffr::expect_doppelganger(
-      name("levels legend"),
-      function() suppressMessages(heat_map(
-        iris[c(1:5, 51:55, 101:105), ], scale = "column", cell_size = TRUE,
-        cell_shape = "diamond", legend = c("both", "levels"), layout = layout,
-        popup = FALSE
-      ))
-    )
-  }
+  )
+  vdiffr::expect_doppelganger(
+    name("size legend medium height"),
+    function() suppressMessages(heat_map(
+      mtcars[1:16, ], scale = "column", cell_size = TRUE,
+      popup = FALSE
+    ))
+  )
+  vdiffr::expect_doppelganger(
+    name("levels legend"),
+    function() suppressMessages(heat_map(
+      iris[c(1:5, 51:55, 101:105), ], scale = "column", cell_size = TRUE,
+      cell_shape = "diamond", legend = c("both", "levels"),
+      popup = FALSE
+    ))
+  )
 })

@@ -34,8 +34,8 @@ test_that("colour breaks bin values into stepped colours", {
   info <- heat_map_info(draw(m, cell_col_scale_breaks = c(-3, -1, 0, 1, 3)))
   expect_equal(info$col_limits, c(-3, 3))
   expect_length(unique(as.vector(info$colours)), 4)
-  # Legend ticks at the breaks, in both layouts and legend positions
-  for (args in list(list(), list(layout = "classic"), list(legend_side = "bottom"))) {
+  # Legend ticks at the breaks, beside or below the heatmap
+  for (args in list(list(), list(legend_side = "bottom"))) {
     hm <- do.call(draw, c(list(m, cell_col_scale_breaks = c(-3, -1, 0, 1, 3)), args))
     expect_true(all(c("-3", "-1", "0", "1", "3") %in% drawn_text(hm)))
   }
@@ -54,11 +54,8 @@ test_that("legend breaks set the colour legend ticks and labels", {
   expect_error(.legend_col_ticks(c(10, 20), NULL, c(0, 1)), "must lie within")
   expect_error(.legend_col_ticks("a", NULL, c(0, 1)), "must be finite numbers")
   m <- test_matrix()
-  for (layout in c("fit", "classic")) {
-    hm <- draw(m, cell_col_scale_limits = c(-10, 15), legend_col_breaks = c(low = -10, 0, high = 15),
-               layout = layout)
-    expect_true(all(c("low", "0", "high") %in% drawn_text(hm)))
-  }
+  hm <- draw(m, cell_col_scale_limits = c(-10, 15), legend_col_breaks = c(low = -10, 0, high = 15))
+  expect_true(all(c("low", "0", "high") %in% drawn_text(hm)))
 })
 
 test_that("legends can be drawn below the heatmap", {
@@ -126,12 +123,9 @@ test_that("bottom legends wrap into rows and shrink when space is short", {
   expect_null(.heat_map_legend_bottom(list(), NULL, list()))
 })
 
-test_that("legend_side is checked and needs the fit layout", {
+test_that("legend_side is checked", {
   m <- test_matrix()
   expect_error(draw(m, legend_side = "left"), "'legend_side' must be")
-  expect_warning(hm <- draw(m, legend_side = "bottom", layout = "classic"), "requires layout")
-  lg <- lbox(hm, "legend")
-  expect_gte(lg$xmin, lbox(hm, "heatmap")$xmax)
   # No legend
   hm <- draw(m, legend = FALSE, legend_side = "bottom")
   expect_false("legend" %in% heat_map_info(hm)$layout$component)
@@ -186,13 +180,13 @@ test_that("the distribution of the values is traced over the colour legend", {
   )[[1]][[1]]
   expect_equal(xy$x, seq(1, 3, length.out = 5))
   expect_equal(max(xy$y), 5.9)
-  # heat_map() - side, bottom and classic legends
+  # heat_map() - side and bottom legends
   set.seed(2)
   m <- matrix(rnorm(200), 20)
   traces <- function(hm) {
     Filter(function(z) identical(z[[2]], "l") && length(z[[1]]$x) == 128, drawn(hm, "C_plotXY"))
   }
-  for (args in list(list(), list(legend_side = "bottom"), list(layout = "classic"))) {
+  for (args in list(list(), list(legend_side = "bottom"))) {
     hm <- do.call(draw, c(list(m, legend_col_density = TRUE), args))
     expect_length(traces(hm), 2)
   }
@@ -209,4 +203,21 @@ test_that("legends shrink until they fit, even when text sizes are rounded", {
   # Legends that fit are left alone
   m <- .legend_shrink(measure(1), measure, c(5, 5))
   expect_equal(m$scale, 1)
+})
+
+test_that("colour legend labels that crowd each other shrink", {
+  m <- matrix(seq(-3, 3, length.out = 20), 4)
+  hm <- draw(m, legend_col_breaks = c(-3, -2.95, 0, 3))
+  ticks <- Filter(function(z) "-2.95" %in% as.character(z[[2]]), drawn(hm, "C_text"))
+  expect_lt(ticks[[1]][[7]][1], 1)
+})
+
+test_that("components without finite positions are left out of the layout boxes", {
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  graphics::plot.new()
+  graphics::plot.window(c(0, 1), c(0, 1))
+  b <- .layout_boxes(list(heatmap_xlim = c(0, 1), heatmap_ylim = c(0, 1), title = "T",
+                          title_line = NA, title_at = 0.5, title_cex = 1, title_font = 1))
+  expect_equal(b$component, "heatmap")
 })
