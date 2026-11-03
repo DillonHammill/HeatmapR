@@ -5,13 +5,19 @@
 // from its branches with min-plus products; the best ordering is then traced
 // back from the root. The steps, and the choice between equal costs (the
 // first in column-major order), follow the R version this replaces, so the
-// orders are the same.
+// orders are the same. The columns of the larger min-plus products are shared
+// between threads, and the blocks of a large tree are ordered on several
+// threads at once (olo_rows_batch_cpp).
 
 #include <cpp11.hpp>
 #include <cmath>
+#include <algorithm>
 #include <limits>
+#include <numeric>
 #include <vector>
 
+#include "linkage.h"
+#include "parallel.h"
 #include "tree.h"
 
 namespace {
@@ -62,29 +68,15 @@ struct Olo {
 
 }  // namespace
 
-[[cpp11::register]]
-cpp11::integers olo_order_cpp(cpp11::integers merge, cpp11::doubles d, bool full) {
+// The optimal order (1-based leaves) of the k merges m (k x 2, column-major)
+// given the n x n distances D (missing distances count as infinite)
+std::vector<int> olo_core(const int* m, int k, std::vector<double> D, int threads) {
   Olo o;
-  o.m = INTEGER(merge);
-  o.k = Rf_nrows(merge);
-  o.n = o.k + 1;
-  const int k = o.k, n = o.n;
-  const int* m = o.m;
-  // DISTANCES - A SQUARE MATRIX OR THE LOWER TRIANGLE OF A dist OBJECT
-  o.D.assign(static_cast<size_t>(n) * n, 0.0);
-  const double* dv = REAL(d);
-  if (full) {
-    for (size_t t = 0; t < static_cast<size_t>(n) * n; ++t) o.D[t] = dv[t];
-  } else {
-    size_t idx = 0;
-    for (int j = 0; j < n; ++j) {
-      for (int i = j + 1; i < n; ++i) {
-        double v = dv[idx++];
-        o.D[i + static_cast<size_t>(j) * n] = v;
-        o.D[j + static_cast<size_t>(i) * n] = v;
-      }
-    }
-  }
+  o.m = m;
+  o.k = k;
+  o.n = k + 1;
+  const int n = o.n;
+  o.D = std::move(D);
   for (double& v : o.D) {
     if (std::isnan(v)) v = INF;
   }
@@ -102,9 +94,12 @@ cpp11::integers olo_order_cpp(cpp11::integers merge, cpp11::doubles d, bool full
   std::vector<double> x;
   std::vector<double> col;
   for (int s = 0; s < k; ++s) {
-    cpp11::check_user_interrupt();
+    par::poll();
     int a = m[s], b = m[s + k];
     int na = o.node_size(a), nb = o.node_size(b);
+    // (COLUMNS SHARED BETWEEN THREADS WHEN THE PRODUCTS ARE LARGE)
+    double work = static_cast<double>(na) * nb * (na + nb);
+    int t_merge = work < 2097152.0 ? 1 : threads;
     // FROM EVERY LEAF OF a, THE BEST ORDERING OF a THEN A STEP TO EACH LEAF
     // OF b (ROWS: THE LEAVES OF a IN ORDER)
     x.assign(static_cast<size_t>(na) * nb, INF);
@@ -114,7 +109,8 @@ cpp11::integers olo_order_cpp(cpp11::integers merge, cpp11::doubles d, bool full
       int l1 = m[a - 1], l2 = m[(a - 1) + k];
       int n1 = o.node_size(l1), n2 = o.node_size(l2);
       const std::vector<double>& ca = o.cost[a - 1];
-      for (int j = 0; j < nb; ++j) {
+      par::parallel_for(static_cast<size_t>(nb), t_merge, [&](size_t jj) {
+        int j = static_cast<int>(jj);
         int lbj = o.leaf_at(b, j);
         double* xj = &x[static_cast<size_t>(j) * na];
         // STARTING IN l1, ENDING IN l2 AT LEAF t
@@ -136,7 +132,7 @@ cpp11::integers olo_order_cpp(cpp11::integers merge, cpp11::doubles d, bool full
           }
           xj[n1 + i] = best;
         }
-      }
+      });
     }
     // THEN THE BEST ORDERING OF b FROM THAT LEAF (COLUMNS: WHERE IT ENDS)
     if (b < 0) {
@@ -147,30 +143,32 @@ cpp11::integers olo_order_cpp(cpp11::integers merge, cpp11::doubles d, bool full
       const std::vector<double>& cb = o.cost[b - 1];
       std::vector<double>& c = o.cost[s];
       c.assign(static_cast<size_t>(na) * nb, INF);
-      // ENDING IN l1 AT j - ENTERING b IN l2 AT t
-      for (int j = 0; j < n1; ++j) {
+      par::parallel_for(static_cast<size_t>(nb), t_merge, [&](size_t jj) {
+        int j = static_cast<int>(jj);
         double* cj = &c[static_cast<size_t>(j) * na];
-        for (int t = 0; t < n2; ++t) {
-          double w = cb[j + static_cast<size_t>(t) * n1];
-          const double* xt = &x[static_cast<size_t>(n1 + t) * na];
-          for (int i = 0; i < na; ++i) {
-            double v = xt[i] + w;
-            if (v < cj[i]) cj[i] = v;
+        if (j < n1) {
+          // ENDING IN l1 AT j - ENTERING b IN l2 AT t
+          for (int t = 0; t < n2; ++t) {
+            double w = cb[j + static_cast<size_t>(t) * n1];
+            const double* xt = &x[static_cast<size_t>(n1 + t) * na];
+            for (int i = 0; i < na; ++i) {
+              double v = xt[i] + w;
+              if (v < cj[i]) cj[i] = v;
+            }
+          }
+        } else {
+          // ENDING IN l2 AT j - n1 - ENTERING b IN l1 AT t
+          int j2 = j - n1;
+          for (int t = 0; t < n1; ++t) {
+            double w = cb[t + static_cast<size_t>(j2) * n1];
+            const double* xt = &x[static_cast<size_t>(t) * na];
+            for (int i = 0; i < na; ++i) {
+              double v = xt[i] + w;
+              if (v < cj[i]) cj[i] = v;
+            }
           }
         }
-      }
-      // ENDING IN l2 AT j - ENTERING b IN l1 AT t
-      for (int j = 0; j < n2; ++j) {
-        double* cj = &c[static_cast<size_t>(n1 + j) * na];
-        for (int t = 0; t < n1; ++t) {
-          double w = cb[t + static_cast<size_t>(j) * n1];
-          const double* xt = &x[static_cast<size_t>(t) * na];
-          for (int i = 0; i < na; ++i) {
-            double v = xt[i] + w;
-            if (v < cj[i]) cj[i] = v;
-          }
-        }
-      }
+      });
     }
   }
   // TRACE BACK FROM THE BEST PAIR OF END LEAVES OF THE ROOT (THE FIRST
@@ -186,7 +184,7 @@ cpp11::integers olo_order_cpp(cpp11::integers merge, cpp11::doubles d, bool full
   std::vector<Task> stack;
   stack.push_back({k, o.leaf_at(ra, static_cast<int>(best % na)),
                    o.leaf_at(rb, static_cast<int>(best / na))});
-  cpp11::writable::integers out(n);
+  std::vector<int> out(n);
   int n_out = 0;
   while (!stack.empty()) {
     Task task = stack.back();
@@ -220,4 +218,88 @@ cpp11::integers olo_order_cpp(cpp11::integers merge, cpp11::doubles d, bool full
     stack.push_back({c0, task.i, o.leaf_at(c0, bu)});
   }
   return out;
+}
+
+[[cpp11::register]]
+cpp11::integers olo_order_cpp(cpp11::integers merge, cpp11::doubles d, bool full,
+                              int threads) {
+  int k = Rf_nrows(merge);
+  int n = k + 1;
+  // DISTANCES - A SQUARE MATRIX OR THE LOWER TRIANGLE OF A dist OBJECT
+  std::vector<double> D(static_cast<size_t>(n) * n, 0.0);
+  const double* dv = REAL(d);
+  if (full) {
+    for (size_t t = 0; t < static_cast<size_t>(n) * n; ++t) D[t] = dv[t];
+  } else {
+    size_t idx = 0;
+    for (int j = 0; j < n; ++j) {
+      for (int i = j + 1; i < n; ++i) {
+        double v = dv[idx++];
+        D[i + static_cast<size_t>(j) * n] = v;
+        D[j + static_cast<size_t>(i) * n] = v;
+      }
+    }
+  }
+  std::vector<int> ord = olo_core(INTEGER(merge), k, std::move(D), threads);
+  cpp11::writable::integers out(n);
+  std::copy(ord.begin(), ord.end(), INTEGER(out));
+  return out;
+}
+
+// Blocks of the rows of x ordered optimally, several at once: block b holds
+// the (1-based) rows leaves[[b]], clustered as merges[[b]] (leaves numbered
+// in the order of leaves[[b]]; NULL for blocks of fewer than three rows, kept
+// as they are), with distances computed from the rows (see row_dist()). The
+// blocks are shared between threads, largest first. Returns the rows of each
+// block in their order.
+[[cpp11::register]]
+cpp11::list olo_rows_batch_cpp(cpp11::doubles_matrix<> x, cpp11::list leaves,
+                               cpp11::list merges, int metric, double q,
+                               int threads) {
+  const double* xv = REAL(x.data());
+  int n_total = x.nrow(), p = x.ncol();
+  R_xlen_t nb = leaves.size();
+  if (merges.size() != nb) cpp11::stop("one merge matrix per block is needed");
+  // EVERYTHING READ FROM R BEFORE THE THREADS START
+  std::vector<const int*> leaf(nb), merge(nb);
+  std::vector<int> size(nb);
+  for (R_xlen_t b = 0; b < nb; ++b) {
+    SEXP l = leaves[b], m = merges[b];
+    if (TYPEOF(l) != INTSXP) cpp11::stop("leaves must be integer vectors");
+    leaf[b] = INTEGER(l);
+    size[b] = static_cast<int>(Rf_xlength(l));
+    if (size[b] >= 3) {
+      if (TYPEOF(m) != INTSXP || Rf_nrows(m) != size[b] - 1) {
+        cpp11::stop("each block of three or more rows needs its merges");
+      }
+      merge[b] = INTEGER(m);
+    } else {
+      merge[b] = nullptr;
+    }
+  }
+  std::vector<size_t> jobs(nb);
+  std::iota(jobs.begin(), jobs.end(), 0);
+  std::stable_sort(jobs.begin(), jobs.end(),
+                   [&](size_t a, size_t b) { return size[a] > size[b]; });
+  std::vector<std::vector<int>> out(nb);
+  par::parallel_for(jobs.size(), threads, [&](size_t t) {
+    size_t b = jobs[t];
+    int s = size[b];
+    std::vector<int>& o = out[b];
+    if (s < 3) {
+      o.assign(leaf[b], leaf[b] + s);
+      return;
+    }
+    std::vector<double> D = full_distances(xv, n_total, p, leaf[b], s, metric, q);
+    std::vector<int> ord = olo_core(merge[b], s - 1, std::move(D), 1);
+    o.resize(s);
+    for (int i = 0; i < s; ++i) o[i] = leaf[b][ord[i] - 1];
+  });
+  cpp11::writable::list res(nb);
+  for (R_xlen_t b = 0; b < nb; ++b) {
+    cpp11::writable::integers v(static_cast<R_xlen_t>(out[b].size()));
+    std::copy(out[b].begin(), out[b].end(), INTEGER(v));
+    res[b] = v;
+  }
+  return res;
 }

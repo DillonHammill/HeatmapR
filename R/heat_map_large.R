@@ -396,7 +396,8 @@
     metric$x,
     lapply(members, as.integer),
     metric$code,
-    metric$q
+    metric$q,
+    .threads()
   )
   vapply(
     seq_along(members),
@@ -437,14 +438,14 @@
     centres <- metric$x[med, , drop = FALSE]
     probe <- rows[seq_len(min(length(rows), 2000L))]
     a <- nearest_medoid_cpp(metric$x[probe, , drop = FALSE], centres,
-                            metric$code, metric$q)
+                            metric$code, metric$q, .threads())
     out[seq_along(probe)] <- a
     done <- length(probe)
     if(attr(a, "evaluations") / length(probe) <= k / 4 &&
        done < length(rows)) {
       i <- (done + 1):length(rows)
       out[i] <- nearest_medoid_cpp(metric$x[rows[i], , drop = FALSE],
-                                   centres, metric$code, metric$q)
+                                   centres, metric$code, metric$q, .threads())
       done <- length(rows)
     }
   }
@@ -469,6 +470,8 @@
 
 #' Each group of rows clustered on its own by the compiled code
 #'
+#' The groups are shared between threads (\code{heat_map_threads()}).
+#'
 #' @param metric from \code{.compiled_metric()}.
 #' @param groups list of the rows in each group.
 #' @param method a linkage in \code{.NN_CHAIN}.
@@ -480,12 +483,31 @@
 .cluster_groups <- function(metric,
                             groups,
                             method = "complete") {
-  cluster_groups_cpp(
-    metric$x,
-    lapply(groups, as.integer),
+  .cluster_batch(list(metric$x), metric, groups, method)[[1]]
+}
+
+#' Groups of rows of several matrices, each clustered on its own by the
+#' compiled code, sharing the jobs between threads
+#'
+#' @param xs list of matrices prepared as \code{.compiled_metric()} prepares
+#'   them (\code{metric$x}), with the same rows.
+#' @param metric from \code{.compiled_metric()} (its code and power).
+#' @param groups list of the rows in each group, or NULL for all rows.
+#'
+#' @return a list (one element per matrix) of lists of trees (one per group).
+#'
+#' @noRd
+.cluster_batch <- function(xs,
+                           metric,
+                           groups = NULL,
+                           method = "complete") {
+  cluster_batch_cpp(
+    xs,
+    if(!is.null(groups)) lapply(groups, as.integer),
     metric$code,
     metric$q,
-    .NN_CHAIN[[method]]
+    .NN_CHAIN[[method]],
+    .threads()
   )
 }
 
@@ -712,16 +734,28 @@
   split_tree <- olo_blocks_cpp(merge, as.integer(min(max, .Machine$integer.max)))
   blocks <- split_tree$blocks
   above <- split_tree$above
-  # EACH BLOCK ORDERED EXACTLY
-  block_order <- lapply(blocks, function(node) {
-    leaves <- .node_leaves(merge, node, size_of(node))
-    if(length(leaves) < 3) {
-      return(leaves)
-    }
-    sub <- .sub_merge(merge, node)
-    d <- .dist_matrix(x[leaves, , drop = FALSE], dist, ...)
-    leaves[.olo_order(sub, d)]
+  # EACH BLOCK ORDERED EXACTLY - SEVERAL AT ONCE IN COMPILED CODE WHEN IT
+  # COMPUTES THE DISTANCES
+  leaves <- lapply(blocks, function(node) {
+    .node_leaves(merge, node, size_of(node))
   })
+  metric <- .compiled_metric(x, dist, ...)
+  block_order <- if(!is.null(metric)) {
+    subs <- lapply(seq_along(blocks), function(b) {
+      if(length(leaves[[b]]) >= 3) .sub_merge(merge, blocks[b])
+    })
+    olo_rows_batch_cpp(metric$x, lapply(leaves, as.integer), subs,
+                       metric$code, metric$q, .threads())
+  } else {
+    lapply(seq_along(blocks), function(b) {
+      l <- leaves[[b]]
+      if(length(l) < 3) {
+        return(l)
+      }
+      d <- .dist_matrix(x[l, , drop = FALSE], dist, ...)
+      l[.olo_order(.sub_merge(merge, blocks[b]), d)]
+    })
+  }
   # THE TREE ABOVE THE BLOCKS, WITH EACH BLOCK AS A LEAF (-b) AND THE OTHER
   # MERGES NUMBERED AMONG THEMSELVES
   v <- as.vector(merge[above, , drop = FALSE])

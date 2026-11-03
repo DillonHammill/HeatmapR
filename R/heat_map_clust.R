@@ -328,7 +328,8 @@ heat_map_clust <- function(x,
   if(!is.double(d)) {
     storage.mode(d) <- "double"
   }
-  r <- hclust_cpp(d, n, code, if(is.null(members)) NULL else as.double(members))
+  r <- hclust_cpp(d, n, code, if(is.null(members)) NULL else as.double(members),
+                  .threads())
   structure(
     list(
       merge = r$merge,
@@ -355,7 +356,8 @@ heat_map_clust <- function(x,
 .hclust_rows <- function(x,
                          metric,
                          method = "complete") {
-  r <- hclust_rows_cpp(metric$x, metric$code, metric$q, .NN_CHAIN[[method]])
+  r <- hclust_rows_cpp(metric$x, metric$code, metric$q, .NN_CHAIN[[method]],
+                       .threads())
   structure(
     list(
       merge = r$merge,
@@ -607,7 +609,7 @@ heat_map_clust <- function(x,
   full <- !inherits(d, "dist")
   d <- if(full) as.matrix(d) else unclass(d)
   storage.mode(d) <- "double"
-  olo_order_cpp(.int_merge(merge), d, full)
+  olo_order_cpp(.int_merge(merge), d, full, .threads())
 }
 
 #' Reorder the leaves of a tree

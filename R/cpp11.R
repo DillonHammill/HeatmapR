@@ -24,28 +24,40 @@ native_colours_cpp <- function(col) {
   .Call(`_HeatmapR_native_colours_cpp`, col)
 }
 
-hclust_cpp <- function(d, n, method, members) {
-  .Call(`_HeatmapR_hclust_cpp`, d, n, method, members)
+hclust_cpp <- function(d, n, method, members, threads) {
+  .Call(`_HeatmapR_hclust_cpp`, d, n, method, members, threads)
 }
 
-hclust_rows_cpp <- function(x, metric, q, method) {
-  .Call(`_HeatmapR_hclust_rows_cpp`, x, metric, q, method)
+hclust_rows_cpp <- function(x, metric, q, method, threads) {
+  .Call(`_HeatmapR_hclust_rows_cpp`, x, metric, q, method, threads)
 }
 
-cluster_groups_cpp <- function(x, groups, metric, q, method) {
-  .Call(`_HeatmapR_cluster_groups_cpp`, x, groups, metric, q, method)
+cluster_batch_cpp <- function(xs, groups, metric, q, method, threads) {
+  .Call(`_HeatmapR_cluster_batch_cpp`, xs, groups, metric, q, method, threads)
 }
 
-nearest_medoid_cpp <- function(x, medoids, metric, q) {
-  .Call(`_HeatmapR_nearest_medoid_cpp`, x, medoids, metric, q)
+nearest_medoid_cpp <- function(x, medoids, metric, q, threads) {
+  .Call(`_HeatmapR_nearest_medoid_cpp`, x, medoids, metric, q, threads)
 }
 
-group_medoids_cpp <- function(x, groups, metric, q) {
-  .Call(`_HeatmapR_group_medoids_cpp`, x, groups, metric, q)
+group_medoids_cpp <- function(x, groups, metric, q, threads) {
+  .Call(`_HeatmapR_group_medoids_cpp`, x, groups, metric, q, threads)
 }
 
-olo_order_cpp <- function(merge, d, full) {
-  .Call(`_HeatmapR_olo_order_cpp`, merge, d, full)
+olo_order_cpp <- function(merge, d, full, threads) {
+  .Call(`_HeatmapR_olo_order_cpp`, merge, d, full, threads)
+}
+
+olo_rows_batch_cpp <- function(x, leaves, merges, metric, q, threads) {
+  .Call(`_HeatmapR_olo_rows_batch_cpp`, x, leaves, merges, metric, q, threads)
+}
+
+hardware_threads_cpp <- function() {
+  .Call(`_HeatmapR_hardware_threads_cpp`)
+}
+
+parallel_check_cpp <- function(n, threads, fail_at, nested) {
+  .Call(`_HeatmapR_parallel_check_cpp`, n, threads, fail_at, nested)
 }
 
 merge_sizes_cpp <- function(merge) {

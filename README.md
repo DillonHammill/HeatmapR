@@ -58,9 +58,10 @@ graphics approach.
   data, which means you don’t have to spend ages formatting and
   pre-processing the data beforehand.
 - **HeatmapR** clusters large datasets quickly: distances, linkage and
-  optimal leaf ordering run in compiled C++ code, and rows or columns
-  beyond `clust_max` are clustered in two stages, so 100,000 rows take
-  about 2 seconds.
+  optimal leaf ordering run in compiled C++ code shared between threads
+  (`heat_map_threads()`), and rows or columns beyond `clust_max` are
+  clustered in two stages, so 100,000 rows take about a second on two
+  cores.
 - **HeatmapR** shows sample or feature metadata as annotation tracks
   (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
   labels and bar plots, and adapts the layout so that labels and legends
