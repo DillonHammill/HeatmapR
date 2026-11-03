@@ -446,7 +446,12 @@
 }
 
 #' Resolve the colour scale for numeric values into a colorRamp function
-#' @importFrom grDevices colorRamp hcl.colors
+#'
+#' Ramps through colours keep the positions and channels that
+#' \code{colorRamp()} interpolates between (attribute \code{"ramp"}), so that
+#' \code{.ramp_packed()} can interpolate them in compiled code.
+#'
+#' @importFrom grDevices colorRamp col2rgb hcl.colors
 #' @noRd
 .col_scale <- function(x = NULL) {
   if(is.null(x)) {
@@ -458,30 +463,45 @@
   if(.is_hcl_palette(x)) {
     x <- hcl.colors(100, x)
   }
-  colorRamp(x)
+  ramp <- colorRamp(x)
+  # AS colorRamp() - CHANNELS IN [0, 1], A SINGLE COLOUR TWICE
+  channels <- t(col2rgb(x) / 255)
+  if(nrow(channels) == 1) {
+    channels <- channels[c(1, 1), , drop = FALSE]
+  }
+  attr(ramp, "ramp") <- list(
+    knots = as.double(seq.int(0, 1, length.out = nrow(channels))),
+    channels = channels
+  )
+  ramp
 }
 
-#' Colours of positions along a colour scale
+#' Colours of positions along a colour scale, as packed integers
 #'
-#' The scale gives each position's red, green and blue intensities, which are
-#' written as colours in compiled code exactly as \code{rgb(maxColorValue =
-#' 255)} writes them (intensities \code{rgb()} would reject go to
+#' Ramps from \code{.col_scale()} are interpolated in compiled code with the
+#' arithmetic of \code{colorRamp()} and \code{rgb(maxColorValue = 255)}; other
+#' scales give red, green and blue intensities, which are truncated as
+#' \code{rgb()} truncates them (intensities \code{rgb()} would reject go to
 #' \code{rgb()}, which reports them).
 #'
 #' @param k positions along the scale, in [0, 1].
 #' @param scale a function from \code{.col_scale()}.
-#' @param alpha NULL, or a transparency in [0, 1] to append (as
-#'   \code{.alpha_col()} would).
 #'
-#' @return "#RRGGBB" colours (or "#RRGGBBAA" with \code{alpha}).
+#' @return opaque colours as packed integers (see \code{.native_colours()}).
 #'
 #' @importFrom grDevices rgb
 #' @noRd
-.ramp_colours <- function(k,
-                          scale,
-                          alpha = NULL) {
+.ramp_packed <- function(k,
+                         scale) {
   if(length(k) == 0) {
-    return(character(0))
+    return(integer(0))
+  }
+  ramp <- attr(scale, "ramp")
+  if(!is.null(ramp)) {
+    out <- ramp_packed_cpp(as.double(k), ramp$knots, ramp$channels)
+    if(!is.null(out)) {
+      return(out)
+    }
   }
   rgb_mat <- scale(k)
   if(is.null(dim(rgb_mat))) {
@@ -489,21 +509,45 @@
   }
   rgb_mat <- rgb_mat[, 1:3, drop = FALSE]
   storage.mode(rgb_mat) <- "double"
-  byte <- if(is.null(alpha)) -1L else .alpha_byte(alpha)
-  out <- if(!is.na(byte)) rgb_strings_cpp(rgb_mat, byte)
+  out <- rgb_packed_cpp(rgb_mat)
   if(is.null(out)) {
-    out <- rgb(rgb_mat[, 1], rgb_mat[, 2], rgb_mat[, 3], maxColorValue = 255)
-    if(!is.null(alpha)) {
-      out <- .alpha_col(out, alpha)
-    }
+    out <- .native_colours(
+      rgb(rgb_mat[, 1], rgb_mat[, 2], rgb_mat[, 3], maxColorValue = 255)
+    )
   }
   out
 }
 
-#' Alpha channel of a transparency in [0, 1], as .alpha_col() writes it
+#' Colours of positions along a colour scale
+#'
+#' @param k positions along the scale, in [0, 1].
+#' @param scale a function from \code{.col_scale()}.
+#' @param alpha NULL, or transparency in [0, 1] (as \code{.alpha_col()}
+#'   applies it).
+#'
+#' @return "#RRGGBB" colours as \code{rgb(maxColorValue = 255)} writes them (or
+#'   "#RRGGBBAA" with \code{alpha}).
+#'
 #' @noRd
-.alpha_byte <- function(alpha) {
-  as.integer(255 * min(1, max(0, alpha)) + 0.5)
+.ramp_colours <- function(k,
+                          scale,
+                          alpha = NULL) {
+  packed <- .ramp_packed(k, scale)
+  if(is.null(alpha)) {
+    return(packed_strings_cpp(packed, FALSE))
+  }
+  packed_strings_cpp(.alpha_packed(packed, alpha), TRUE)
+}
+
+#' Transparency applied to packed colours as adjustcolor() applies it (the
+#' alpha channel times alpha, recycled)
+#' @noRd
+.alpha_packed <- function(packed,
+                          alpha) {
+  if(length(alpha) == 0) {
+    stop("'alpha' must have at least one value.", call. = FALSE)
+  }
+  adjust_alpha_cpp(packed, as.double(alpha))
 }
 
 #' Resolve the colour palette for non-numeric values into a function of n
@@ -1274,9 +1318,10 @@ print.heat_map <- function(x, ...) {
 #' Vectorised adjustcolor() over both colours and alpha values
 #' 
 #' \code{adjustcolor()} only accepts a single \code{alpha.f}, so colours and
-#' alpha values are recycled together here.
+#' alpha values are recycled together here. Colours are converted once per
+#' distinct colour and their alpha channels multiplied in compiled code, with
+#' the arithmetic of \code{adjustcolor()} - the same "#RRGGBBAA" colours.
 #' 
-#' @importFrom grDevices adjustcolor
 #' @noRd
 .alpha_col <- function(col,
                        alpha = 1) {
@@ -1284,27 +1329,8 @@ print.heat_map <- function(x, ...) {
     return(character(0))
   }
   n <- max(length(col), length(alpha))
-  col <- rep_len(col, n)
-  alpha <- rep_len(alpha, n)
-  if(all(alpha == alpha[1])) {
-    # FAST PATH FOR OPAQUE "#RRGGBB" COLOURS (FROM rgb()) - THE SAME RESULT AS
-    # adjustcolor(), WHICH APPENDS THE ALPHA CHANNEL (IN COMPILED CODE); OTHER
-    # COLOURS ARE ADJUSTED ONCE PER UNIQUE COLOUR
-    out <- alpha_hex_cpp(as.character(col), .alpha_byte(alpha[1]))
-    hex <- !is.na(out)
-    if(any(!hex)) {
-      u <- unique(col[!hex])
-      out[!hex] <- adjustcolor(u, alpha[1])[match(col[!hex], u)]
-    }
-    return(out)
-  }
-  vapply(
-    seq_len(n),
-    function(z) {
-      adjustcolor(col[z], alpha[z])
-    },
-    character(1)
-  )
+  packed <- .alpha_packed(.native_colours(rep_len(col, n)), alpha)
+  packed_strings_cpp(packed, TRUE)
 }
 
 ## ANNOTATIONS -----------------------------------------------------------------
@@ -1648,22 +1674,19 @@ print.heat_map <- function(x, ...) {
 
 #' Colours as packed integers, as the graphics engine stores them
 #'
-#' Hex colours (and NA, transparent) are converted in compiled code, others
-#' once per unique colour with \code{col2rgb()}.
+#' Red in the lowest byte, then green, blue and alpha (so NA_integer_ is
+#' "#00000080"). Hex colours (and NA, transparent) are converted in compiled
+#' code, others once per distinct colour with \code{col2rgb()}.
 #'
 #' @importFrom grDevices col2rgb
 #' @noRd
 .native_colours <- function(col) {
   out <- native_colours_cpp(as.character(col))
-  other <- is.na(out)
-  if(any(other)) {
+  other <- attr(out, "other")
+  if(!is.null(other)) {
+    attr(out, "other") <- NULL
     u <- unique(col[other])
-    rgba <- col2rgb(u, alpha = TRUE)
-    packed <- rgba[1, ] + rgba[2, ] * 256 + rgba[3, ] * 65536 +
-      rgba[4, ] * 16777216
-    # (UNSIGNED 32-BIT VALUES AS SIGNED INTEGERS)
-    packed <- as.integer(ifelse(packed >= 2^31, packed - 2^32, packed))
-    out[other] <- packed[match(col[other], u)]
+    out[other] <- pack_channels_cpp(col2rgb(u, alpha = TRUE))[match(col[other], u)]
   }
   out
 }
@@ -1697,6 +1720,8 @@ print.heat_map <- function(x, ...) {
 #'   column by column from the top left, with centres increasing to the right
 #'   and decreasing downwards (as heat_map() lays them out); NULL to work the
 #'   grid out from the centres.
+#' @param packed the fill colours as packed integers (from
+#'   \code{.native_colours()}), if known.
 #'
 #' @importFrom graphics rasterImage segments rect par
 #' @noRd
@@ -1708,15 +1733,19 @@ print.heat_map <- function(x, ...) {
                                line_width = 1,
                                res = 150,
                                max_px = 2e6,
-                               grid = NULL) {
+                               grid = NULL,
+                               packed = NULL) {
 
   # CELL COLOURS IN DISPLAY ORDER - ROW 1 AT THE TOP (AS PACKED INTEGERS)
+  if(is.null(packed)) {
+    packed <- .native_colours(fill)
+  }
   if(!is.null(grid)) {
     # A FULL GRID - COLUMNS LEFT TO RIGHT, EACH FROM THE TOP ROW DOWN
     keep <- TRUE
     xs <- x[seq(1, by = grid[1], length.out = grid[2])]
     ys <- y[seq_len(grid[1])]
-    img <- matrix(.native_colours(fill), nrow = grid[1], ncol = grid[2])
+    img <- matrix(packed, nrow = grid[1], ncol = grid[2])
   } else {
     keep <- !is.na(x) & !is.na(y)
     xs <- sort(unique(x[keep]))
@@ -1727,7 +1756,7 @@ print.heat_map <- function(x, ...) {
       ncol = length(xs)
     )
     img[match(y[keep], ys) + (match(x[keep], xs) - 1L) * length(ys)] <-
-      .native_colours(fill[keep])
+      packed[keep]
   }
 
   # INCHES PER PLOT UNIT

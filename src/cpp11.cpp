@@ -6,17 +6,38 @@
 #include <R_ext/Visibility.h>
 
 // colour.cpp
-SEXP rgb_strings_cpp(cpp11::doubles_matrix<> rgb, int alpha);
-extern "C" SEXP _HeatmapR_rgb_strings_cpp(SEXP rgb, SEXP alpha) {
+SEXP ramp_packed_cpp(cpp11::doubles k, cpp11::doubles knots, cpp11::doubles_matrix<> rgb);
+extern "C" SEXP _HeatmapR_ramp_packed_cpp(SEXP k, SEXP knots, SEXP rgb) {
   BEGIN_CPP11
-    return cpp11::as_sexp(rgb_strings_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb), cpp11::as_cpp<cpp11::decay_t<int>>(alpha)));
+    return cpp11::as_sexp(ramp_packed_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(k), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(knots), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb)));
   END_CPP11
 }
 // colour.cpp
-cpp11::strings alpha_hex_cpp(cpp11::strings col, int alpha);
-extern "C" SEXP _HeatmapR_alpha_hex_cpp(SEXP col, SEXP alpha) {
+SEXP rgb_packed_cpp(cpp11::doubles_matrix<> rgb);
+extern "C" SEXP _HeatmapR_rgb_packed_cpp(SEXP rgb) {
   BEGIN_CPP11
-    return cpp11::as_sexp(alpha_hex_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::strings>>(col), cpp11::as_cpp<cpp11::decay_t<int>>(alpha)));
+    return cpp11::as_sexp(rgb_packed_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb)));
+  END_CPP11
+}
+// colour.cpp
+cpp11::integers adjust_alpha_cpp(cpp11::integers col, cpp11::doubles alpha);
+extern "C" SEXP _HeatmapR_adjust_alpha_cpp(SEXP col, SEXP alpha) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(adjust_alpha_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(col), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(alpha)));
+  END_CPP11
+}
+// colour.cpp
+cpp11::strings packed_strings_cpp(cpp11::integers col, bool alpha);
+extern "C" SEXP _HeatmapR_packed_strings_cpp(SEXP col, SEXP alpha) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(packed_strings_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(col), cpp11::as_cpp<cpp11::decay_t<bool>>(alpha)));
+  END_CPP11
+}
+// colour.cpp
+cpp11::integers pack_channels_cpp(cpp11::integers_matrix<> rgba);
+extern "C" SEXP _HeatmapR_pack_channels_cpp(SEXP rgba) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(pack_channels_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers_matrix<>>>(rgba)));
   END_CPP11
 }
 // colour.cpp
@@ -148,7 +169,7 @@ extern "C" SEXP _HeatmapR_clade_in_cpp(SEXP keys, SEXP other) {
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
-    {"_HeatmapR_alpha_hex_cpp",         (DL_FUNC) &_HeatmapR_alpha_hex_cpp,         2},
+    {"_HeatmapR_adjust_alpha_cpp",      (DL_FUNC) &_HeatmapR_adjust_alpha_cpp,      2},
     {"_HeatmapR_apply_order_cpp",       (DL_FUNC) &_HeatmapR_apply_order_cpp,       2},
     {"_HeatmapR_clade_hash_cpp",        (DL_FUNC) &_HeatmapR_clade_hash_cpp,        2},
     {"_HeatmapR_clade_in_cpp",          (DL_FUNC) &_HeatmapR_clade_in_cpp,          2},
@@ -164,7 +185,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_nearest_medoid_cpp",    (DL_FUNC) &_HeatmapR_nearest_medoid_cpp,    4},
     {"_HeatmapR_olo_blocks_cpp",        (DL_FUNC) &_HeatmapR_olo_blocks_cpp,        2},
     {"_HeatmapR_olo_order_cpp",         (DL_FUNC) &_HeatmapR_olo_order_cpp,         3},
-    {"_HeatmapR_rgb_strings_cpp",       (DL_FUNC) &_HeatmapR_rgb_strings_cpp,       2},
+    {"_HeatmapR_pack_channels_cpp",     (DL_FUNC) &_HeatmapR_pack_channels_cpp,     1},
+    {"_HeatmapR_packed_strings_cpp",    (DL_FUNC) &_HeatmapR_packed_strings_cpp,    2},
+    {"_HeatmapR_ramp_packed_cpp",       (DL_FUNC) &_HeatmapR_ramp_packed_cpp,       3},
+    {"_HeatmapR_rgb_packed_cpp",        (DL_FUNC) &_HeatmapR_rgb_packed_cpp,        1},
     {"_HeatmapR_structural_clades_cpp", (DL_FUNC) &_HeatmapR_structural_clades_cpp, 2},
     {"_HeatmapR_sub_merge_cpp",         (DL_FUNC) &_HeatmapR_sub_merge_cpp,         2},
     {"_HeatmapR_tree_segments_cpp",     (DL_FUNC) &_HeatmapR_tree_segments_cpp,     3},
