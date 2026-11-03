@@ -50,8 +50,11 @@
     }
     ind <- which(mark %in% TRUE)
   } else if(is.numeric(mark)) {
+    if(any(is.na(mark) | mark != round(mark))) {
+      stop("'", arg, "' must contain whole-number positions.", call. = FALSE)
+    }
     pos <- as.integer(mark)
-    if(any(is.na(pos) | pos < 1 | pos > n)) {
+    if(any(pos < 1 | pos > n)) {
       stop(
         "'", arg, "' contains positions outside 1 to ", n, ".",
         call. = FALSE
@@ -84,7 +87,8 @@
     if(length(labels) != length(keep)) {
       stop(
         "'", sub("mark", "mark_labels", arg), "' must have one label for each ",
-        "element of '", arg, "'.",
+        if(grepl("x$", arg)) "column" else "row", " marked by '", arg, "' (",
+        length(keep), ").",
         call. = FALSE
       )
     }

@@ -226,7 +226,9 @@ of its nearest group medoid and each group is clustered exactly beneath
 the sample's dendrogram (see \code{\link{heat_map_clust}}). 100,000 rows
 take about 2 seconds. Branch support (\code{tree_support_x},
 \code{tree_support_y}) is only computed for up to \code{clust_max} rows or
-columns. Set to \code{Inf} to always cluster exactly.}
+columns. Set to \code{Inf} to always cluster exactly. Rows or columns
+grouped by \code{tree_cut_x} or \code{tree_cut_y} are clustered within
+each group, so the limit applies to each group.}
 
 \item{round}{indicates the number of decimal places to round values when
 \code{cell_text = TRUE} and values are displayed in the heatmap, set to 2
@@ -255,7 +257,8 @@ default.}
 either \code{"default"} (the order from \code{hclust}), \code{"olo"}
 (optimal leaf ordering, which flips branches so that neighbouring columns
 are as similar as possible) or \code{"mean"} (branches ordered by their
-mean values, as in \code{\link[stats]{heatmap}}). Optimal leaf ordering
+mean values - \code{\link[stats]{heatmap}} orders them by the sum of
+their columns' means instead, which favours small branches). Optimal leaf ordering
 is exact for up to 2000 columns, which takes about a second; larger
 dendrograms are ordered in blocks (see \code{\link{heat_map_clust}}).}
 
@@ -265,7 +268,7 @@ the rows are resampled with replacement and the columns clustered again
 (with \code{dist_method} and \code{clust_method}, within each group for
 a dendrogram split by groups), and each branch scores the proportion of
 resamples in which its exact set of columns is a branch again. Branches
-with 90\\% support or more are thick black lines, 70-89\\% grey lines and
+with 90\% support or more are thick black lines, 70-89\% grey lines and
 lower support dashed lines, with a key in the legend. \code{TRUE} uses
 100 resamples. The resamples use a fixed seed (leaving the random number
 generator as it was), so the support is the same each time the heatmap
@@ -478,7 +481,9 @@ numeric values. By default the scale runs through the colour-blind
 friendly viridis colours from dark purple to yellow, then on through
 orange and red to dark red. Alternatively, the name of a palette listed in
 \code{\link[grDevices]{hcl.pals}} (e.g. \code{"viridis"} or
-\code{"Blue-Red 3"}), or a function created by
+\code{"Blue-Red 3"}), a palette function that takes the number of
+colours as its first argument \code{n} (e.g. one created by
+\code{\link[grDevices]{colorRampPalette}}), or a function created by
 \code{\link[grDevices]{colorRamp}}.}
 
 \item{cell_col_scale_limits}{a numeric vector of length 2 specifying custom
@@ -569,7 +574,7 @@ legend - the values in \code{x} and in \code{cell_split}, set to
 for cell borders, set to 1 by default for solid lines. See \code{lty} in
 \code{?par} for alternatives.}
 
-\item{cell_border_line_width}{a numeric to control the with of cell borders,
+\item{cell_border_line_width}{a numeric to control the width of cell borders,
 set to 1 by default.}
 
 \item{cell_border_line_col}{indicates the colour to use for cell borders, set
@@ -835,9 +840,9 @@ colours.}
 set to 1 by default.}
 
 \item{margins}{vector of numerics to control the size of the margins around
-the \code{bottom}, \code{left}, \code{top} and \code{right} of the heatmap.
-Setting any of these values to NA will allow for internal computation of
-optimal heatmap margins.}
+the \code{bottom}, \code{left}, \code{top} and \code{right} of the heatmap,
+in lines of text (as \code{par("mar")}). Setting any of these values to NA
+(the default) sizes that margin to fit its contents.}
 
 \item{title}{text to include in the title above the heatmap.}
 
@@ -959,8 +964,9 @@ row. The labels use the axis text font, size and colour; row labels are
 horizontal and column labels vertical.}
 
 \item{mark_labels_x, mark_labels_y}{labels for the columns or rows in
-\code{mark_x} and \code{mark_y}, one per element, set to NULL by default
-to use the column or row names.}
+\code{mark_x} and \code{mark_y}, one per marked column or row (one per
+element of names or positions, or one per \code{TRUE} value of a logical
+vector), set to NULL by default to use the column or row names.}
 
 \item{mark_line_col}{colour of the leader lines connecting mark labels to
 their rows or columns, set to \code{"grey40"} by default.}
@@ -1037,8 +1043,10 @@ label text should be shrunk to fit the available space when it would
 otherwise overlap, set to TRUE by default. Axis labels that still don't
 fit at half their size are thinned to every second, third, ... label.}
 
-\item{popup}{logical indicating whether the heatmap should be constructed in
-a popup window, set to TRUE by default.}
+\item{popup}{logical indicating whether the heatmap should be drawn in a new
+popup window, set to TRUE by default. Popups are only opened in
+interactive sessions: in scripts, R Markdown and other non-interactive
+sessions the heatmap is drawn on the current device.}
 
 \item{popup_size}{vector to control the height and width of the popup window
 in inches, set to \code{c(7,7)}.}

@@ -43,7 +43,10 @@
       add = TRUE
     )
   }
-  set.seed(seed)
+  # (THE GENERATOR IS FIXED TOO, SO THAT THE SAMPLE DOESN'T DEPEND ON THE
+  # USER'S RNGkind() - THE USER'S STATE, KIND INCLUDED, IS RESTORED ON EXIT)
+  set.seed(seed, kind = "Mersenne-Twister", normal.kind = "Inversion",
+           sample.kind = "Rejection")
   expr
 }
 
@@ -132,11 +135,22 @@
 .unit_rows <- function(x,
                        method) {
   if(method == "spearman") {
-    p <- ncol(x)
-    x <- t(apply(x, 1, rank))
-    # (ONE COLUMN - apply() GIVES A VECTOR)
-    if(p == 1) {
-      x <- t(x)
+    if(is.numeric(x) && !anyNA(x)) {
+      # (AVERAGE RANKS, AS rank() GIVES THEM, IN COMPILED CODE - apply() CALLS
+      # rank() ONCE PER ROW)
+      if(!is.double(x)) {
+        storage.mode(x) <- "double"
+      }
+      r <- row_ranks_cpp(x, .threads())
+      dimnames(r) <- dimnames(x)
+      x <- r
+    } else {
+      p <- ncol(x)
+      x <- t(apply(x, 1, rank))
+      # (ONE COLUMN - apply() GIVES A VECTOR)
+      if(p == 1) {
+        x <- t(x)
+      }
     }
   }
   if(method %in% c("pearson", "spearman")) {

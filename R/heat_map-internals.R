@@ -128,7 +128,58 @@
   invisible(TRUE)
 }
 
-#' Validate that a dendrogram matches the data being displayed
+#' A side of the heatmap given by name (or number) as a side number
+#'
+#' @param sides named side numbers, e.g. \code{c(bottom = 1, top = 3)}.
+#'
+#' @noRd
+.check_side <- function(side,
+                        sides,
+                        arg) {
+  s <- if(is.numeric(side) && length(side) == 1 && side %in% sides) {
+    side
+  } else if(is.character(side) && length(side) == 1) {
+    unname(sides[pmatch(tolower(side), names(sides))])
+  } else {
+    NA
+  }
+  if(length(s) != 1 || is.na(s)) {
+    stop(
+      "'", arg, "' must be ",
+      paste0("\"", names(sides), "\"", collapse = " or "), ".",
+      call. = FALSE
+    )
+  }
+  as.numeric(s)
+}
+
+#' A single TRUE or FALSE
+#' @noRd
+.check_flag <- function(x,
+                        arg) {
+  if(!is.logical(x) || length(x) != 1 || is.na(x)) {
+    stop("'", arg, "' must be TRUE or FALSE.", call. = FALSE)
+  }
+  invisible(x)
+}
+
+#' A single positive number
+#' @noRd
+.check_positive <- function(x,
+                            arg) {
+  if(!is.numeric(x) || length(x) != 1 || !is.finite(x) || x <= 0) {
+    stop("'", arg, "' must be a positive number.", call. = FALSE)
+  }
+  invisible(x)
+}
+
+#' Validate a dendrogram supplied by the user
+#'
+#' An hclust object describing the rows or columns displayed: each leaf and
+#' each merge joined once, merges only joining leaves or earlier merges, a
+#' height for each merge and an order holding each leaf once. (The compiled
+#' code relies on this.)
+#'
 #' @noRd
 .check_tree <- function(tree,
                         n,
@@ -141,6 +192,35 @@
         length(tree$order), " leaves!"
       )
     )
+  }
+  bad <- function(why) {
+    stop("'", arg, "' is not a valid hclust object - ", why, ".", call. = FALSE)
+  }
+  k <- n - 1
+  merge <- tree$merge
+  if(!is.matrix(merge) || !is.numeric(merge) || nrow(merge) != k ||
+     ncol(merge) != 2) {
+    bad(paste0("'merge' must be a matrix with ", k, " rows and 2 columns"))
+  }
+  m <- as.vector(merge)
+  if(anyNA(m) || any(m != round(m))) {
+    bad("'merge' must hold whole numbers")
+  }
+  leaves <- -m[m < 0]
+  if(length(leaves) != n || any(leaves > n) || anyDuplicated(leaves)) {
+    bad("each leaf must be joined once in 'merge'")
+  }
+  nodes <- m[m > 0]
+  if(length(nodes) != max(0, k - 1) || anyDuplicated(nodes) ||
+     any(nodes >= rep(seq_len(k), 2)[m > 0])) {
+    bad("each merge must join leaves or earlier merges, each once")
+  }
+  if(length(tree$height) != k || anyNA(tree$height)) {
+    bad("'height' must hold one value for each merge")
+  }
+  if(anyNA(tree$order) || !setequal(tree$order, seq_len(n)) ||
+     anyDuplicated(tree$order)) {
+    bad("'order' must hold each leaf once")
   }
   invisible(TRUE)
 }
@@ -456,6 +536,11 @@
 .col_scale <- function(x = NULL) {
   if(is.null(x)) {
     x <- .default_col_scale()
+  }
+  # PALETTE FUNCTIONS - colorRampPalette(), viridisLite::viridis() ETC. TAKE
+  # THE NUMBER OF COLOURS (n); colorRamp() FUNCTIONS TAKE POSITIONS IN [0, 1]
+  if(is.function(x) && identical(names(formals(x))[1], "n")) {
+    x <- x(100)
   }
   if(is.function(x)) {
     return(x)
@@ -1393,10 +1478,20 @@ print.heat_map <- function(x, ...) {
   if(ncol(annotation) == 0) {
     return(NULL)
   }
-  # MATCH BY NAME WHEN ROW NAMES ARE SUPPLIED
+  # MATCH BY NAME WHEN ROW NAMES ARE SUPPLIED - NAMES THAT MATCH ONLY SOME
+  # ROWS (OR COLUMNS) ARE AN ERROR RATHER THAN MATCHED BY POSITION
   named <- .row_names_info(annotation) > 0
   if(named && !is.null(labels) && all(labels %in% rownames(annotation))) {
     annotation <- annotation[labels, , drop = FALSE]
+  } else if(named && !is.null(labels) && any(labels %in% rownames(annotation))) {
+    missing <- labels[!labels %in% rownames(annotation)]
+    stop(
+      "The row names of '", arg, "' match only some ",
+      if(arg == "annotation_x") "columns" else "rows", " of 'x' - missing: ",
+      paste(utils::head(missing, 5), collapse = ", "),
+      if(length(missing) > 5) ", ...", ".",
+      call. = FALSE
+    )
   } else if(nrow(annotation) != n) {
     stop(
       paste0(
@@ -1613,7 +1708,8 @@ print.heat_map <- function(x, ...) {
 #' @importFrom methods formalArgs
 #' @importFrom stats dist hclust
 #' @noRd
-.check_dots <- function(dots) {
+.check_dots <- function(dots,
+                        fun = "heat_map()") {
   if(length(dots) == 0) {
     return(invisible(NULL))
   }
@@ -1629,7 +1725,7 @@ print.heat_map <- function(x, ...) {
   if(length(unknown) > 0) {
     unknown[unknown == ""] <- "<unnamed>"
     warning(
-      "Ignoring unknown argument(s) passed to heat_map(): ",
+      "Ignoring unknown argument(s) passed to ", fun, ": ",
       paste(unique(unknown), collapse = ", "),
       call. = FALSE
     )

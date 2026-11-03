@@ -148,6 +148,23 @@
   support
 }
 
+#' The distance and linkage a supplied tree was built with, when HeatmapR can
+#' compute them (NULL otherwise)
+#' @noRd
+.tree_methods <- function(tree) {
+  dists <- c("euclidean", "maximum", "manhattan", "canberra", "binary",
+             "minkowski", "pearson", "spearman", "kendall", "cosine")
+  methods <- c("ward.D", "ward.D2", "single", "complete", "average",
+               "mcquitty", "median", "centroid")
+  d <- tree$dist.method
+  m <- tree$method
+  if(!is.character(d) || length(d) != 1 || !tolower(d) %in% dists ||
+     !is.character(m) || length(m) != 1 || !m %in% methods) {
+    return(NULL)
+  }
+  list(dist = tolower(d), method = m)
+}
+
 #' Line styles of each merge from its support (NA - a plain line)
 #' @noRd
 .support_style <- function(support) {

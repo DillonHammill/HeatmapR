@@ -35,7 +35,9 @@
 #'   the sample's dendrogram (see \code{\link{heat_map_clust}}). 100,000 rows
 #'   take about 2 seconds. Branch support (\code{tree_support_x},
 #'   \code{tree_support_y}) is only computed for up to \code{clust_max} rows or
-#'   columns. Set to \code{Inf} to always cluster exactly.
+#'   columns. Set to \code{Inf} to always cluster exactly. Rows or columns
+#'   grouped by \code{tree_cut_x} or \code{tree_cut_y} are clustered within
+#'   each group, so the limit applies to each group.
 #' @param round indicates the number of decimal places to round values when
 #'   \code{cell_text = TRUE} and values are displayed in the heatmap, set to 2
 #'   decimal places by default
@@ -58,7 +60,8 @@
 #'   either \code{"default"} (the order from \code{hclust}), \code{"olo"}
 #'   (optimal leaf ordering, which flips branches so that neighbouring columns
 #'   are as similar as possible) or \code{"mean"} (branches ordered by their
-#'   mean values, as in \code{\link[stats]{heatmap}}). Optimal leaf ordering
+#'   mean values - \code{\link[stats]{heatmap}} orders them by the sum of
+#'   their columns' means instead, which favours small branches). Optimal leaf ordering
 #'   is exact for up to 2000 columns, which takes about a second; larger
 #'   dendrograms are ordered in blocks (see \code{\link{heat_map_clust}}).
 #' @param tree_cut_x either a numeric ranging from 0 to 1 indicating the branch
@@ -136,7 +139,7 @@
 #'   (with \code{dist_method} and \code{clust_method}, within each group for
 #'   a dendrogram split by groups), and each branch scores the proportion of
 #'   resamples in which its exact set of columns is a branch again. Branches
-#'   with 90\% support or more are thick black lines, 70-89\% grey lines and
+#'   with 90% support or more are thick black lines, 70-89% grey lines and
 #'   lower support dashed lines, with a key in the legend. \code{TRUE} uses
 #'   100 resamples. The resamples use a fixed seed (leaving the random number
 #'   generator as it was), so the support is the same each time the heatmap
@@ -246,7 +249,9 @@
 #'   friendly viridis colours from dark purple to yellow, then on through
 #'   orange and red to dark red. Alternatively, the name of a palette listed in
 #'   \code{\link[grDevices]{hcl.pals}} (e.g. \code{"viridis"} or
-#'   \code{"Blue-Red 3"}), or a function created by
+#'   \code{"Blue-Red 3"}), a palette function that takes the number of
+#'   colours as its first argument \code{n} (e.g. one created by
+#'   \code{\link[grDevices]{colorRampPalette}}), or a function created by
 #'   \code{\link[grDevices]{colorRamp}}.
 #' @param cell_col_scale_limits a numeric vector of length 2 specifying custom
 #'   limits for the colour scale as \code{c(min, max)}. If NULL (default),
@@ -322,7 +327,7 @@
 #' @param cell_border_line_type a integer to indicate the type of line to use
 #'   for cell borders, set to 1 by default for solid lines. See \code{lty} in
 #'   \code{?par} for alternatives.
-#' @param cell_border_line_width a numeric to control the with of cell borders,
+#' @param cell_border_line_width a numeric to control the width of cell borders,
 #'   set to 1 by default.
 #' @param cell_border_line_col indicates the colour to use for cell borders, set
 #'   to \code{"black"} by default. Borders are left out when cells are smaller
@@ -520,9 +525,9 @@
 #' @param axis_ticks_length_y numeric to control the length of the y axis ticks,
 #'   set to 1 by default.
 #' @param margins vector of numerics to control the size of the margins around
-#'   the \code{bottom}, \code{left}, \code{top} and \code{right} of the heatmap.
-#'   Setting any of these values to NA will allow for internal computation of
-#'   optimal heatmap margins.
+#'   the \code{bottom}, \code{left}, \code{top} and \code{right} of the heatmap,
+#'   in lines of text (as \code{par("mar")}). Setting any of these values to NA
+#'   (the default) sizes that margin to fit its contents.
 #' @param title text to include in the title above the heatmap.
 #' @param title_text_font integer to control the font face for the heatmap
 #'   title, set to 2 by default. See \code{font} in \code{?par} for
@@ -567,8 +572,9 @@
 #'   row. The labels use the axis text font, size and colour; row labels are
 #'   horizontal and column labels vertical.
 #' @param mark_labels_x,mark_labels_y labels for the columns or rows in
-#'   \code{mark_x} and \code{mark_y}, one per element, set to NULL by default
-#'   to use the column or row names.
+#'   \code{mark_x} and \code{mark_y}, one per marked column or row (one per
+#'   element of names or positions, or one per \code{TRUE} value of a logical
+#'   vector), set to NULL by default to use the column or row names.
 #' @param mark_line_col colour of the leader lines connecting mark labels to
 #'   their rows or columns, set to \code{"grey40"} by default.
 #' @param zoom_x,zoom_y columns or rows to enlarge, as names, positions in the
@@ -682,8 +688,10 @@
 #'   \code{"black"}.
 #' @param legend_text_col_alpha numeric to control the transparency of text in
 #'   the legend, set to 1 by default to use solid colours.
-#' @param popup logical indicating whether the heatmap should be constructed in
-#'   a popup window, set to TRUE by default.
+#' @param popup logical indicating whether the heatmap should be drawn in a new
+#'   popup window, set to TRUE by default. Popups are only opened in
+#'   interactive sessions: in scripts, R Markdown and other non-interactive
+#'   sessions the heatmap is drawn on the current device.
 #' @param popup_size vector to control the height and width of the popup window
 #'   in inches, set to \code{c(7,7)}.
 #' @param ... additional arguments passed to \code{\link{heat_map_clust}} (and
@@ -1060,6 +1068,22 @@ heat_map <- function(x,
 
   # CLUSTERING -----------------------------------------------------------------
 
+  # FLAGS, SIZES AND ANGLES
+  for(arg in c("fit_text", "tree_label_x", "tree_label_y")) {
+    .check_flag(get(arg), arg)
+  }
+  for(arg in c("tree_size_x", "tree_size_y", "bar_size_x", "bar_size_y",
+               "annotation_size_x", "annotation_size_y")) {
+    .check_positive(get(arg), arg)
+  }
+  if(!is.numeric(axis_text_angle_y) || length(axis_text_angle_y) != 1 ||
+     !axis_text_angle_y %in% 0:3) {
+    stop(
+      "'axis_text_angle_y' must be 0, 1, 2 or 3 (see 'las' in ?par).",
+      call. = FALSE
+    )
+  }
+
   # BRANCH SUPPORT - NUMBER OF RESAMPLES (NULL FOR NONE)
   support_n_x <- .support_resamples(tree_support_x, "tree_support_x")
   support_n_y <- .support_resamples(tree_support_y, "tree_support_y")
@@ -1076,20 +1100,28 @@ heat_map <- function(x,
 
   # TREE -> OVERRIDES TREE_X | TREE_Y
   if(!is.null(tree) && !isFALSE(tree)) {
-    # BOTH
-    if(isTRUE(tree) || grepl("^b", tree, ignore.case = TRUE)) {
-      tree_x <- TRUE
-      tree_y <- TRUE
-    # COLUMN | X
-    } else if(grepl("^c|^x", tree, ignore.case = TRUE)) {
-      tree_x <- TRUE
-      tree_y <- NULL
-    # ROW | y
-    } else if(grepl("^r|^y", tree, ignore.case = TRUE)) {
-      tree_x <- NULL
-      tree_y <- TRUE
+    trees <- c("both", "x", "y", "columns", "rows")
+    which_tree <- if(isTRUE(tree)) {
+      "both"
+    } else if(is.character(tree) && length(tree) == 1) {
+      trees[pmatch(tolower(tree), trees)]
+    } else {
+      NA
     }
+    if(is.na(which_tree)) {
+      stop(
+        "'tree' must be TRUE, FALSE, \"both\", \"x\" (\"columns\") or \"y\" ",
+        "(\"rows\").",
+        call. = FALSE
+      )
+    }
+    tree_x <- if(which_tree %in% c("both", "x", "columns")) TRUE
+    tree_y <- if(which_tree %in% c("both", "y", "rows")) TRUE
   }
+  # TREES SUPPLIED BY THE USER (BRANCH SUPPORT CLUSTERS THEIR RESAMPLES AS
+  # THEY WERE BUILT)
+  supplied_x <- inherits(tree_x, c("dist", "hclust"))
+  supplied_y <- inherits(tree_y, c("dist", "hclust"))
 
   # K-MEANS CLUSTERS - GROUPS IN THE ORIGINAL ORDER, AS FOR tree_cut_*
   if(!is.null(tree_kmeans_x)) {
@@ -1132,7 +1164,9 @@ heat_map <- function(x,
     tree_y <- TRUE
   }
 
-  # LEAF ORDER
+  # DISTANCE, LINKAGE AND LEAF ORDER
+  dist_method <- .dist_name(dist_method, "dist_method")
+  clust_method <- .clust_name(clust_method, "clust_method")
   .check_clust_max(clust_max)
   .check_order(tree_order_x, "tree_order_x")
   .check_order(tree_order_y, "tree_order_y")
@@ -1157,7 +1191,12 @@ heat_map <- function(x,
       tree_x <- NULL
     } else {
       tree_x <- .memo_call(memo, "heat_map_clust", c(list(
-        x = x[, num_cols, drop = FALSE],
+        # (A SUPPLIED TREE - ITS LEAVES, THE COLUMNS, AS ROWS)
+        x = if(inherits(tree_x, c("dist", "hclust"))) {
+          t(as.matrix(x[, num_cols, drop = FALSE]))
+        } else {
+          x[, num_cols, drop = FALSE]
+        },
         tree = if(inherits(tree_x, c("dist", "hclust"))) {
           tree_x
         } else {
@@ -1376,23 +1415,46 @@ heat_map <- function(x,
     )
     support_n_y <- NULL
   }
-  if(!is.null(support_n_x) && inherits(tree_x, "hclust")) {
+  # (A SUPPLIED TREE - CLUSTERED AGAIN WITH ITS OWN DISTANCE AND LINKAGE,
+  # WHEN THEY ARE KNOWN)
+  support_how <- function(tree, supplied, ax) {
+    if(!supplied) {
+      return(list(dist = dist_method, method = clust_method))
+    }
+    how <- .tree_methods(tree)
+    if(is.null(how)) {
+      warning(
+        "Branch support needs the distance and linkage the supplied 'tree_",
+        ax, "' was built with ('dist.method' and 'method' of a dist() and ",
+        "hclust() tree) - 'tree_support_", ax, "' was ignored.",
+        call. = FALSE
+      )
+    }
+    how
+  }
+  how_x <- if(!is.null(support_n_x) && inherits(tree_x, "hclust")) {
+    support_how(tree_x, supplied_x, "x")
+  }
+  how_y <- if(!is.null(support_n_y) && inherits(tree_y, "hclust")) {
+    support_how(tree_y, supplied_y, "y")
+  }
+  if(!is.null(how_x)) {
     support_x <- .memo_call(memo, ".tree_support", c(list(
       data = t(data.matrix(x[, num_cols, drop = FALSE])),
       tree = tree_x,
       B = support_n_x,
-      dist = dist_method,
-      method = clust_method,
+      dist = how_x$dist,
+      method = how_x$method,
       groups = support_groups_x
     ), list(...)))
   }
-  if(!is.null(support_n_y) && inherits(tree_y, "hclust")) {
+  if(!is.null(how_y)) {
     support_y <- .memo_call(memo, ".tree_support", c(list(
       data = data.matrix(x[, num_cols, drop = FALSE]),
       tree = tree_y,
       B = support_n_y,
-      dist = dist_method,
-      method = clust_method,
+      dist = how_y$dist,
+      method = how_y$method,
       groups = support_groups_y
     ), list(...)))
   }
@@ -1412,6 +1474,19 @@ heat_map <- function(x,
   # CLUSTER ASSIGNMENTS IN DISPLAY ORDER (ROWS FROM THE BOTTOM)
   cut_x <- if(is.list(tree_x)) tree_x$cut else NULL
   cut_y <- if(is.list(tree_y)) tree_y$cut else NULL
+
+  # ONE CLUSTER LABEL, OR ONE FOR EACH CLUSTER
+  for(ax in c("x", "y")) {
+    cut <- get(paste0("cut_", ax))
+    text <- get(paste0("tree_label_text_", ax))
+    if(!is.null(cut) && !.all_na(text) && !length(text) %in% c(1, max(cut))) {
+      stop(
+        "'tree_label_text_", ax, "' must have one label, or one for each of the ",
+        max(cut), " clusters.",
+        call. = FALSE
+      )
+    }
+  }
 
   # SETTINGS FOR EACH ROW CLUSTER ARE GIVEN FROM THE TOP - DRAWN FROM THE
   # BOTTOM (DEFAULT LABELS FROM tree_cut_y ARE ALREADY IN DRAWING ORDER)
@@ -1922,23 +1997,11 @@ heat_map <- function(x,
 
   # AXES SIDES -----------------------------------------------------------------
 
-  # AXIS_TEXT_SIDE_X
-  if(is.character(axis_text_side_x)) {
-    if(grepl("^t", axis_text_side_x, ignore.case = TRUE)) {
-      axis_text_side_x <- 3
-    } else {
-      axis_text_side_x <- 1
-    }
-  }
-
-  # AXIS_TEXT_SIDE_Y
-  if(is.character(axis_text_side_y)) {
-    if(grepl("^r", axis_text_side_y, ignore.case = TRUE)) {
-      axis_text_side_y <- 4
-    } else {
-      axis_text_side_y <- 2
-    }
-  }
+  # AXIS_TEXT_SIDE_X / AXIS_TEXT_SIDE_Y
+  axis_text_side_x <- .check_side(axis_text_side_x, c(bottom = 1, top = 3),
+                                  "axis_text_side_x")
+  axis_text_side_y <- .check_side(axis_text_side_y, c(left = 2, right = 4),
+                                  "axis_text_side_y")
 
   # ANNOTATIONS ----------------------------------------------------------------
 
@@ -2219,14 +2282,16 @@ heat_map <- function(x,
         y_centers
       },
       zoom_x = .zoom_input(zoom_x, zoom_size_x, axis_text_size_x,
-                           axis_text_font_x, n_col),
+                           axis_text_font_x, n_col, axis_text_angle_x, rot_x),
       zoom_y = .zoom_input(zoom_y, zoom_size_y, axis_text_size_y,
-                           axis_text_font_y, n_row),
+                           axis_text_font_y, n_row, axis_text_angle_y),
       side_x = axis_text_side_x,
       side_y = axis_text_side_y,
-      las_x = if(is.null(marks_x)) axis_text_angle_x else 2,
-      las_y = if(is.null(marks_y)) axis_text_angle_y else 1,
-      rot_x = if(is.null(marks_x)) rot_x,
+      # (MARK LABELS ARE DRAWN AT A FIXED ANGLE; THE NAMES OF THE ENLARGED
+      # CELLS THAT REPLACE THEM BESIDE A NEAR PANEL AT THE AXIS TEXT'S)
+      las_x = if(is.null(marks_x) || length(zoom_near("x")) > 0) axis_text_angle_x else 2,
+      las_y = if(is.null(marks_y) || length(zoom_near("y")) > 0) axis_text_angle_y else 1,
+      rot_x = if(is.null(marks_x) || length(zoom_near("x")) > 0) rot_x,
       axis_text_x = if(length(zoom_near("x")) > 0) {
         .zoom_join(zoom_near("x"), "labels")
       } else if(is.null(marks_x)) {
@@ -3140,13 +3205,14 @@ heat_map <- function(x,
       zoom_y = lay$zoom_y,
       zoom_text_x = zoom_text("x", FALSE),
       zoom_text_y = zoom_text("y", FALSE),
+      zoom_rot_x = rot_x,
       marks_x = marks_x,
       marks_y = marks_y,
       side_x = axis_text_side_x,
       side_y = axis_text_side_y,
       las_x = axis_text_angle_x,
       las_y = axis_text_angle_y,
-      rot_x = if(is.null(marks_x)) rot_x,
+      rot_x = if(is.null(marks_x) || length(near_x) > 0) rot_x,
       cex_x = lay$axis_text_size_x,
       cex_y = lay$axis_text_size_y,
       font_x = axis_text_font_x,

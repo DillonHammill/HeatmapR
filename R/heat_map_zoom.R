@@ -176,12 +176,18 @@
                         size,
                         text_size,
                         font,
-                        n) {
+                        n,
+                        las = 1,
+                        rot = NULL) {
   if(is.null(zoom)) {
     return(NULL)
   }
   list(
     size = size,
+    # (THE ANGLE OF THE LABELS BESIDE THE PANELS - THE AXIS TEXT'S, EVEN WHEN
+    # MARK LABELS REPLACE THE AXIS TEXT)
+    las = las,
+    rot = rot,
     bands = lapply(zoom, function(z) {
       list(
         lim = z$lim,

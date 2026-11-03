@@ -502,6 +502,25 @@ heat_map_bar <- function(x,
       )
     }
   }
+  # NAMES THAT MATCH ONLY SOME COLUMNS (ROWS), AND UNNAMED VALUES OF THE
+  # WRONG LENGTH
+  if(!is.null(names(values)) && !is.null(labels)) {
+    found <- names(values) %in% labels
+    if(any(found) && !all(found)) {
+      stop(
+        "'", arg, "' has names that aren't ", what, " names of 'x': ",
+        paste(utils::head(names(values)[!found], 5), collapse = ", "), ".",
+        call. = FALSE
+      )
+    }
+  }
+  if(!is.list(values) && length(values) != n &&
+     (is.null(names(values)) || is.null(labels))) {
+    stop(
+      "'", arg, "' must have one value for each ", what, " of 'x' (", n, ").",
+      call. = FALSE
+    )
+  }
   if(is.list(values)) {
     numeric <- vapply(
       values,

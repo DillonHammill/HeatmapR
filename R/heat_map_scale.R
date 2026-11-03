@@ -10,8 +10,8 @@
 #'   \code{"column"}, set to \code{"column"} by default. Abbreviations such as
 #'   \code{"col"} are accepted, as are \code{"x"} and \code{"y"} as aliases for
 #'   \code{"column"} and \code{"row"}.
-#' @param method type of scaling to perform, can be either \code{'range'},
-#'   \code{'mean'} or \code{'zscore'} (unique abbreviations such as \code{"z"}
+#' @param method type of scaling to perform, can be either \code{"range"},
+#'   \code{"mean"} or \code{"zscore"} (unique abbreviations such as \code{"z"}
 #'   are accepted). Range scaling normalizes the data to have limits between 0
 #'   and 1. Mean scaling subtracts the mean (calculated excluding missing
 #'   values) from each value and divides the result by the range. Z-score
@@ -164,19 +164,26 @@ heat_map_scale <- function(x,
 }
 
 #' Scale a vector based on its range
+#'
+#' The scaling statistics use the finite values only, so that an infinite
+#' value doesn't turn every value of its row or column into NaN (infinite
+#' values stay infinite, missing values stay missing).
+#'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' @noRd
 .scale_range <- function(x) {
-  # ALL MISSING
-  if(all(is.na(x))) {
+  fin <- x[is.finite(x)]
+  # NO FINITE VALUES
+  if(length(fin) == 0) {
     return(x)
   }
   # LIMITS
-  x_min <- min(x, na.rm = TRUE)
-  x_max <- max(x, na.rm = TRUE)
+  x_min <- min(fin)
+  x_max <- max(fin)
   # NO VARIATION - MIDDLE OF RANGE
   if(x_max == x_min) {
-    return(ifelse(is.na(x), NA_real_, 0.5))
+    x[is.finite(x)] <- 0.5
+    return(x)
   }
   # RANGE SCALING - VECTORIZED
   (x - x_min) / (x_max - x_min)
@@ -186,21 +193,21 @@ heat_map_scale <- function(x,
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' @noRd
 .scale_mean <- function(x) {
-  # ALL MISSING
-  if(all(is.na(x))) {
+  fin <- x[is.finite(x)]
+  # NO FINITE VALUES
+  if(length(fin) == 0) {
     return(x)
   }
   # LIMITS
-  x_min <- min(x, na.rm = TRUE)
-  x_max <- max(x, na.rm = TRUE)
+  x_min <- min(fin)
+  x_max <- max(fin)
   # NO VARIATION - CENTRED
   if(x_max == x_min) {
-    return(ifelse(is.na(x), NA_real_, 0))
+    x[is.finite(x)] <- 0
+    return(x)
   }
-  # MEAN
-  x_mean <- mean(x, na.rm = TRUE)
   # MEAN SCALING - VECTORIZED
-  (x - x_mean) / (x_max - x_min)
+  (x - mean(fin)) / (x_max - x_min)
 }
 
 #' Apply z-score scaling to a vector
@@ -208,18 +215,18 @@ heat_map_scale <- function(x,
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #' @noRd
 .scale_zscore <- function(x) {
-  # ALL MISSING
-  if(all(is.na(x))) {
+  fin <- x[is.finite(x)]
+  # NO FINITE VALUES
+  if(length(fin) == 0) {
     return(x)
   }
-  # MEAN
-  x_mean <- mean(x, na.rm = TRUE)
   # SD
-  x_sd <- sd(x, na.rm = TRUE)
+  x_sd <- if(length(fin) > 1) sd(fin) else NA_real_
   # NO VARIATION (OR SINGLE VALUE) - CENTRED
   if(is.na(x_sd) || x_sd == 0) {
-    return(ifelse(is.na(x), NA_real_, 0))
+    x[is.finite(x)] <- 0
+    return(x)
   }
   # Z-SCORE SCALING - VECTORIZED
-  (x - x_mean) / x_sd
+  (x - mean(fin)) / x_sd
 }

@@ -553,10 +553,11 @@
     from <- if(side %in% c(1, 3)) uy(texts[[1]]$pos) else ux(texts[[1]]$pos)
     dir <- if(side %in% c(1, 2)) -1 else 1
     name <- paste0("zoom_text_", ax)
-    if(ax == "x" && !is.null(g$rot_x)) {
+    rot <- if(ax == "x") g$zoom_rot_x
+    if(!is.null(rot)) {
       h <- .text_in(labels, cex, font, "height")
-      rx <- .rotated_text(.text_widths(labels, cex, font), h, g$rot_x)
-      a <- g$rot_x * pi / 180
+      rx <- .rotated_text(.text_widths(labels, cex, font), h, rot)
+      a <- rot * pi / 180
       pos <- ux(at)
       near <- 0.75 * h * sin(a)
       span <- if(g$side_y == 2) {
@@ -976,11 +977,13 @@
   } else {
     1.5 * ext_x[["height"]] * sin(p$rot_x * pi / 180)
   }
-  rx_far <- if(!is.null(p$rot_x) && !is.null(far_text_x)) {
+  dims_far_x <- if(is.null(zx)) dims_x else .axis_text_dims(p$side_x, zx$las)
+  dims_far_y <- if(is.null(zy)) dims_y else .axis_text_dims(p$side_y, zy$las)
+  rx_far <- if(!is.null(zx$rot) && !is.null(far_text_x)) {
     .rotated_text(
       .text_widths(far_text_x$labels, far_text_x$size, far_text_x$font),
       far_text_x$height,
-      p$rot_x
+      zx$rot
     )
   }
   fit_far_x <- list(scale = 1, step = 1)
@@ -1001,8 +1004,8 @@
     base <- .axis_text_span(side, dims[["out"]], 1e-12)[2]
     c(base, .axis_text_span(side, dims[["out"]], out)[2] - base)
   }
-  far_lin_x <- far_lin(far_text_x, other_side(p$side_x), dims_x, rx_far)
-  far_lin_y <- far_lin(far_text_y, other_side(p$side_y), dims_y, NULL)
+  far_lin_x <- far_lin(far_text_x, other_side(p$side_x), dims_far_x, rx_far)
+  far_lin_y <- far_lin(far_text_y, other_side(p$side_y), dims_far_y, NULL)
   far_fit <- function(lin, cap) {
     if(lin[2] <= 0) 1 else (cap - lin[1]) / lin[2]
   }
@@ -1237,9 +1240,9 @@
           far_text_x$labels,
           far_text_x$size,
           far_text_x$font,
-          if(is.null(rx_far)) dims_x[["along"]] else rx_far$what,
+          if(is.null(rx_far)) dims_far_x[["along"]] else rx_far$what,
           .min_spacing(far_text_x$centers) * cell_x_in,
-          ext = if(is.null(rx_far)) far_text_x[[dims_x[["along"]]]] else rx_far$along
+          ext = if(is.null(rx_far)) far_text_x[[dims_far_x[["along"]]]] else rx_far$along
         )
       }
       if(!is.null(far_text_y)) {
@@ -1247,9 +1250,9 @@
           far_text_y$labels,
           far_text_y$size,
           far_text_y$font,
-          dims_y[["along"]],
+          dims_far_y[["along"]],
           .min_spacing(far_text_y$centers) * cell_y_in,
-          ext = far_text_y[[dims_y[["along"]]]]
+          ext = far_text_y[[dims_far_y[["along"]]]]
         )
       }
     }

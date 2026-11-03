@@ -14,8 +14,8 @@ heat_map_scale(x, scale = "column", method = "range")
 \code{"col"} are accepted, as are \code{"x"} and \code{"y"} as aliases for
 \code{"column"} and \code{"row"}.}
 
-\item{method}{type of scaling to perform, can be either \code{'range'},
-\code{'mean'} or \code{'zscore'} (unique abbreviations such as \code{"z"}
+\item{method}{type of scaling to perform, can be either \code{"range"},
+\code{"mean"} or \code{"zscore"} (unique abbreviations such as \code{"z"}
 are accepted). Range scaling normalizes the data to have limits between 0
 and 1. Mean scaling subtracts the mean (calculated excluding missing
 values) from each value and divides the result by the range. Z-score

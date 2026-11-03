@@ -2,8 +2,11 @@
 
 #' Perform hierarchical clustering for heatmap
 #'
-#' @param x matrix-like object to cluster. The distance matrix will be computed
-#'   using \code{dist} and passed to \code{hclust} for hierarchical clustering.
+#' @param x matrix-like object to cluster - its numeric columns. Distances and
+#'   linkage are computed in compiled code (with \code{\link[stats]{dist}} and
+#'   \code{\link[stats]{hclust}} for the methods it doesn't cover). With a
+#'   supplied \code{hclust} object and \code{order}, the rows of \code{x} (or
+#'   its columns when they don't match) are the leaves of the tree.
 #' @param tree indicates whether hierarchical clustering should be performed by
 #'   \code{"row"} or \code{"column"}. Optionally a custom object of class
 #'   \code{"dist"} (clustered using \code{method}) or \code{"hclust"} which will
@@ -16,9 +19,13 @@
 #'   \code{"spearman"} or \code{"kendall"} for one minus the correlation
 #'   (rows without variation are treated as uncorrelated), or a function that
 #'   takes the matrix being clustered (one row per leaf) and returns a
-#'   \code{dist} object or a square matrix of distances.
-#' @param method agglomeration method passed to \code{\link{hclust}} to perform
-#'   hierarchical clustering, set to \code{"complete"} by default.
+#'   \code{dist} object or a square matrix of distances. Names ignore case and
+#'   can be abbreviated (e.g. \code{"pear"}).
+#' @param method agglomeration method, one of the methods of
+#'   \code{\link{hclust}} (\code{"ward.D"}, \code{"ward.D2"},
+#'   \code{"single"}, \code{"complete"}, \code{"average"},
+#'   \code{"mcquitty"}, \code{"median"} or \code{"centroid"}, which can be
+#'   abbreviated), set to \code{"complete"} by default.
 #' @param scale logical indicating whether branch heights should be scaled for
 #'   better visualisation, set to FALSE by default.
 #' @param cut value from 0 to less than 1 specifying the tree cutpoint as a
@@ -28,8 +35,9 @@
 #' @param order how the branches of the dendrogram are ordered:
 #'   \code{"default"} keeps the order from \code{hclust}, \code{"olo"} flips
 #'   branches to minimise the distances between neighbouring leaves (optimal
-#'   leaf ordering) and \code{"mean"} orders branches by their mean values as
-#'   in \code{\link[stats]{heatmap}}. Optimal leaf ordering is exact for up to
+#'   leaf ordering) and \code{"mean"} orders branches by their mean values
+#'   (\code{\link[stats]{heatmap}} orders them by the sum of their leaves'
+#'   means instead, which favours small branches). Optimal leaf ordering is exact for up to
 #'   2000 leaves, which takes about a second; its time grows with the cube of
 #'   the number of leaves, so larger trees are ordered in blocks (of 2000
 #'   leaves, down to 100 for the largest trees), each ordered exactly, with the
@@ -46,8 +54,21 @@
 #'   dendrogram then shows the structure of the whole data down to the groups,
 #'   and within each group: 100,000 rows take about 2 seconds. Set to
 #'   \code{Inf} to always cluster exactly.
-#' @param ... additional arguments passed to \code{\link{dist}} or
-#'   \code{\link{hclust}}.
+#' @param ... additional arguments passed to \code{\link{dist}} (e.g.
+#'   \code{p}) or \code{\link{hclust}} (\code{members}); others are ignored
+#'   with a warning.
+#'
+#' @details Single, complete, average, McQuitty and Ward linkage are computed
+#'   by the nearest-neighbour chain algorithm, which builds the same tree as
+#'   \code{\link[stats]{hclust}} when the distances are distinct. When
+#'   distances are tied (common for integer, binary or rounded data), more
+#'   than one tree is correct and the two can choose differently between tied
+#'   merges, so the tree - and the branches above the tied merges - can
+#'   differ from the one \code{hclust} returns while being equally valid.
+#'   Centroid and median linkage use \code{hclust} itself. Missing and
+#'   infinite values are left out of the distances between rows (as
+#'   \code{\link[stats]{dist}} leaves out missing values); rows that share
+#'   no values can't be clustered.
 #'
 #' @return object of class \code{hclust} which describes the tree produced by
 #'   the clustering process. Branch heights are rescaled to the range
@@ -80,23 +101,28 @@ heat_map_clust <- function(x,
   # ARGUMENTS
   .check_order(order)
   .check_clust_max(max, "max")
+  .check_dots(list(...), "heat_map_clust()")
+  dist <- .dist_name(dist)
+  method <- .clust_name(method)
   args <- .args_list(...)
 
-  # DISTANCE MATRIX -> HCLUST (DIST OBJECTS ARE NUMERIC SO CHECK THEM FIRST)
+  # DISTANCE MATRIX -> HCLUST (DIST OBJECTS ARE NUMERIC SO CHECK THEM FIRST);
+  # THE DISTANCES ALSO ORDER THE LEAVES
+  supplied_dist <- NULL
   if(inherits(args$tree, "dist")) {
-    args$tree <- .hclust_dist(
-      args$tree,
-      method = method
-    )
+    supplied_dist <- args$tree
   } else if(!is.character(args$tree) &&
             !is.numeric(args$tree) &&
             !inherits(args$tree, "hclust")) {
+    supplied_dist <- as.dist(args$tree)
+  }
+  if(!is.null(supplied_dist)) {
     args$tree <- .hclust_dist(
-      as.dist(
-        args$tree
-      ),
+      supplied_dist,
       method = method
     )
+  } else if(inherits(args$tree, "hclust")) {
+    .check_tree(args$tree, length(args$tree$order), "tree", "leaves")
   }
 
   # CLUSTERING REQUIRED
@@ -116,10 +142,9 @@ heat_map_clust <- function(x,
       }
     }
 
-    # PREPARE DATA
-    if(args$tree == 2) {
-      args[["x"]] <- t(x)
-    }
+    # PREPARE DATA - THE NUMERIC COLUMNS
+    num <- as.matrix(x[, .numeric_cols(x), drop = FALSE])
+    args[["x"]] <- if(args$tree == 2) t(num) else num
 
     # MINIMUM TWO OBSERVATIONS
     if(nrow(args[["x"]]) < 2) {
@@ -144,8 +169,12 @@ heat_map_clust <- function(x,
 
   } else {
     tree <- args$tree
-    # LEAF ORDER - DISTANCES FROM THE DATA WHEN IT MATCHES THE TREE
-    if(!identical(order, "default")) {
+    # LEAF ORDER - FROM SUPPLIED DISTANCES, OR DISTANCES FROM THE DATA WHEN
+    # IT MATCHES THE TREE
+    if(identical(order, "olo") && !is.null(supplied_dist) &&
+       length(tree$order) <= .OLO_MAX) {
+      tree <- .tree_order(tree, NULL, order = order, d = supplied_dist)
+    } else if(!identical(order, "default")) {
       rows <- if(nrow(as.matrix(x)) == length(tree$order)) {
         as.matrix(x)
       } else {
@@ -183,23 +212,25 @@ heat_map_clust <- function(x,
     # NUMBER OF LEAVES
     n_leaves <- length(tree$order)
     # VALIDATE CUT
-    if(!is.numeric(cut) || length(cut) != 1 || is.na(cut) || cut < 0) {
-      stop("'cut' must be a single non-negative number!")
+    if(!is.numeric(cut) || length(cut) != 1 || is.na(cut) || cut < 0 ||
+       (cut >= 1 && cut != round(cut))) {
+      stop(
+        "'cut' must be a single non-negative number - below 1 (a height) or ",
+        "a whole number of clusters.",
+        call. = FALSE
+      )
     }
     # COSINE DISTANCE WITH CUT < 1 - use as actual distance threshold
     if(cut < 1 && is.character(dist) && tolower(dist) == "cosine") {
       # CUT USING ORIGINAL (UNSCALED) HEIGHTS
       tmp <- tree
       tmp$height <- original_heights
-      tree$cut <- cutree(
-        tmp,
-        h = cut
-      )
+      tree$cut <- .cut_height(tmp, cut)
     # HEIGHT - proportional cut (0 to 1) for non-cosine distances
     } else if(cut < 1) {
-      tree$cut <- cutree(
+      tree$cut <- .cut_height(
         tree,
-        h = min(tree$height) + cut * diff(range(tree$height))
+        min(tree$height) + cut * diff(range(tree$height))
       )
     # K CLUSTERS
     } else {
@@ -230,6 +261,23 @@ heat_map_clust <- function(x,
   # RETURN TREE
   return(tree)
 
+}
+
+#' Cut a tree at a height
+#'
+#' A tree with inversions (centroid and median linkage) has heights that
+#' aren't sorted, which \code{cutree(h = )} rejects: it is cut into one more
+#' cluster than the number of merges above the height, as a tree without
+#' inversions would be.
+#'
+#' @importFrom stats cutree
+#' @noRd
+.cut_height <- function(tree,
+                        h) {
+  if(!is.unsorted(tree$height)) {
+    return(cutree(tree, h = h))
+  }
+  cutree(tree, k = 1 + sum(tree$height > h))
 }
 
 #' Rescale tree branch heights to [0, 1] for display
@@ -320,6 +368,15 @@ heat_map_clust <- function(x,
                          members = NULL) {
   n <- attr(d, "Size")
   code <- .NN_CHAIN[method]
+  # (stats::hclust() FAILS ON MISSING DISTANCES WITH AN OBSCURE MESSAGE)
+  if(anyNA(d)) {
+    stop(
+      "Some distances are missing, so the dendrogram can't be built - a row ",
+      "or column has no values, or a pair has no values in common. Remove ",
+      "them, or turn off clustering for that axis.",
+      call. = FALSE
+    )
+  }
   if(is.na(code) || is.null(n) || n < 2 || anyNA(d) ||
      !all(is.finite(range(d))) || (!is.null(members) &&
                                    length(members) != n)) {
@@ -404,6 +461,7 @@ heat_map_clust <- function(x,
   heights <- vector("list", n_groups)
   orders <- vector("list", n_groups)
   roots <- integer(n_groups)
+  stages <- vector("list", n_groups)
   offset <- 0L
   for(g in seq_len(n_groups)) {
     idx <- which(groups == g)
@@ -427,6 +485,7 @@ heat_map_clust <- function(x,
     merges[[g]] <- m
     heights[[g]] <- h$height
     orders[[g]] <- idx[h$order]
+    stages[[g]] <- h$two_stage
     offset <- offset + nrow(m)
     roots[g] <- offset
   }
@@ -460,6 +519,11 @@ heat_map_clust <- function(x,
   # MERGES IN ORDER OF HEIGHT (AS IN hclust) WHEN CHILDREN STAY BEFORE PARENTS
   tree <- .sort_merges(tree)
   tree$order <- ord
+  # GROUPS CLUSTERED IN TWO STAGES - THEIR SAMPLES AND GROUPS IN TOTAL
+  stages <- do.call(rbind, stages)
+  if(!is.null(stages)) {
+    tree$two_stage <- colSums(stages)
+  }
   if(!raw) {
     tree$height <- .tree_heights(tree$height, scale = scale)
   }
@@ -501,6 +565,10 @@ heat_map_clust <- function(x,
     return(d)
   }
   method <- tolower(dist)
+  # INFINITE VALUES CAN'T BE PLACED - LEFT OUT LIKE MISSING VALUES
+  if(is.numeric(x) && any(is.infinite(x))) {
+    x[is.infinite(x)] <- NA
+  }
   if(method == "cosine") {
     return(.cosine_dist(x))
   }
@@ -513,7 +581,8 @@ heat_map_clust <- function(x,
   if(method %in% c("pearson", "spearman", "kendall")) {
     # ONE MINUS THE CORRELATION - ROWS WITHOUT VARIATION ARE UNCORRELATED
     r <- suppressWarnings(
-      cor(t(x), method = method, use = "pairwise.complete.obs")
+      cor(t(x), method = method,
+          use = if(anyNA(x)) "pairwise.complete.obs" else "everything")
     )
     r[is.na(r)] <- 0
     diag(r) <- 1
@@ -617,7 +686,7 @@ heat_map_clust <- function(x,
 #' @param tree hclust object (unscaled).
 #' @param x the matrix that was clustered (rows are leaves).
 #' @param order "default" (hclust order), "olo" (optimal leaf ordering) or
-#'   "mean" (branches ordered by their mean, as in \code{stats::heatmap()}).
+#'   "mean" (branches ordered by their mean).
 #' @param d distances between the leaves, computed from \code{x} with
 #'   \code{dist} when NULL.
 #'
@@ -644,6 +713,53 @@ heat_map_clust <- function(x,
     d <- .dist_matrix(x, dist, ...)
   }
   .apply_order(tree, .olo_order(tree$merge, d))
+}
+
+#' Resolve a distance name - ignoring case and accepting unique
+#' abbreviations, as stats::dist() accepts them
+#' @noRd
+.dist_name <- function(dist,
+                       arg = "dist") {
+  if(is.function(dist)) {
+    return(dist)
+  }
+  methods <- c("euclidean", "maximum", "manhattan", "canberra", "binary",
+               "minkowski", "pearson", "spearman", "kendall", "cosine")
+  ind <- if(is.character(dist) && length(dist) == 1 && !is.na(dist)) {
+    pmatch(tolower(dist), methods)
+  } else {
+    NA
+  }
+  if(is.na(ind)) {
+    stop(
+      "'", arg, "' must be a function or one of ",
+      paste0("\"", methods, "\"", collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  methods[ind]
+}
+
+#' Resolve a linkage name - unique abbreviations, as stats::hclust() accepts
+#' them ("ward" is "ward.D", as stats::hclust() treats it)
+#' @noRd
+.clust_name <- function(method,
+                        arg = "method") {
+  methods <- c("ward.D", "ward.D2", "single", "complete", "average",
+               "mcquitty", "median", "centroid")
+  ind <- if(is.character(method) && length(method) == 1 && !is.na(method)) {
+    if(identical(method, "ward")) 1L else pmatch(method, methods)
+  } else {
+    NA
+  }
+  if(is.na(ind)) {
+    stop(
+      "'", arg, "' must be one of ",
+      paste0("\"", methods, "\"", collapse = ", "), ".",
+      call. = FALSE
+    )
+  }
+  methods[ind]
 }
 
 #' Check a leaf ordering method
@@ -748,14 +864,6 @@ heat_map_clust <- function(x,
     m[miss] <- mu[miss[, 2]]
   }
   n <- nrow(m)
-  distinct <- !duplicated(m)
-  if(k > sum(distinct)) {
-    stop(
-      "'", arg, "' asks for ", k, " clusters but there are only ",
-      sum(distinct), " distinct ", what, ".",
-      call. = FALSE
-    )
-  }
   # STARTING CENTRES - EQUAL SLICES ALONG THE FIRST PRINCIPAL COMPONENT
   pc <- .first_pc(m)
   start <- integer(n)
@@ -771,7 +879,18 @@ heat_map_clust <- function(x,
   if(!anyDuplicated(centres)) {
     fit <- .try_kmeans(m, centres)
   }
+  # (k NON-EMPTY CLUSTERS MEAN AT LEAST k DISTINCT ROWS - IDENTICAL ROWS SHARE
+  # A CLUSTER - SO THE DISTINCT ROWS, SLOW TO FIND FOR LARGE DATA, ARE ONLY
+  # NEEDED WHEN THAT FAILS)
   if(is.null(fit)) {
+    distinct <- !duplicated(m)
+    if(k > sum(distinct)) {
+      stop(
+        "'", arg, "' asks for ", k, " clusters but there are only ",
+        sum(distinct), " distinct ", what, ".",
+        call. = FALSE
+      )
+    }
     fit <- .try_kmeans(m, spread())
   }
   if(is.null(fit)) {

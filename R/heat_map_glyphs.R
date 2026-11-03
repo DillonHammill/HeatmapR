@@ -124,7 +124,9 @@
                               fill = "#FFFFFF8C") {
   g <- .GLYPH
   half <- g$width / 2
-  poly_x <- poly_y <- numeric(0)
+  # (PIECES ARE COLLECTED IN LISTS AND JOINED ONCE - GROWING A VECTOR CELL BY
+  # CELL IS QUADRATIC IN THE NUMBER OF CELLS)
+  poly_x <- poly_y <- vector("list", length(values))
   bars <- list()
   ticks <- list()
   boxes <- list()
@@ -161,8 +163,8 @@
     if(glyph == "density") {
       d <- .violin_density(v, n = 64, from = lo[i], to = hi[i])
       h <- g$height * d$y / max(d$y)
-      poly_x <- c(poly_x, xs(lo[i]), xs(d$x), xs(hi[i]), NA)
-      poly_y <- c(poly_y, yb, yb + h, yb, NA)
+      poly_x[[i]] <- c(xs(lo[i]), xs(d$x), xs(hi[i]), NA)
+      poly_y[[i]] <- c(yb, yb + h, yb, NA)
     } else {
       edges <- seq(lo[i], hi[i], length.out = 17)
       counts <- tabulate(
@@ -177,12 +179,14 @@
         yb + g$height * counts[keep] / max(counts)
       )
       # BASELINE ACROSS THE RANGE
-      poly_x <- c(poly_x, xs(lo[i]), xs(hi[i]), NA)
-      poly_y <- c(poly_y, yb, yb, NA)
+      poly_x[[i]] <- c(xs(lo[i]), xs(hi[i]), NA)
+      poly_y[[i]] <- c(yb, yb, NA)
     }
     ticks[[length(ticks) + 1]] <- c(xs(median(v)), yb)
   }
   # DENSITIES (OR HISTOGRAM BASELINES)
+  poly_x <- unlist(poly_x, use.names = FALSE)
+  poly_y <- unlist(poly_y, use.names = FALSE)
   if(length(poly_x) > 0) {
     if(glyph == "density") {
       polygon(poly_x, poly_y, col = fill, border = col, lwd = 1, xpd = NA)
