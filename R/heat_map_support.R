@@ -68,6 +68,15 @@
   structural_clades_cpp(.int_merge(merge), as.integer(groups))
 }
 
+#' A merge matrix with the children of each merge in a fixed order, so that
+#' trees that differ only by flipped branches (leaf order) give the same key
+#' @noRd
+.clade_merge <- function(merge) {
+  out <- cbind(pmin(merge[, 1], merge[, 2]), pmax(merge[, 1], merge[, 2]))
+  storage.mode(out) <- "integer"
+  out
+}
+
 #' Bootstrap support of each branch of a tree
 #'
 #' The columns of \code{data} are resampled with replacement \code{B} times

@@ -1015,11 +1015,17 @@
   label_cex_y <- max(p$axis_label_size_y)
 
   shrink <- 1
+  um <- c(x = 1, y = 1)
+  um_off <- c(x = FALSE, y = FALSE)
   fit_x <- list(scale = 1, step = 1)
   fit_y <- list(scale = 1, step = 1)
   spill <- rep(0, 4)
   gap_x_in <- 0
   gap_y_in <- 0
+  # (EXTRA SPACE BETWEEN THE HEATMAP AND ITS ANNOTATION TRACKS, SO THAT THE
+  # AXIS TEXT AT THAT EDGE CLEARS THE ANNOTATION NAMES)
+  annot_extra_x <- 0
+  annot_extra_y <- 0
   bar_label_x_in <- 0
   bar_label_y_in <- 0
   shape_in <- 0.25
@@ -1054,8 +1060,11 @@
 
   for(iter in seq_len(12)) {
 
-    sc_x <- min(fit_x$scale, shrink)
-    sc_y <- min(fit_y$scale, shrink)
+    # (AXIS TEXT ALSO SHRUNK TO FIT MARGINS THE USER SUPPLIED - um)
+    shrink_x <- min(shrink, um[["x"]])
+    shrink_y <- min(shrink, um[["y"]])
+    sc_x <- min(fit_x$scale, shrink_x)
+    sc_y <- min(fit_y$scale, shrink_y)
 
     # AXIS TEXT, ANNOTATION NAMES & BAR AXES BESIDE THE PLOT REGION (INCHES)
     near <- rep(0, 4)
@@ -1104,12 +1113,14 @@
     label_x_inner <- NA
     if(nzchar(p$axis_label_x)) {
       label_x_inner <- margins_in[p$side_x] + gap
-      margins_in[p$side_x] <- label_x_inner + 0.75 * label_cex_x * line_in
+      margins_in[p$side_x] <- label_x_inner +
+        0.75 * label_cex_x * um[["x"]] * line_in
     }
     label_y_inner <- NA
     if(nzchar(p$axis_label_y)) {
       label_y_inner <- margins_in[p$side_y] + gap
-      margins_in[p$side_y] <- label_y_inner + 0.75 * label_cex_y * line_in
+      margins_in[p$side_y] <- label_y_inner +
+        0.75 * label_cex_y * um[["y"]] * line_in
     }
     title_inner <- NA
     if(!is.null(p$title)) {
@@ -1129,6 +1140,25 @@
     auto <- is.na(p$margins)
     margins <- margins_in / line_in
     margins[!auto] <- p$margins[!auto]
+    # A USER MARGIN TOO SMALL FOR THE AXIS TEXT, LABEL (AND BOTTOM LEGEND)
+    # BESIDE IT - THE AXIS TEXT AND LABEL SHRINK (TO 40% OF THEIR SIZE AT
+    # MOST) RATHER THAN BEING DRAWN OVER EACH OTHER
+    # (A MARGIN FAR TOO SMALL FOR THE TEXT EVEN THEN KEEPS IT AT ITS SIZE)
+    tight <- !auto & margins * line_in < margins_in - 1e-6
+    sides <- c(x = p$side_x, y = p$side_y)
+    tight_ax <- tight[sides] & !um_off
+    names(tight_ax) <- names(sides)
+    if(any(tight_ax)) {
+      hopeless <- (margins * line_in)[sides] < 0.75 * margins_in[sides]
+      off <- tight_ax & um <= 0.4 & hopeless
+      um[off] <- 1
+      um_off <- um_off | off
+      shrink_ax <- tight_ax & !off & um > 0.4
+      um[shrink_ax] <- pmax(0.4, um[shrink_ax] * 0.85)
+      if(any(off | shrink_ax)) {
+        next
+      }
+    }
 
     # PLOT REGION (INCHES) - SHRINK TEXT IF THE MARGINS DON'T FIT
     pw <- fin[1] - (margins[2] + margins[4]) * line_in
@@ -1164,7 +1194,7 @@
     # TRACKS ALONG Y (COLUMN TRACKS) - AT MOST HALF THE PLOT HEIGHT
     tracks_y <- .fit_tracks(
       c(
-        annotation = annot_x_in,
+        annotation = annot_x_in + annot_extra_x,
         gap = gap_x_in,
         bar = bar_x_in,
         label = strip_x_in,
@@ -1181,7 +1211,7 @@
     room <- max(0.6 * pw - legend_in, 0.15 * pw)
     tracks_x <- .fit_tracks(
       c(
-        annotation = annot_y_in,
+        annotation = annot_y_in + annot_extra_y,
         gap = gap_y_in,
         bar = bar_y_in,
         label = strip_y_in,
@@ -1212,9 +1242,9 @@
     name_h <- 1.1 * .text_in("Mg", p$annot_text_size, p$annot_text_font, "height")
     new_annot_sc <- c(
       x = min(1, p$annot_size_x * tracks_y[["annotation"]] /
-                max(annot_x_in, 1e-12) / name_h),
+                max(annot_x_in + annot_extra_x, 1e-12) / name_h),
       y = min(1, p$annot_size_y * tracks_x[["annotation"]] /
-                max(annot_y_in, 1e-12) / name_h)
+                max(annot_y_in + annot_extra_y, 1e-12) / name_h)
     )
 
     # FIT AXIS TEXT TO THE CELLS
@@ -1286,7 +1316,7 @@
         font = p$axis_text_font_x[1],
         label_cex = p$bar_label_size_y,
         label_font = p$bar_label_font_y,
-        out = .axis_text_dims(p$side_x, p$las_y)[["out"]],
+        out = .axis_text_dims(p$side_x, 1)[["out"]],
         label_out = "height",
         default_in = 0
       )
@@ -1314,14 +1344,14 @@
       over <- tick + inner_over(
         p$n_annot_x,
         p$annot_size_x,
-        ext_y[[dims_y[["along"]]]] * min(fit_y$scale, shrink),
+        ext_y[[dims_y[["along"]]]] * min(fit_y$scale, shrink_y),
         1 / upi_y
       )
       new_gap_x <- if(over > 0) over + 0.02 else 0
     }
     new_gap_y <- 0
     if(p$bar_y) {
-      along_y <- .axis_text_dims(p$side_x, p$las_y)[["along"]]
+      along_y <- .axis_text_dims(p$side_x, 1)[["along"]]
       tick <- 0.5 * .text_in(
         as.character(p$bar_ticks_y),
         p$axis_text_size_x[1],
@@ -1331,10 +1361,47 @@
       over <- tick + inner_over(
         p$n_annot_y,
         p$annot_size_y,
-        near_ext_x * min(fit_x$scale, shrink),
+        near_ext_x * min(fit_x$scale, shrink_x),
         1 / upi_x
       )
       new_gap_y <- if(over > 0) over + 0.02 else 0
+    }
+
+    # SPACE BETWEEN THE HEATMAP AND ITS ANNOTATION TRACKS WHEN THE AXIS TEXT
+    # AT THAT EDGE (E.G. HORIZONTAL OR ROTATED COLUMN LABELS WIDER THAN THEIR
+    # CELLS) WOULD REACH THE ANNOTATION NAMES, WHICH ARE WRITTEN BESIDE THE
+    # TRACKS ON THE AXIS TEXT SIDE (NOT FOR PANELS THAT TAKE THE AXIS TEXT
+    # AWAY FROM THE HEATMAP)
+    annot_clear <- function(n_annot, annot_size, annot_in, track_in, sc,
+                            text_ext, cell_in) {
+      if(n_annot == 0) {
+        return(0)
+      }
+      # (THE TRACKS MAY BE SHRUNK TO FIT - THE EXTRA SPACE WITH THEM)
+      f <- track_in / max(annot_in, 1e-12)
+      name_h <- .text_in("Mg", p$annot_text_size * sc, p$annot_text_font,
+                         "height")
+      over <- 0.5 * (text_ext - cell_in)
+      clear <- p$annot_gap * f + 0.5 * (annot_size * f - name_h)
+      if(over > clear) (over - clear + 0.03) / f else 0
+    }
+    new_annot_extra_y <- if(length(zoom_on(zx, p$side_x)) == 0) {
+      annot_clear(
+        p$n_annot_y, p$annot_size_y, annot_y_in + annot_extra_y,
+        tracks_x[["annotation"]], annot_sc[["y"]],
+        near_ext_x * min(fit_x$scale, shrink_x), 1 / upi_x
+      )
+    } else {
+      0
+    }
+    new_annot_extra_x <- if(length(zoom_on(zy, p$side_y)) == 0) {
+      annot_clear(
+        p$n_annot_x, p$annot_size_x, annot_x_in + annot_extra_x,
+        tracks_y[["annotation"]], annot_sc[["x"]],
+        ext_y[[dims_y[["along"]]]] * min(fit_y$scale, shrink_y), 1 / upi_y
+      )
+    } else {
+      0
     }
 
     # CONVERGED WHEN THE TEXT SIZES, SPILLS & GAPS USED ARE THOSE NEEDED
@@ -1350,7 +1417,7 @@
         hx,
         upi_x,
         p$side_y,
-        min(fit_x$scale, shrink)
+        min(fit_x$scale, shrink_x)
       ),
       .rotated_over(
         rx_far,
@@ -1367,14 +1434,18 @@
       all(abs(new_spill - spill) < 1e-6) &&
       abs(new_gap_x - gap_x_in) < 1e-6 &&
       abs(new_gap_y - gap_y_in) < 1e-6 &&
-      abs(min(fit_x$scale, shrink) - sc_x) < 1e-6 &&
-      abs(min(fit_y$scale, shrink) - sc_y) < 1e-6 &&
+      abs(new_annot_extra_x - annot_extra_x) < 1e-4 &&
+      abs(new_annot_extra_y - annot_extra_y) < 1e-4 &&
+      abs(min(fit_x$scale, shrink_x) - sc_x) < 1e-6 &&
+      abs(min(fit_y$scale, shrink_y) - sc_y) < 1e-6 &&
       all(abs(new_annot_sc - annot_sc) < 1e-6)
     annot_sc_used <- annot_sc
     annot_sc <- new_annot_sc
     spill <- new_spill
     gap_x_in <- new_gap_x
     gap_y_in <- new_gap_y
+    annot_extra_x <- new_annot_extra_x
+    annot_extra_y <- new_annot_extra_y
     over_x <- new_over_x
     if(converged && iter > 1) {
       break
@@ -1480,20 +1551,20 @@
     ylim = ylim,
     margins = margins,
     # NEVER LARGER THAN THE TEXT THE MARGINS WERE SIZED FOR
-    axis_text_size_x = p$axis_text_size_x * min(fit_x$scale, shrink, sc_x),
-    axis_text_size_y = p$axis_text_size_y * min(fit_y$scale, shrink, sc_y),
+    axis_text_size_x = p$axis_text_size_x * min(fit_x$scale, shrink_x, sc_x),
+    axis_text_size_y = p$axis_text_size_y * min(fit_y$scale, shrink_y, sc_y),
     step_x = fit_x$step,
     step_y = fit_y$step,
     upi = c(x = upi_x, y = upi_y),
     cell_in = c(1 / upi_x, 1 / upi_y),
     annot_size_x = p$annot_size_x * upi_y * tracks_y[["annotation"]] /
-      max(annot_x_in, 1e-12),
+      max(annot_x_in + annot_extra_x, 1e-12),
     annot_size_y = p$annot_size_y * upi_x * tracks_x[["annotation"]] /
-      max(annot_y_in, 1e-12),
-    annot_gap_x = p$annot_gap * upi_y * tracks_y[["annotation"]] /
-      max(annot_x_in, 1e-12),
-    annot_gap_y = p$annot_gap * upi_x * tracks_x[["annotation"]] /
-      max(annot_y_in, 1e-12),
+      max(annot_y_in + annot_extra_y, 1e-12),
+    annot_gap_x = (p$annot_gap + annot_extra_x) * upi_y *
+      tracks_y[["annotation"]] / max(annot_x_in + annot_extra_x, 1e-12),
+    annot_gap_y = (p$annot_gap + annot_extra_y) * upi_x *
+      tracks_x[["annotation"]] / max(annot_y_in + annot_extra_y, 1e-12),
     bar_label_x = bar_label_x_in * upi_x,
     bar_label_y = bar_label_y_in * upi_y,
     annot_text_size_x = p$annot_text_size *
@@ -1501,8 +1572,10 @@
     annot_text_size_y = p$annot_text_size *
       min(annot_sc[["y"]], annot_sc_used[["y"]]),
     title_line = mt(3, title_inner, title_cex),
-    axis_label_x_line = mt(p$side_x, label_x_inner, label_cex_x),
-    axis_label_y_line = mt(p$side_y, label_y_inner, label_cex_y),
+    axis_label_x_line = mt(p$side_x, label_x_inner, label_cex_x * um[["x"]]),
+    axis_label_y_line = mt(p$side_y, label_y_inner, label_cex_y * um[["y"]]),
+    # (AXIS LABELS SHRUNK TO FIT A USER SUPPLIED MARGIN)
+    axis_label_scale = um,
     legend_geom = list(
       shape_in = shape_in,
       key = p$legend_size,

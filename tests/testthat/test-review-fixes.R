@@ -183,7 +183,8 @@ test_that("grouped trees keep two-stage information", {
   groups <- rep(1:2, each = 200)
   tree <- .group_tree(x, groups, max = 100)
   expect_identical(names(tree$two_stage), c("sample", "groups"))
-  expect_identical(tree$two_stage[["sample"]], 200)
+  # (THE GROUPS SHARE max - 50 ROWS EACH)
+  expect_identical(tree$two_stage[["sample"]], 100)
 })
 
 test_that("summaries of ungrouped rows don't build indicator matrices", {

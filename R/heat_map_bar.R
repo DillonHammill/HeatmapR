@@ -248,14 +248,15 @@ heat_map_bar <- function(x,
         }
       }
     )
-    # ADD AXIS
+    # ADD AXIS - ON THE X AXIS SIDE, WITH ITS TICKS AND TEXT SETTINGS (THE
+    # NUMBERS STAY HORIZONTAL WHATEVER THE ANGLE OF THE COLUMN LABELS)
     axis(
       side = axis_text_side_x,
       at = axis_ticks,
       labels = axis_labels,
-      tck = -0.02 * axis_ticks_length_y,
-      las = axis_text_angle_y,
-      padj = axis_text_adjust_y,
+      tck = -0.02 * axis_ticks_length_x,
+      las = 1,
+      padj = axis_text_adjust_x,
       font.axis = axis_text_font_x[1],
       cex.axis = axis_text_size_x[1],
       col.axis = adjustcolor(

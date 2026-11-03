@@ -15,9 +15,11 @@
 #' \code{taskset} or a container), no more than the environment variables
 #' \code{OMP_THREAD_LIMIT} and \code{OMP_NUM_THREADS} allow (when they are
 #' set) and no more than two while \code{R CMD check} limits the number of
-#' cores (\code{_R_CHECK_LIMIT_CORES_}). The linkage's threads wait for each
-#' step by spinning, so they slow down when other processes keep the cores
-#' busy: use fewer threads on a shared or busy machine. Set the number
+#' cores (\code{_R_CHECK_LIMIT_CORES_}). Processes forked from R (e.g. by
+#' \code{parallel::mclapply()}) use one thread unless the number is set. The
+#' linkage stops sharing its scans between threads when waiting for them
+#' takes longer than the work they save, e.g. when other processes keep the
+#' cores busy; results are the same either way. Set the number
 #' with \code{heat_map_threads(n)} or \code{options(HeatmapR.threads = n)},
 #' e.g. \code{heat_map_threads(1)} when heatmaps are drawn in parallel
 #' processes.
@@ -71,6 +73,11 @@ heat_map_threads <- function(threads = NULL) {
   threads <- getOption("HeatmapR.threads")
   if(!is.null(threads)) {
     return(.check_threads(threads))
+  }
+  # A FORKED CHILD (E.G. OF parallel::mclapply()) - ITS SIBLINGS ARE USING
+  # THE OTHER CORES
+  if(!is.null(.cores$pid) && !identical(.cores$pid, Sys.getpid())) {
+    return(1L)
   }
   .default_threads()
 }

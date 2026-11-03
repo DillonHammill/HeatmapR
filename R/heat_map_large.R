@@ -92,6 +92,12 @@
     ub <- .unit_rows(b, method)
     return(1 - tcrossprod(ua, ub))
   }
+  # MISSING VALUES - LEFT OUT OF EACH PAIR AS stats::dist() AND cor() LEAVE
+  # THEM OUT, FROM THE CROSS DISTANCES THEMSELVES
+  if(method %in% .CROSS_NA && is.numeric(a) && is.numeric(b)) {
+    q <- list(...)$p
+    return(.cross_na(a, b, method, if(is.null(q)) 2 else q))
+  }
   # ANY OTHER DISTANCE - DISTANCES WITHIN rbind(chunk, b), A CHUNK AT A TIME
   nb <- nrow(b)
   chunk <- max(256L, 2000L - nb)
@@ -101,6 +107,105 @@
     d <- as.matrix(.dist_matrix(rbind(a[i, , drop = FALSE], b), dist, ...))
     out[i, ] <- d[seq_along(i), length(i) + seq_len(nb), drop = FALSE]
   }
+  out
+}
+
+# Distances .cross_na() computes with missing values
+.CROSS_NA <- c("euclidean", "manhattan", "maximum", "minkowski", "canberra",
+               "pearson", "cosine")
+
+#' Distances between the rows of a and the rows of b with missing values
+#'
+#' Each pair of rows is compared on the columns both have, as
+#' \code{stats::dist()} compares them: sums (euclidean, manhattan, canberra,
+#' minkowski) are scaled up to all the columns, the maximum isn't, and terms
+#' of the Canberra distance with zero numerator and denominator are left out.
+#' Pearson distances are one minus the correlation over the shared columns
+#' (as \code{cor(use = "pairwise.complete.obs")}, a missing correlation
+#' counting as 0) and cosine distances one minus the cosine over them. Pairs
+#' with no columns in common have a missing distance.
+#'
+#' @param q the power of the Minkowski distance.
+#'
+#' @return matrix with a row for each row of \code{a} and a column for each row
+#'   of \code{b}.
+#'
+#' @noRd
+.cross_na <- function(a,
+                      b,
+                      method = "euclidean",
+                      q = 2) {
+  a <- as.matrix(a)
+  b <- as.matrix(b)
+  storage.mode(a) <- "double"
+  storage.mode(b) <- "double"
+  a[!is.finite(a)] <- NA
+  b[!is.finite(b)] <- NA
+  oa <- !is.na(a) * 1
+  ob <- !is.na(b) * 1
+  a0 <- a
+  a0[is.na(a0)] <- 0
+  b0 <- b
+  b0[is.na(b0)] <- 0
+  # NUMBER OF SHARED COLUMNS
+  n <- tcrossprod(oa, ob)
+  p <- ncol(a)
+  if(method %in% c("pearson", "cosine")) {
+    sab <- tcrossprod(a0, b0)
+    saa <- tcrossprod(a0^2, ob)
+    sbb <- tcrossprod(oa, b0^2)
+    if(method == "cosine") {
+      den <- sqrt(saa * sbb)
+      r <- ifelse(den > 0, sab / den, 0)
+      r[n == 0] <- NA
+    } else {
+      sa <- tcrossprod(a0, ob)
+      sb <- tcrossprod(oa, b0)
+      den <- sqrt(pmax(n * saa - sa^2, 0) * pmax(n * sbb - sb^2, 0))
+      r <- ifelse(den > 0 & n > 1, (n * sab - sa * sb) / den, 0)
+    }
+    return(pmin(pmax(1 - r, 0), 2))
+  }
+  # EUCLIDEAN - SQUARED DIFFERENCES OVER THE SHARED COLUMNS FROM
+  # CROSS-PRODUCTS
+  if(method == "euclidean") {
+    s2 <- tcrossprod(a0^2, ob) - 2 * tcrossprod(a0, b0) + tcrossprod(oa, b0^2)
+    out <- sqrt(pmax(s2, 0) * p / n)
+    out[n == 0] <- NA
+    return(out)
+  }
+  # SUMS OVER THE SHARED COLUMNS (THE MAXIMUM FOR "maximum"), A COLUMN AT A
+  # TIME
+  acc <- matrix(0, nrow(a), nrow(b))
+  used <- n
+  for(j in seq_len(p)) {
+    dev <- abs(outer(a[, j], b[, j], "-"))
+    if(method == "canberra") {
+      tot <- outer(abs(a[, j]), abs(b[, j]), "+")
+      skip <- !is.na(dev) & tot <= .Machine$double.xmin &
+        dev <= .Machine$double.xmin
+      dev <- dev / tot
+      dev[skip] <- NA
+      used <- used - skip
+    } else if(method == "euclidean") {
+      dev <- dev^2
+    } else if(method == "minkowski") {
+      dev <- dev^q
+    }
+    dev[is.na(dev)] <- if(method == "maximum") -Inf else 0
+    acc <- if(method == "maximum") pmax(acc, dev) else acc + dev
+  }
+  out <- if(method == "maximum") {
+    acc
+  } else {
+    acc * p / used
+  }
+  if(method == "euclidean") {
+    out <- sqrt(out)
+  } else if(method == "minkowski") {
+    out <- out^(1 / q)
+  }
+  out[used == 0] <- NA
   out
 }
 
@@ -118,7 +223,15 @@
   method <- if(is.character(dist)) tolower(dist) else ""
   if(!method %in% c("euclidean", "pearson", "spearman", "cosine") ||
      anyNA(a) || anyNA(b)) {
-    return(max.col(-.dist_to(a, b, dist, ...), ties.method = "first"))
+    d <- .dist_to(a, b, dist, ...)
+    # (A ROW WITHOUT A DISTANCE TO ANY ROW OF b - NO VALUES, OR NONE IN
+    # COMMON - CAN'T JOIN ONE)
+    miss <- is.na(d)
+    if(any(rowSums(miss) == ncol(d))) {
+      .stop_missing_distances()
+    }
+    d[miss] <- Inf
+    return(max.col(-d, ties.method = "first"))
   }
   score <- if(method == "euclidean") {
     tcrossprod(cbind(a, 1), cbind(b, -rowSums(b^2) / 2))
@@ -441,6 +554,25 @@
                          dist = "euclidean",
                          ...) {
   k <- length(med)
+  # MISSING VALUES IN SOME ROWS (NOT THE MEDOIDS) - THE OTHER ROWS STILL USE
+  # THE COMPILED SEARCH, AND ONLY THE ROWS WITH MISSING VALUES THE SLOWER
+  # PAIRWISE DISTANCES
+  if(is.null(metric) && is.character(dist) &&
+     !anyNA(x[med, , drop = FALSE])) {
+    gaps <- rowSums(is.na(x[rows, , drop = FALSE])) > 0
+    if(any(gaps) && !all(gaps)) {
+      sub <- c(med, rows[!gaps])
+      m2 <- .compiled_metric(x[sub, , drop = FALSE], dist, ...)
+      if(!is.null(m2)) {
+        out <- integer(length(rows))
+        out[!gaps] <- .assign_rows(x[sub, , drop = FALSE],
+                                   k + seq_len(sum(!gaps)), seq_len(k), m2,
+                                   dist, ...)
+        out[gaps] <- .assign_rows(x, rows[gaps], med, NULL, dist, ...)
+        return(out)
+      }
+    }
+  }
   out <- integer(length(rows))
   done <- 0L
   prune <- !is.null(metric) && !(metric$code == 4L && metric$q < 1)
@@ -590,6 +722,24 @@
   small <- which(size >= 2 & size <= max & size <= n / 2)
   if(!is.null(metric) && length(small) > 0) {
     trees[small] <- .cluster_groups(metric, members[small], method)
+  } else if(length(small) > 0 && is.character(dist) &&
+            !is.na(.NN_CHAIN[method]) && anyNA(x)) {
+    # (MISSING VALUES - THE GROUPS WITHOUT THEM STILL IN ONE CALL)
+    complete <- which(rowSums(is.na(x)) == 0)
+    pos <- integer(n)
+    pos[complete] <- seq_along(complete)
+    ok <- small[vapply(members[small], function(idx) all(pos[idx] > 0),
+                       logical(1))]
+    cm <- if(length(ok) > 0) {
+      .compiled_metric(x[complete, , drop = FALSE], dist, ...)
+    }
+    if(!is.null(cm)) {
+      trees[ok] <- .cluster_groups(
+        cm,
+        lapply(members[ok], function(idx) pos[idx]),
+        method
+      )
+    }
   }
   merges <- vector("list", k)
   heights <- vector("list", k)

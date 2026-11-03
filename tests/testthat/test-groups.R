@@ -57,12 +57,17 @@ test_that("rows and columns are clustered within groups in heat_map()", {
   expect_true(all(c("Control", "Drug_A", "Drug_B") %in% drawn_text(hm)))
   # Rows grouped too (row_order runs from the top, the first group is at the top)
   expect_equal(rep(c("a", "b"), 10)[info$row_order], rep(c("a", "b"), each = 10))
-  # Non-numeric columns can't be clustered within groups - previous behaviour
+  # Non-numeric columns - the numeric columns are clustered within their
+  # groups, the others follow as a cluster of their own
   df <- data.frame(a = 1:4, b = c(2, 1, 4, 3), c = letters[1:4], d = 4:1)
-  expect_warning(
-    draw(df, tree_x = TRUE, tree_cut_x = c(1, 2, 1, 2)),
-    "not contiguous"
-  )
+  expect_no_warning(hm <- draw(df, tree_x = TRUE, tree_cut_x = c(1, 2, 1, 2)))
+  info <- heat_map_info(hm)
+  expect_identical(colnames(df)[info$col_order][4], "c")
+  shown <- unname(info$col_clusters[info$col_order])
+  expect_identical(shown[4], 3L)
+  expect_setequal(shown[1:3], 1:2)
+  expect_false(is.unsorted(shown))
+  expect_setequal(info$tree_x$order, 1:3)
 })
 
 test_that("cluster gaps are sized in inches", {

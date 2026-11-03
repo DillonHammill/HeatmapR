@@ -17,6 +17,7 @@
 #include <cpp11.hpp>
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <thread>
 #include <limits>
@@ -227,6 +228,12 @@ const size_t TEAM_MIN = 768;
 // A team of threads that run short tasks with R's thread, again and again
 // (each step of the chain). Between tasks the extra threads wait by spinning
 // (then yielding), as the tasks follow each other within microseconds.
+//
+// Every task waits for its slowest member, so a member whose core is busy
+// with another process holds up each step. R's thread therefore times its
+// own part of the tasks and its waits for the others: when, over a window of
+// tasks, it waits longer than the others' parts would have taken it alone,
+// the team is slower than one thread and should be disbanded (worth_it()).
 class Team {
  public:
   explicit Team(int size) : size_(1) {
@@ -251,11 +258,27 @@ class Team {
     ctx_ = ctx;
     done_.store(0, std::memory_order_relaxed);
     generation_.fetch_add(1, std::memory_order_release);
+    auto t0 = std::chrono::steady_clock::now();
     fn(ctx, 0);
+    auto t1 = std::chrono::steady_clock::now();
     int spins = 0;
     while (done_.load(std::memory_order_acquire) != size_ - 1) {
       if (++spins > 4096) std::this_thread::yield();
     }
+    auto t2 = std::chrono::steady_clock::now();
+    own_ += std::chrono::duration<double>(t1 - t0).count();
+    wait_ += std::chrono::duration<double>(t2 - t1).count();
+    ++runs_;
+  }
+  // False once the waits of a window of tasks exceed the time R's thread
+  // would have taken for the other members' parts (size - 1 times its own)
+  bool worth_it() {
+    if (runs_ < 512) return true;
+    bool keep = wait_ <= (size_ - 1) * own_;
+    runs_ = 0;
+    own_ = 0;
+    wait_ = 0;
+    return keep;
   }
 
  private:
@@ -275,6 +298,8 @@ class Team {
     }
   }
   int size_;
+  int runs_ = 0;
+  double own_ = 0, wait_ = 0;
   std::vector<std::thread> pool_;
   std::atomic<unsigned> generation_{0};
   std::atomic<int> done_{0};
@@ -396,8 +421,10 @@ Tree nn_chain_impl(M& d, int n, int method, const double* init, int threads = 1)
   };
   for (int remaining = n; remaining > 1; --remaining) {
     if (remaining % 256 == 0) par::poll();
-    // (THE TEAM STOPS ONCE FEW CLUSTERS ARE LEFT)
-    if (team && act.size() < TEAM_MIN) {
+    // (THE TEAM STOPS ONCE FEW CLUSTERS ARE LEFT, OR WHEN WAITING FOR ITS
+    // MEMBERS TAKES LONGER THAN THEIR WORK - E.G. ON A BUSY MACHINE; THE
+    // TREE IS THE SAME EITHER WAY)
+    if (team && (act.size() < TEAM_MIN || !team->worth_it())) {
       team.reset();
       ctx.parts = 0;
     }

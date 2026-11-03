@@ -94,7 +94,7 @@ test_that("heat_map_new opens a new device only when the current one is used", {
 test_that("popups are only opened in interactive sessions", {
   local_mocked_bindings(.is_interactive = function() FALSE)
   grDevices::pdf(NULL)
-  on.exit(grDevices::dev.off())
+  on.exit(grDevices::dev.off(), add = TRUE)
   graphics::plot.new()
   n <- length(grDevices::dev.list())
   heat_map_new(popup = TRUE)

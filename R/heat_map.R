@@ -36,8 +36,11 @@
 #'   take about 2 seconds. Branch support (\code{tree_support_x},
 #'   \code{tree_support_y}) is only computed for up to \code{clust_max} rows or
 #'   columns. Set to \code{Inf} to always cluster exactly. Rows or columns
-#'   grouped by \code{tree_cut_x} or \code{tree_cut_y} are clustered within
-#'   each group, so the limit applies to each group.
+#'   grouped by \code{tree_cut_x} or \code{tree_cut_y} (or
+#'   \code{tree_kmeans_x}, \code{tree_kmeans_y}) are clustered within each
+#'   group, and the groups share the limit in proportion to their size (at
+#'   least 50 rows each), so grouped clustering takes no longer than
+#'   clustering all the rows at once.
 #' @param round indicates the number of decimal places to round values when
 #'   \code{cell_text = TRUE} and values are displayed in the heatmap, set to 2
 #'   decimal places by default
@@ -413,7 +416,11 @@
 #'   hierarchical clustering. As for \code{bar_values_x}, a list (one numeric
 #'   vector per row), a matrix or data.frame with one row per row of
 #'   \code{x}, or \code{TRUE} (the values of each row of the heatmap) shows
-#'   the distribution of each row as a box plot or violin.
+#'   the distribution of each row as a box plot or violin. The axis of the
+#'   row bar graph is drawn on the x axis side with the x axis text font,
+#'   size, colour, adjustment and tick length (and that of the column bar
+#'   graph on the y axis side with the y axis settings); its numbers are
+#'   always horizontal.
 #' @param bar_type_y the type of plot drawn for \code{bar_values_y}, as for
 #'   \code{bar_type_x}.
 #' @param bar_axis_label_y axis label to use for the y axis bar plot.
@@ -1175,7 +1182,7 @@ heat_map <- function(x,
   # CLUSTER WITHIN EACH GROUP RATHER THAN ACROSS ALL ROWS OR COLUMNS
   group_x <- !is.null(tree_x) && !inherits(tree_x, c("dist", "hclust")) &&
     length(tree_cut_x) > 1 && length(tree_cut_x) == ncol(x) &&
-    length(char_cols) == 0 && length(num_cols) >= 2
+    length(num_cols) >= 2
   group_y <- !is.null(tree_y) && !inherits(tree_y, c("dist", "hclust")) &&
     length(tree_cut_y) > 1 && length(tree_cut_y) == nrow(x) &&
     length(num_cols) >= 1
@@ -1190,7 +1197,7 @@ heat_map <- function(x,
       )
       tree_x <- NULL
     } else {
-      tree_x <- .memo_call(memo, "heat_map_clust", c(list(
+      tree_x <- .memo_clust(memo, c(list(
         # (A SUPPLIED TREE - ITS LEAVES, THE COLUMNS, AS ROWS)
         x = if(inherits(tree_x, c("dist", "hclust"))) {
           t(as.matrix(x[, num_cols, drop = FALSE]))
@@ -1204,11 +1211,11 @@ heat_map <- function(x,
         },
         dist = dist_method,
         method = clust_method,
-        max = clust_max,
-        scale = tree_scale_x,
-        order = tree_order_x,
-        cut = if(length(tree_cut_x) == 1) tree_cut_x else NULL
-      ), list(...)))
+        max = clust_max
+      ), list(...)),
+      order = tree_order_x,
+      scale = tree_scale_x,
+      cut = if(length(tree_cut_x) == 1) tree_cut_x else NULL)
       .check_tree(tree_x, length(num_cols), "tree_x", "numeric columns")
       # ADD CHARACTER COLUMNS AS AN EXTRA CLUSTER
       if(!is.null(tree_x$cut) && length(char_cols) > 0) {
@@ -1235,15 +1242,14 @@ heat_map <- function(x,
     if(is.null(tree_kmeans_x) &&
        .display_indices(tree_cut_x, ncol(x), colnames(x))) {
       shown <- if(group_x) {
-        num_cols[.memo_call(memo, "heat_map_clust", c(list(
+        # (NON-NUMERIC COLUMNS AFTER THE CLUSTERED ONES)
+        c(num_cols[.memo_clust(memo, c(list(
           x = x[, num_cols, drop = FALSE],
           tree = 2,
           dist = dist_method,
           method = clust_method,
-          max = clust_max,
-          scale = tree_scale_x,
-          order = tree_order_x
-        ), list(...)))$order]
+          max = clust_max
+        ), list(...)), order = tree_order_x)$order], char_cols)
       } else {
         col_ind
       }
@@ -1266,17 +1272,40 @@ heat_map <- function(x,
     if(group_x) {
       groups <- integer(ncol(x))
       groups[manual$ind] <- manual$cut
-      support_groups_x <- groups[num_cols]
+      # THE GROUPS OF THE NUMERIC COLUMNS, NUMBERED FROM 1 (A GROUP OF
+      # NON-NUMERIC COLUMNS ONLY HAS NOTHING TO CLUSTER)
+      used <- sort(unique(groups[num_cols]))
+      groups_num <- match(groups[num_cols], used)
+      support_groups_x <- groups_num
+      # (HEIGHTS SCALED AFTER THE STEP KEPT FOR REDRAWS)
       tree_x <- .memo_call(memo, ".group_tree", c(list(
         x = t(x[, num_cols, drop = FALSE]),
-        groups = groups[num_cols],
+        groups = groups_num,
         dist = dist_method,
         method = clust_method,
         max = clust_max,
-        scale = tree_scale_x,
-        order = tree_order_x
+        order = tree_order_x,
+        raw = TRUE
       ), list(...)))
+      tree_x$height <- .tree_heights(tree_x$height, scale = tree_scale_x)
+      shown_chars <- manual$ind[manual$ind %in% char_cols]
       manual$ind <- num_cols[tree_x$order]
+      # NON-NUMERIC COLUMNS - AFTER THE CLUSTERED COLUMNS, AS A CLUSTER OF
+      # THEIR OWN (AS WITHOUT GROUPS)
+      if(length(shown_chars) > 0) {
+        manual$ind <- c(manual$ind, shown_chars)
+        tree_x$cut <- c(
+          tree_x$cut,
+          structure(
+            rep(length(used) + 1L, length(shown_chars)),
+            names = colnames(x)[shown_chars]
+          )
+        )
+        if(!is.null(manual$labels) &&
+           identical(tree_label_text_x, manual$labels)) {
+          tree_label_text_x <- c(manual$labels[used], "")
+        }
+      }
     # DENDROGRAM REQUIRES UNCHANGED ORDER OF NUMERIC COLUMNS
     } else if(inherits(tree_x, "hclust")) {
       n_num <- length(num_cols)
@@ -1306,7 +1335,7 @@ heat_map <- function(x,
       )
       tree_y <- NULL
     } else {
-      tree_y <- .memo_call(memo, "heat_map_clust", c(list(
+      tree_y <- .memo_clust(memo, c(list(
         x = x[, num_cols, drop = FALSE],
         tree = if(inherits(tree_y, c("dist", "hclust"))) {
           tree_y
@@ -1315,11 +1344,11 @@ heat_map <- function(x,
         },
         dist = dist_method,
         method = clust_method,
-        max = clust_max,
-        scale = tree_scale_y,
-        order = tree_order_y,
-        cut = if(length(tree_cut_y) == 1) tree_cut_y else NULL
-      ), list(...)))
+        max = clust_max
+      ), list(...)),
+      order = tree_order_y,
+      scale = tree_scale_y,
+      cut = if(length(tree_cut_y) == 1) tree_cut_y else NULL)
       .check_tree(tree_y, nrow(x), "tree_y", "rows")
       # UPDATE ROW INDICES
       row_ind <- row_ind[tree_y$order]
@@ -1333,15 +1362,13 @@ heat_map <- function(x,
     if(is.null(tree_kmeans_y) &&
        .display_indices(tree_cut_y, nrow(x), rownames(x))) {
       shown <- if(group_y) {
-        .memo_call(memo, "heat_map_clust", c(list(
+        .memo_clust(memo, c(list(
           x = x[, num_cols, drop = FALSE],
           tree = 1,
           dist = dist_method,
           method = clust_method,
-          max = clust_max,
-          scale = tree_scale_y,
-          order = tree_order_y
-        ), list(...)))$order
+          max = clust_max
+        ), list(...)), order = tree_order_y)$order
       } else {
         row_ind
       }
@@ -1365,15 +1392,17 @@ heat_map <- function(x,
       groups <- integer(nrow(x))
       groups[manual$ind] <- manual$cut
       support_groups_y <- groups
+      # (HEIGHTS SCALED AFTER THE STEP KEPT FOR REDRAWS)
       tree_y <- .memo_call(memo, ".group_tree", c(list(
         x = x[, num_cols, drop = FALSE],
         groups = groups,
         dist = dist_method,
         method = clust_method,
         max = clust_max,
-        scale = tree_scale_y,
-        order = tree_order_y
+        order = tree_order_y,
+        raw = TRUE
       ), list(...)))
+      tree_y$height <- .tree_heights(tree_y$height, scale = tree_scale_y)
       manual$ind <- tree_y$order
     # DENDROGRAM REQUIRES UNCHANGED ROW ORDER
     } else if(inherits(tree_y, "hclust")) {
@@ -1441,7 +1470,9 @@ heat_map <- function(x,
   if(!is.null(how_x)) {
     support_x <- .memo_call(memo, ".tree_support", c(list(
       data = t(data.matrix(x[, num_cols, drop = FALSE])),
-      tree = tree_x,
+      # (ONLY THE CLADES MATTER - A NEW CUT, HEIGHT SCALE OR LEAF ORDER
+      # REUSES THE SUPPORT OF A REDRAW)
+      tree = list(merge = .clade_merge(tree_x$merge)),
       B = support_n_x,
       dist = how_x$dist,
       method = how_x$method,
@@ -1451,7 +1482,9 @@ heat_map <- function(x,
   if(!is.null(how_y)) {
     support_y <- .memo_call(memo, ".tree_support", c(list(
       data = data.matrix(x[, num_cols, drop = FALSE]),
-      tree = tree_y,
+      # (ONLY THE CLADES MATTER - A NEW CUT, HEIGHT SCALE OR LEAF ORDER
+      # REUSES THE SUPPORT OF A REDRAW)
+      tree = list(merge = .clade_merge(tree_y$merge)),
       B = support_n_y,
       dist = how_y$dist,
       method = how_y$method,
@@ -2615,6 +2648,9 @@ heat_map <- function(x,
   }
 
   # TITLE & AXIS LABELS - CENTRED ON THE HEATMAP BUT KEPT ON THE DEVICE
+  # (AXIS LABELS SHRUNK WITH THEIR AXIS TEXT TO FIT A USER SUPPLIED MARGIN)
+  axis_label_size_x <- axis_label_size_x * lay$axis_label_scale[["x"]]
+  axis_label_size_y <- axis_label_size_y * lay$axis_label_scale[["y"]]
   title_at <- .mtext_at(title, title_text_size, title_text_font,
                         mean(heatmap_xlim), "x")
   axis_label_x_at <- .mtext_at(axis_label_x, axis_label_size_x,
@@ -3250,7 +3286,7 @@ heat_map <- function(x,
       },
       bar_cex_y = axis_text_size_x[1],
       bar_font_y = axis_text_font_x[1],
-      bar_out_y = .axis_text_dims(axis_text_side_x, axis_text_angle_y)[["out"]],
+      bar_out_y = .axis_text_dims(axis_text_side_x, 1)[["out"]],
       bar_label_y = bar_axis_label_y,
       bar_label_cex_y = bar_axis_label_size_y,
       bar_label_font_y = bar_axis_label_font_y,

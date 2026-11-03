@@ -227,8 +227,11 @@ the sample's dendrogram (see \code{\link{heat_map_clust}}). 100,000 rows
 take about 2 seconds. Branch support (\code{tree_support_x},
 \code{tree_support_y}) is only computed for up to \code{clust_max} rows or
 columns. Set to \code{Inf} to always cluster exactly. Rows or columns
-grouped by \code{tree_cut_x} or \code{tree_cut_y} are clustered within
-each group, so the limit applies to each group.}
+grouped by \code{tree_cut_x} or \code{tree_cut_y} (or
+\code{tree_kmeans_x}, \code{tree_kmeans_y}) are clustered within each
+group, and the groups share the limit in proportion to their size (at
+least 50 rows each), so grouped clustering takes no longer than
+clustering all the rows at once.}
 
 \item{round}{indicates the number of decimal places to round values when
 \code{cell_text = TRUE} and values are displayed in the heatmap, set to 2
@@ -686,7 +689,11 @@ will be internally reordered to match the order of rows as determined by
 hierarchical clustering. As for \code{bar_values_x}, a list (one numeric
 vector per row), a matrix or data.frame with one row per row of
 \code{x}, or \code{TRUE} (the values of each row of the heatmap) shows
-the distribution of each row as a box plot or violin.}
+the distribution of each row as a box plot or violin. The axis of the
+row bar graph is drawn on the x axis side with the x axis text font,
+size, colour, adjustment and tick length (and that of the column bar
+graph on the y axis side with the y axis settings); its numbers are
+always horizontal.}
 
 \item{bar_type_y}{the type of plot drawn for \code{bar_values_y}, as for
 \code{bar_type_x}.}
