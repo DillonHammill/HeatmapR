@@ -28,6 +28,29 @@
 #include <thread>
 #include <vector>
 
+#if defined(__linux__)
+#include <sched.h>
+#endif
+
+namespace par {
+
+// The CPUs this process may run on: those of its affinity mask on Linux
+// (e.g. under taskset or a container's cpuset), otherwise the number of
+// threads the hardware runs at once (0 if unknown)
+inline int available_cpus() {
+#if defined(__linux__) && defined(CPU_COUNT)
+  cpu_set_t set;
+  CPU_ZERO(&set);
+  if (sched_getaffinity(0, sizeof(set), &set) == 0) {
+    int c = CPU_COUNT(&set);
+    if (c > 0) return c;
+  }
+#endif
+  return static_cast<int>(std::thread::hardware_concurrency());
+}
+
+}  // namespace par
+
 namespace par {
 
 // Thrown by poll() on an extra thread once its loop has been stopped

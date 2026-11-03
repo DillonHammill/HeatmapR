@@ -1,8 +1,14 @@
 # THREADS ----------------------------------------------------------------------
 
-# Value of an expression computed with a number of threads
+# The most threads a test may use - CRAN allows two
+max_threads <- function() {
+  if (identical(Sys.getenv("NOT_CRAN"), "true")) 4L else 2L
+}
+
+# Value of an expression computed with a number of threads (at most
+# max_threads())
 with_threads <- function(threads, expr) {
-  old <- options(HeatmapR.threads = threads)
+  old <- options(HeatmapR.threads = min(threads, max_threads()))
   on.exit(options(old))
   expr
 }
@@ -52,12 +58,15 @@ test_that("the default number of threads keeps to the environment's limits", {
   Sys.setenv("_R_CHECK_LIMIT_CORES_" = "false")
   expect_identical(.default_threads(), 8L)
   expect_gte(hardware_threads_cpp(), 0L)
-  expect_identical(.count_cores(6), 6L)
+  expect_identical(.count_cores(6, avail = 0L), 6L)
+  expect_identical(.count_cores(6, avail = 4L), 4L)
+  expect_identical(.count_cores(NA, avail = 3L), 3L)
+  expect_identical(.count_cores(NA, avail = 0L), 1L)
   expect_identical(.count_cores(NA), max(1L, hardware_threads_cpp()))
 })
 
 test_that("parallel loops do every item once and raise errors from any thread", {
-  for (threads in 1:4) {
+  for (threads in seq_len(max_threads())) {
     expect_identical(parallel_check_cpp(1000L, threads, -1L, FALSE), 2 * (0:999))
     expect_identical(parallel_check_cpp(95L, threads, -1L, TRUE), 2 * (0:94))
     expect_error(parallel_check_cpp(1000L, threads, 500L, FALSE), "item 500 failed")

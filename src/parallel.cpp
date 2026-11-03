@@ -11,10 +11,10 @@ std::chrono::steady_clock::time_point last_check;
 
 }  // namespace par
 
-// Number of threads the hardware runs at once (0 if unknown)
+// Number of CPUs this process may run on (0 if unknown)
 [[cpp11::register]]
 int hardware_threads_cpp() {
-  return static_cast<int>(std::thread::hardware_concurrency());
+  return par::available_cpus();
 }
 
 // For tests: 2 * i for each i < n, computed on up to `threads` threads (in

@@ -8,6 +8,7 @@
 #include <cpp11.hpp>
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <string>
 #include <unordered_set>
@@ -63,6 +64,9 @@ cpp11::integers merge_sizes_cpp(cpp11::integers merge) {
 [[cpp11::register]]
 cpp11::integers merge_order_cpp(cpp11::integers merge, int node, int n_leaves) {
   int k = Rf_nrows(merge);
+  if (k > 0 && (node < 1 || node > k)) {
+    cpp11::stop("merge_order_cpp() needs a merge of the tree (1 to %d)", k);
+  }
   std::vector<int> ord = merge_order(INTEGER(merge), k, node, n_leaves);
   cpp11::writable::integers out(static_cast<R_xlen_t>(ord.size()));
   std::copy(ord.begin(), ord.end(), INTEGER(out));
@@ -333,11 +337,21 @@ std::string hash_cpp(SEXP x) {
     default:
       cpp11::stop("hash_cpp() needs a numeric, integer or logical vector");
   }
-  uint64_t h = 14695981039346656037ULL;
-  for (size_t i = 0; i < bytes; ++i) {
+  // EIGHT BYTES AT A TIME (A MULTIPLY PER BYTE IS SLOW FOR LARGE DATA), THE
+  // HIGH BITS FOLDED BACK DOWN AFTER EACH WORD, THEN ANY REMAINING BYTES
+  uint64_t h = 14695981039346656037ULL ^ static_cast<uint64_t>(bytes);
+  size_t words = bytes / 8;
+  for (size_t i = 0; i < words; ++i) {
+    uint64_t w;
+    std::memcpy(&w, p + 8 * i, 8);
+    h = (h ^ w) * 0x9E3779B97F4A7C15ULL;
+    h ^= h >> 29;
+  }
+  for (size_t i = 8 * words; i < bytes; ++i) {
     h ^= p[i];
     h *= 1099511628211ULL;
   }
+  h ^= h >> 32;
   char buf[17];
   const char* hex = "0123456789abcdef";
   for (int i = 15; i >= 0; --i) {

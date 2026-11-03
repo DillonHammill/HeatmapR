@@ -50,6 +50,15 @@ struct Rows {
 
 // Rows idx (1-based; all rows when idx is null) of an n_total x p matrix in
 // column-major order
+// Whether every row index (1-based) of idx[0..s) is a row of a matrix with n
+// rows - checked on R's thread before indices reach gather_rows()
+static bool rows_in_range(const int* idx, int s, int n) {
+  for (int i = 0; i < s; ++i) {
+    if (idx[i] == NA_INTEGER || idx[i] < 1 || idx[i] > n) return false;
+  }
+  return true;
+}
+
 Rows gather_rows(const double* x, int n_total, int p, const int* idx, int s) {
   Rows r;
   r.n = s;
@@ -311,7 +320,7 @@ Tree nn_chain_impl(M& d, int n, int method, const double* init, int threads = 1)
   // THAN THE HARDWARE RUNS AT ONCE - SPINNING THREADS WITHOUT A CORE OF THEIR
   // OWN WOULD SLOW THE OTHERS DOWN
   std::unique_ptr<Team> team;
-  int hw = static_cast<int>(std::thread::hardware_concurrency());
+  int hw = par::available_cpus();
   if (hw > 0) threads = std::min(threads, hw);
   if (threads > 1 && static_cast<size_t>(n) >= 2 * TEAM_MIN && !par::worker &&
       par::stop_flag == nullptr) {
@@ -560,8 +569,22 @@ cpp11::writable::list tree_list(const Tree& tree) {
 [[cpp11::register]]
 cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members,
                        int threads) {
+  // (THE NEAREST-NEIGHBOUR CHAIN NEEDS FINITE DISTANCES - stats::hclust()
+  // HANDLES THE OTHERS)
+  if (n < 0 || d.size() != static_cast<R_xlen_t>(n) * (n - 1) / 2) {
+    cpp11::stop("hclust_cpp() needs the n * (n - 1) / 2 distances between n leaves");
+  }
+  const double* dv = REAL(d);
+  for (R_xlen_t t = 0; t < d.size(); ++t) {
+    if (!std::isfinite(dv[t])) {
+      cpp11::stop("hclust_cpp() needs finite distances");
+    }
+  }
+  if (!Rf_isNull(members) && Rf_xlength(members) != n) {
+    cpp11::stop("hclust_cpp() needs one member count per leaf");
+  }
   const double* m = Rf_isNull(members) ? nullptr : REAL(members);
-  Tree tree = nn_chain(REAL(d), n, method, m, threads);
+  Tree tree = nn_chain(dv, n, method, m, threads);
   hclust_form(tree);
   return tree_list(tree);
 }
@@ -599,7 +622,13 @@ cpp11::list cluster_batch_cpp(cpp11::list xs, SEXP groups, int metric, double q,
     for (R_xlen_t t = 0; t < g.size(); ++t) {
       SEXP idx = g[t];
       if (TYPEOF(idx) != INTSXP) cpp11::stop("groups must hold integer vectors");
-      grp.push_back({INTEGER(idx), static_cast<int>(Rf_xlength(idx))});
+      int s = static_cast<int>(Rf_xlength(idx));
+      for (const Matrix& m : mats) {
+        if (!rows_in_range(INTEGER(idx), s, m.n)) {
+          cpp11::stop("groups must hold rows of every matrix");
+        }
+      }
+      grp.push_back({INTEGER(idx), s});
     }
   }
   size_t G = grp.size();
@@ -632,6 +661,33 @@ cpp11::list cluster_batch_cpp(cpp11::list xs, SEXP groups, int metric, double q,
   return out;
 }
 
+// Average ranks (as rank() gives them) within each row of x, which has no
+// missing values; rows are shared between threads
+[[cpp11::register]]
+SEXP row_ranks_cpp(cpp11::doubles_matrix<> x, int threads) {
+  int n = x.nrow(), p = x.ncol();
+  const double* xv = REAL(x.data());
+  cpp11::writable::doubles out(static_cast<R_xlen_t>(n) * p);
+  double* ov = REAL(out);
+  par::parallel_for(static_cast<size_t>(n), threads, [&](size_t ii) {
+    size_t i = ii;
+    std::vector<int> o(p);
+    std::iota(o.begin(), o.end(), 0);
+    auto at = [&](int j) { return xv[i + static_cast<size_t>(j) * n]; };
+    std::stable_sort(o.begin(), o.end(), [&](int a, int b) { return at(a) < at(b); });
+    for (int s = 0; s < p;) {
+      int e = s + 1;
+      while (e < p && at(o[e]) == at(o[s])) ++e;
+      // (POSITIONS s TO e - 1 ARE RANKS s + 1 TO e)
+      double r = (s + 1 + e) / 2.0;
+      for (int t = s; t < e; ++t) ov[i + static_cast<size_t>(o[t]) * n] = r;
+      s = e;
+    }
+  });
+  out.attr("dim") = cpp11::writable::integers({n, p});
+  return out;
+}
+
 // Index (1-based) of the nearest medoid (a row of medoids) to each row of x,
 // the first medoid winning ties. The metric must satisfy the triangle
 // inequality (for scaled rows, metric 5, the euclidean distance between them
@@ -649,6 +705,9 @@ cpp11::integers nearest_medoid_cpp(cpp11::doubles_matrix<> x,
   const double* xv = REAL(x.data());
   int n = x.nrow(), p = x.ncol();
   int k = medoids.nrow();
+  if (k == 0 || medoids.ncol() != p) {
+    cpp11::stop("nearest_medoid_cpp() needs at least one medoid with the columns of x");
+  }
   int m = metric == 5 ? 1 : metric;
   Rows med = gather_rows(REAL(medoids.data()), k, p, nullptr, k);
   FullMatrix M(med, m, q, threads);
@@ -734,6 +793,9 @@ cpp11::integers group_medoids_cpp(cpp11::doubles_matrix<> x,
     if (TYPEOF(v) != INTSXP) cpp11::stop("groups must hold integer vectors");
     idx[g] = INTEGER(v);
     size[g] = static_cast<int>(Rf_xlength(v));
+    if (!rows_in_range(idx[g], size[g], n)) {
+      cpp11::stop("groups must hold rows of x");
+    }
   }
   std::vector<int> out(G, 1);
   par::parallel_for(static_cast<size_t>(G), threads, [&](size_t g) {
