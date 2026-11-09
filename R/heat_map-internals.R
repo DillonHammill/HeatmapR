@@ -695,7 +695,8 @@
                             col_alpha,
                             keep = NULL,
                             rotate = NULL,
-                            slant = 2) {
+                            slant = 2,
+                            pos = NULL) {
   n <- length(at)
   if(n == 0) {
     return(invisible(NULL))
@@ -721,16 +722,22 @@
   }
   # LABELS ROTATED BY AN ANGLE (DEGREES) - EACH ENDS ONE LINE BEYOND ITS TICK
   # AND SLANTS TOWARDS THE Y AXIS TEXT (SIDE slant)
+  axis_pos <- if(is.null(pos)) NA else pos
   if(!is.null(rotate)) {
     for(z in keep) {
-      axis(side, at = at[z], labels = FALSE, tck = tck)
+      axis(side, at = at[z], labels = FALSE, tck = tck, pos = axis_pos)
     }
     if(length(keep) > 0) {
       usr <- par("usr")
       off <- .line_in() / par("pin")[2] * diff(usr[3:4])
+      edge <- if(is.null(pos)) {
+        if(side == 1) usr[3] else usr[4]
+      } else {
+        pos
+      }
       text(
         x = at[keep],
-        y = if(side == 1) usr[3] - off else usr[4] + off,
+        y = if(side == 1) edge - off else edge + off,
         labels = labels[keep],
         srt = if((side == 1) == (slant == 2)) rotate else -rotate,
         adj = c(if(slant == 2) 1 else 0, 0.5),
@@ -754,7 +761,8 @@
       tck = tck,
       font.axis = font[z],
       cex.axis = size[z],
-      col.axis = cols[z]
+      col.axis = cols[z],
+      pos = axis_pos
     )
   }
   invisible(NULL)
@@ -1192,7 +1200,8 @@
 #'   groups, or \code{NULL}.}
 #'   \item{\code{zoom_x}, \code{zoom_y}: indices of the columns (from left
 #'   to right) and rows (from top to bottom) enlarged in a zoom panel
-#'   (\code{zoom_x}, \code{zoom_y}), or \code{NULL}.}
+#'   (\code{zoom_x}, \code{zoom_y}) - a list with the indices of each band
+#'   when several were given as a list - or \code{NULL}.}
 #'   \item{\code{axis_text_x}, \code{axis_text_y}: axis labels from left to
 #'   right and from top to bottom respectively.}
 #'   \item{\code{colours}, \code{sizes}, \code{shapes}: the fill colour,

@@ -173,6 +173,8 @@ heat_map(
   zoom_y = NULL,
   zoom_size_x = 1,
   zoom_size_y = 1,
+  zoom_side_x = NULL,
+  zoom_side_y = NULL,
   cell_raster = "auto",
   cell_values = NULL,
   cell_glyph = "density",
@@ -969,17 +971,30 @@ a logical vector with one value per column or row in the original order
 of \code{x}. Every row from the first to the last of these in the displayed
 order is enlarged, so giving the first and last rows of a band is enough
 (e.g. a cluster from \code{tree_cut_y}). The band is outlined on the
-heatmap and drawn again in a larger panel on the axis text side, joined to
-the band by a wedge, and the enlarged rows are named beside the panel in
-place of the axis text. This shows the detail of a few rows of a large
-heatmap together with the whole. Can't be combined with \code{mark_x} or
-\code{mark_y} on the same axis.}
+heatmap and drawn again in a larger panel beside it, joined to the band by
+a wedge, with the enlarged rows named on the outer side of the panel. This
+shows the detail of a few rows of a large heatmap together with the whole.
+A list enlarges several bands, each in its own panel (e.g.
+\code{zoom_y = list(c("gene1", "gene9"), 40:55)}); bands can't share rows.
+Panels on the same side keep the order of their bands, are spread out so
+that they don't overlap and enlarge their rows by the same amount.}
 
 \item{zoom_size_x, zoom_size_y}{size of the zoom panel relative to the
 heatmap - its height for \code{zoom_x} and its width for \code{zoom_y} -
 between 0.2 and 5, set to 1 by default. Along the band the panel is as long
 as the heatmap, or shorter when that would make the enlarged cells larger
 than 0.3 inches.}
+
+\item{zoom_side_x, zoom_side_y}{the side of the heatmap each zoom panel is
+drawn on: \code{"bottom"} or \code{"top"} for \code{zoom_x},
+\code{"left"} or \code{"right"} for \code{zoom_y}. One side for every
+panel, or sides for the bands of a list in turn (recycled, so
+\code{c("left", "right")} alternates). Set to NULL by default to use the
+axis text side, where the panels replace the axis text. Panels on the
+other side are drawn beyond the dendrogram and other tracks, which a lane
+carries the band across, and the heatmap keeps its axis text unless a
+panel is on the axis text side. \code{mark_x} or \code{mark_y} can't be
+combined with panels on the axis text side of the same axis.}
 
 \item{cell_raster}{whether to draw the cells as raster images, which is much
 faster and gives smaller files for large heatmaps. Set to \code{"auto"} by
