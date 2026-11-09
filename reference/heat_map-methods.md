@@ -7,6 +7,10 @@ supplied to
 Any arguments supplied through `...` override the original arguments,
 for example `plot(hm, title = "New title")`. Use `data` to redraw the
 heatmap with new data, as `x` refers to the `heat_map` object itself.
+The dendrograms, k-means clusters and branch support of the heatmap are
+kept in it and reused when the arguments they depend on (the data,
+scaling, distance, linkage and tree arguments) haven't changed, so a
+redraw only draws.
 
 ## Usage
 

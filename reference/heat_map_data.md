@@ -32,7 +32,9 @@ a data.frame:
   each row, with the `row` and `column` names, their `row_index` and
   `col_index` in the original data, `display_row`, `display_col`, `x`
   and `y`, the displayed `value` (after any scaling), `level` for
-  non-numeric columns, the fill `colour` and relative `size`,
+  non-numeric columns, the fill `colour`, relative `size` and `shape`
+  (see `cell_shape` in
+  [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)),
   `split_value` and `split_colour` for split cells (`cell_split`), and
   the `row_cluster` and `col_cluster` when rows or columns are split
   into clusters.
@@ -84,31 +86,38 @@ hm <- heat_map(
 #> Applying range scaling to each column...
 cells <- heat_map_data(hm)
 head(cells)
-#>             row column row_index col_index display_row display_col   x        y
-#> 1 Mazda RX4 Wag    mpg         2         1           1           1 0.5 32.39679
-#> 2 Mazda RX4 Wag    cyl         2         2           1           2 1.5 32.39679
-#> 3 Mazda RX4 Wag   disp         2         3           1           3 2.5 32.39679
-#> 4 Mazda RX4 Wag     hp         2         4           1           4 3.5 32.39679
-#> 5 Mazda RX4 Wag   drat         2         5           1           5 4.5 32.39679
-#> 6 Mazda RX4 Wag     wt         2         6           1           6 5.5 32.39679
-#>       value    colour size row_cluster
-#> 1 0.4510638 #6ECE57FF    1           3
-#> 2 0.5000000 #A3DA36FF    1           3
-#> 3 0.2217511 #2B748EFF    1           3
-#> 4 0.2049470 #2E6D8DFF    1           3
-#> 5 0.5253456 #C0DE23FF    1           3
-#> 6 0.3482485 #26A783FF    1           3
+#>              row column row_index col_index display_row display_col   x
+#> 1 Ford Pantera L    mpg        29         1           1           1 0.5
+#> 2 Ford Pantera L    cyl        29         2           1           2 1.5
+#> 3 Ford Pantera L   disp        29         3           1           3 2.5
+#> 4 Ford Pantera L     hp        29         4           1           4 3.5
+#> 5 Ford Pantera L   drat        29         5           1           5 4.5
+#> 6 Ford Pantera L     wt        29         6           1           6 5.5
+#>          y     value    colour size shape row_cluster
+#> 1 32.39679 0.2297872 #2A778EFF    1  rect           1
+#> 2 32.39679 1.0000000 #6E0A0AFF    1  rect           1
+#> 3 32.39679 0.6981791 #FBAF29FF    1  rect           1
+#> 4 32.39679 0.7491166 #F9932AFF    1  rect           1
+#> 5 32.39679 0.6728111 #FCBC28FF    1  rect           1
+#> 6 32.39679 0.4236768 #53C568FF    1  rect           1
 
 # The displayed values, rows in the order of the heatmap
 rows <- heat_map_data(hm, "rows")
 head(rows)
-#>              row row_index display_row        y          label cluster
-#> 1  Mazda RX4 Wag         2           1 32.39679  Mazda RX4 Wag       3
-#> 2      Mazda RX4         1           2 31.39679      Mazda RX4       3
-#> 3   Ferrari Dino        30           3 30.39679   Ferrari Dino       3
-#> 4  Porsche 914-2        27           4 29.39679  Porsche 914-2       3
-#> 5 Toyota Corolla        20           5 28.39679 Toyota Corolla       3
-#> 6       Fiat 128        18           6 27.39679       Fiat 128       3
+#>                   row row_index display_row        y               label
+#> 1      Ford Pantera L        29           1 32.39679      Ford Pantera L
+#> 2       Maserati Bora        31           2 31.39679       Maserati Bora
+#> 3   Chrysler Imperial        17           3 30.39679   Chrysler Imperial
+#> 4  Cadillac Fleetwood        15           4 29.39679  Cadillac Fleetwood
+#> 5 Lincoln Continental        16           5 28.39679 Lincoln Continental
+#> 6          Duster 360         7           6 27.39679          Duster 360
+#>   cluster
+#> 1       1
+#> 2       1
+#> 3       1
+#> 4       1
+#> 5       1
+#> 6       1
 
 # Mark the highest value of each column on the heatmap
 top <- cells[ave(cells$value, cells$column, FUN = max) == cells$value, ]

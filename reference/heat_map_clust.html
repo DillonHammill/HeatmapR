@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,6 +47,7 @@
 <span>  scale <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  cut <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  order <span class="op">=</span> <span class="st">"default"</span>,</span>
+<span>  max <span class="op">=</span> <span class="fl">5000</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -56,8 +57,11 @@
 
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>matrix-like object to cluster. The distance matrix will be computed
-using <code>dist</code> and passed to <code>hclust</code> for hierarchical clustering.</p></dd>
+<dd><p>matrix-like object to cluster - its numeric columns. Distances and
+linkage are computed in compiled code (with <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> and
+<code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code> for the methods it doesn't cover). With a
+supplied <code>hclust</code> object and <code>order</code>, the rows of <code>x</code> (or
+its columns when they don't match) are the leaves of the tree.</p></dd>
 
 
 <dt id="arg-tree">tree<a class="anchor" aria-label="anchor" href="#arg-tree"></a></dt>
@@ -76,12 +80,16 @@ cosine distance (1 - cosine similarity), <code>"pearson"</code>,
 <code>"spearman"</code> or <code>"kendall"</code> for one minus the correlation
 (rows without variation are treated as uncorrelated), or a function that
 takes the matrix being clustered (one row per leaf) and returns a
-<code>dist</code> object or a square matrix of distances.</p></dd>
+<code>dist</code> object or a square matrix of distances. Names ignore case and
+can be abbreviated (e.g. <code>"pear"</code>).</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
-<dd><p>agglomeration method passed to <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code> to perform
-hierarchical clustering, set to <code>"complete"</code> by default.</p></dd>
+<dd><p>agglomeration method, one of the methods of
+<code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code> (<code>"ward.D"</code>, <code>"ward.D2"</code>,
+<code>"single"</code>, <code>"complete"</code>, <code>"average"</code>,
+<code>"mcquitty"</code>, <code>"median"</code> or <code>"centroid"</code>, which can be
+abbreviated), set to <code>"complete"</code> by default.</p></dd>
 
 
 <dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
@@ -100,14 +108,34 @@ greater than or equal to 1 indicating the number of desired clusters.</p></dd>
 <dd><p>how the branches of the dendrogram are ordered:
 <code>"default"</code> keeps the order from <code>hclust</code>, <code>"olo"</code> flips
 branches to minimise the distances between neighbouring leaves (optimal
-leaf ordering; this takes a few seconds for 1000 leaves and grows with the
-cube of the number of leaves) and <code>"mean"</code> orders branches by their
-mean values as in <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code>.</p></dd>
+leaf ordering) and <code>"mean"</code> orders branches by their mean values
+(<code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code> orders them by the sum of their leaves'
+means instead, which favours small branches). Optimal leaf ordering is exact for up to
+2000 leaves, which takes about a second; its time grows with the cube of
+the number of leaves, so larger trees are ordered in blocks (of 2000
+leaves, down to 100 for the largest trees), each ordered exactly, with the
+blocks then ordered and turned to meet their neighbours. 200,000 leaves
+take about 3 seconds.</p></dd>
+
+
+<dt id="arg-max">max<a class="anchor" aria-label="anchor" href="#arg-max"></a></dt>
+<dd><p>the largest number of rows (or columns) clustered exactly, set
+to 5000 by default. Exact clustering needs the distances between every
+pair of rows, so its memory and time grow with the square of their
+number. Larger data is clustered in two stages: a sample of <code>max</code>
+rows (drawn with a fixed seed, so the result is the same each time) is
+clustered exactly and its dendrogram split into groups of about 200 rows
+of the data, every row joins the group of its nearest group medoid, and
+each group is clustered exactly beneath the sample's dendrogram. The
+dendrogram then shows the structure of the whole data down to the groups,
+and within each group: 100,000 rows take about 2 seconds. Set to
+<code>Inf</code> to always cluster exactly.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>additional arguments passed to <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> or
-<code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code>.</p></dd>
+<dd><p>additional arguments passed to <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> (e.g.
+<code>p</code>) or <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code> (<code>members</code>); others are ignored
+with a warning.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -116,7 +144,23 @@ mean values as in <code><a href="https://rdrr.io/r/stats/heatmap.html" class="ex
 the clustering process. Branch heights are rescaled to the range
 <code>[0, 1]</code> for display. When <code>cut</code> is supplied, the returned object
 also contains a <code>cut</code> element holding the cluster assigned to each
-leaf in dendrogram order.</p>
+leaf in dendrogram order. A tree clustered in two stages (more than
+<code>max</code> rows) has a <code>two_stage</code> element giving the size of the
+sample and the number of groups.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Single, complete, average, McQuitty and Ward linkage are computed
+by the nearest-neighbour chain algorithm, which builds the same tree as
+<code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code> when the distances are distinct. When
+distances are tied (common for integer, binary or rounded data), more
+than one tree is correct and the two can choose differently between tied
+merges, so the tree - and the branches above the tied merges - can
+differ from the one <code>hclust</code> returns while being equally valid.
+Centroid and median linkage use <code>hclust</code> itself. Missing and
+infinite values are left out of the distances between rows (as
+<code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> leaves out missing values); rows that share
+no values can't be clustered.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>

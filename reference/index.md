@@ -4,6 +4,8 @@
 
 - [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   : Create a complex heatmap using base graphics
+- [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md)
+  : Correlation heatmaps with ellipses, numbers and dendrograms
 - [`plot(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   [`print(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   : Draw a heat_map object
@@ -40,6 +42,8 @@ Scale, summarise and cluster data before (or while) drawing a heatmap.
   : Summarise groups of rows or columns for a heatmap
 - [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
   : Perform hierarchical clustering for heatmap
+- [`heat_map_threads()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.md)
+  : Number of threads used by HeatmapR
 
 ## Arrange and save heatmaps
 
@@ -51,7 +55,7 @@ resolution images.
 - [`heat_map_layout()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.md)
   : Arrange multiple heatmaps
 - [`heat_map_new()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_new.md)
-  : Open a pop-up graphics device for heatmaps
+  : Open a popup graphics device for heatmaps
 - [`heat_map_record()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_record.md)
   : Record a custom heatmap
 - [`heat_map_complete()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_complete.md)

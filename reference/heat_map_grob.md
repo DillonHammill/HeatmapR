@@ -4,9 +4,10 @@
 so that it can sit beside ggplot2 plots in patchwork, cowplot or
 gridExtra layouts, or be drawn with
 [`grid::grid.draw()`](https://rdrr.io/r/grid/grid.draw.html). The grob
-draws the heatmap again whenever its space changes, so the fit layout
-sizes the dendrograms, legends and text for the space the heatmap is
-given.
+draws the heatmap again whenever its space changes, so the layout sizes
+the dendrograms, legends and text for the space the heatmap is given.
+The dendrograms are kept in the heatmap, so drawing it again doesn't
+cluster it again.
 
 ## Usage
 
@@ -66,10 +67,13 @@ if(requireNamespace("gridGraphics", quietly = TRUE)) {
 
 
 
-if (FALSE) { # \dontrun{
 # Beside a ggplot2 plot with patchwork
-library(ggplot2)
-library(patchwork)
-ggplot(mtcars, aes(wt, mpg)) + geom_point() + heat_map_grob(hm)
-} # }
+if(requireNamespace("gridGraphics", quietly = TRUE) &&
+   requireNamespace("ggplot2", quietly = TRUE) &&
+   requireNamespace("patchwork", quietly = TRUE)) {
+  library(ggplot2)
+  library(patchwork)
+  ggplot(mtcars, aes(wt, mpg)) + geom_point() + heat_map_grob(hm)
+}
+
 ```

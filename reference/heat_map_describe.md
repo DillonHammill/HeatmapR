@@ -66,10 +66,10 @@ heat_map_describe(hm)
 #> green to dark red (3.21). The highest value is 3.21 (Maserati Bora, carb) and
 #> the lowest is -1.87 (Ford Pantera L, qsec). Rows are ordered by hierarchical
 #> clustering (euclidean distance, complete linkage). Rows are split into 3
-#> groups, numbered from the bottom: group 1 (15 rows, e.g. Datsun 710 and Hornet
-#> 4 Drive) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows,
-#> e.g. Hornet Sportabout and Duster 360) is highest in disp and cyl and lowest in
-#> gear and drat; group 3 (5 rows, e.g. Mazda RX4 and Mazda RX4 Wag) is highest in
-#> carb and gear and lowest in qsec and vs. Columns are ordered by hierarchical
-#> clustering (euclidean distance, complete linkage).
+#> groups, numbered from the top: group 1 (15 rows, e.g. Hornet 4 Drive and
+#> Valiant) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows,
+#> e.g. Chrysler Imperial and Cadillac Fleetwood) is highest in disp and cyl and
+#> lowest in gear and drat; group 3 (5 rows, e.g. Ferrari Dino and Mazda RX4) is
+#> highest in carb and gear and lowest in qsec and vs. Columns are ordered by
+#> hierarchical clustering (euclidean distance, complete linkage).
 ```

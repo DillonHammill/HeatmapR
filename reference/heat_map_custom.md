@@ -21,7 +21,9 @@ heat_map_custom(popup = TRUE, popup_size = c(8, 8), layout = NULL, ...)
 
 - popup:
 
-  logical indicating whether a popup graphics device should be opened.
+  logical indicating whether a popup graphics device should be opened,
+  set to TRUE by default. Popups are only opened in interactive
+  sessions.
 
 - popup_size:
 

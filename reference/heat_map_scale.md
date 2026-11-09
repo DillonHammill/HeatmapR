@@ -24,8 +24,8 @@ heat_map_scale(x, scale = "column", method = "range")
 
 - method:
 
-  type of scaling to perform, can be either `'range'`, `'mean'` or
-  `'zscore'` (unique abbreviations such as `"z"` are accepted). Range
+  type of scaling to perform, can be either `"range"`, `"mean"` or
+  `"zscore"` (unique abbreviations such as `"z"` are accepted). Range
   scaling normalizes the data to have limits between 0 and 1. Mean
   scaling subtracts the mean (calculated excluding missing values) from
   each value and divides the result by the range. Z-score scaling

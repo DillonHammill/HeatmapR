@@ -14,7 +14,8 @@ functions in `HeatmapR` as summarised below:
 - [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
   is used inside
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-  to perform hierarchical clustering on the dataset using
+  to perform hierarchical clustering on the dataset, in compiled code
+  that builds the same trees as
   [`stats::hclust()`](https://rdrr.io/r/stats/hclust.html).
 - [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)
   is used inside
@@ -60,8 +61,10 @@ Constructing a heatmap is as simple loading the **HeatmapR** package and
 supplying your dataset to the
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 function. The constructed heatmap will be in the same orientation as the
-input data and each numeric cell in the heatmap will be coloured using
-the colour scale supplied to `cell_col_scale`. By default,
+input data, the first row at the top and the first column at the left as
+when the data is printed, and each numeric cell in the heatmap will be
+coloured using the colour scale supplied to `cell_col_scale`. By
+default,
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 uses a hybrid colour blind friendly `viridis` palette to offer high
 visual contrast.
@@ -72,7 +75,11 @@ library(HeatmapR)
 heat_map(mtcars)
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-1.png)
+![Heatmap of the unscaled mtcars data with the 32 cars as rows and the
+11 variables as columns, coloured on a single scale from 0 to about 470,
+so that only displacement (disp) and horsepower (hp) stand out and the
+other variables all look the
+same.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-1.png)
 
 ## 2. Cell Properties
 
@@ -88,7 +95,15 @@ orientation of the input matrix.
 
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 supports different cell shapes through the `cell_shape` argument which
-can be set to either `"rect"` (default), `"circle"` or `"diamond"`.
+can be set to `"rect"` (default), `"circle"`, `"diamond"`, `"ellipse"`,
+`"number"` or `"none"`. Circles and diamonds stay round when the cells
+aren’t square, sized by the shorter side of the cells. Ellipses show
+values between -1 and 1, such as correlations, by their shape,
+`"number"` writes each value in the colour of its cell, and `"none"`
+leaves a cell empty (see [Correlation Matrices](#correlation-matrices)).
+Where cells are drawn as shapes that don’t fill them,
+`cell_grid_line_col` (e.g. `"grey85"`) draws a light grid around the
+cells.
 
 ``` r
 
@@ -98,7 +113,10 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-3.png)
+![The unscaled mtcars heatmap with every cell drawn as a circle of the
+same size, coloured by its value, with the 32 cars as rows and the 11
+variables as
+columns.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-3.png)
 
 ``` r
 
@@ -108,7 +126,10 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-4.png)
+![The unscaled mtcars heatmap with every cell drawn as a diamond of the
+same size, coloured by its value, with the 32 cars as rows and the 11
+variables as
+columns.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-4.png)
 
 ### 2.2 Cell Size
 
@@ -123,11 +144,16 @@ control the size of the cells independently of their colour.
 heat_map(
   mtcars,
   cell_shape = "circle",
+  legend_size = 1.5,
   cell_size = TRUE
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-5.png)
+![The unscaled mtcars heatmap drawn as circles that are both sized and
+coloured by value, with a colour bar and a size legend, so that the
+large displacement and horsepower values appear as big circles and the
+small values shrink to
+dots.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-5.png)
 
 ### 2.3 Cell Colours
 
@@ -173,7 +199,11 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-2.png)
+![Heatmap of 25 randomly sampled rows of the iris data with each value
+written in its cell, the four measurements coloured on a yellow to black
+scale, the Species column coloured by species, and the missing values
+shown as empty grey
+cells.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-2.png)
 
 #### 2.3.1 Uncertainty in Colour
 
@@ -215,7 +245,11 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-uncertainty.png)
+![Heatmap of simulated log2 fold changes for 14 genes over six time
+points, with the genes clustered by a dendrogram, in which precise
+estimates use the full blue to red scale and uncertain ones fade towards
+grey, and a legend with one row of colours for each level of standard
+error.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-uncertainty.png)
 
 #### 2.3.2 Two Values in Each Cell
 
@@ -253,7 +287,11 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-split.png)
+![Heatmap of simulated expression of 10 genes in six immune cell types,
+with each cell split along its diagonal into a control half (upper left)
+and a stimulated half (lower right) on one colour scale, the genes
+clustered by a dendrogram and a legend naming the two
+halves.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-split.png)
 
 Split cells need full-size rectangles, so `cell_size` and other
 `cell_shape`s can’t be used with them.
@@ -275,7 +313,9 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-6.png)
+![The unscaled mtcars heatmap with every cell outlined by a thick dotted
+red
+border.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-6.png)
 
 #### 2.4.1 Border Masking
 
@@ -296,11 +336,15 @@ heat_map(
   cell_border_line_width = 2,
   cell_border_line_col = "red",
   cell_border_mask = border_mask,
+  cell_text = TRUE,
   title = "Border Masking Example"
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-6b.png)
+![The unscaled mtcars heatmap, titled Border Masking Example, with each
+value written in its cell and red borders drawn only around the cells
+whose values are above the median of the whole data
+set.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-6b.png)
 
 ### 2.5 Cell Text
 
@@ -320,11 +364,14 @@ heat_map(
   cell_text_font = 2,
   cell_text_col = "black",
   cell_text_col_alpha = 1,
+  cell_col_alpha = 0.9,
   title = "mtcars"
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-7.png)
+![The unscaled mtcars heatmap, titled mtcars, with each value written in
+bold black text in its
+cell.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-7.png)
 
 ### 2.6 Large Heatmaps
 
@@ -362,17 +409,63 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-raster.png)
+![Heatmap of 5,000 simulated cells by 20 markers drawn as a raster
+image, with the markers clustered by a dendrogram and the cells cut into
+three clusters labelled A, B and C: A is high in markers 12 to 20, B in
+markers 1 to 8 and C in
+neither.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-raster.png)
+
+Clustering is the slow part of a large heatmap. It needs the distance
+between every pair of rows, so exact clustering of 10,000 rows takes
+about 3 seconds and 400 MB of memory, and four times as much for twice
+the rows. Rows (or columns) beyond `clust_max`, 5000 by default, are
+clustered in two stages instead. A sample of 5000 rows is clustered
+exactly and its dendrogram is split into groups of about 200 rows, every
+row joins the group whose medoid it is closest to, and each group is
+clustered on its own beneath the sample’s dendrogram. The sample is
+drawn with a fixed seed, so the dendrogram is the same each time. The
+dendrogram shows the structure of the data down to the groups and within
+each group, and 100,000 rows take about 2 seconds. `clust_max = Inf`
+always clusters exactly, and
+[`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
+takes the same limit as `max`. Branch support is only computed for up to
+`clust_max` rows or columns, and optimal leaf ordering
+(`tree_order_y = "olo"`) of more than 2000 rows orders blocks of the
+dendrogram. Distances, linkage and leaf ordering run in compiled C++
+code.
+
+``` r
+
+set.seed(1)
+cells <- matrix(
+  rnorm(100000 * 20),
+  nrow = 100000,
+  dimnames = list(
+    NULL,
+    paste0("Marker_", 1:20)
+  )
+)
+cells[1:30000, 1:8] <- cells[1:30000, 1:8] + 2.5
+cells[60001:100000, 12:20] <- cells[60001:100000, 12:20] + 2
+heat_map(
+  cells,
+  tree = "both",
+  tree_cut_y = 3,
+  axis_text_y = NA,
+  title = "100,000 cells"
+)
+```
 
 ### 2.7 Labelling Chosen Rows and Columns
 
 When a heatmap has too many rows to label them all, `mark_y` (and
 `mark_x` for columns) labels just the rows you choose, given as names,
-indices in the original order of the data or a logical vector. The
-labels replace the axis text: they are spread out beside the heatmap so
-that they don’t overlap, and leader lines connect each label to its row.
-`mark_labels_y` supplies other text for the labels (e.g. gene symbols),
-and `mark_line_col` sets the colour of the leader lines.
+positions in the heatmap (rows from the top) or a logical vector in the
+order of the data. The labels replace the axis text: they are spread out
+beside the heatmap so that they don’t overlap, and leader lines connect
+each label to its row. `mark_labels_y` supplies other text for the
+labels (e.g. gene symbols), and `mark_line_col` sets the colour of the
+leader lines.
 
 ``` r
 
@@ -397,7 +490,11 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-marks.png)
+![Heatmap of 2,000 simulated genes across 24 samples, clustered in both
+directions with the genes cut into two clusters, in which seven chosen
+genes (MS4A1, CD79A, IL7R, CD4, CCR7, CD3E and ACTB) are labelled beside
+the heatmap with leader lines to their rows instead of all the gene
+names.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-marks.png)
 
 #### 2.7.1 Zooming Into a Band of Rows
 
@@ -441,7 +538,11 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-zoom.png)
+![Row-scaled heatmap of 2,000 simulated genes across 24 clustered
+samples, in which a thin band of 20 pathway genes is outlined and joined
+by a wedge to an enlarged panel on the left that names each gene and
+shows its values cell by
+cell.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-zoom.png)
 
 The panel keeps the cells’ shapes, text and distributions and the gaps
 between clusters. Rows that are far apart in a clustered heatmap make a
@@ -468,7 +569,64 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-rotate.png)
+![Heatmap of the z-scored mtcars data transposed so that the 11
+variables are rows and the 32 cars are columns, clustered in both
+directions with dendrograms, with the car names written at a 45 degree
+angle beneath
+it.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-rotate.png)
+
+### 2.9 Correlation Matrices
+
+[`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md)
+draws the correlations between the columns of a data set (or a
+correlation matrix) with one order for the rows and columns, so that the
+diagonal runs from the top left to the bottom right and each triangle
+can show the correlations differently. By default, the variables are
+clustered on one minus their correlations, the lower triangle shows
+ellipses, the upper triangle the correlation coefficients written in
+their colours, and the diagonal the names of the variables. Each ellipse
+is the outline of a bivariate normal distribution with that correlation:
+a circle for uncorrelated variables, rising to the right for positive
+correlations, falling for negative ones, and narrower the stronger the
+correlation.
+
+``` r
+
+heat_map_cor(mtcars)
+```
+
+![Correlation heatmap of the mtcars variables, clustered so that
+correlated variables sit together, with ellipses in the lower triangle,
+the coefficients written in blue (negative) or red (positive) in the
+upper triangle and the variable names on the
+diagonal.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cor.png)
+
+`lower`, `upper` and `diag` take any cell shape - `"circle"` and
+`"diamond"` are sized by the absolute correlation, and `"none"` leaves a
+triangle empty - and any other
+[`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+argument can be added, such as cuts that split the variables into
+clusters along both axes:
+
+``` r
+
+heat_map_cor(
+  mtcars,
+  method = "spearman",
+  upper = "ellipse",
+  tree_cut_x = 3,
+  tree_cut_y = 3
+)
+```
+
+![Spearman correlations of the mtcars variables drawn as ellipses
+throughout, with the variables split into three clusters along both
+axes.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cor-2.png)
+
+For other layouts, the shapes can be set cell by cell in
+[`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+with a matrix of shapes, e.g. ellipses for the correlations of each gene
+with a set of clinical variables and numbers for the strongest ones.
 
 ## 3. Data Scaling
 
@@ -479,13 +637,13 @@ represent each column on the same scale, we can apply a form of data
 scaling through the `scale_method` argument either to each row or column
 as specified by the `scale` argument. Currently,
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-has internal support for `"mean"`, `"range"` and `"z-score"` scaling
+has internal support for `"mean"`, `"range"` and `"zscore"` scaling
 methods that can be applied to either the rows or columns of the input
 matrix.
 
 ### 3.1 Scaling Columns
 
-To scale the values in every column, simply set `scale = "column` and
+To scale the values in every column, simply set `scale = "column"` and
 specify the scaling method through the `scale_method` argument. For
 example, to apply range scaling to every column in the `mtcars` dataset:
 
@@ -499,7 +657,10 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-8.png)
+![The mtcars heatmap with each column rescaled from 0 to 1, titled
+mtcars scaled columns, so that differences between the cars are now
+visible in every
+variable.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-8.png)
 
 ### 3.2 Scaling Rows
 
@@ -518,7 +679,10 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-9.png)
+![The mtcars heatmap with each row converted to z-scores, titled mtcars
+scaled rows, in which displacement and horsepower are the highest values
+for every car and the other variables are all
+low.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-9.png)
 
 ## 4. Bar Plots
 
@@ -545,13 +709,17 @@ heat_map(
   bar_line_col_x = "black",
   bar_values_y = 1:nrow(mtcars),
   bar_size_y = 0.8,
-  bar_fill_y = rainbow(ncol(mtcars)),
+  bar_fill_y = rainbow(nrow(mtcars)),
   bar_line_col_y = "black",
   title = "heatmap with bar plots"
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-10.png)
+![The unscaled mtcars heatmap, titled heatmap with bar plots, with a bar
+plot above it showing the values 1 to 11 for the columns and a bar plot
+to its right showing the values 1 to 32 for the rows, the bars filled
+with rainbow
+colours.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-10.png)
 
 ### 4.1 Metadata Annotations
 
@@ -604,7 +772,11 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-annotations.png)
+![Heatmap of 20 simulated genes across 24 samples on a blue-white-red
+z-score scale, with the samples split into labelled Control, Drug_A and
+Drug_B groups, coloured Treatment and Sex annotation tracks above the
+columns with their own legends, and the genes clustered by a
+dendrogram.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-annotations.png)
 
 ### 4.2 Box Plots and Violins
 
@@ -662,18 +834,27 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-side-plots.png)
+![Heatmap of the median intensity of six markers in five clusters of
+simulated cytometry events, each cluster bright only in its defining
+markers, with violins above showing the distribution of each marker
+across all events and bars on the right showing the number of events in
+each
+cluster.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-side-plots.png)
 
 ## 5. Hierarchical Clustering
 
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-also supports hierarchical clustering using the conventional
-[`stats::hclust()`](https://rdrr.io/r/stats/hclust.html) to construct
-dendrograms and [`stats::cutree()`](https://rdrr.io/r/stats/cutree.html)
-to partition the dendrograms into distinct clusters. The `dist_method`
-and `clust_method` arguments allow for control over the distance metric
-to use for hierarchical clustering (any method supported by
-[`stats::dist()`](https://rdrr.io/r/stats/dist.html), `"cosine"` for
+also supports hierarchical clustering to construct dendrograms, and
+[`stats::cutree()`](https://rdrr.io/r/stats/cutree.html) to partition
+the dendrograms into distinct clusters. Distances and linkage are
+computed in compiled code using the nearest-neighbour chain algorithm,
+which builds the same trees as
+[`stats::hclust()`](https://rdrr.io/r/stats/hclust.html) (when distances
+are tied, as they often are for integer data, the tree can make a
+different but equally valid choice between the tied merges). The
+`dist_method` and `clust_method` arguments allow for control over the
+distance metric to use for hierarchical clustering (any method supported
+by [`stats::dist()`](https://rdrr.io/r/stats/dist.html), `"cosine"` for
 cosine distance, `"pearson"`, `"spearman"` or `"kendall"` for
 correlation distances, or a function) and the agglomeration method to
 use (any method supported by
@@ -705,11 +886,15 @@ heat_map(
   tree_x = TRUE,
   tree_y = TRUE,
   tree_size_y = 0.8,
+  tree_scale_x = TRUE,
   title = "Dendrograms"
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-11.png)
+![The column-scaled mtcars heatmap, titled Dendrograms, with the cars
+and the variables reordered by hierarchical clustering and dendrograms
+drawn to the right of the rows and above the
+columns.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-11.png)
 
 #### 5.1.1 Cosine Distance
 
@@ -732,11 +917,15 @@ heat_map(
   tree_x = TRUE,
   tree_y = TRUE,
   tree_size_y = 0.8,
+  tree_scale_x = TRUE,
   title = "Cosine Distance Clustering"
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-11b.png)
+![The column-scaled mtcars heatmap, titled Cosine Distance Clustering,
+with the cars and the variables clustered on cosine distance and
+dendrograms drawn to the right of the rows and above the
+columns.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-11b.png)
 
 **Absolute Distance Thresholds**: When using cosine distance, `tree_cut`
 values between 0 and 1 are interpreted as absolute cosine distance
@@ -796,7 +985,12 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-dist-order.png)
+![Heatmap of 60 simulated genes across 12 samples clustered in both
+directions on Pearson correlation distance with optimal leaf ordering,
+in which the 20 genes that rise and fall together, at different levels,
+form a block at the bottom whose values increase smoothly from left to
+right across the reordered
+samples.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-dist-order.png)
 
 #### 5.1.2 Branch Support
 
@@ -826,7 +1020,12 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-support.png)
+![The column-scaled mtcars heatmap clustered in both directions, with
+each dendrogram branch drawn as a thick black, thin grey or dashed line
+according to its bootstrap support and the larger branches labelled with
+percentages, showing that only small groups such as the Mazda RX4 pair
+are strongly
+supported.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-support.png)
 
 ### 5.2 Clustering
 
@@ -856,7 +1055,10 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-12.png)
+![The column-scaled mtcars heatmap, titled Hierarchical Clustering, with
+dendrograms on both axes cut into 5 groups of cars and 4 groups of
+variables, separated by
+gaps.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-12.png)
 
 In addition to heatmap splitting,
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
@@ -895,7 +1097,10 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13.png)
+![The column-scaled mtcars heatmap, titled Cluster Labels, split into 4
+groups of variables and 5 groups of cars, each group marked by a
+coloured bar numbered 1 to 4 above the columns or 1 to 5 beside the
+rows.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-13.png)
 
 #### 5.2.1 Manual Clustering
 
@@ -919,18 +1124,25 @@ heat_map(
   tree_split_x = 1,
   tree_label_x = TRUE,
   tree_label_text_x = c("Group A", "Group B", "Group C"),
+  tree_label_col_x = "white",
   title = "Manual Clustering by Size"
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13b.png)
+![The column-scaled mtcars heatmap, titled Manual Clustering by Size,
+with the variables kept in their original order and split into groups of
+4, 3 and 4 columns labelled Group A, Group B and Group
+C.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-13b.png)
 
 **Method 2: Specify cluster indices** - Provide a vector where each
-element indicates which cluster that row/column belongs to. Cluster
-indices are supplied in the original order of the rows/columns of the
-data (in the same way as `bar_values_x` and `bar_values_y`), and can be
-numbers, characters or a factor. The rows/columns are regrouped so that
-each cluster is contiguous in the heatmap:
+element indicates which cluster that row/column belongs to. Numeric
+indices are given as the heatmap is displayed - columns from the left,
+rows from the top, in the dendrogram order when a dendrogram is drawn
+and in the order of the data otherwise - so you can draw a heatmap, read
+it, and assign clusters to what you see. Labels given as characters or a
+factor (e.g. treatments from sample metadata) follow the original order
+of the data, and named vectors are matched by name. The rows/columns are
+regrouped so that each cluster is contiguous in the heatmap:
 
 ``` r
 
@@ -950,7 +1162,10 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13c.png)
+![The column-scaled mtcars heatmap, titled Manual Clustering by Index,
+with the variables split into three groups of 4, 3 and 4 columns
+labelled Low, Medium and High on blue, yellow and red
+bars.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-13c.png)
 
 Manual clusters can be combined with dendrograms by setting
 `tree_x = TRUE` or `tree_y = TRUE`. The rows or columns are then
@@ -983,7 +1198,11 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-groups.png)
+![Heatmap of 40 simulated genes across 24 samples, with the samples
+split into labelled Control, Drug_A and Drug_B groups that are each
+clustered by their own dendrogram under a shared root, and the genes
+clustered so that those raised in the Drug_A samples sit together at the
+bottom.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-groups.png)
 
 A dendrogram supplied as an `hclust` or `dist` object is kept only when
 the clusters are contiguous in its order, and is dropped with a warning
@@ -1045,7 +1264,11 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-kmeans.png)
+![Row z-scored heatmap of 2,000 simulated genes across 12 samples, split
+by k-means into four clusters separated by gaps and clustered by a
+dendrogram within each, in which three clusters are high in samples S9
+to S12, S1 to S4 and S5 to S8 respectively and one shows no
+pattern.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-kmeans.png)
 
 ### 5.3 Group Summaries
 
@@ -1086,7 +1309,11 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-summarise.png)
+![Dot plot of eight marker genes in four simulated cell types, with
+circles coloured by mean expression (z-scored within each gene) and
+sized by the proportion of cells in which the gene is detected, so that
+each cell type has two large bright circles for its own
+markers.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-summarise.png)
 
 #### 5.3.1 Distributions Inside Cells
 
@@ -1136,7 +1363,12 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-cell-values.png)
+![Heatmap of the median intensity of six markers in six clusters of
+simulated cytometry events, with a density curve of each cluster's
+values and a tick at the median drawn inside every cell, showing that
+the middling CD4 and CD8 medians of the T mixed cluster come from two
+separate
+populations.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cell-values.png)
 
 ## 6. Legends
 
@@ -1169,7 +1401,10 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-17.png)
+![The mtcars heatmap rescaled from 0 to 1 within each column, clustered
+in both directions and drawn as circles sized and coloured by value,
+with a colour legend titled colour and a size legend titled size to its
+right.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-17.png)
 
 Legends can also be drawn below the heatmap with
 `legend_side = "bottom"`, where the colour bars are horizontal and the
@@ -1196,7 +1431,10 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-legend-bottom.png)
+![The z-scored mtcars heatmap clustered in both directions with the
+variables cut into three groups, coloured on a stepped blue to red scale
+whose horizontal legend, labelled low, 0 and high, sits below the
+heatmap.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-legend-bottom.png)
 
 `legend_col_density = TRUE` traces the distribution of the values (a
 kernel density) over the colour legend, so you can see which colours
@@ -1226,22 +1464,24 @@ heat_map(
 )
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-legend-density.png)
+![Heatmap of 40 simulated genes across 12 samples clustered in both
+directions, with the colour scale limited to the 2nd and 98th
+percentiles of the values and a density curve traced over the colour
+legend showing that most values lie near
+zero.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-legend-density.png)
 
 ### 6.1 Layout
 
-By default
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-uses the `"fit"` layout, which sizes everything around the heatmap in
-inches from its contents: dendrograms and bar graphs keep the same size
-whatever the shape of the data (`tree_size_x`, `bar_size_x` etc. are
-multiples of 0.6 inches), the legend is as wide as its text, the margins
-are as wide as the axis text, axis labels and title, and the heatmap
-body takes the remaining space. Legends are stacked from the top of the
-heatmap and shrunk if they don’t fit. Setting `layout = "classic"`
-restores the layout of earlier versions, in which dendrograms, bar
-graphs and the legend are sized as fractions of the heatmap, so they
-grow and shrink with the number of rows and columns.
+sizes everything around the heatmap in inches from its contents:
+dendrograms and bar graphs keep the same size whatever the shape of the
+data (`tree_size_x`, `bar_size_x` etc. are multiples of 0.6 inches), the
+legend is as wide as its text, the margins are as wide as the axis text,
+axis labels and title, and the heatmap body takes the remaining space.
+Legends are stacked from the top of the heatmap and shrunk if they don’t
+fit, and text is shrunk (or thinned) only when it would otherwise
+overlap. Below, the dendrograms, annotation track and legend are the
+same size for 60 genes as for 12.
 
 ``` r
 
@@ -1264,20 +1504,26 @@ heat_map_custom(
   popup_size = c(11, 6.5),
   layout = c(1, 2)
 )
-for(layout in c("classic", "fit")) {
-  heat_map(
-    mat,
-    tree = "both",
-    annotation_x = group,
-    legend_title = "Expression",
-    title = paste0("layout = \"", layout, "\""),
-    layout = layout
-  )
-}
+heat_map(
+  mat,
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "60 genes"
+)
+heat_map(
+  mat[1:12, ],
+  tree = "both",
+  annotation_x = group,
+  legend_title = "Expression",
+  title = "12 genes"
+)
 heat_map_complete()
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-layout.png)
+![Two clustered heatmaps side by side, of 60 and 12 genes, with
+dendrograms, annotation tracks and legends of the same
+size](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-layout.png)
 
 ## 7. Complex Layouts
 
@@ -1323,7 +1569,11 @@ heat_map(
 heat_map_complete()
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-14.png)
+![Three unscaled heatmaps of subsets of the mtcars data arranged in one
+figure: the Mercedes cars in a large panel on the left, and the Mazda
+and Toyota cars and the Hornet, Datsun and Volvo cars in two smaller
+panels on the right, each with its own colour
+scale.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-14.png)
 
 `HeatmapR` also supports layouts with other plots generated using base
 graphics. For example, we could arrange a heatmap with a scatterplot and
@@ -1343,6 +1593,9 @@ heat_map_custom(
 )
 heat_map(
   mtcars,
+  scale = "column",
+  cell_size = TRUE,
+  legend_size = 1.5,
   title = "mtcars"
 )
 plot(
@@ -1353,6 +1606,11 @@ plot(
   pch = 16,
   col = "black"
 )
+abline(
+  lm(hp ~ disp, data = mtcars),
+  col = "red",
+  lty = 2
+)
 boxplot(
   mtcars[, "disp"],
   main = "Displacement",
@@ -1362,7 +1620,11 @@ boxplot(
 heat_map_complete()
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-15.png)
+![A column-scaled mtcars heatmap drawn as squares sized and coloured by
+value on the left, beside a scatter plot of horsepower against
+displacement with a dashed red regression line and a horizontal box plot
+of displacement on the
+right.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-15.png)
 
 ### 7.1 Heatmaps Beside ggplot2 Plots
 
@@ -1398,7 +1660,7 @@ p + heat_map_grob(hm) + plot_layout(widths = c(1, 1.5))
 ![A scatter plot of miles per gallon against weight for the mtcars data,
 coloured by the number of cylinders, beside a clustered heatmap of the
 same
-cars](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-ggplot.png)
+cars](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-ggplot.png)
 
 ### 7.2 Heatmap Data for ggplot2 and Other Tools
 
@@ -1439,7 +1701,7 @@ ggplot(cells) +
 ![The mtcars heatmap rebuilt with ggplot2 from heat_map_data(), with a
 red-blue fill scale, the same row clusters and gaps, and the row
 dendrogram on the
-right](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-ggplot-data.png)
+right](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-ggplot-data.png)
 
 Drawn straight after
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
@@ -1476,7 +1738,10 @@ heat_map(
 heat_map_complete()
 ```
 
-![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-16.png)
+![Heatmap of the mtcars data rescaled within each column, drawn as
+circles sized and coloured by value, with dendrograms splitting the cars
+into 12 groups and the variables into 4
+groups.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-16.png)
 
 ## 9. Describing a Heatmap
 
@@ -1508,12 +1773,12 @@ heat_map_describe(hm)
     green to dark red (3.21). The highest value is 3.21 (Maserati Bora, carb) and
     the lowest is -1.87 (Ford Pantera L, qsec). Rows are ordered by hierarchical
     clustering (euclidean distance, complete linkage). Rows are split into 3
-    groups, numbered from the bottom: group 1 (15 rows, e.g. Datsun 710 and Hornet
-    4 Drive) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows,
-    e.g. Hornet Sportabout and Duster 360) is highest in disp and cyl and lowest in
-    gear and drat; group 3 (5 rows, e.g. Mazda RX4 and Mazda RX4 Wag) is highest in
-    carb and gear and lowest in qsec and vs. Columns are ordered by hierarchical
-    clustering (euclidean distance, complete linkage).
+    groups, numbered from the top: group 1 (15 rows, e.g. Hornet 4 Drive and
+    Valiant) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows,
+    e.g. Chrysler Imperial and Cadillac Fleetwood) is highest in disp and cyl and
+    lowest in gear and drat; group 3 (5 rows, e.g. Ferrari Dino and Mazda RX4) is
+    highest in carb and gear and lowest in qsec and vs. Columns are ordered by
+    hierarchical clustering (euclidean distance, complete linkage).
 
 In a chunk that draws the heatmap, compute the description in an earlier
 chunk and refer to it,

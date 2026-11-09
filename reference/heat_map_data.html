@@ -15,7 +15,7 @@ displayed values, colours and clusters."><meta property="og:image" content="http
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -75,7 +75,8 @@ along each row, with the <code>row</code> and <code>column</code> names, their
 <code>row_index</code> and <code>col_index</code> in the original data,
 <code>display_row</code>, <code>display_col</code>, <code>x</code> and <code>y</code>, the
 displayed <code>value</code> (after any scaling), <code>level</code> for
-non-numeric columns, the fill <code>colour</code> and relative <code>size</code>,
+non-numeric columns, the fill <code>colour</code>, relative <code>size</code> and
+<code>shape</code> (see <code>cell_shape</code> in <code><a href="heat_map.html">heat_map</a></code>),
 <code>split_value</code> and <code>split_colour</code> for split cells
 (<code>cell_split</code>), and the <code>row_cluster</code> and <code>col_cluster</code>
 when rows or columns are split into clusters.</p></li>
@@ -124,31 +125,38 @@ and vectors, and <code><a href="heat_map_grob.html">heat_map_grob</a></code> to 
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Applying range scaling to each column...</span>
 <span class="r-in"><span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu">heat_map_data</span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cells</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             row column row_index col_index display_row display_col   x        y</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Mazda RX4 Wag    mpg         2         1           1           1 0.5 32.39679</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Mazda RX4 Wag    cyl         2         2           1           2 1.5 32.39679</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Mazda RX4 Wag   disp         2         3           1           3 2.5 32.39679</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Mazda RX4 Wag     hp         2         4           1           4 3.5 32.39679</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Mazda RX4 Wag   drat         2         5           1           5 4.5 32.39679</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 Mazda RX4 Wag     wt         2         6           1           6 5.5 32.39679</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       value    colour size row_cluster</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.4510638 #6ECE57FF    1           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.5000000 #A3DA36FF    1           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 0.2217511 #2B748EFF    1           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 0.2049470 #2E6D8DFF    1           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 0.5253456 #C0DE23FF    1           3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 0.3482485 #26A783FF    1           3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              row column row_index col_index display_row display_col   x</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 Ford Pantera L    mpg        29         1           1           1 0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 Ford Pantera L    cyl        29         2           1           2 1.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 Ford Pantera L   disp        29         3           1           3 2.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 Ford Pantera L     hp        29         4           1           4 3.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Ford Pantera L   drat        29         5           1           5 4.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 Ford Pantera L     wt        29         6           1           6 5.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>          y     value    colour size shape row_cluster</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 32.39679 0.2297872 #2A778EFF    1  rect           1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 32.39679 1.0000000 #6E0A0AFF    1  rect           1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 32.39679 0.6981791 #FBAF29FF    1  rect           1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 32.39679 0.7491166 #F9932AFF    1  rect           1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 32.39679 0.6728111 #FCBC28FF    1  rect           1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 32.39679 0.4236768 #53C568FF    1  rect           1</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># The displayed values, rows in the order of the heatmap</span></span></span>
 <span class="r-in"><span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu">heat_map_data</span><span class="op">(</span><span class="va">hm</span>, <span class="st">"rows"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rows</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              row row_index display_row        y          label cluster</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  Mazda RX4 Wag         2           1 32.39679  Mazda RX4 Wag       3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      Mazda RX4         1           2 31.39679      Mazda RX4       3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   Ferrari Dino        30           3 30.39679   Ferrari Dino       3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Porsche 914-2        27           4 29.39679  Porsche 914-2       3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Toyota Corolla        20           5 28.39679 Toyota Corolla       3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6       Fiat 128        18           6 27.39679       Fiat 128       3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                   row row_index display_row        y               label</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1      Ford Pantera L        29           1 32.39679      Ford Pantera L</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2       Maserati Bora        31           2 31.39679       Maserati Bora</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   Chrysler Imperial        17           3 30.39679   Chrysler Imperial</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4  Cadillac Fleetwood        15           4 29.39679  Cadillac Fleetwood</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 Lincoln Continental        16           5 28.39679 Lincoln Continental</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6          Duster 360         7           6 27.39679          Duster 360</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   cluster</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1       1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2       1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3       1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4       1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5       1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6       1</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Mark the highest value of each column on the heatmap</span></span></span>
 <span class="r-in"><span><span class="va">top</span> <span class="op">&lt;-</span> <span class="va">cells</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/ave.html" class="external-link">ave</a></span><span class="op">(</span><span class="va">cells</span><span class="op">$</span><span class="va">value</span>, <span class="va">cells</span><span class="op">$</span><span class="va">column</span>, FUN <span class="op">=</span> <span class="va">max</span><span class="op">)</span> <span class="op">==</span> <span class="va">cells</span><span class="op">$</span><span class="va">value</span>, <span class="op">]</span></span></span>

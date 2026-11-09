@@ -32,7 +32,7 @@ a list containing:
 - `row_clusters`, `col_clusters`: the cluster assigned to each
   row/column in their original order (or `NULL` when no clusters were
   defined). Clusters are numbered in the order they are displayed: from
-  left to right for columns and from bottom to top for rows.
+  left to right for columns and from top to bottom for rows.
 
 - `tree_x`, `tree_y`: `hclust` objects for the x and y axis dendrograms
   (or `NULL`). Branch heights are rescaled for display.
@@ -43,13 +43,14 @@ a list containing:
 
 - `zoom_x`, `zoom_y`: indices of the columns (from left to right) and
   rows (from top to bottom) enlarged in a zoom panel (`zoom_x`,
-  `zoom_y`), or `NULL`.
+  `zoom_y`) - a list with the indices of each band when several were
+  given as a list - or `NULL`.
 
 - `axis_text_x`, `axis_text_y`: axis labels from left to right and from
   top to bottom respectively.
 
-- `colours`, `sizes`: the fill colour and relative size of each cell, in
-  the orientation of the original data.
+- `colours`, `sizes`, `shapes`: the fill colour, relative size and shape
+  of each cell, in the orientation of the original data.
 
 - `centers`: lists `x` and `y` with the centre of each column and row in
   the original order, in the heatmap's plot co-ordinates (one unit per
@@ -94,15 +95,15 @@ info$col_clusters
 #>  mpg  cyl disp   hp drat   wt qsec   vs   am gear carb 
 #>    3    1    1    1    3    1    3    3    2    2    1 
 rownames(mtcars)[info$row_order]
-#>  [1] "Mazda RX4 Wag"       "Mazda RX4"           "Ferrari Dino"       
-#>  [4] "Porsche 914-2"       "Toyota Corolla"      "Fiat 128"           
-#>  [7] "Fiat X1-9"           "Honda Civic"         "Volvo 142E"         
-#> [10] "Datsun 710"          "Lotus Europa"        "Valiant"            
-#> [13] "Hornet 4 Drive"      "Merc 280C"           "Merc 280"           
-#> [16] "Merc 230"            "Merc 240D"           "Toyota Corona"      
-#> [19] "AMC Javelin"         "Dodge Challenger"    "Merc 450SL"         
-#> [22] "Merc 450SE"          "Merc 450SLC"         "Pontiac Firebird"   
-#> [25] "Hornet Sportabout"   "Camaro Z28"          "Duster 360"         
-#> [28] "Lincoln Continental" "Cadillac Fleetwood"  "Chrysler Imperial"  
-#> [31] "Maserati Bora"       "Ford Pantera L"     
+#>  [1] "Ford Pantera L"      "Maserati Bora"       "Chrysler Imperial"  
+#>  [4] "Cadillac Fleetwood"  "Lincoln Continental" "Duster 360"         
+#>  [7] "Camaro Z28"          "Hornet Sportabout"   "Pontiac Firebird"   
+#> [10] "Merc 450SLC"         "Merc 450SE"          "Merc 450SL"         
+#> [13] "Dodge Challenger"    "AMC Javelin"         "Toyota Corona"      
+#> [16] "Merc 240D"           "Merc 230"            "Merc 280"           
+#> [19] "Merc 280C"           "Hornet 4 Drive"      "Valiant"            
+#> [22] "Lotus Europa"        "Datsun 710"          "Volvo 142E"         
+#> [25] "Honda Civic"         "Fiat X1-9"           "Fiat 128"           
+#> [28] "Toyota Corolla"      "Porsche 914-2"       "Ferrari Dino"       
+#> [31] "Mazda RX4"           "Mazda RX4 Wag"      
 ```

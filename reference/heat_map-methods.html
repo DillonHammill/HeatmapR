@@ -3,11 +3,19 @@
 arguments originally supplied to heat_map. Any arguments
 supplied through ... override the original arguments, for example
 plot(hm, title = &quot;New title&quot;). Use data to redraw the heatmap
-with new data, as x refers to the heat_map object itself."><meta property="og:description" content="plot() redraws a heatmap on the current graphics device using the
+with new data, as x refers to the heat_map object itself.
+The dendrograms, k-means clusters and branch support of the heatmap are
+kept in it and reused when the arguments they depend on (the data,
+scaling, distance, linkage and tree arguments) haven't changed, so a
+redraw only draws."><meta property="og:description" content="plot() redraws a heatmap on the current graphics device using the
 arguments originally supplied to heat_map. Any arguments
 supplied through ... override the original arguments, for example
 plot(hm, title = &quot;New title&quot;). Use data to redraw the heatmap
-with new data, as x refers to the heat_map object itself."><meta property="og:image" content="https://dillonhammill.github.io/HeatmapR/logo.png"></head><body>
+with new data, as x refers to the heat_map object itself.
+The dendrograms, k-means clusters and branch support of the heatmap are
+kept in it and reused when the arguments they depend on (the data,
+scaling, distance, linkage and tree arguments) haven't changed, so a
+redraw only draws."><meta property="og:image" content="https://dillonhammill.github.io/HeatmapR/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -15,7 +23,7 @@ with new data, as x refers to the heat_map object itself."><meta property="og:im
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,7 +54,11 @@ with new data, as x refers to the heat_map object itself."><meta property="og:im
 arguments originally supplied to <code><a href="heat_map.html">heat_map</a></code>. Any arguments
 supplied through <code>...</code> override the original arguments, for example
 <code>plot(hm, title = "New title")</code>. Use <code>data</code> to redraw the heatmap
-with new data, as <code>x</code> refers to the <code>heat_map</code> object itself.</p>
+with new data, as <code>x</code> refers to the <code>heat_map</code> object itself.
+The dendrograms, k-means clusters and branch support of the heatmap are
+kept in it and reused when the arguments they depend on (the data,
+scaling, distance, linkage and tree arguments) haven't changed, so a
+redraw only draws.</p>
     </div>
 
     <div class="section level2">
