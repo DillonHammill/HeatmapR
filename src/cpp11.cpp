@@ -5,6 +5,27 @@
 #include "cpp11/declarations.hpp"
 #include <R_ext/Visibility.h>
 
+// colour.cpp
+SEXP rgb_strings_cpp(cpp11::doubles_matrix<> rgb, int alpha);
+extern "C" SEXP _HeatmapR_rgb_strings_cpp(SEXP rgb, SEXP alpha) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(rgb_strings_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb), cpp11::as_cpp<cpp11::decay_t<int>>(alpha)));
+  END_CPP11
+}
+// colour.cpp
+cpp11::strings alpha_hex_cpp(cpp11::strings col, int alpha);
+extern "C" SEXP _HeatmapR_alpha_hex_cpp(SEXP col, SEXP alpha) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(alpha_hex_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::strings>>(col), cpp11::as_cpp<cpp11::decay_t<int>>(alpha)));
+  END_CPP11
+}
+// colour.cpp
+cpp11::integers native_colours_cpp(cpp11::strings col);
+extern "C" SEXP _HeatmapR_native_colours_cpp(SEXP col) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(native_colours_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::strings>>(col)));
+  END_CPP11
+}
 // linkage.cpp
 cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members, double max_bytes);
 extern "C" SEXP _HeatmapR_hclust_cpp(SEXP d, SEXP n, SEXP method, SEXP members, SEXP max_bytes) {
@@ -110,21 +131,32 @@ extern "C" SEXP _HeatmapR_olo_blocks_cpp(SEXP merge, SEXP max) {
     return cpp11::as_sexp(olo_blocks_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(merge), cpp11::as_cpp<cpp11::decay_t<int>>(max)));
   END_CPP11
 }
+// tree.cpp
+std::string hash_cpp(SEXP x);
+extern "C" SEXP _HeatmapR_hash_cpp(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(hash_cpp(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
+    {"_HeatmapR_alpha_hex_cpp",         (DL_FUNC) &_HeatmapR_alpha_hex_cpp,         2},
     {"_HeatmapR_apply_order_cpp",       (DL_FUNC) &_HeatmapR_apply_order_cpp,       2},
     {"_HeatmapR_clade_hash_cpp",        (DL_FUNC) &_HeatmapR_clade_hash_cpp,        2},
     {"_HeatmapR_cluster_groups_cpp",    (DL_FUNC) &_HeatmapR_cluster_groups_cpp,    5},
     {"_HeatmapR_group_medoids_cpp",     (DL_FUNC) &_HeatmapR_group_medoids_cpp,     4},
+    {"_HeatmapR_hash_cpp",              (DL_FUNC) &_HeatmapR_hash_cpp,              1},
     {"_HeatmapR_hclust_cpp",            (DL_FUNC) &_HeatmapR_hclust_cpp,            5},
     {"_HeatmapR_hclust_rows_cpp",       (DL_FUNC) &_HeatmapR_hclust_rows_cpp,       5},
     {"_HeatmapR_mean_order_cpp",        (DL_FUNC) &_HeatmapR_mean_order_cpp,        2},
     {"_HeatmapR_merge_order_cpp",       (DL_FUNC) &_HeatmapR_merge_order_cpp,       3},
     {"_HeatmapR_merge_sizes_cpp",       (DL_FUNC) &_HeatmapR_merge_sizes_cpp,       1},
+    {"_HeatmapR_native_colours_cpp",    (DL_FUNC) &_HeatmapR_native_colours_cpp,    1},
     {"_HeatmapR_nearest_medoid_cpp",    (DL_FUNC) &_HeatmapR_nearest_medoid_cpp,    4},
     {"_HeatmapR_olo_blocks_cpp",        (DL_FUNC) &_HeatmapR_olo_blocks_cpp,        2},
     {"_HeatmapR_olo_order_cpp",         (DL_FUNC) &_HeatmapR_olo_order_cpp,         3},
+    {"_HeatmapR_rgb_strings_cpp",       (DL_FUNC) &_HeatmapR_rgb_strings_cpp,       2},
     {"_HeatmapR_structural_clades_cpp", (DL_FUNC) &_HeatmapR_structural_clades_cpp, 2},
     {"_HeatmapR_sub_merge_cpp",         (DL_FUNC) &_HeatmapR_sub_merge_cpp,         2},
     {"_HeatmapR_tree_segments_cpp",     (DL_FUNC) &_HeatmapR_tree_segments_cpp,     3},

@@ -7,6 +7,8 @@
 
 #include <cpp11.hpp>
 #include <algorithm>
+#include <cstdint>
+#include <string>
 #include <vector>
 
 #include "tree.h"
@@ -307,4 +309,38 @@ cpp11::list olo_blocks_cpp(cpp11::integers merge, int max) {
   std::copy(above.begin(), above.end(), INTEGER(a));
   using namespace cpp11::literals;
   return cpp11::writable::list({"blocks"_nm = b, "above"_nm = a});
+}
+
+// 64-bit FNV-1a hash of the values of a numeric, integer or logical vector,
+// as 16 hex digits - identifies the data behind a cached result
+[[cpp11::register]]
+std::string hash_cpp(SEXP x) {
+  const unsigned char* p = nullptr;
+  size_t bytes = 0;
+  switch (TYPEOF(x)) {
+    case REALSXP:
+      p = reinterpret_cast<const unsigned char*>(REAL(x));
+      bytes = static_cast<size_t>(Rf_xlength(x)) * sizeof(double);
+      break;
+    case INTSXP:
+    case LGLSXP:
+      p = reinterpret_cast<const unsigned char*>(INTEGER(x));
+      bytes = static_cast<size_t>(Rf_xlength(x)) * sizeof(int);
+      break;
+    default:
+      cpp11::stop("hash_cpp() needs a numeric, integer or logical vector");
+  }
+  uint64_t h = 14695981039346656037ULL;
+  for (size_t i = 0; i < bytes; ++i) {
+    h ^= p[i];
+    h *= 1099511628211ULL;
+  }
+  char buf[17];
+  const char* hex = "0123456789abcdef";
+  for (int i = 15; i >= 0; --i) {
+    buf[i] = hex[h & 15];
+    h >>= 4;
+  }
+  buf[16] = '\0';
+  return std::string(buf);
 }

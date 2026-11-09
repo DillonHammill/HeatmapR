@@ -461,6 +461,51 @@
   colorRamp(x)
 }
 
+#' Colours of positions along a colour scale
+#'
+#' The scale gives each position's red, green and blue intensities, which are
+#' written as colours in compiled code exactly as \code{rgb(maxColorValue =
+#' 255)} writes them (intensities \code{rgb()} would reject go to
+#' \code{rgb()}, which reports them).
+#'
+#' @param k positions along the scale, in [0, 1].
+#' @param scale a function from \code{.col_scale()}.
+#' @param alpha NULL, or a transparency in [0, 1] to append (as
+#'   \code{.alpha_col()} would).
+#'
+#' @return "#RRGGBB" colours (or "#RRGGBBAA" with \code{alpha}).
+#'
+#' @importFrom grDevices rgb
+#' @noRd
+.ramp_colours <- function(k,
+                          scale,
+                          alpha = NULL) {
+  if(length(k) == 0) {
+    return(character(0))
+  }
+  rgb_mat <- scale(k)
+  if(is.null(dim(rgb_mat))) {
+    rgb_mat <- matrix(rgb_mat, nrow = 1)
+  }
+  rgb_mat <- rgb_mat[, 1:3, drop = FALSE]
+  storage.mode(rgb_mat) <- "double"
+  byte <- if(is.null(alpha)) -1L else .alpha_byte(alpha)
+  out <- if(!is.na(byte)) rgb_strings_cpp(rgb_mat, byte)
+  if(is.null(out)) {
+    out <- rgb(rgb_mat[, 1], rgb_mat[, 2], rgb_mat[, 3], maxColorValue = 255)
+    if(!is.null(alpha)) {
+      out <- .alpha_col(out, alpha)
+    }
+  }
+  out
+}
+
+#' Alpha channel of a transparency in [0, 1], as .alpha_col() writes it
+#' @noRd
+.alpha_byte <- function(alpha) {
+  as.integer(255 * min(1, max(0, alpha)) + 0.5)
+}
+
 #' Resolve the colour palette for non-numeric values into a function of n
 #' @importFrom grDevices colorRampPalette hcl.colors
 #' @noRd
@@ -994,15 +1039,81 @@
   tree
 }
 
+## REDRAWING -------------------------------------------------------------------
+
+# The slow steps of heat_map() - clustering, k-means and branch support - are
+# kept in the heat_map object with their inputs, so that redrawing it
+# (print(), plot(), heat_map_grob(), heat_map_save(x = )) reuses them when the
+# inputs haven't changed. plot.heat_map() leaves the kept results in .memo
+# for the heat_map() call it makes.
+.memo <- new.env(parent = emptyenv())
+
+#' Start the record of slow steps for a heat_map() call, taking the results a
+#' redraw left for it
+#' @noRd
+.memo_start <- function() {
+  memo <- new.env(parent = emptyenv())
+  memo$use <- .memo$pending
+  .memo$pending <- NULL
+  memo$record <- list()
+  memo
+}
+
+#' Call fun with args, or reuse its result from the heatmap being redrawn
+#'
+#' @param memo from \code{.memo_start()}.
+#' @param fun name of a HeatmapR function.
+#' @param args named list of its arguments.
+#'
+#' @noRd
+.memo_call <- function(memo,
+                       fun,
+                       args) {
+  key <- list(fun, .memo_key(args))
+  for(e in memo$use) {
+    if(identical(e$key, key)) {
+      memo$record[[length(memo$record) + 1]] <- e
+      return(e$value)
+    }
+  }
+  # (A CALL THAT NAMES THE ARGUMENTS, NOT THEIR VALUES, FOR ERROR MESSAGES)
+  call <- as.call(c(
+    as.name(fun),
+    lapply(seq_along(args), function(i) call("[[", as.name("args"), i))
+  ))
+  names(call) <- c("", names(args))
+  value <- eval(call)
+  memo$record[[length(memo$record) + 1]] <- list(key = key, value = value)
+  value
+}
+
+#' Inputs of a slow step as a key: long numeric, integer and logical vectors
+#' (data, groups, trees) are replaced by a hash of their values
+#' @noRd
+.memo_key <- function(x) {
+  if(is.list(x)) {
+    return(list(class(x), names(x), attr(x, "row.names"), lapply(unclass(x), .memo_key)))
+  }
+  if((is.numeric(x) || is.logical(x)) && length(x) > 64) {
+    return(list(typeof(x), dim(x), dimnames(x), hash_cpp(x)))
+  }
+  x
+}
+
 #' Convert a recorded plot into a heat_map object
+#'
+#' @param memo results of the slow steps (see \code{.memo_call()}).
+#'
 #' @noRd
 .as_heat_map <- function(x,
                          info,
                          args,
-                         custom = FALSE) {
+                         custom = FALSE,
+                         memo = NULL) {
   attr(x, "heat_map_info") <- info
   attr(x, "heat_map_args") <- args
   attr(x, "heat_map_custom") <- custom
+  attr(x, "heat_map_memo") <- memo
   class(x) <- unique(c("heat_map", class(x)))
   x
 }
@@ -1093,6 +1204,10 @@ heat_map_info <- function(x) {
 #' supplied through \code{...} override the original arguments, for example
 #' \code{plot(hm, title = "New title")}. Use \code{data} to redraw the heatmap
 #' with new data, as \code{x} refers to the \code{heat_map} object itself.
+#' The dendrograms, k-means clusters and branch support of the heatmap are
+#' kept in it and reused when the arguments they depend on (the data,
+#' scaling, distance, linkage and tree arguments) haven't changed, so a
+#' redraw only draws.
 #'
 #' \code{print()} also redraws the heatmap, unless it was drawn within a custom
 #' layout (see \code{\link{heat_map_custom}}), in which case the recorded page
@@ -1132,6 +1247,9 @@ plot.heat_map <- function(x, ...) {
   if(!"popup" %in% names(dots)) {
     args[["popup"]] <- FALSE
   }
+  # REUSE THE SLOW STEPS WHOSE INPUTS ARE UNCHANGED
+  .memo$pending <- attr(x, "heat_map_memo")
+  on.exit(.memo$pending <- NULL, add = TRUE)
   suppressMessages(
     do.call(
       heat_map,
@@ -1170,16 +1288,10 @@ print.heat_map <- function(x, ...) {
   alpha <- rep_len(alpha, n)
   if(all(alpha == alpha[1])) {
     # FAST PATH FOR OPAQUE "#RRGGBB" COLOURS (FROM rgb()) - THE SAME RESULT AS
-    # adjustcolor(), WHICH APPENDS THE ALPHA CHANNEL; OTHER COLOURS ARE
-    # ADJUSTED ONCE PER UNIQUE COLOUR
-    out <- character(n)
-    hex <- !is.na(col) & nchar(col) == 7 & startsWith(col, "#")
-    if(any(hex)) {
-      out[hex] <- paste0(
-        toupper(col[hex]),
-        sprintf("%02X", as.integer(255 * min(1, max(0, alpha[1])) + 0.5))
-      )
-    }
+    # adjustcolor(), WHICH APPENDS THE ALPHA CHANNEL (IN COMPILED CODE); OTHER
+    # COLOURS ARE ADJUSTED ONCE PER UNIQUE COLOUR
+    out <- alpha_hex_cpp(as.character(col), .alpha_byte(alpha[1]))
+    hex <- !is.na(out)
     if(any(!hex)) {
       u <- unique(col[!hex])
       out[!hex] <- adjustcolor(u, alpha[1])[match(col[!hex], u)]
@@ -1534,6 +1646,40 @@ print.heat_map <- function(x, ...) {
   )
 }
 
+#' Colours as packed integers, as the graphics engine stores them
+#'
+#' Hex colours (and NA, transparent) are converted in compiled code, others
+#' once per unique colour with \code{col2rgb()}.
+#'
+#' @importFrom grDevices col2rgb
+#' @noRd
+.native_colours <- function(col) {
+  out <- native_colours_cpp(as.character(col))
+  other <- is.na(out)
+  if(any(other)) {
+    u <- unique(col[other])
+    rgba <- col2rgb(u, alpha = TRUE)
+    packed <- rgba[1, ] + rgba[2, ] * 256 + rgba[3, ] * 65536 +
+      rgba[4, ] * 16777216
+    # (UNSIGNED 32-BIT VALUES AS SIGNED INTEGERS)
+    packed <- as.integer(ifelse(packed >= 2^31, packed - 2^32, packed))
+    out[other] <- packed[match(col[other], u)]
+  }
+  out
+}
+
+#' A matrix of packed colours (from .native_colours()) as a nativeRaster,
+#' which stores the pixels row by row
+#' @noRd
+.native_raster <- function(m) {
+  structure(
+    as.vector(t(m)),
+    dim = dim(m),
+    class = "nativeRaster",
+    channels = 4L
+  )
+}
+
 #' Draw full-size rectangular cells as raster images
 #'
 #' Each block of cells between cluster splits is drawn with one
@@ -1547,9 +1693,12 @@ print.heat_map <- function(x, ...) {
 #' @param border border colour shared by all cells, or one per cell.
 #' @param res smallest resolution of the images (pixels per inch).
 #' @param max_px largest number of pixels in each image.
+#' @param grid the numbers of rows and columns when the cells fill a grid
+#'   column by column from the top left, with centres increasing to the right
+#'   and decreasing downwards (as heat_map() lays them out); NULL to work the
+#'   grid out from the centres.
 #'
 #' @importFrom graphics rasterImage segments rect par
-#' @importFrom grDevices as.raster
 #' @noRd
 .draw_cells_raster <- function(x,
                                y,
@@ -1558,21 +1707,28 @@ print.heat_map <- function(x, ...) {
                                line_type = 1,
                                line_width = 1,
                                res = 150,
-                               max_px = 2e6) {
+                               max_px = 2e6,
+                               grid = NULL) {
 
-  keep <- !is.na(x) & !is.na(y)
-  xs <- sort(unique(x[keep]))
-  ys <- sort(unique(y[keep]), decreasing = TRUE)
-
-  # CELL COLOURS IN DISPLAY ORDER - ROW 1 AT THE TOP
-  fill <- fill[keep]
-  fill[is.na(fill)] <- "transparent"
-  img <- matrix(
-    "transparent",
-    nrow = length(ys),
-    ncol = length(xs)
-  )
-  img[match(y[keep], ys) + (match(x[keep], xs) - 1L) * length(ys)] <- fill
+  # CELL COLOURS IN DISPLAY ORDER - ROW 1 AT THE TOP (AS PACKED INTEGERS)
+  if(!is.null(grid)) {
+    # A FULL GRID - COLUMNS LEFT TO RIGHT, EACH FROM THE TOP ROW DOWN
+    keep <- TRUE
+    xs <- x[seq(1, by = grid[1], length.out = grid[2])]
+    ys <- y[seq_len(grid[1])]
+    img <- matrix(.native_colours(fill), nrow = grid[1], ncol = grid[2])
+  } else {
+    keep <- !is.na(x) & !is.na(y)
+    xs <- sort(unique(x[keep]))
+    ys <- sort(unique(y[keep]), decreasing = TRUE)
+    img <- matrix(
+      .native_colours("transparent"),
+      nrow = length(ys),
+      ncol = length(xs)
+    )
+    img[match(y[keep], ys) + (match(x[keep], xs) - 1L) * length(ys)] <-
+      .native_colours(fill[keep])
+  }
 
   # INCHES PER PLOT UNIT
   usr <- par("usr")
@@ -1605,7 +1761,7 @@ print.heat_map <- function(x, ...) {
         ]
       }
       rasterImage(
-        as.raster(block),
+        .native_raster(block),
         xleft = min(xs[rx]) - 0.5,
         ybottom = min(ys[ry]) - 0.5,
         xright = max(xs[rx]) + 0.5,
