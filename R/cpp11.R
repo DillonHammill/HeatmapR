@@ -52,6 +52,10 @@ olo_order_cpp <- function(merge, d, full, threads) {
   .Call(`_HeatmapR_olo_order_cpp`, merge, d, full, threads)
 }
 
+olo_settings_cpp <- function(kernel, bounds) {
+  .Call(`_HeatmapR_olo_settings_cpp`, kernel, bounds)
+}
+
 olo_rows_batch_cpp <- function(x, leaves, merges, metric, q, threads) {
   .Call(`_HeatmapR_olo_rows_batch_cpp`, x, leaves, merges, metric, q, threads)
 }

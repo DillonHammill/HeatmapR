@@ -494,11 +494,26 @@ Tree nn_chain_impl(M& d, int n, int method, const double* init, int threads = 1)
 
 // The full (symmetric) matrix of the distances between rows idx (1-based) of
 // an n_total x p matrix x (column-major), as row_dist() computes them
-std::vector<double> full_distances(const double* x, int n_total, int p,
-                                   const int* idx, int s, int metric, double q) {
+// Distances between rows idx[0..s) (1-based) of x, in that order, as the
+// columns of an upper triangle - column j holds the distances from row j to
+// rows 0 to j - 1 and starts after j (j - 1) / 2 values - on up to `threads`
+// threads (as optimal leaf ordering keeps them)
+std::unique_ptr<double[]> upper_distances(const double* x, int n_total, int p,
+                                          const int* idx, int s, int metric, double q,
+                                          int threads) {
   Rows rows = gather_rows(x, n_total, p, idx, s);
-  FullMatrix full(rows, metric, q);
-  return std::move(full.F);
+  size_t total = s > 1 ? static_cast<size_t>(s) * (s - 1) / 2 : 1;
+  std::unique_ptr<double[]> out(new double[total]);
+  double work = 0.5 * static_cast<double>(s) * s * std::max(1, p);
+  size_t grain = std::max<size_t>(1, 65536 / (static_cast<size_t>(std::max(1, s)) * std::max(1, p)));
+  par::parallel_for(s > 1 ? static_cast<size_t>(s - 1) : 0, threads_for(work, threads),
+                    [&](size_t jj) {
+    int j = static_cast<int>(jj) + 1;
+    double* o = out.get() + static_cast<size_t>(j) * (j - 1) / 2;
+    const double* xj = rows.row(j);
+    for (int i = 0; i < j; ++i) o[i] = row_dist(xj, rows.row(i), p, metric, q);
+  }, grain);
+  return out;
 }
 
 // Cluster n leaves from the lower triangle of their distances (as in a dist

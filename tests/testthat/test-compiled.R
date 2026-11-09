@@ -66,6 +66,45 @@ test_that("optimal leaf ordering matches the R code it replaced", {
   expect_identical(.olo_order(hclust(dist(1:2))$merge, dist(1:2)), c(1L, 2L))
 })
 
+test_that("optimal leaf ordering is the same with every kernel, with or without bounds", {
+  # TREES LARGE ENOUGH FOR THE TILED PRODUCTS AND THEIR BOUNDS (INNER
+  # DIMENSIONS OF 64 LEAVES OR MORE), WITH TIED AND MISSING DISTANCES
+  set.seed(11)
+  x <- matrix(rnorm(300 * 4), 300) + rep(sample(0:3 * 3, 300, TRUE), 4)
+  ties <- matrix(sample(0:2, 260 * 3, TRUE), 260)
+  d_na <- dist(x)
+  d_na[sample(length(d_na), 50)] <- NA
+  cases <- list(
+    list(d = dist(x), tree = hclust(dist(x), "average")),
+    list(d = dist(x, "manhattan"), tree = hclust(dist(x, "manhattan"), "complete")),
+    list(d = dist(ties), tree = hclust(dist(ties), "average")),
+    list(d = as.dist(1 - cor(t(x))), tree = hclust(as.dist(1 - cor(t(x))), "ward.D2")),
+    list(d = d_na, tree = hclust(dist(x), "single"))
+  )
+  on.exit(olo_settings_cpp("auto", TRUE), add = TRUE)
+  for (case in cases) {
+    m <- case$tree$merge
+    # (MISSING DISTANCES COUNT AS INFINITE)
+    d_ref <- case$d
+    d_ref[is.na(d_ref)] <- Inf
+    expected <- ref.olo_order(m, d_ref)
+    for (kernel in c("avx2", "sse2", "generic")) {
+      for (bounds in c(TRUE, FALSE)) {
+        olo_settings_cpp(kernel, bounds)
+        expect_identical(.olo_order(m, case$d), expected)
+        expect_identical(.olo_order(m, as.matrix(case$d)), expected)
+      }
+    }
+  }
+  # THE SETTINGS - KERNELS THE PROCESSOR LACKS FALL BACK
+  s <- olo_settings_cpp("generic", FALSE)
+  expect_identical(s, list(kernel = "generic", bounds = FALSE))
+  expect_true(olo_settings_cpp("avx2", TRUE)$kernel %in% c("avx2", "sse2", "generic"))
+  expect_true(olo_settings_cpp("auto", TRUE)$bounds)
+  expect_error(olo_settings_cpp("neon", TRUE), "unknown kernel")
+  expect_error(olo_order_cpp(.int_merge(m), c(1, 2, 3), FALSE, 1L), "between the 300 leaves")
+})
+
 test_that("compiled linkage gives stats::hclust() trees", {
   set.seed(3)
   for (i in 1:30) {

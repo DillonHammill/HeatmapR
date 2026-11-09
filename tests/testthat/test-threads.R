@@ -203,3 +203,27 @@ test_that("blocks ordered several at once take the orders of their distances", {
   expect_identical(.apply_order(tree, ord)$order, ord)
   expect_error(group_medoids_cpp(u, list(c(1, 2)), 1L, 2, 1L), "integer")
 })
+
+test_that("optimal leaf ordering gives the same order on one or two threads", {
+  # LARGE ENOUGH FOR THE PRODUCTS AND THE DISTANCES BY POSITION TO BE SHARED
+  # BETWEEN THREADS
+  set.seed(12)
+  x <- matrix(rnorm(1600 * 5), 1600) + rep(sample(0:5 * 3, 1600, TRUE), 5)
+  d <- dist(x)
+  m <- hclust(d, "average")$merge
+  on.exit(olo_settings_cpp("auto", TRUE), add = TRUE)
+  for (bounds in c(TRUE, FALSE)) {
+    olo_settings_cpp("auto", bounds)
+    one <- with_threads(1, .olo_order(m, d))
+    expect_identical(with_threads(2, .olo_order(m, d)), one)
+    expect_identical(with_threads(2, .olo_order(m, as.matrix(d))), one)
+  }
+  olo_settings_cpp("generic", TRUE)
+  expect_identical(with_threads(2, .olo_order(m, d)), one)
+  # BLOCKS OF ROWS
+  leaves <- list(1:1500, 1501:1600)
+  merges <- lapply(leaves, function(l) .int_merge(hclust(dist(x[l, ]), "average")$merge))
+  batch <- with_threads(2, olo_rows_batch_cpp(x, leaves, merges, 1L, 2, 2L))
+  expect_identical(batch[[1]], .olo_order(merges[[1]], dist(x[leaves[[1]], ])))
+  expect_identical(batch[[2]], 1500L + .olo_order(merges[[2]], dist(x[leaves[[2]], ])))
+})

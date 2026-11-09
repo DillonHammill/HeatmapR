@@ -97,6 +97,13 @@ extern "C" SEXP _HeatmapR_olo_order_cpp(SEXP merge, SEXP d, SEXP full, SEXP thre
   END_CPP11
 }
 // olo.cpp
+cpp11::list olo_settings_cpp(std::string kernel, bool bounds);
+extern "C" SEXP _HeatmapR_olo_settings_cpp(SEXP kernel, SEXP bounds) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(olo_settings_cpp(cpp11::as_cpp<cpp11::decay_t<std::string>>(kernel), cpp11::as_cpp<cpp11::decay_t<bool>>(bounds)));
+  END_CPP11
+}
+// olo.cpp
 cpp11::list olo_rows_batch_cpp(cpp11::doubles_matrix<> x, cpp11::list leaves, cpp11::list merges, int metric, double q, int threads);
 extern "C" SEXP _HeatmapR_olo_rows_batch_cpp(SEXP x, SEXP leaves, SEXP merges, SEXP metric, SEXP q, SEXP threads) {
   BEGIN_CPP11
@@ -215,6 +222,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_olo_blocks_cpp",        (DL_FUNC) &_HeatmapR_olo_blocks_cpp,        2},
     {"_HeatmapR_olo_order_cpp",         (DL_FUNC) &_HeatmapR_olo_order_cpp,         4},
     {"_HeatmapR_olo_rows_batch_cpp",    (DL_FUNC) &_HeatmapR_olo_rows_batch_cpp,    6},
+    {"_HeatmapR_olo_settings_cpp",      (DL_FUNC) &_HeatmapR_olo_settings_cpp,      2},
     {"_HeatmapR_pack_channels_cpp",     (DL_FUNC) &_HeatmapR_pack_channels_cpp,     1},
     {"_HeatmapR_packed_strings_cpp",    (DL_FUNC) &_HeatmapR_packed_strings_cpp,    2},
     {"_HeatmapR_parallel_check_cpp",    (DL_FUNC) &_HeatmapR_parallel_check_cpp,    4},
