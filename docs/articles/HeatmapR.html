@@ -154,7 +154,7 @@ visual contrast.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dillonhammill.github.io/HeatmapR/">HeatmapR</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-1.png" alt="Heatmap of the unscaled mtcars data with the 32 cars as rows and the 11 variables as columns, coloured on a single scale from 0 to about 470, so that only displacement (disp) and horsepower (hp) stand out and the other variables all look the same." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-1.png" alt="Heatmap of the unscaled mtcars data with the 32 cars as rows and the 11 variables as columns, coloured on a single scale from 0 to about 470, so that only displacement (disp) and horsepower (hp) stand out and the other variables all look the same." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="cell-properties">2. Cell Properties<a class="anchor" aria-label="anchor" href="#cell-properties"></a>
@@ -186,13 +186,13 @@ light grid around the cells.</p>
 <span>  <span class="va">mtcars</span>,</span>
 <span>  cell_shape <span class="op">=</span> <span class="st">"circle"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-3.png" alt="The unscaled mtcars heatmap with every cell drawn as a circle of the same size, coloured by its value, with the 32 cars as rows and the 11 variables as columns." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-3.png" alt="The unscaled mtcars heatmap with every cell drawn as a circle of the same size, coloured by its value, with the 32 cars as rows and the 11 variables as columns." width="95%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">mtcars</span>,</span>
 <span>  cell_shape <span class="op">=</span> <span class="st">"diamond"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-4.png" alt="The unscaled mtcars heatmap with every cell drawn as a diamond of the same size, coloured by its value, with the 32 cars as rows and the 11 variables as columns." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-4.png" alt="The unscaled mtcars heatmap with every cell drawn as a diamond of the same size, coloured by its value, with the 32 cars as rows and the 11 variables as columns." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="cell-size">2.2 Cell Size<a class="anchor" aria-label="anchor" href="#cell-size"></a>
@@ -210,7 +210,7 @@ of the cells independently of their colour.</p>
 <span>  legend_size <span class="op">=</span> <span class="fl">1.5</span>,</span>
 <span>  cell_size <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-5.png" alt="The unscaled mtcars heatmap drawn as circles that are both sized and coloured by value, with a colour bar and a size legend, so that the large displacement and horsepower values appear as big circles and the small values shrink to dots." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-5.png" alt="The unscaled mtcars heatmap drawn as circles that are both sized and coloured by value, with a colour bar and a size legend, so that the large displacement and horsepower values appear as big circles and the small values shrink to dots." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="cell-colours">2.3 Cell Colours<a class="anchor" aria-label="anchor" href="#cell-colours"></a>
@@ -254,7 +254,7 @@ introduced:</p>
 <span>  <span class="op">)</span>,</span>
 <span>  cell_col_alpha <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-2.png" alt="Heatmap of 25 randomly sampled rows of the iris data with each value written in its cell, the four measurements coloured on a yellow to black scale, the Species column coloured by species, and the missing values shown as empty grey cells." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-2.png" alt="Heatmap of 25 randomly sampled rows of the iris data with each value written in its cell, the four measurements coloured on a yellow to black scale, the Species column coloured by species, and the missing values shown as empty grey cells." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level4">
 <h4 id="uncertainty-in-colour">2.3.1 Uncertainty in Colour<a class="anchor" aria-label="anchor" href="#uncertainty-in-colour"></a>
 </h4>
@@ -292,7 +292,7 @@ levels, and the colour legend becomes a key with one row per level.</p>
 <span>  legend_title <span class="op">=</span> <span class="st">"log2 FC"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Fold changes, faded where they're uncertain"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-uncertainty.png" alt="Heatmap of simulated log2 fold changes for 14 genes over six time points, with the genes clustered by a dendrogram, in which precise estimates use the full blue to red scale and uncertain ones fade towards grey, and a legend with one row of colours for each level of standard error." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-uncertainty.png" alt="Heatmap of simulated log2 fold changes for 14 genes over six time points, with the genes clustered by a dendrogram, in which precise estimates use the full blue to red scale and uncertain ones fade towards grey, and a legend with one row of colours for each level of standard error." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level4">
 <h4 id="two-values-in-each-cell">2.3.2 Two Values in Each Cell<a class="anchor" aria-label="anchor" href="#two-values-in-each-cell"></a>
@@ -327,7 +327,7 @@ cells with two colours, without doubling the size of the heatmap.
 <span>  legend_title <span class="op">=</span> <span class="st">"Expression"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Control and stimulated in each cell"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-split.png" alt="Heatmap of simulated expression of 10 genes in six immune cell types, with each cell split along its diagonal into a control half (upper left) and a stimulated half (lower right) on one colour scale, the genes clustered by a dendrogram and a legend naming the two halves." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-split.png" alt="Heatmap of simulated expression of 10 genes in six immune cell types, with each cell split along its diagonal into a control half (upper left) and a stimulated half (lower right) on one colour scale, the genes clustered by a dendrogram and a legend naming the two halves." width="95%" style="display: block; margin: auto;"></p>
 <p>Split cells need full-size rectangles, so <code>cell_size</code> and
 other <code>cell_shape</code>s can’t be used with them.</p>
 </div>
@@ -347,7 +347,7 @@ and <code>cell_border_line_col_alpha</code> arguments.</p>
 <span>  cell_border_line_col <span class="op">=</span> <span class="st">"red"</span>,</span>
 <span>  cell_border_line_col_alpha <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-6.png" alt="The unscaled mtcars heatmap with every cell outlined by a thick dotted red border." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-6.png" alt="The unscaled mtcars heatmap with every cell outlined by a thick dotted red border." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level4">
 <h4 id="border-masking">2.4.1 Border Masking<a class="anchor" aria-label="anchor" href="#border-masking"></a>
 </h4>
@@ -370,7 +370,7 @@ heatmap.</p>
 <span>  cell_text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Border Masking Example"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-6b.png" alt="The unscaled mtcars heatmap, titled Border Masking Example, with each value written in its cell and red borders drawn only around the cells whose values are above the median of the whole data set." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-6b.png" alt="The unscaled mtcars heatmap, titled Border Masking Example, with each value written in its cell and red borders drawn only around the cells whose values are above the median of the whole data set." width="95%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level3">
@@ -394,7 +394,7 @@ easily be customised using the <code>cell_text_size</code>,
 <span>  cell_col_alpha <span class="op">=</span> <span class="fl">0.9</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"mtcars"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-7.png" alt="The unscaled mtcars heatmap, titled mtcars, with each value written in bold black text in its cell." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-7.png" alt="The unscaled mtcars heatmap, titled mtcars, with each value written in bold black text in its cell." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="large-heatmaps">2.6 Large Heatmaps<a class="anchor" aria-label="anchor" href="#large-heatmaps"></a>
@@ -430,7 +430,7 @@ otherwise hide the cells.</p>
 <span>  axis_text_y <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"5000 cells"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-raster.png" alt="Heatmap of 5,000 simulated cells by 20 markers drawn as a raster image, with the markers clustered by a dendrogram and the cells cut into three clusters labelled A, B and C: A is high in markers 12 to 20, B in markers 1 to 8 and C in neither." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-raster.png" alt="Heatmap of 5,000 simulated cells by 20 markers drawn as a raster image, with the markers clustered by a dendrogram and the cells cut into three clusters labelled A, B and C: A is high in markers 12 to 20, B in markers 1 to 8 and C in neither." width="95%" style="display: block; margin: auto;"></p>
 <p>Clustering is the slow part of a large heatmap. It needs the distance
 between every pair of rows, so exact clustering of 10,000 rows takes
 about 3 seconds and 400 MB of memory, and four times as much for twice
@@ -500,7 +500,7 @@ lines.</p>
 <span>  mark_labels_y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3E"</span>, <span class="st">"CD4"</span>, <span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"ACTB"</span><span class="op">)</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Marker genes"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-marks.png" alt="Heatmap of 2,000 simulated genes across 24 samples, clustered in both directions with the genes cut into two clusters, in which seven chosen genes (MS4A1, CD79A, IL7R, CD4, CCR7, CD3E and ACTB) are labelled beside the heatmap with leader lines to their rows instead of all the gene names." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-marks.png" alt="Heatmap of 2,000 simulated genes across 24 samples, clustered in both directions with the genes cut into two clusters, in which seven chosen genes (MS4A1, CD79A, IL7R, CD4, CCR7, CD3E and ACTB) are labelled beside the heatmap with leader lines to their rows instead of all the gene names." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level4">
 <h4 id="zooming-into-a-band-of-rows">2.7.1 Zooming Into a Band of Rows<a class="anchor" aria-label="anchor" href="#zooming-into-a-band-of-rows"></a>
 </h4>
@@ -541,7 +541,7 @@ the heatmap (the same width by default), and enlarged rows are at most
 <span>  zoom_y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"IL7R"</span>, <span class="st">"CD7"</span><span class="op">)</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"A pathway in 2,000 genes"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-zoom.png" alt="Row-scaled heatmap of 2,000 simulated genes across 24 clustered samples, in which a thin band of 20 pathway genes is outlined and joined by a wedge to an enlarged panel on the left that names each gene and shows its values cell by cell." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-zoom.png" alt="Row-scaled heatmap of 2,000 simulated genes across 24 clustered samples, in which a thin band of 20 pathway genes is outlined and joined by a wedge to an enlarged panel on the left that names each gene and shows its values cell by cell." width="95%" style="display: block; margin: auto;"></p>
 <p>The panel keeps the cells’ shapes, text and distributions and the
 gaps between clusters. Rows that are far apart in a clustered heatmap
 make a wide band; to enlarge one cluster, pass its rows,
@@ -565,7 +565,7 @@ perpendicular labels on crowded heatmaps.</p>
 <span>  tree <span class="op">=</span> <span class="st">"both"</span>,</span>
 <span>  axis_text_angle_x <span class="op">=</span> <span class="fl">45</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-rotate.png" alt="Heatmap of the z-scored mtcars data transposed so that the 11 variables are rows and the 32 cars are columns, clustered in both directions with dendrograms, with the car names written at a 45 degree angle beneath it." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-rotate.png" alt="Heatmap of the z-scored mtcars data transposed so that the 11 variables are rows and the 32 cars are columns, clustered in both directions with dendrograms, with the car names written at a 45 degree angle beneath it." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="correlation-matrices">2.9 Correlation Matrices<a class="anchor" aria-label="anchor" href="#correlation-matrices"></a>
@@ -583,7 +583,7 @@ rising to the right for positive correlations, falling for negative
 ones, and narrower the stronger the correlation.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_cor.html">heat_map_cor</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cor.png" alt="Correlation heatmap of the mtcars variables, clustered so that correlated variables sit together, with ellipses in the lower triangle, the coefficients written in blue (negative) or red (positive) in the upper triangle and the variable names on the diagonal." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-cor.png" alt="Correlation heatmap of the mtcars variables, clustered so that correlated variables sit together, with ellipses in the lower triangle, the coefficients written in blue (negative) or red (positive) in the upper triangle and the variable names on the diagonal." width="95%" style="display: block; margin: auto;"></p>
 <p><code>lower</code>, <code>upper</code> and <code>diag</code> take any
 cell shape - <code>"circle"</code> and <code>"diamond"</code> are sized
 by the absolute correlation, and <code>"none"</code> leaves a triangle
@@ -597,7 +597,7 @@ such as cuts that split the variables into clusters along both axes:</p>
 <span>  tree_cut_x <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  tree_cut_y <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cor-2.png" alt="Spearman correlations of the mtcars variables drawn as ellipses throughout, with the variables split into three clusters along both axes." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-cor-2.png" alt="Spearman correlations of the mtcars variables drawn as ellipses throughout, with the variables split into three clusters along both axes." width="95%" style="display: block; margin: auto;"></p>
 <p>For other layouts, the shapes can be set cell by cell in
 <code><a href="../reference/heat_map.html">heat_map()</a></code> with a matrix of shapes, e.g. ellipses for the
 correlations of each gene with a set of clinical variables and numbers
@@ -631,7 +631,7 @@ to every column in the <code>mtcars</code> dataset:</p>
 <span>  scale_method <span class="op">=</span> <span class="st">"range"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"mtcars scaled columns"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-8.png" alt="The mtcars heatmap with each column rescaled from 0 to 1, titled mtcars scaled columns, so that differences between the cars are now visible in every variable." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-8.png" alt="The mtcars heatmap with each column rescaled from 0 to 1, titled mtcars scaled columns, so that differences between the cars are now visible in every variable." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="scaling-rows">3.2 Scaling Rows<a class="anchor" aria-label="anchor" href="#scaling-rows"></a>
@@ -648,7 +648,7 @@ dataset:</p>
 <span>  scale_method <span class="op">=</span> <span class="st">"zscore"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"mtcars scaled rows"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-9.png" alt="The mtcars heatmap with each row converted to z-scores, titled mtcars scaled rows, in which displacement and horsepower are the highest values for every car and the other variables are all low." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-9.png" alt="The mtcars heatmap with each row converted to z-scores, titled mtcars scaled rows, in which displacement and horsepower are the highest values for every car and the other variables are all low." width="95%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -680,7 +680,7 @@ plots to the x and y axes of a heatmap constructed using the
 <span>  bar_line_col_y <span class="op">=</span> <span class="st">"black"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"heatmap with bar plots"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-10.png" alt="The unscaled mtcars heatmap, titled heatmap with bar plots, with a bar plot above it showing the values 1 to 11 for the columns and a bar plot to its right showing the values 1 to 32 for the rows, the bars filled with rainbow colours." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-10.png" alt="The unscaled mtcars heatmap, titled heatmap with bar plots, with a bar plot above it showing the values 1 to 11 for the columns and a bar plot to its right showing the values 1 to 32 for the rows, the bars filled with rainbow colours." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level3">
 <h3 id="metadata-annotations">4.1 Metadata Annotations<a class="anchor" aria-label="anchor" href="#metadata-annotations"></a>
 </h3>
@@ -730,7 +730,7 @@ to <code>tree_cut_x</code> splits the columns into groups and, when
 <span>  legend_title <span class="op">=</span> <span class="st">"z-score"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Metadata annotations"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-annotations.png" alt="Heatmap of 20 simulated genes across 24 samples on a blue-white-red z-score scale, with the samples split into labelled Control, Drug_A and Drug_B groups, coloured Treatment and Sex annotation tracks above the columns with their own legends, and the genes clustered by a dendrogram." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-annotations.png" alt="Heatmap of 20 simulated genes across 24 samples on a blue-white-red z-score scale, with the samples split into labelled Control, Drug_A and Drug_B groups, coloured Treatment and Sex annotation tracks above the columns with their own legends, and the genes clustered by a dendrogram." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="box-plots-and-violins">4.2 Box Plots and Violins<a class="anchor" aria-label="anchor" href="#box-plots-and-violins"></a>
@@ -785,7 +785,7 @@ all events, and the bars show the size of each cluster:</p>
 <span>  bar_axis_label_y <span class="op">=</span> <span class="st">"Events"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Median marker intensity per cluster"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-side-plots.png" alt="Heatmap of the median intensity of six markers in five clusters of simulated cytometry events, each cluster bright only in its defining markers, with violins above showing the distribution of each marker across all events and bars on the right showing the number of events in each cluster." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-side-plots.png" alt="Heatmap of the median intensity of six markers in five clusters of simulated cytometry events, each cluster bright only in its defining markers, with violins above showing the distribution of each marker across all events and bars on the right showing the number of events in each cluster." width="95%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -836,7 +836,7 @@ for better visualisation of relationships in large heatmaps.</p>
 <span>  tree_scale_x <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Dendrograms"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-11.png" alt="The column-scaled mtcars heatmap, titled Dendrograms, with the cars and the variables reordered by hierarchical clustering and dendrograms drawn to the right of the rows and above the columns." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-11.png" alt="The column-scaled mtcars heatmap, titled Dendrograms, with the cars and the variables reordered by hierarchical clustering and dendrograms drawn to the right of the rows and above the columns." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level4">
 <h4 id="cosine-distance">5.1.1 Cosine Distance<a class="anchor" aria-label="anchor" href="#cosine-distance"></a>
 </h4>
@@ -859,7 +859,7 @@ analyzing gene expression data or other normalized datasets.</p>
 <span>  tree_scale_x <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Cosine Distance Clustering"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-11b.png" alt="The column-scaled mtcars heatmap, titled Cosine Distance Clustering, with the cars and the variables clustered on cosine distance and dendrograms drawn to the right of the rows and above the columns." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-11b.png" alt="The column-scaled mtcars heatmap, titled Cosine Distance Clustering, with the cars and the variables clustered on cosine distance and dendrograms drawn to the right of the rows and above the columns." width="95%" style="display: block; margin: auto;"></p>
 <p><strong>Absolute Distance Thresholds</strong>: When using cosine
 distance, <code>tree_cut</code> values between 0 and 1 are interpreted
 as absolute cosine distance thresholds rather than proportional tree
@@ -913,7 +913,7 @@ and <code>"mean"</code> orders branches by their mean values as
 <span>  axis_text_y <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Pearson distance, optimal leaf order"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-dist-order.png" alt="Heatmap of 60 simulated genes across 12 samples clustered in both directions on Pearson correlation distance with optimal leaf ordering, in which the 20 genes that rise and fall together, at different levels, form a block at the bottom whose values increase smoothly from left to right across the reordered samples." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-dist-order.png" alt="Heatmap of 60 simulated genes across 12 samples clustered in both directions on Pearson correlation distance with optimal leaf ordering, in which the 20 genes that rise and fall together, at different levels, form a block at the bottom whose values increase smoothly from left to right across the reordered samples." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level4">
 <h4 id="branch-support">5.1.2 Branch Support<a class="anchor" aria-label="anchor" href="#branch-support"></a>
@@ -941,7 +941,7 @@ same each time the heatmap is drawn.</p>
 <span>  tree_support_y <span class="op">=</span> <span class="fl">200</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Bootstrap support of each branch"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-support.png" alt="The column-scaled mtcars heatmap clustered in both directions, with each dendrogram branch drawn as a thick black, thin grey or dashed line according to its bootstrap support and the larger branches labelled with percentages, showing that only small groups such as the Mazda RX4 pair are strongly supported." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-support.png" alt="The column-scaled mtcars heatmap clustered in both directions, with each dendrogram branch drawn as a thick black, thin grey or dashed line according to its bootstrap support and the larger branches labelled with percentages, showing that only small groups such as the Mazda RX4 pair are strongly supported." width="95%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level3">
@@ -970,7 +970,7 @@ are scalars that control the height or width of the splits.</p>
 <span>  tree_split_y <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Hierarchical Clustering"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-12.png" alt="The column-scaled mtcars heatmap, titled Hierarchical Clustering, with dendrograms on both axes cut into 5 groups of cars and 4 groups of variables, separated by gaps." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-12.png" alt="The column-scaled mtcars heatmap, titled Hierarchical Clustering, with dendrograms on both axes cut into 5 groups of cars and 4 groups of variables, separated by gaps." width="95%" style="display: block; margin: auto;"></p>
 <p>In addition to heatmap splitting, <code><a href="../reference/heat_map.html">heat_map()</a></code> also
 supports the labelling of clusters through the
 <code>tree_label_x</code>, <code>tree_label_text_x</code>,
@@ -1005,7 +1005,7 @@ arguments.</p>
 <span>  <span class="op">)</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Cluster Labels"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-13.png" alt="The column-scaled mtcars heatmap, titled Cluster Labels, split into 4 groups of variables and 5 groups of cars, each group marked by a coloured bar numbered 1 to 4 above the columns or 1 to 5 beside the rows." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13.png" alt="The column-scaled mtcars heatmap, titled Cluster Labels, split into 4 groups of variables and 5 groups of cars, each group marked by a coloured bar numbered 1 to 4 above the columns or 1 to 5 beside the rows." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level4">
 <h4 id="manual-clustering">5.2.1 Manual Clustering<a class="anchor" aria-label="anchor" href="#manual-clustering"></a>
 </h4>
@@ -1030,7 +1030,7 @@ indicating the number of rows/columns in each cluster:</p>
 <span>  tree_label_col_x <span class="op">=</span> <span class="st">"white"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Manual Clustering by Size"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-13b.png" alt="The column-scaled mtcars heatmap, titled Manual Clustering by Size, with the variables kept in their original order and split into groups of 4, 3 and 4 columns labelled Group A, Group B and Group C." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13b.png" alt="The column-scaled mtcars heatmap, titled Manual Clustering by Size, with the variables kept in their original order and split into groups of 4, 3 and 4 columns labelled Group A, Group B and Group C." width="95%" style="display: block; margin: auto;"></p>
 <p><strong>Method 2: Specify cluster indices</strong> - Provide a vector
 where each element indicates which cluster that row/column belongs to.
 Numeric indices are given as the heatmap is displayed - columns from the
@@ -1056,7 +1056,7 @@ heatmap:</p>
 <span>  tree_label_col_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"blue"</span>, <span class="st">"yellow"</span>, <span class="st">"red"</span><span class="op">)</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Manual Clustering by Index"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-13c.png" alt="The column-scaled mtcars heatmap, titled Manual Clustering by Index, with the variables split into three groups of 4, 3 and 4 columns labelled Low, Medium and High on blue, yellow and red bars." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13c.png" alt="The column-scaled mtcars heatmap, titled Manual Clustering by Index, with the variables split into three groups of 4, 3 and 4 columns labelled Low, Medium and High on blue, yellow and red bars." width="95%" style="display: block; margin: auto;"></p>
 <p>Manual clusters can be combined with dendrograms by setting
 <code>tree_x = TRUE</code> or <code>tree_y = TRUE</code>. The rows or
 columns are then clustered within each cluster, and the clusters are
@@ -1084,7 +1084,7 @@ a cell type) gets its own dendrogram:</p>
 <span>  tree_label_x <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Clustering within groups"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-groups.png" alt="Heatmap of 40 simulated genes across 24 samples, with the samples split into labelled Control, Drug_A and Drug_B groups that are each clustered by their own dendrogram under a shared root, and the genes clustered so that those raised in the Drug_A samples sit together at the bottom." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-groups.png" alt="Heatmap of 40 simulated genes across 24 samples, with the samples split into labelled Control, Drug_A and Drug_B groups that are each clustered by their own dendrogram under a shared root, and the genes clustered so that those raised in the Drug_A samples sit together at the bottom." width="95%" style="display: block; margin: auto;"></p>
 <p>A dendrogram supplied as an <code>hclust</code> or <code>dist</code>
 object is kept only when the clusters are contiguous in its order, and
 is dropped with a warning otherwise.</p>
@@ -1139,7 +1139,7 @@ returns the cluster of each row.</p>
 <span>  axis_text_y <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"k-means clusters of 2,000 genes"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-kmeans.png" alt="Row z-scored heatmap of 2,000 simulated genes across 12 samples, split by k-means into four clusters separated by gaps and clustered by a dendrogram within each, in which three clusters are high in samples S9 to S12, S1 to S4 and S5 to S8 respectively and one shows no pattern." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-kmeans.png" alt="Row z-scored heatmap of 2,000 simulated genes across 12 samples, split by k-means into four clusters separated by gaps and clustered by a dendrogram within each, in which three clusters are high in samples S9 to S12, S1 to S4 and S5 to S8 respectively and one shows no pattern." width="95%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level3">
@@ -1180,7 +1180,7 @@ as the size:</p>
 <span>  legend_title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Mean (z-score)"</span>, <span class="st">"Detected"</span><span class="op">)</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Marker genes by cell type"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-summarise.png" alt="Dot plot of eight marker genes in four simulated cell types, with circles coloured by mean expression (z-scored within each gene) and sized by the proportion of cells in which the gene is detected, so that each cell type has two large bright circles for its own markers." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-summarise.png" alt="Dot plot of eight marker genes in four simulated cell types, with circles coloured by mean expression (z-scored within each gene) and sized by the proportion of cells in which the gene is detected, so that each cell type has two large bright circles for its own markers." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level4">
 <h4 id="distributions-inside-cells">5.3.1 Distributions Inside Cells<a class="anchor" aria-label="anchor" href="#distributions-inside-cells"></a>
 </h4>
@@ -1227,7 +1227,7 @@ one CD8+.</p>
 <span>  legend_title <span class="op">=</span> <span class="st">"Median"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Median intensity, with each cluster's distribution"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cell-values.png" alt="Heatmap of the median intensity of six markers in six clusters of simulated cytometry events, with a density curve of each cluster's values and a tick at the median drawn inside every cell, showing that the middling CD4 and CD8 medians of the T mixed cluster come from two separate populations." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-cell-values.png" alt="Heatmap of the median intensity of six markers in six clusters of simulated cytometry events, with a density curve of each cluster's values and a tick at the median drawn inside every cell, showing that the middling CD4 and CD8 medians of the T mixed cluster come from two separate populations." width="95%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 </div>
@@ -1261,7 +1261,7 @@ arguments.</p>
 <span>  legend_title <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"colour"</span>, <span class="st">"size"</span><span class="op">)</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Legends"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-17.png" alt="The mtcars heatmap rescaled from 0 to 1 within each column, clustered in both directions and drawn as circles sized and coloured by value, with a colour legend titled colour and a size legend titled size to its right." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-17.png" alt="The mtcars heatmap rescaled from 0 to 1 within each column, clustered in both directions and drawn as circles sized and coloured by value, with a colour legend titled colour and a size legend titled size to its right." width="95%" style="display: block; margin: auto;"></p>
 <p>Legends can also be drawn below the heatmap with
 <code>legend_side = "bottom"</code>, where the colour bars are
 horizontal and the legends sit side by side, wrapping into rows when
@@ -1283,7 +1283,7 @@ values labelled on the colour legend (names become the labels).</p>
 <span>  legend_title <span class="op">=</span> <span class="st">"z-score"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Legend below the heatmap"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-legend-bottom.png" alt="The z-scored mtcars heatmap clustered in both directions with the variables cut into three groups, coloured on a stepped blue to red scale whose horizontal legend, labelled low, 0 and high, sits below the heatmap." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-legend-bottom.png" alt="The z-scored mtcars heatmap clustered in both directions with the variables cut into three groups, coloured on a stepped blue to red scale whose horizontal legend, labelled low, 0 and high, sits below the heatmap." width="95%" style="display: block; margin: auto;"></p>
 <p><code>legend_col_density = TRUE</code> traces the distribution of the
 values (a kernel density) over the colour legend, so you can see which
 colours most cells take and how much of the data sits near the ends of
@@ -1308,7 +1308,7 @@ limits all take the end colours.</p>
 <span>  legend_title <span class="op">=</span> <span class="st">"Expression"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Robust limits, with the data behind them"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-legend-density.png" alt="Heatmap of 40 simulated genes across 12 samples clustered in both directions, with the colour scale limited to the 2nd and 98th percentiles of the values and a density curve traced over the colour legend showing that most values lie near zero." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-legend-density.png" alt="Heatmap of 40 simulated genes across 12 samples clustered in both directions, with the colour scale limited to the 2nd and 98th percentiles of the values and a density curve traced over the colour legend showing that most values lie near zero." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level3">
 <h3 id="layout">6.1 Layout<a class="anchor" aria-label="anchor" href="#layout"></a>
 </h3>
@@ -1357,7 +1357,7 @@ same size for 60 genes as for 12.</p>
 <span>  title <span class="op">=</span> <span class="st">"12 genes"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-layout.png" alt="Two clustered heatmaps side by side, of 60 and 12 genes, with dendrograms, annotation tracks and legends of the same size" width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-layout.png" alt="Two clustered heatmaps side by side, of 60 and 12 genes, with dendrograms, annotation tracks and legends of the same size" width="95%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -1397,7 +1397,7 @@ different car brands into separate heatmaps and arrange them:</p>
 <span>  title <span class="op">=</span> <span class="st">"Hornet | Datsun | Volvo"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-14.png" alt="Three unscaled heatmaps of subsets of the mtcars data arranged in one figure: the Mercedes cars in a large panel on the left, and the Mazda and Toyota cars and the Hornet, Datsun and Volvo cars in two smaller panels on the right, each with its own colour scale." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-14.png" alt="Three unscaled heatmaps of subsets of the mtcars data arranged in one figure: the Mercedes cars in a large panel on the left, and the Mazda and Toyota cars and the Hornet, Datsun and Volvo cars in two smaller panels on the right, each with its own colour scale." width="95%" style="display: block; margin: auto;"></p>
 <p><code>HeatmapR</code> also supports layouts with other plots
 generated using base graphics. For example, we could arrange a heatmap
 with a scatterplot and a boxplot.</p>
@@ -1439,7 +1439,7 @@ with a scatterplot and a boxplot.</p>
 <span>  horizontal <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-15.png" alt="A column-scaled mtcars heatmap drawn as squares sized and coloured by value on the left, beside a scatter plot of horsepower against displacement with a dashed red regression line and a horizontal box plot of displacement on the right." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-15.png" alt="A column-scaled mtcars heatmap drawn as squares sized and coloured by value on the left, beside a scatter plot of horsepower against displacement with a dashed red regression line and a horizontal box plot of displacement on the right." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level3">
 <h3 id="heatmaps-beside-ggplot2-plots">7.1 Heatmaps Beside ggplot2 Plots<a class="anchor" aria-label="anchor" href="#heatmaps-beside-ggplot2-plots"></a>
 </h3>
@@ -1467,7 +1467,7 @@ e.g. <code>heat_map_grob(hm, title = NULL)</code>. It needs the
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Weight (1000 lbs)"</span>, y <span class="op">=</span> <span class="st">"Miles per gallon"</span>, colour <span class="op">=</span> <span class="st">"Cylinders"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">p</span> <span class="op">+</span> <span class="fu"><a href="../reference/heat_map_grob.html">heat_map_grob</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/pkg/patchwork/man/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span>widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-ggplot.png" alt="A scatter plot of miles per gallon against weight for the mtcars data, coloured by the number of cylinders, beside a clustered heatmap of the same cars" width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-ggplot.png" alt="A scatter plot of miles per gallon against weight for the mtcars data, coloured by the number of cylinders, beside a clustered heatmap of the same cars" width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="heatmap-data-for-ggplot2-and-other-tools">7.2 Heatmap Data for ggplot2 and Other Tools<a class="anchor" aria-label="anchor" href="#heatmap-data-for-ggplot2-and-other-tools"></a>
@@ -1502,7 +1502,7 @@ exported, or used to draw on the heatmap with base graphics.</p>
 <span>    panel.grid <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>    axis.text.x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/element.html" class="external-link">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">90</span>, hjust <span class="op">=</span> <span class="fl">1</span>, vjust <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-ggplot-data.png" alt="The mtcars heatmap rebuilt with ggplot2 from heat_map_data(), with a red-blue fill scale, the same row clusters and gaps, and the row dendrogram on the right" width="75%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-ggplot-data.png" alt="The mtcars heatmap rebuilt with ggplot2 from heat_map_data(), with a red-blue fill scale, the same row clusters and gaps, and the row dendrogram on the right" width="75%" style="display: block; margin: auto;"></p>
 <p>Drawn straight after <code><a href="../reference/heat_map.html">heat_map()</a></code>, base graphics land on
 the cells: <code>points(cells$x, cells$y)</code> marks the centre of
 every cell.</p>
@@ -1534,7 +1534,7 @@ dimensions and resolution of the exported image.</p>
 <span>  title <span class="op">=</span> <span class="st">"mtcars"</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-16.png" alt="Heatmap of the mtcars data rescaled within each column, drawn as circles sized and coloured by value, with dendrograms splitting the cars into 12 groups and the variables into 4 groups." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-16.png" alt="Heatmap of the mtcars data rescaled within each column, drawn as circles sized and coloured by value, with dendrograms splitting the cars into 12 groups and the variables into 4 groups." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="describing-a-heatmap">9. Describing a Heatmap<a class="anchor" aria-label="anchor" href="#describing-a-heatmap"></a>
