@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <limits>
 #include <numeric>
+#include <utility>
 #include <vector>
 
 #include "linkage.h"
@@ -63,6 +64,15 @@ struct Olo {
       for (int t = 0; t < n1; ++t) out[t] = cz[t + static_cast<size_t>(kk) * n1];
     }
     return out;
+  }
+
+  // The positions within branch z (lo, hi) that an ordering from leaf i can
+  // end at: the leaves of the other side of z from i (all of a leaf)
+  std::pair<int, int> ends_from(int z, int i) const {
+    if (z < 0) return {0, 1};
+    int z1 = m[z - 1], z2 = m[(z - 1) + k];
+    int n1 = node_size(z1), n2 = node_size(z2);
+    return contains(z1, i) ? std::make_pair(n1, n1 + n2) : std::make_pair(0, n1);
   }
 };
 
@@ -198,13 +208,16 @@ std::vector<int> olo_core(const int* m, int k, std::vector<double> D, int thread
     if (!o.contains(c0, task.i)) std::swap(c0, c1);
     std::vector<double> f0 = o.cost_from(c0, task.i);
     std::vector<double> f1 = o.cost_from(c1, task.j);
-    int n0 = static_cast<int>(f0.size()), n1 = static_cast<int>(f1.size());
-    int bu = 0, bv = 0;
+    // (ONLY THE LEAVES AN ORDERING CAN END AT - WHEN EVERY COST IS INFINITE,
+    // E.G. A LEAF WITH NO DISTANCES, THE OTHERS WOULD BE PICKED)
+    std::pair<int, int> r0 = o.ends_from(c0, task.i);
+    std::pair<int, int> r1 = o.ends_from(c1, task.j);
+    int bu = r0.first, bv = r1.first;
     double bt = INF;
     bool first = true;
-    for (int v = 0; v < n1; ++v) {
+    for (int v = r1.first; v < r1.second; ++v) {
       int lj = o.leaf_at(c1, v);
-      for (int u = 0; u < n0; ++u) {
+      for (int u = r0.first; u < r0.second; ++u) {
         double t = (f0[u] + f1[v]) + o.dist(o.leaf_at(c0, u), lj);
         if (first || t < bt) {
           bt = t;
@@ -268,6 +281,11 @@ cpp11::list olo_rows_batch_cpp(cpp11::doubles_matrix<> x, cpp11::list leaves,
     if (TYPEOF(l) != INTSXP) cpp11::stop("leaves must be integer vectors");
     leaf[b] = INTEGER(l);
     size[b] = static_cast<int>(Rf_xlength(l));
+    for (int i = 0; i < size[b]; ++i) {
+      if (leaf[b][i] == NA_INTEGER || leaf[b][i] < 1 || leaf[b][i] > n_total) {
+        cpp11::stop("leaves must be rows of x");
+      }
+    }
     if (size[b] >= 3) {
       if (TYPEOF(m) != INTSXP || Rf_nrows(m) != size[b] - 1) {
         cpp11::stop("each block of three or more rows needs its merges");
@@ -282,8 +300,7 @@ cpp11::list olo_rows_batch_cpp(cpp11::doubles_matrix<> x, cpp11::list leaves,
   std::stable_sort(jobs.begin(), jobs.end(),
                    [&](size_t a, size_t b) { return size[a] > size[b]; });
   std::vector<std::vector<int>> out(nb);
-  par::parallel_for(jobs.size(), threads, [&](size_t t) {
-    size_t b = jobs[t];
+  auto order_block = [&](size_t b, int inner) {
     int s = size[b];
     std::vector<int>& o = out[b];
     if (s < 3) {
@@ -291,10 +308,26 @@ cpp11::list olo_rows_batch_cpp(cpp11::doubles_matrix<> x, cpp11::list leaves,
       return;
     }
     std::vector<double> D = full_distances(xv, n_total, p, leaf[b], s, metric, q);
-    std::vector<int> ord = olo_core(merge[b], s - 1, std::move(D), 1);
+    std::vector<int> ord = olo_core(merge[b], s - 1, std::move(D), inner);
     o.resize(s);
     for (int i = 0; i < s; ++i) o[i] = leaf[b][ord[i] - 1];
-  });
+  };
+  // A BLOCK WITH MORE THAN ITS SHARE OF THE WORK (WHICH GROWS WITH THE CUBE
+  // OF ITS SIZE) WOULD KEEP ONE THREAD BUSY AFTER THE OTHERS FINISH - SUCH
+  // BLOCKS ARE ORDERED ONE AT A TIME ON EVERY THREAD (THE ORDER DOESN'T
+  // DEPEND ON THE NUMBER OF THREADS), THE OTHERS SHARED BETWEEN THREADS
+  double total = 0;
+  for (R_xlen_t b = 0; b < nb; ++b) total += std::pow(static_cast<double>(size[b]), 3);
+  std::vector<size_t> rest;
+  for (size_t b : jobs) {
+    if (threads > 1 && size[b] >= 3 &&
+        std::pow(static_cast<double>(size[b]), 3) > total / threads) {
+      order_block(b, threads);
+    } else {
+      rest.push_back(b);
+    }
+  }
+  par::parallel_for(rest.size(), threads, [&](size_t t) { order_block(rest[t], 1); });
   cpp11::writable::list res(nb);
   for (R_xlen_t b = 0; b < nb; ++b) {
     cpp11::writable::integers v(static_cast<R_xlen_t>(out[b].size()));

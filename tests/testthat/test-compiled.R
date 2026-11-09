@@ -99,13 +99,13 @@ test_that("compiled linkage gives stats::hclust() trees", {
   expect_equal(ours$height, hclust(dist(x), "single")$height)
   expect_equal(ours$order, .merge_order(ours$merge))
   expect_true(all(ours$merge < seq_len(39)))
-  # OTHER METHODS, MISSING VALUES AND PARTIAL NAMES GO TO stats::hclust()
+  # OTHER METHODS AND PARTIAL NAMES GO TO stats::hclust(); MISSING DISTANCES FAIL
   d <- dist(matrix(rnorm(30), 10))
   expect_identical(.hclust_dist(d, "centroid")$merge, hclust(d, "centroid")$merge)
   expect_identical(.hclust_dist(d, "median")$order, hclust(d, "median")$order)
   expect_identical(.hclust_dist(d, "ave")$merge, hclust(d, "average")$merge)
   d[3] <- NA
-  expect_error(.hclust_dist(d), "NA/NaN/Inf")
+  expect_error(.hclust_dist(d), "distances are missing")
   expect_error(.hclust_dist(dist(1)), "must have n >= 2 objects to cluster")
   # INTEGER DISTANCES
   d <- as.dist(matrix(c(0, 3, 4, 3, 0, 5, 4, 5, 0), 3))

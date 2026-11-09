@@ -44,11 +44,13 @@ if(requireNamespace("gridGraphics", quietly = TRUE)) {
   grid::grid.draw(g)
 }
 
-\dontrun{
 # Beside a ggplot2 plot with patchwork
-library(ggplot2)
-library(patchwork)
-ggplot(mtcars, aes(wt, mpg)) + geom_point() + heat_map_grob(hm)
+if(requireNamespace("gridGraphics", quietly = TRUE) &&
+   requireNamespace("ggplot2", quietly = TRUE) &&
+   requireNamespace("patchwork", quietly = TRUE)) {
+  library(ggplot2)
+  library(patchwork)
+  ggplot(mtcars, aes(wt, mpg)) + geom_point() + heat_map_grob(hm)
 }
 
 }

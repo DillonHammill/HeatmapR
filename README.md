@@ -60,7 +60,7 @@ graphics approach.
 - **HeatmapR** clusters large datasets quickly: distances, linkage and
   optimal leaf ordering run in compiled C++ code shared between threads
   (`heat_map_threads()`), and rows or columns beyond `clust_max` are
-  clustered in two stages, so 100,000 rows take about a second on two
+  clustered in two stages, so 100,000 rows take about 2 seconds on two
   cores.
 - **HeatmapR** shows sample or feature metadata as annotation tracks
   (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
@@ -104,29 +104,29 @@ text, legends and layouts, **HeatmapR** can:
 <table>
 <tr>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#zooming-into-a-band-of-rows"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-zoom.png" height="220" alt="Zoom lens"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#zooming-into-a-band-of-rows">Zoom
+<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#zooming-into-a-band-of-rows"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-zoom.png" height="220" alt="Zoom lens"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#zooming-into-a-band-of-rows">Zoom
 lens</a>
 </td>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#two-values-in-each-cell"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-split.png" height="220" alt="Split cells"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#two-values-in-each-cell">Split
+<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#two-values-in-each-cell"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-split.png" height="220" alt="Split cells"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#two-values-in-each-cell">Split
 cells</a>
 </td>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#uncertainty-in-colour"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-uncertainty.png" height="220" alt="Uncertainty in colour"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#uncertainty-in-colour">Uncertainty
+<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#uncertainty-in-colour"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-uncertainty.png" height="220" alt="Uncertainty in colour"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#uncertainty-in-colour">Uncertainty
 in colour</a>
 </td>
 </tr>
 <tr>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#distributions-inside-cells"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-cell-values.png" height="220" alt="Distributions inside cells"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#distributions-inside-cells">Distributions
+<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#distributions-inside-cells"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cell-values.png" height="220" alt="Distributions inside cells"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#distributions-inside-cells">Distributions
 inside cells</a>
 </td>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#branch-support"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-support.png" height="220" alt="Branch support"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#branch-support">Branch
+<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#branch-support"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-support.png" height="220" alt="Branch support"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#branch-support">Branch
 support</a>
 </td>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#metadata-annotations"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-annotations.png" height="220" alt="Metadata annotations"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#metadata-annotations">Metadata
+<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#metadata-annotations"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-annotations.png" height="220" alt="Metadata annotations"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#metadata-annotations">Metadata
 annotations</a>
 </td>
 </tr>
@@ -134,7 +134,7 @@ annotations</a>
 
 See the
 [changelog](https://dillonhammill.github.io/HeatmapR/news/index.html)
-for everything new in **HeatmapR** 1.2.0.
+for everything new in **HeatmapR** 2.0.0.
 
 ## Installation
 
@@ -150,10 +150,10 @@ The development version can be installed directly from GitHub:
 devtools::install_github("DillonHammill/HeatmapR")
 ```
 
-The development version contains C++ code, so installing it from GitHub
-needs a compiler:
-[Rtools](https://cran.r-project.org/bin/windows/Rtools/) on Windows or
-the Xcode command line tools on macOS.
+**HeatmapR** contains C++ code: CRAN provides ready-built binaries for
+Windows and macOS, but installing from GitHub (or from source) needs a
+compiler - [Rtools](https://cran.r-project.org/bin/windows/Rtools/) on
+Windows or the Xcode command line tools on macOS.
 
 ## Usage
 
@@ -181,11 +181,12 @@ heat_map(
 
 ## Acknowledgements
 
-**HeatmapR** relies on statistical methods in the `stats` package to
-compute distance matrices and perform hierarchical clustering. The
-dendrogram line segments follow the layout used by the
-[ggdendro](https://github.com/andrie/ggdendro) package, which earlier
-versions of **HeatmapR** used modified code from.
+**HeatmapR** computes distances and hierarchical clustering in compiled
+code that follows the methods of the `stats` package (`stats::dist()`
+and `stats::hclust()`), which it still uses for the methods the compiled
+code doesn’t cover. The dendrogram line segments follow the layout used
+by the [ggdendro](https://github.com/andrie/ggdendro) package, which
+earlier versions of **HeatmapR** used modified code from.
 
 ## Code of Conduct
 
@@ -204,7 +205,7 @@ citation("HeatmapR")
 #> To cite package 'HeatmapR' in publications use:
 #> 
 #>   Hammill D (2026). _HeatmapR: Create Heatmaps Using Base Graphics_. R
-#>   package version 1.2.0, <https://dillonhammill.github.io/HeatmapR/>.
+#>   package version 2.0.0, <https://dillonhammill.github.io/HeatmapR/>.
 #> 
 #> A BibTeX entry for LaTeX users is
 #> 
@@ -212,7 +213,7 @@ citation("HeatmapR")
 #>     title = {HeatmapR: Create Heatmaps Using Base Graphics},
 #>     author = {Dillon Hammill},
 #>     year = {2026},
-#>     note = {R package version 1.2.0},
+#>     note = {R package version 2.0.0},
 #>     url = {https://dillonhammill.github.io/HeatmapR/},
 #>   }
 ```

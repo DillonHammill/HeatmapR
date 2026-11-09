@@ -36,6 +36,10 @@ cluster_batch_cpp <- function(xs, groups, metric, q, method, threads) {
   .Call(`_HeatmapR_cluster_batch_cpp`, xs, groups, metric, q, method, threads)
 }
 
+row_ranks_cpp <- function(x, threads) {
+  .Call(`_HeatmapR_row_ranks_cpp`, x, threads)
+}
+
 nearest_medoid_cpp <- function(x, medoids, metric, q, threads) {
   .Call(`_HeatmapR_nearest_medoid_cpp`, x, medoids, metric, q, threads)
 }

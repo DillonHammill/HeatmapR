@@ -8,7 +8,8 @@ heat_map_custom(popup = TRUE, popup_size = c(8, 8), layout = NULL, ...)
 }
 \arguments{
 \item{popup}{logical indicating whether a popup graphics device should be
-opened.}
+opened, set to TRUE by default. Popups are only opened in interactive
+sessions.}
 
 \item{popup_size}{indicates the size of the popup graphics device in inches,
 set to \code{c(8,8)} by default.}

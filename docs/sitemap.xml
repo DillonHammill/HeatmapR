@@ -1,23 +1,87 @@
-<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
-<url><loc>https://dillonhammill.github.io/HeatmapR/404.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/articles/index.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/authors.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/CODE_OF_CONDUCT.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/GEMINI.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/index.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/news/index.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/figures/logo.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_complete.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_custom.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_new.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_record.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_reset.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.html</loc></url>
-<url><loc>https://dillonhammill.github.io/HeatmapR/reference/index.html</loc></url>
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/404.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/CODE_OF_CONDUCT.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/authors.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/index.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/news/index.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/figures/logo.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_complete.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_custom.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_new.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_record.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_reset.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>https://dillonhammill.github.io/HeatmapR/reference/print.heat_map_description.html</loc>
+  </url>
 </urlset>
-

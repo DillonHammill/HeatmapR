@@ -128,7 +128,58 @@
   invisible(TRUE)
 }
 
-#' Validate that a dendrogram matches the data being displayed
+#' A side of the heatmap given by name (or number) as a side number
+#'
+#' @param sides named side numbers, e.g. \code{c(bottom = 1, top = 3)}.
+#'
+#' @noRd
+.check_side <- function(side,
+                        sides,
+                        arg) {
+  s <- if(is.numeric(side) && length(side) == 1 && side %in% sides) {
+    side
+  } else if(is.character(side) && length(side) == 1) {
+    unname(sides[pmatch(tolower(side), names(sides))])
+  } else {
+    NA
+  }
+  if(length(s) != 1 || is.na(s)) {
+    stop(
+      "'", arg, "' must be ",
+      paste0("\"", names(sides), "\"", collapse = " or "), ".",
+      call. = FALSE
+    )
+  }
+  as.numeric(s)
+}
+
+#' A single TRUE or FALSE
+#' @noRd
+.check_flag <- function(x,
+                        arg) {
+  if(!is.logical(x) || length(x) != 1 || is.na(x)) {
+    stop("'", arg, "' must be TRUE or FALSE.", call. = FALSE)
+  }
+  invisible(x)
+}
+
+#' A single positive number
+#' @noRd
+.check_positive <- function(x,
+                            arg) {
+  if(!is.numeric(x) || length(x) != 1 || !is.finite(x) || x <= 0) {
+    stop("'", arg, "' must be a positive number.", call. = FALSE)
+  }
+  invisible(x)
+}
+
+#' Validate a dendrogram supplied by the user
+#'
+#' An hclust object describing the rows or columns displayed: each leaf and
+#' each merge joined once, merges only joining leaves or earlier merges, a
+#' height for each merge and an order holding each leaf once. (The compiled
+#' code relies on this.)
+#'
 #' @noRd
 .check_tree <- function(tree,
                         n,
@@ -141,6 +192,35 @@
         length(tree$order), " leaves!"
       )
     )
+  }
+  bad <- function(why) {
+    stop("'", arg, "' is not a valid hclust object - ", why, ".", call. = FALSE)
+  }
+  k <- n - 1
+  merge <- tree$merge
+  if(!is.matrix(merge) || !is.numeric(merge) || nrow(merge) != k ||
+     ncol(merge) != 2) {
+    bad(paste0("'merge' must be a matrix with ", k, " rows and 2 columns"))
+  }
+  m <- as.vector(merge)
+  if(anyNA(m) || any(m != round(m))) {
+    bad("'merge' must hold whole numbers")
+  }
+  leaves <- -m[m < 0]
+  if(length(leaves) != n || any(leaves > n) || anyDuplicated(leaves)) {
+    bad("each leaf must be joined once in 'merge'")
+  }
+  nodes <- m[m > 0]
+  if(length(nodes) != max(0, k - 1) || anyDuplicated(nodes) ||
+     any(nodes >= rep(seq_len(k), 2)[m > 0])) {
+    bad("each merge must join leaves or earlier merges, each once")
+  }
+  if(length(tree$height) != k || anyNA(tree$height)) {
+    bad("'height' must hold one value for each merge")
+  }
+  if(anyNA(tree$order) || !setequal(tree$order, seq_len(n)) ||
+     anyDuplicated(tree$order)) {
+    bad("'order' must hold each leaf once")
   }
   invisible(TRUE)
 }
@@ -456,6 +536,11 @@
 .col_scale <- function(x = NULL) {
   if(is.null(x)) {
     x <- .default_col_scale()
+  }
+  # PALETTE FUNCTIONS - colorRampPalette(), viridisLite::viridis() ETC. TAKE
+  # THE NUMBER OF COLOURS (n); colorRamp() FUNCTIONS TAKE POSITIONS IN [0, 1]
+  if(is.function(x) && identical(names(formals(x))[1], "n")) {
+    x <- x(100)
   }
   if(is.function(x)) {
     return(x)
@@ -1139,6 +1224,74 @@
   value
 }
 
+#' A result from the heatmap being redrawn (NULL if it has none), recorded
+#' for the next redraw
+#' @noRd
+.memo_get <- function(memo,
+                      key) {
+  for(e in memo$use) {
+    if(identical(e$key, key)) {
+      memo$record[[length(memo$record) + 1]] <- e
+      return(e$value)
+    }
+  }
+  NULL
+}
+
+#' Record a result for the next redraw
+#' @noRd
+.memo_put <- function(memo,
+                      key,
+                      value) {
+  memo$record[[length(memo$record) + 1]] <- list(key = key, value = value)
+  invisible(value)
+}
+
+#' heat_map_clust(), reusing the clustering and leaf order of the heatmap
+#' being redrawn
+#'
+#' The clustering (keyed on the data, tree, distance, linkage and
+#' \code{clust_max}) and the leaf order are kept apart from the branch heights
+#' and the cut, which are quick: a redraw with a new cut or height scaling
+#' only redoes those, and one with a new leaf order only orders the leaves
+#' again.
+#'
+#' @param args the arguments of heat_map_clust() other than \code{order},
+#'   \code{scale} and \code{cut} (x, tree, dist, method, max and those in
+#'   \code{...}).
+#'
+#' @noRd
+.memo_clust <- function(memo,
+                        args,
+                        order = "default",
+                        scale = FALSE,
+                        cut = NULL) {
+  .check_order(order)
+  .check_clust_max(args$max, "clust_max")
+  base <- .memo_key(args)
+  key_raw <- list(".clust_raw", base)
+  key_ord <- list(".clust_order", base, order)
+  raw <- .memo_get(memo, key_raw)
+  ordered <- if(identical(order, "default")) raw else .memo_get(memo, key_ord)
+  if(is.null(raw)) {
+    steps <- do.call(.clust_steps, c(args, list(order = order)))
+    raw <- .memo_put(memo, key_raw, steps$raw)
+    ordered <- steps$ordered
+    if(!identical(order, "default")) {
+      .memo_put(memo, key_ord, ordered)
+    }
+  } else if(is.null(ordered)) {
+    prep <- .clust_prep(args$x, args$tree)
+    dots <- args[setdiff(names(args), c("x", "tree", "dist", "method", "max"))]
+    ordered <- do.call(.clust_order, c(
+      list(raw = raw, prep = prep, order = order, dist = args$dist),
+      dots
+    ))
+    .memo_put(memo, key_ord, ordered)
+  }
+  .finish_tree(ordered, scale = scale, cut = cut, dist = args$dist)
+}
+
 #' Inputs of a slow step as a key: long numeric, integer and logical vectors
 #' (data, groups, trees) are replaced by a hash of their values
 #' @noRd
@@ -1162,7 +1315,7 @@
                          args,
                          custom = FALSE,
                          memo = NULL) {
-  attr(x, "heat_map_info") <- info
+  attr(x, "heat_map_info") <- .pack_info(info, args)
   attr(x, "heat_map_args") <- args
   attr(x, "heat_map_custom") <- custom
   attr(x, "heat_map_memo") <- memo
@@ -1245,7 +1398,90 @@ heat_map_info <- function(x) {
   if(!inherits(x, "heat_map")) {
     stop("'x' must be a heat_map object returned by heat_map()!")
   }
-  attr(x, "heat_map_info")
+  .unpack_info(attr(x, "heat_map_info"), attr(x, "heat_map_args"))
+}
+
+#' Store the cell matrices of heat_map_info() compactly
+#'
+#' A matrix with one value in every cell (e.g. sizes and shapes when they
+#' aren't mapped to data) is kept as that value, and a character matrix (e.g.
+#' colours) as integer codes into its distinct values. The data are dropped
+#' when they are the \code{x} the heatmap was drawn from, which the heatmap
+#' keeps to redraw itself. \code{.unpack_info()} restores them all.
+#'
+#' @noRd
+.pack_info <- function(info,
+                       args) {
+  for(nm in intersect(c("colours", "split_colours", "sizes", "shapes"),
+                      names(info))) {
+    if(!is.null(info[[nm]])) {
+      info[[nm]] <- .pack_cells(info[[nm]])
+    }
+  }
+  if(!is.null(info$data) && !is.null(args$x) && identical(info$data, args$x)) {
+    info["data"] <- list(structure(list(), class = "heat_map_from_args"))
+  }
+  info
+}
+
+#' The heat_map_info() of a heatmap, as .pack_info() stored it
+#' @noRd
+.unpack_info <- function(info,
+                         args) {
+  if(is.null(info)) {
+    return(info)
+  }
+  for(nm in names(info)) {
+    if(inherits(info[[nm]], "heat_map_packed")) {
+      info[[nm]] <- .unpack_cells(info[[nm]])
+    }
+  }
+  if(inherits(info$data, "heat_map_from_args")) {
+    info["data"] <- list(args$x)
+  }
+  info
+}
+
+#' A cell matrix as one value or as codes into its distinct values
+#' @noRd
+.pack_cells <- function(m) {
+  if(!is.matrix(m) || length(m) < 64) {
+    return(m)
+  }
+  v <- m[[1]]
+  same <- if(is.na(v)) all(is.na(m)) else !anyNA(m) && all(m == v)
+  if(same) {
+    return(structure(
+      list(value = v, dim = dim(m), dimnames = dimnames(m)),
+      class = "heat_map_packed"
+    ))
+  }
+  if(is.character(m)) {
+    lev <- unique(as.vector(m))
+    if(length(lev) < length(m) / 4) {
+      return(structure(
+        list(
+          codes = match(m, lev),
+          levels = lev,
+          dim = dim(m),
+          dimnames = dimnames(m)
+        ),
+        class = "heat_map_packed"
+      ))
+    }
+  }
+  m
+}
+
+#' A cell matrix stored by .pack_cells()
+#' @noRd
+.unpack_cells <- function(p) {
+  values <- if(is.null(p$codes)) {
+    rep(p$value, prod(p$dim))
+  } else {
+    p$levels[p$codes]
+  }
+  matrix(values, p$dim[1], p$dim[2], dimnames = p$dimnames)
 }
 
 ## PRINT & PLOT METHODS --------------------------------------------------------
@@ -1393,10 +1629,20 @@ print.heat_map <- function(x, ...) {
   if(ncol(annotation) == 0) {
     return(NULL)
   }
-  # MATCH BY NAME WHEN ROW NAMES ARE SUPPLIED
+  # MATCH BY NAME WHEN ROW NAMES ARE SUPPLIED - NAMES THAT MATCH ONLY SOME
+  # ROWS (OR COLUMNS) ARE AN ERROR RATHER THAN MATCHED BY POSITION
   named <- .row_names_info(annotation) > 0
   if(named && !is.null(labels) && all(labels %in% rownames(annotation))) {
     annotation <- annotation[labels, , drop = FALSE]
+  } else if(named && !is.null(labels) && any(labels %in% rownames(annotation))) {
+    missing <- labels[!labels %in% rownames(annotation)]
+    stop(
+      "The row names of '", arg, "' match only some ",
+      if(arg == "annotation_x") "columns" else "rows", " of 'x' - missing: ",
+      paste(utils::head(missing, 5), collapse = ", "),
+      if(length(missing) > 5) ", ...", ".",
+      call. = FALSE
+    )
   } else if(nrow(annotation) != n) {
     stop(
       paste0(
@@ -1613,7 +1859,8 @@ print.heat_map <- function(x, ...) {
 #' @importFrom methods formalArgs
 #' @importFrom stats dist hclust
 #' @noRd
-.check_dots <- function(dots) {
+.check_dots <- function(dots,
+                        fun = "heat_map()") {
   if(length(dots) == 0) {
     return(invisible(NULL))
   }
@@ -1629,7 +1876,7 @@ print.heat_map <- function(x, ...) {
   if(length(unknown) > 0) {
     unknown[unknown == ""] <- "<unnamed>"
     warning(
-      "Ignoring unknown argument(s) passed to heat_map(): ",
+      "Ignoring unknown argument(s) passed to ", fun, ": ",
       paste(unique(unknown), collapse = ", "),
       call. = FALSE
     )

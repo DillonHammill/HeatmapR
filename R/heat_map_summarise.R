@@ -142,15 +142,20 @@ heat_map_summarise <- function(x,
     if(length(ci) == 0) {
       return(out)
     }
-    indicator <- function(ind) {
-      g <- matrix(0, length(unlist(ind)), length(ind))
-      g[cbind(seq_len(nrow(g)), rep(seq_along(ind), lengths(ind)))] <- 1
-      g
+    # (rowsum() - GROUP INDICATOR MATRICES WOULD BE ONE ROW BY ONE COLUMN
+    # FOR UNGROUPED ROWS, TOO LARGE FOR LARGE DATA; GROUPS OF ONE ARE LEFT
+    # AS THEY ARE)
+    group_sum <- function(a, ind) {
+      if(all(lengths(ind) == 1)) {
+        return(a)
+      }
+      s <- rowsum(a, rep.int(seq_along(ind), lengths(ind)))
+      out <- matrix(0, length(ind), ncol(a))
+      out[as.integer(rownames(s)), ] <- s
+      out
     }
-    rg <- indicator(rows)
-    cg <- indicator(cols)
     add <- function(a) {
-      crossprod(rg, a %*% cg)
+      t(group_sum(t(group_sum(a, rows)), cols))
     }
     v <- m[ri, ci, drop = FALSE]
     ok <- !is.na(v)

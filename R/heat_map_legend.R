@@ -239,6 +239,10 @@ heat_map_legend <- function(col = NULL,
     )
   }
   for(a in annotations) {
+    # (AN ANNOTATION WITHOUT VALUES - NOTHING TO SHOW)
+    if(is.null(a$ramp) && length(a$labels) == 0) {
+      next
+    }
     if(is.null(a$ramp)) {
       b <- block(
         "swatch",

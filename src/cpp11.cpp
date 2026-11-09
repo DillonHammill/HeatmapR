@@ -69,6 +69,13 @@ extern "C" SEXP _HeatmapR_cluster_batch_cpp(SEXP xs, SEXP groups, SEXP metric, S
   END_CPP11
 }
 // linkage.cpp
+SEXP row_ranks_cpp(cpp11::doubles_matrix<> x, int threads);
+extern "C" SEXP _HeatmapR_row_ranks_cpp(SEXP x, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(row_ranks_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// linkage.cpp
 cpp11::integers nearest_medoid_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> medoids, int metric, double q, int threads);
 extern "C" SEXP _HeatmapR_nearest_medoid_cpp(SEXP x, SEXP medoids, SEXP metric, SEXP q, SEXP threads) {
   BEGIN_CPP11
@@ -213,6 +220,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_parallel_check_cpp",    (DL_FUNC) &_HeatmapR_parallel_check_cpp,    4},
     {"_HeatmapR_ramp_packed_cpp",       (DL_FUNC) &_HeatmapR_ramp_packed_cpp,       3},
     {"_HeatmapR_rgb_packed_cpp",        (DL_FUNC) &_HeatmapR_rgb_packed_cpp,        1},
+    {"_HeatmapR_row_ranks_cpp",         (DL_FUNC) &_HeatmapR_row_ranks_cpp,         2},
     {"_HeatmapR_structural_clades_cpp", (DL_FUNC) &_HeatmapR_structural_clades_cpp, 2},
     {"_HeatmapR_sub_merge_cpp",         (DL_FUNC) &_HeatmapR_sub_merge_cpp,         2},
     {"_HeatmapR_tree_segments_cpp",     (DL_FUNC) &_HeatmapR_tree_segments_cpp,     3},

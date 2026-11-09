@@ -310,6 +310,47 @@ test_that("heat_map draws panels on either side of the heatmap", {
   }
 })
 
+test_that("cluster gaps keep their size in a panel and panels never shrink cells", {
+  # RUNS OF ROWS BETWEEN GAPS, AND WHERE THEY GO IN THE PANEL
+  centers <- c(1.5, 2.5, 3.5, 9.5, 10.5)
+  expect_equal(.zoom_segments(centers), list(c(1, 4), c(9, 11)))
+  expect_equal(.zoom_extent(centers), c(rows = 5, gaps = 5))
+  expect_equal(.zoom_segment_along(list(c(1, 4), c(9, 11)), c(0, 30)),
+               list(c(0, 15), c(20, 30)))
+  expect_equal(.zoom_map_band(c(1, 2.5, 4, 9, 10, 11), centers, c(0, 30)),
+               c(0, 7.5, 15, 20, 25, 30))
+  # (A PANEL SHORTER THAN ITS BAND - EVERYTHING SCALED ALIKE)
+  expect_equal(.zoom_segment_along(list(c(1, 4), c(9, 11)), c(0, 5)),
+               list(c(0, 1.5), c(4, 5)))
+  pieces <- .zoom_pieces(list(lim = c(1, 11), along = c(0, 30), side = 2), centers)
+  expect_equal(lapply(pieces, `[[`, "lim"), list(c(1, 4), c(9, 11)))
+  expect_equal(pieces[[2]]$along, c(20, 30))
+  # A BAND ACROSS THE GAP BETWEEN TWO LARGE CLUSTERS - THE GAP STAYS AS WIDE
+  # AS ON THE HEATMAP AND THE ROWS FILL THE PANEL
+  m <- matrix(seq_len(2000 * 4), 2000, dimnames = list(paste0("r", 1:2000), NULL))
+  hm <- draw(m, tree_cut_y = rep(1:2, each = 1000), axis_text_y = NA,
+             zoom_y = c(995, 1006))
+  panel <- Filter(function(z) length(z[[5]]) %in% c(6 * 4), drawn(hm, "C_rect"))
+  expect_length(panel, 2)
+  # (THE LABELS OF THE ENLARGED ROWS ARE EVENLY SPACED, AND THE STEP ACROSS
+  # THE GAP IS LONGER BY THE WIDTH OF THE GAP ON THE HEATMAP)
+  at <- sort(vapply(Filter(function(z) z[[1]] == 2, drawn(hm, "C_axis")),
+                    function(z) z[[2]], numeric(1)))
+  step <- diff(at)
+  centres <- sort(heat_map_info(hm)$centers$y)
+  expect_length(at, 12)
+  expect_gt(min(step), 50)
+  expect_equal(max(step) - min(step), max(diff(centres)) - 1, tolerance = 1e-6)
+  expect_equal(sum(step == max(step)), 1)
+  # A SMALL HEATMAP - PANEL ROWS AT LEAST AS LARGE AS THE HEATMAP'S
+  m <- test_matrix(12, 6)
+  hm <- draw(m, zoom_y = c(3, 5))
+  b <- heat_map_info(hm)$layout
+  heat_row <- diff(unlist(b[b$component == "heatmap", c("ymin", "ymax")])) / 12
+  zb <- b[b$component == "zoom_y", ]
+  expect_gte(diff(unlist(zb[, c("ymin", "ymax")])), 3 * heat_row - 1e-6)
+})
+
 test_that("zoom lens snapshot", {
   skip_on_cran()
   skip_on_os("mac")

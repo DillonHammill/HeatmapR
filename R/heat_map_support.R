@@ -68,6 +68,15 @@
   structural_clades_cpp(.int_merge(merge), as.integer(groups))
 }
 
+#' A merge matrix with the children of each merge in a fixed order, so that
+#' trees that differ only by flipped branches (leaf order) give the same key
+#' @noRd
+.clade_merge <- function(merge) {
+  out <- cbind(pmin(merge[, 1], merge[, 2]), pmax(merge[, 1], merge[, 2]))
+  storage.mode(out) <- "integer"
+  out
+}
+
 #' Bootstrap support of each branch of a tree
 #'
 #' The columns of \code{data} are resampled with replacement \code{B} times
@@ -146,6 +155,23 @@
   support <- hits / B
   support[.structural_clades(tree$merge, groups)] <- NA
   support
+}
+
+#' The distance and linkage a supplied tree was built with, when HeatmapR can
+#' compute them (NULL otherwise)
+#' @noRd
+.tree_methods <- function(tree) {
+  dists <- c("euclidean", "maximum", "manhattan", "canberra", "binary",
+             "minkowski", "pearson", "spearman", "kendall", "cosine")
+  methods <- c("ward.D", "ward.D2", "single", "complete", "average",
+               "mcquitty", "median", "centroid")
+  d <- tree$dist.method
+  m <- tree$method
+  if(!is.character(d) || length(d) != 1 || !tolower(d) %in% dists ||
+     !is.character(m) || length(m) != 1 || !m %in% methods) {
+    return(NULL)
+  }
+  list(dist = tolower(d), method = m)
 }
 
 #' Line styles of each merge from its support (NA - a plain line)

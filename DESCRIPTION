@@ -1,8 +1,8 @@
 Package: HeatmapR
 Type: Package
 Title: Create Heatmaps Using Base Graphics
-Version: 1.2.0
-Date: 2026-11-01
+Version: 2.0.0
+Date: 2026-11-03
 Authors@R: 
     person(given = "Dillon",
            family = "Hammill",
@@ -47,6 +47,6 @@ Suggests:
     knitr,
     patchwork,
     rmarkdown,
-    testthat (>= 3.1.5),
+    testthat (>= 3.1.7),
     vdiffr (>= 1.0.0)
 VignetteBuilder: knitr

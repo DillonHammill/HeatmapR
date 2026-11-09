@@ -3,17 +3,23 @@
 #' Number of threads used by HeatmapR
 #'
 #' The compiled code shares its larger jobs between threads: the distances
-#' between rows, the groups and the nearest-medoid search of two-stage
-#' clustering, the resamples of branch support (\code{tree_support_x},
+#' between rows, the searches for the nearest cluster and the distance
+#' updates of the linkage while many clusters remain (more than about 1,500),
+#' the groups and the nearest-medoid search of two-stage clustering, the
+#' resamples of branch support (\code{tree_support_x},
 #' \code{tree_support_y}) and the larger steps and blocks of optimal leaf
-#' ordering. The linkage itself, which follows one chain of nearest neighbours
-#' at a time, runs on one thread. Results are the same whatever the number of
-#' threads.
+#' ordering. Results are the same whatever the number of threads.
 #'
 #' By default HeatmapR uses one thread per physical core, but no more than the
-#' environment variables \code{OMP_THREAD_LIMIT} and \code{OMP_NUM_THREADS}
-#' allow (when they are set) and no more than two while \code{R CMD check}
-#' limits the number of cores (\code{_R_CHECK_LIMIT_CORES_}). Set the number
+#' CPUs the R process may run on (on Linux, e.g. when limited by
+#' \code{taskset} or a container), no more than the environment variables
+#' \code{OMP_THREAD_LIMIT} and \code{OMP_NUM_THREADS} allow (when they are
+#' set) and no more than two while \code{R CMD check} limits the number of
+#' cores (\code{_R_CHECK_LIMIT_CORES_}). Processes forked from R (e.g. by
+#' \code{parallel::mclapply()}) use one thread unless the number is set. The
+#' linkage stops sharing its scans between threads when waiting for them
+#' takes longer than the work they save, e.g. when other processes keep the
+#' cores busy; results are the same either way. Set the number
 #' with \code{heat_map_threads(n)} or \code{options(HeatmapR.threads = n)},
 #' e.g. \code{heat_map_threads(1)} when heatmaps are drawn in parallel
 #' processes.
@@ -68,6 +74,11 @@ heat_map_threads <- function(threads = NULL) {
   if(!is.null(threads)) {
     return(.check_threads(threads))
   }
+  # A FORKED CHILD (E.G. OF parallel::mclapply()) - ITS SIBLINGS ARE USING
+  # THE OTHER CORES
+  if(!is.null(.cores$pid) && !identical(.cores$pid, Sys.getpid())) {
+    return(1L)
+  }
   .default_threads()
 }
 
@@ -75,12 +86,17 @@ heat_map_threads <- function(threads = NULL) {
 .cores <- new.env(parent = emptyenv())
 
 #' The number of physical cores - or of the hardware's threads when R can't
-#' count the cores, or one
+#' count the cores, or one - but no more than the CPUs the process may run on
+#' (\code{avail}, e.g. limited by taskset or a container's cpuset)
 #' @importFrom parallel detectCores
 #' @noRd
-.count_cores <- function(n = suppressWarnings(detectCores(logical = FALSE))) {
+.count_cores <- function(n = suppressWarnings(detectCores(logical = FALSE)),
+                         avail = hardware_threads_cpp()) {
   if(is.na(n) || n < 1) {
-    n <- hardware_threads_cpp()
+    n <- avail
+  }
+  if(!is.na(avail) && avail >= 1) {
+    n <- min(n, avail)
   }
   if(is.na(n) || n < 1) 1L else as.integer(n)
 }

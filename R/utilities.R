@@ -120,6 +120,22 @@
   if(!is.matrix(x)) {
     x <- as.matrix(x)
   }
+
+  # MISSING VALUES - EACH PAIR OF ROWS COMPARED ON THE COLUMNS BOTH HAVE (NO
+  # SHARED COLUMNS GIVES A MISSING DISTANCE, AS IN stats::dist())
+  if(anyNA(x)) {
+    obs <- !is.na(x) * 1
+    x0 <- x
+    x0[is.na(x0)] <- 0
+    dot <- tcrossprod(x0)
+    # SQUARED NORM OF ROW i OVER THE COLUMNS ROW j HAS
+    norm_sq <- tcrossprod(x0^2, obs)
+    den <- sqrt(norm_sq * t(norm_sq))
+    sim <- ifelse(den > 0, dot / den, 0)
+    sim[tcrossprod(obs) == 0] <- NA
+    d <- as.dist(pmin(pmax(1 - sim, 0), 2))
+    return(d)
+  }
   
   # Identify zero-length vectors before normalization for efficiency
   row_norms_sq <- rowSums(x^2)

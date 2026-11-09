@@ -17,18 +17,24 @@ number in use before, invisibly.
 }
 \description{
 The compiled code shares its larger jobs between threads: the distances
-between rows, the groups and the nearest-medoid search of two-stage
-clustering, the resamples of branch support (\code{tree_support_x},
+between rows, the searches for the nearest cluster and the distance
+updates of the linkage while many clusters remain (more than about 1,500),
+the groups and the nearest-medoid search of two-stage clustering, the
+resamples of branch support (\code{tree_support_x},
 \code{tree_support_y}) and the larger steps and blocks of optimal leaf
-ordering. The linkage itself, which follows one chain of nearest neighbours
-at a time, runs on one thread. Results are the same whatever the number of
-threads.
+ordering. Results are the same whatever the number of threads.
 }
 \details{
 By default HeatmapR uses one thread per physical core, but no more than the
-environment variables \code{OMP_THREAD_LIMIT} and \code{OMP_NUM_THREADS}
-allow (when they are set) and no more than two while \code{R CMD check}
-limits the number of cores (\code{_R_CHECK_LIMIT_CORES_}). Set the number
+CPUs the R process may run on (on Linux, e.g. when limited by
+\code{taskset} or a container), no more than the environment variables
+\code{OMP_THREAD_LIMIT} and \code{OMP_NUM_THREADS} allow (when they are
+set) and no more than two while \code{R CMD check} limits the number of
+cores (\code{_R_CHECK_LIMIT_CORES_}). Processes forked from R (e.g. by
+\code{parallel::mclapply()}) use one thread unless the number is set. The
+linkage stops sharing its scans between threads when waiting for them
+takes longer than the work they save, e.g. when other processes keep the
+cores busy; results are the same either way. Set the number
 with \code{heat_map_threads(n)} or \code{options(HeatmapR.threads = n)},
 e.g. \code{heat_map_threads(1)} when heatmaps are drawn in parallel
 processes.

@@ -189,7 +189,7 @@ test_that("redrawing a heatmap reuses its dendrograms, k-means and support", {
   hm <- draw(m, tree = "both", tree_support_y = 10, tree_kmeans_x = 2)
   memo <- attr(hm, "heat_map_memo")
   expect_setequal(vapply(memo, function(e) e$key[[1]], ""),
-                  c(".kmeans_groups", ".group_tree", "heat_map_clust", ".tree_support"))
+                  c(".kmeans_groups", ".group_tree", ".clust_raw", ".tree_support"))
   redraw <- function(x, ...) {
     grDevices::pdf(NULL)
     on.exit(grDevices::dev.off())
@@ -200,7 +200,7 @@ test_that("redrawing a heatmap reuses its dendrograms, k-means and support", {
   segments <- function(rec) drawn(rec, "C_segments")
   expect_equal(segments(redraw(hm)), segments(hm))
   # A KEPT TREE IS USED AS IT IS (REPLACED HERE BY THE AVERAGE LINKAGE TREE)
-  y <- which(vapply(memo, function(e) identical(e$key[[1]], "heat_map_clust") &&
+  y <- which(vapply(memo, function(e) identical(e$key[[1]], ".clust_raw") &&
                       identical(e$key[[2]][[4]]$tree, 1), logical(1)))
   average <- heat_map_clust(m, method = "average")
   tampered <- hm

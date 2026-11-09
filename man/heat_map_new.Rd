@@ -2,13 +2,13 @@
 % Please edit documentation in R/heat_map-helpers.R
 \name{heat_map_new}
 \alias{heat_map_new}
-\title{Open a pop-up graphics device for heatmaps}
+\title{Open a popup graphics device for heatmaps}
 \usage{
 heat_map_new(popup = FALSE, popup_size = c(8, 8), ...)
 }
 \arguments{
 \item{popup}{logical indicating whether a popup graphics device should be
-opened.}
+opened, set to FALSE by default.}
 
 \item{popup_size}{indicates the size of the popup graphics device in inches,
 set to \code{c(8,8)} by default.}
@@ -20,7 +20,10 @@ set to \code{c(8,8)} by default.}
 No return value, called for side effects.
 }
 \description{
-Open a pop-up graphics device for heatmaps
+Opens a new graphics device when a popup is requested and the current
+device already holds a plot. Popups are only opened in interactive
+sessions: in scripts, R Markdown and other non-interactive sessions the
+current device is used.
 }
 \examples{
 \donttest{
