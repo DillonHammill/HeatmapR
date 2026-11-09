@@ -16,6 +16,8 @@ knitr::opts_chunk$set(
 # HeatmapR <img src="man/figures/logo.png" align="right" alt="" width="240"/>
 
 <!-- badges: start -->
+[![CRAN status](https://www.r-pkg.org/badges/version/HeatmapR)](https://CRAN.R-project.org/package=HeatmapR)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/HeatmapR)](https://CRAN.R-project.org/package=HeatmapR)
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![R-CMD-check](https://github.com/DillonHammill/HeatmapR/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/DillonHammill/HeatmapR/actions/workflows/R-CMD-check.yaml)
 [![Codecov test coverage](https://codecov.io/gh/DillonHammill/HeatmapR/branch/master/graph/badge.svg)](https://app.codecov.io/gh/DillonHammill/HeatmapR?branch=master)
