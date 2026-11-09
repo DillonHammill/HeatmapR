@@ -87,9 +87,9 @@ test_that("manual cluster indices use the original column order", {
 test_that("manual cluster indices accept characters and factors", {
   x <- data.frame(a = 1:5, b = 5:1)
   info <- heat_map_info(draw(x, tree_cut_y = c("b", "a", "b", "a", "a")))
-  # Cluster 1 ("a") at the bottom, cluster 2 ("b") at the top
+  # Cluster 1 ("a") at the top, cluster 2 ("b") at the bottom
   expect_equal(unname(info$row_clusters), c(2L, 1L, 2L, 1L, 1L))
-  expect_equal(info$row_order, c(3L, 1L, 5L, 4L, 2L))
+  expect_equal(info$row_order, c(5L, 4L, 2L, 3L, 1L))
   # Factor levels define the cluster order
   info <- heat_map_info(
     draw(x, tree_cut_y = factor(c("b", "a", "b", "a", "a"), levels = c("b", "a")))

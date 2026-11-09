@@ -264,13 +264,16 @@ Alternatively, clusters can be manually defined by specifying the number of
 columns to include in each cluster in the displayed order (e.g.,
 c(3,4,5)), or a vector of cluster indices can be supplied to assign each
 column to a specific cluster (e.g., c(1,1,1,2,2,2,2,3,3,3) for 10 columns
-in 3 clusters). Cluster indices are supplied in the original column order
-of \code{x} (like \code{bar_values_x}), may be numeric, character or
-factor, and columns are regrouped so that each cluster is contiguous,
-ordered from left to right. When a vector of indices is supplied, its
-length must equal the number of columns in \code{x}; if its length also
-matches a valid set of cluster sizes, it is treated as cluster indices.
-Named indices are matched to the column names of \code{x}. If a
+in 3 clusters). Numeric cluster indices are given column by column from
+the left of the heatmap as it is displayed without them (in the
+dendrogram order when \code{tree_x} is requested), so clusters can be
+assigned by reading a heatmap. Named indices are matched to the column
+names of \code{x}, and labels (character or factor, e.g. treatments from
+metadata) are given in the original column order of \code{x}. Columns
+are regrouped so that each cluster is contiguous, ordered from left to
+right. When a vector of indices is supplied, its length must equal the
+number of columns in \code{x}; if its length also matches a valid set of
+cluster sizes, it is treated as cluster indices. If a
 dendrogram is requested (\code{tree_x = TRUE}), the columns are clustered
 within each cluster and the clusters are joined at the top of the
 dendrogram, so the clusters act as groups (e.g. treatments) with a
@@ -353,21 +356,24 @@ or an integer indicating the desired number of clusters to obtain by
 cutting the y axis dendrogram.
 Alternatively, clusters can be manually defined by specifying the number of
 rows to include in each cluster in the displayed order, starting from the
-bottom of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
+top of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
 be supplied to assign each row to a specific cluster (e.g., c(1,1,1,2,2,2)
-for 6 rows in 2 clusters). Cluster indices are supplied in the original
-row order of \code{x} (like \code{bar_values_y}), may be numeric,
-character or factor, and rows are regrouped so that each cluster is
-contiguous, ordered from the bottom of the heatmap to the top. When a
-vector of indices is supplied, its length must equal the number of rows in
-\code{x}, and named indices are matched to the row names of \code{x}. If
+for 6 rows in 2 clusters). Numeric cluster indices are given row by row
+from the top of the heatmap as it is displayed without them (in the
+dendrogram order when \code{tree_y} is requested; without a dendrogram
+the last row of \code{x} is at the top). Named indices are matched to the
+row names of \code{x}, and labels (character or factor, e.g. cell types
+from metadata) are given in the original row order of \code{x}. Rows are
+regrouped so that each cluster is contiguous, the first cluster at the
+top. When a vector of indices is supplied, its length must equal the
+number of rows in \code{x}. If
 a dendrogram is requested (\code{tree_y = TRUE}), the rows are clustered
 within each cluster and the clusters are joined at the top of the
 dendrogram (e.g. cells grouped by cell type, each with its own
 dendrogram); a supplied \code{hclust} or \code{dist} object is kept only
 when the clusters are contiguous in its order. Clusters are
 always numbered, and labelled by \code{tree_label_text_y}, in the
-displayed order from the bottom of the heatmap to the top, which may
+displayed order from the top of the heatmap to the bottom, which may
 differ from the supplied indices when the dendrogram order is kept.}
 
 \item{tree_kmeans_y}{number of k-means clusters to split the rows of
@@ -404,8 +410,9 @@ labels, set to "grey40" by default.}
 axis tree cluster labels, set to 1 by default to use solid colours.}
 
 \item{tree_label_text_y}{a vector of text to include in the y axis tree
-cluster labels from the bottom of the heatmap to the top, set to NA by
-default.}
+cluster labels from the top of the heatmap to the bottom, set to NA by
+default. Other settings with one value per row cluster (colours, fonts
+and sizes) are also given from the top.}
 
 \item{tree_label_text_font_y}{a vector of font types to use for text in y
 axis cluster labels, set to 1 by default for plain text. See \code{font} in
@@ -679,7 +686,8 @@ to \code{"black"} by default.}
 transparency of bar borders in y axis bar plot, set to 1 by default.}
 
 \item{axis_text_x}{vector of text to use for x axis labels supplied in the
-order matching the constructed heatmap, set to NULL by default to use the
+order matching the constructed heatmap (from left to right), set to NULL
+by default to use the
 column names of \code{x}. Missing values (\code{NA}) are drawn as empty
 labels without a tick mark, so \code{NA} removes the x axis text. An \code{expression} can be supplied for mathematical
 annotation (see \code{?plotmath}).}
@@ -735,11 +743,13 @@ colours.}
 set to 1 by default.}
 
 \item{axis_text_y}{vector of text to use for y axis labels supplied in the
-order matching the constructed heatmap (from bottom to top), set to NULL
+order matching the constructed heatmap (from top to bottom), set to NULL
 by default to use the row names of \code{x}, or the row indices when
 \code{x} has no row names. Missing values (\code{NA}) are drawn as empty
-labels without a tick mark, so \code{NA} removes the y axis text. An \code{expression} can be supplied for mathematical
-annotation (see \code{?plotmath}).}
+labels without a tick mark, so \code{NA} removes the y axis text. An
+\code{expression} can be supplied for mathematical annotation (see
+\code{?plotmath}). Axis text settings with one value per row (e.g.
+\code{axis_text_col_y}) are also given from the top.}
 
 \item{axis_text_side_y}{indicates whether the y axis text should be on the
 \code{2 - "left"} or \code{4 - "right"} of the heatmap, set to
@@ -899,9 +909,10 @@ set to 1 by default.}
 \item{legend_text_col_alpha}{numeric to control the transparency of text in
 the legend, set to 1 by default to use solid colours.}
 
-\item{mark_x, mark_y}{columns or rows to label, as names, indices in the
-original order of \code{x}, or a logical vector with one value per
-column or row. The labels replace the axis text on that axis: they are
+\item{mark_x, mark_y}{columns or rows to label, as names, positions in the
+heatmap as it is displayed (columns from the left, rows from the top), or
+a logical vector with one value per column or row in the original order
+of \code{x}. The labels replace the axis text on that axis: they are
 spread out beside the heatmap so that they don't overlap, and leader
 lines connect each label to its column or row. This names a few rows of
 a large heatmap (e.g. marker genes) when there is no room to label every
@@ -915,9 +926,10 @@ to use the column or row names.}
 \item{mark_line_col}{colour of the leader lines connecting mark labels to
 their rows or columns, set to \code{"grey40"} by default.}
 
-\item{zoom_x, zoom_y}{columns or rows to enlarge, as names, indices in the
-original order of \code{x}, or a logical vector with one value per column
-or row. Every row from the first to the last of these in the displayed
+\item{zoom_x, zoom_y}{columns or rows to enlarge, as names, positions in the
+heatmap as it is displayed (columns from the left, rows from the top), or
+a logical vector with one value per column or row in the original order
+of \code{x}. Every row from the first to the last of these in the displayed
 order is enlarged, so giving the first and last rows of a band is enough
 (e.g. a cluster from \code{tree_cut_y}). The band is outlined on the
 heatmap and drawn again in a larger panel on the axis text side, joined to
