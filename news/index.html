@@ -144,7 +144,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="other-improvements-2-0-0">Other improvements<a class="anchor" aria-label="anchor" href="#other-improvements-2-0-0"></a></h3>
-<ul><li>Layouts adapt to the space available instead of overlapping. Text is measured on the device and:
+<ul><li>A new logo, drawn by HeatmapR itself: a clustered heatmap in the new default colours, with the name written in one of its cells (<code>data-raw/logo.R</code> draws it).</li>
+<li>Layouts adapt to the space available instead of overlapping. Text is measured on the device and:
 <ul><li>axis, cell and cluster label text is shrunk when it would overlap (<code>fit_text = TRUE</code>), and axis labels that still don’t fit at half size are thinned to every second, third, … label;</li>
 <li>cluster label strips are sized to fit their text (previously 0.1 cells, so they vanished on larger heatmaps);</li>
 <li>size and levels legend shapes stay inside the legend (they covered the heatmap when it had fewer than 10 columns), legend titles never extend over the heatmap, and legend labels shrink to fit;</li>
