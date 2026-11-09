@@ -25,6 +25,17 @@
 #' @param clust_method indicates the type of agglomeration method to use when
 #'   constructing performing hierarchical clustering, set to \code{"complete"}
 #'   by default. See \code{?hclust} for alternatives.
+#' @param clust_max the largest number of rows (or columns) clustered exactly,
+#'   set to 5000 by default. Exact clustering needs the distances between every
+#'   pair of rows, so its memory and time grow with the square of their number
+#'   (about 800 MB and 7 seconds for 10,000 rows). Larger margins are
+#'   clustered in two stages: a sample of \code{clust_max} rows is clustered
+#'   exactly, its dendrogram is split into groups, every row joins the group
+#'   of its nearest group medoid and each group is clustered exactly beneath
+#'   the sample's dendrogram (see \code{\link{heat_map_clust}}). 100,000 rows
+#'   take about 5 seconds. Branch support (\code{tree_support_x},
+#'   \code{tree_support_y}) is only computed for up to \code{clust_max} rows or
+#'   columns. Set to \code{Inf} to always cluster exactly.
 #' @param round indicates the number of decimal places to round values when
 #'   \code{cell_text = TRUE} and values are displayed in the heatmap, set to 2
 #'   decimal places by default
@@ -48,8 +59,8 @@
 #'   (optimal leaf ordering, which flips branches so that neighbouring columns
 #'   are as similar as possible) or \code{"mean"} (branches ordered by their
 #'   mean values, as in \code{\link[stats]{heatmap}}). Optimal leaf ordering
-#'   takes a few seconds for 1000 columns and grows with the cube of the
-#'   number of columns.
+#'   is exact for up to 1000 columns, which takes about a second; larger
+#'   dendrograms are ordered in blocks (see \code{\link{heat_map_clust}}).
 #' @param tree_cut_x either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for x axis dendrogram (proportional for non-cosine distances,
 #'   or absolute cosine distance threshold when \code{dist_method = "cosine"})
@@ -722,6 +733,7 @@ heat_map <- function(x,
                      scale_method = "range",
                      dist_method = "euclidean",
                      clust_method = "complete",
+                     clust_max = 5000,
                      round  = 2,
                      tree = FALSE,
                      tree_x = NULL,
@@ -1104,6 +1116,7 @@ heat_map <- function(x,
   }
 
   # LEAF ORDER
+  .check_clust_max(clust_max)
   .check_order(tree_order_x, "tree_order_x")
   .check_order(tree_order_y, "tree_order_y")
 
@@ -1135,6 +1148,7 @@ heat_map <- function(x,
         },
         dist = dist_method,
         method = clust_method,
+        max = clust_max,
         scale = tree_scale_x,
         order = tree_order_x,
         cut = if(length(tree_cut_x) == 1) tree_cut_x else NULL,
@@ -1171,6 +1185,7 @@ heat_map <- function(x,
           tree = 2,
           dist = dist_method,
           method = clust_method,
+          max = clust_max,
           scale = tree_scale_x,
           order = tree_order_x,
           ...
@@ -1203,6 +1218,7 @@ heat_map <- function(x,
         groups = groups[num_cols],
         dist = dist_method,
         method = clust_method,
+        max = clust_max,
         scale = tree_scale_x,
         order = tree_order_x,
         ...
@@ -1246,6 +1262,7 @@ heat_map <- function(x,
         },
         dist = dist_method,
         method = clust_method,
+        max = clust_max,
         scale = tree_scale_y,
         order = tree_order_y,
         cut = if(length(tree_cut_y) == 1) tree_cut_y else NULL,
@@ -1269,6 +1286,7 @@ heat_map <- function(x,
           tree = 1,
           dist = dist_method,
           method = clust_method,
+          max = clust_max,
           scale = tree_scale_y,
           order = tree_order_y,
           ...
@@ -1301,6 +1319,7 @@ heat_map <- function(x,
         groups = groups,
         dist = dist_method,
         method = clust_method,
+        max = clust_max,
         scale = tree_scale_y,
         order = tree_order_y,
         ...
@@ -1327,6 +1346,25 @@ heat_map <- function(x,
   # BRANCH SUPPORT - THE OTHER DIMENSION RESAMPLED AND CLUSTERED AGAIN
   support_x <- NULL
   support_y <- NULL
+  # (TOO MANY LEAVES - EVERY RESAMPLE WOULD CLUSTER THEM AGAIN)
+  if(!is.null(support_n_x) && inherits(tree_x, "hclust") &&
+     length(num_cols) > clust_max) {
+    warning(
+      "Branch support is only computed for up to 'clust_max' (", clust_max,
+      ") columns - 'tree_support_x' was ignored.",
+      call. = FALSE
+    )
+    support_n_x <- NULL
+  }
+  if(!is.null(support_n_y) && inherits(tree_y, "hclust") &&
+     nrow(x) > clust_max) {
+    warning(
+      "Branch support is only computed for up to 'clust_max' (", clust_max,
+      ") rows - 'tree_support_y' was ignored.",
+      call. = FALSE
+    )
+    support_n_y <- NULL
+  }
   if(!is.null(support_n_x) && inherits(tree_x, "hclust")) {
     support_x <- .tree_support(
       t(data.matrix(x[, num_cols, drop = FALSE])),

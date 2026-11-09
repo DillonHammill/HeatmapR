@@ -135,17 +135,8 @@
     x_norm[zero_rows, ] <- 0
   }
   
-  # Compute cosine similarity matrix
-  cos_sim <- x_norm %*% t(x_norm)
-  
-  # Clip values to [-1, 1] to handle numerical precision issues
-  cos_sim[cos_sim > 1] <- 1
-  cos_sim[cos_sim < -1] <- -1
-  
-  # Convert to cosine distance (1 - similarity)
-  cos_dist <- 1 - cos_sim
-  
-  # Convert to dist object (lower triangle only)
-  return(as.dist(cos_dist))
-  
+  # Cosine distance (1 - similarity) clipped to [0, 2] for numerical
+  # precision, as a dist object (lower triangle only)
+  return(.cross_dist(x_norm))
+
 }

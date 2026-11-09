@@ -12,6 +12,7 @@ heat_map_clust(
   scale = FALSE,
   cut = NULL,
   order = "default",
+  max = 5000,
   ...
 )
 }
@@ -48,9 +49,25 @@ greater than or equal to 1 indicating the number of desired clusters.}
 \item{order}{how the branches of the dendrogram are ordered:
 \code{"default"} keeps the order from \code{hclust}, \code{"olo"} flips
 branches to minimise the distances between neighbouring leaves (optimal
-leaf ordering; this takes a few seconds for 1000 leaves and grows with the
-cube of the number of leaves) and \code{"mean"} orders branches by their
-mean values as in \code{\link[stats]{heatmap}}.}
+leaf ordering) and \code{"mean"} orders branches by their mean values as
+in \code{\link[stats]{heatmap}}. Optimal leaf ordering is exact for up to
+1000 leaves, which takes about a second; its time grows with the cube of
+the number of leaves, so larger trees are ordered in blocks (of 1000
+leaves, down to 100 for the largest trees), each ordered exactly, with the
+blocks then ordered and turned to meet their neighbours. 50,000 leaves
+take about 10 seconds.}
+
+\item{max}{the largest number of rows (or columns) clustered exactly, set
+to 5000 by default. Exact clustering needs the distances between every
+pair of rows, so its memory and time grow with the square of their
+number. Larger data is clustered in two stages: a sample of \code{max}
+rows (drawn with a fixed seed, so the result is the same each time) is
+clustered exactly and its dendrogram split into groups of about 200 rows
+of the data, every row joins the group of its nearest group medoid, and
+each group is clustered exactly beneath the sample's dendrogram. The
+dendrogram then shows the structure of the whole data down to the groups,
+and within each group: 100,000 rows take about 5 seconds. Set to
+\code{Inf} to always cluster exactly.}
 
 \item{...}{additional arguments passed to \code{\link{dist}} or
 \code{\link{hclust}}.}
@@ -60,7 +77,9 @@ object of class \code{hclust} which describes the tree produced by
 the clustering process. Branch heights are rescaled to the range
 \code{[0, 1]} for display. When \code{cut} is supplied, the returned object
 also contains a \code{cut} element holding the cluster assigned to each
-leaf in dendrogram order.
+leaf in dendrogram order. A tree clustered in two stages (more than
+\code{max} rows) has a \code{two_stage} element giving the size of the
+sample and the number of groups.
 }
 \description{
 Perform hierarchical clustering for heatmap

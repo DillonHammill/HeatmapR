@@ -112,30 +112,20 @@
   n <- nrow(data)
   w <- .leaf_weights(n)
   keys <- .clade_hash(tree$merge, w)
-  # FIXED SEED - RESTORE THE CALLER'S RANDOM NUMBER GENERATOR
-  env <- globalenv()
-  if(exists(".Random.seed", envir = env, inherits = FALSE)) {
-    seed <- get(".Random.seed", envir = env, inherits = FALSE)
-    on.exit(assign(".Random.seed", seed, envir = env), add = TRUE)
-  } else {
-    on.exit(
-      if(exists(".Random.seed", envir = env, inherits = FALSE)) {
-        rm(".Random.seed", envir = env)
-      },
-      add = TRUE
-    )
-  }
-  set.seed(1066)
-  hits <- numeric(length(keys))
-  for(b in seq_len(B)) {
-    xb <- data[, sample.int(ncol(data), replace = TRUE), drop = FALSE]
-    hb <- if(is.null(groups)) {
-      .hclust_raw(xb, dist = dist, method = method, ...)
-    } else {
-      .group_tree(xb, groups = groups, dist = dist, method = method, ...)
+  # FIXED SEED - THE CALLER'S RANDOM NUMBER GENERATOR IS RESTORED
+  hits <- .with_seed(1066, {
+    hits <- numeric(length(keys))
+    for(b in seq_len(B)) {
+      xb <- data[, sample.int(ncol(data), replace = TRUE), drop = FALSE]
+      hb <- if(is.null(groups)) {
+        .hclust_raw(xb, dist = dist, method = method, ...)
+      } else {
+        .group_tree(xb, groups = groups, dist = dist, method = method, ...)
+      }
+      hits <- hits + (keys %in% .clade_hash(hb$merge, w))
     }
-    hits <- hits + (keys %in% .clade_hash(hb$merge, w))
-  }
+    hits
+  })
   support <- hits / B
   support[.structural_clades(tree$merge, groups)] <- NA
   support

@@ -556,6 +556,20 @@ as.character.heat_map_description <- function(x,
       )
     )
   }
+  # TOO MANY LEAVES TO CLUSTER EXACTLY (clust_max)
+  two_stage <- tree$two_stage
+  if(!is.null(two_stage)) {
+    out <- c(
+      out,
+      paste0(
+        "There were too many ", what, "s to cluster exactly, so a sample of ",
+        format(two_stage[["sample"]], big.mark = ","), " ", what,
+        "s was clustered and every other ", what, " joined the nearest of its ",
+        format(two_stage[["groups"]], big.mark = ","),
+        " groups, each then clustered on its own."
+      )
+    )
+  }
   support <- info[[paste0("support_", axis)]]
   if(!is.null(support) && any(!is.na(support))) {
     s <- support[!is.na(support)]

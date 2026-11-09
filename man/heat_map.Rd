@@ -10,6 +10,7 @@ heat_map(
   scale_method = "range",
   dist_method = "euclidean",
   clust_method = "complete",
+  clust_max = 5000,
   round = 2,
   tree = FALSE,
   tree_x = NULL,
@@ -213,6 +214,18 @@ clustered (one row per row or column of the heatmap) and returns a
 constructing performing hierarchical clustering, set to \code{"complete"}
 by default. See \code{?hclust} for alternatives.}
 
+\item{clust_max}{the largest number of rows (or columns) clustered exactly,
+set to 5000 by default. Exact clustering needs the distances between every
+pair of rows, so its memory and time grow with the square of their number
+(about 800 MB and 7 seconds for 10,000 rows). Larger margins are
+clustered in two stages: a sample of \code{clust_max} rows is clustered
+exactly, its dendrogram is split into groups, every row joins the group
+of its nearest group medoid and each group is clustered exactly beneath
+the sample's dendrogram (see \code{\link{heat_map_clust}}). 100,000 rows
+take about 5 seconds. Branch support (\code{tree_support_x},
+\code{tree_support_y}) is only computed for up to \code{clust_max} rows or
+columns. Set to \code{Inf} to always cluster exactly.}
+
 \item{round}{indicates the number of decimal places to round values when
 \code{cell_text = TRUE} and values are displayed in the heatmap, set to 2
 decimal places by default}
@@ -241,8 +254,8 @@ either \code{"default"} (the order from \code{hclust}), \code{"olo"}
 (optimal leaf ordering, which flips branches so that neighbouring columns
 are as similar as possible) or \code{"mean"} (branches ordered by their
 mean values, as in \code{\link[stats]{heatmap}}). Optimal leaf ordering
-takes a few seconds for 1000 columns and grows with the cube of the
-number of columns.}
+is exact for up to 1000 columns, which takes about a second; larger
+dendrograms are ordered in blocks (see \code{\link{heat_map_clust}}).}
 
 \item{tree_support_x}{\code{TRUE} or a number of resamples (at least 10)
 to draw each branch of the x axis dendrogram by its bootstrap support:
