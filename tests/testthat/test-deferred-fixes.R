@@ -137,14 +137,16 @@ test_that("groups share clust_max", {
   expect_identical(tree$two_stage[["sample"]], 600)
   expect_null(.group_tree(x, g, max = 1200)$two_stage)
   # OPTIMAL LEAF ORDERING IN BLOCKS SIZED FOR ALL THE ROWS
-  expect_identical(.olo_block(1200), 2000L)
+  expect_identical(.olo_block(1200), 4000L)
+  # (EACH GROUP SMALLER THAN A BLOCK IS ORDERED EXACTLY - IN ONE BLOCK)
   calls <- list()
   local_mocked_bindings(.olo_large = function(merge, x, dist, max, ...) {
-    calls[[length(calls) + 1]] <<- max
+    calls[[length(calls) + 1]] <<- c(max = max, leaves = nrow(merge) + 1)
     .merge_order(merge)
   })
   .group_tree(x, g, order = "olo", max = Inf)
-  expect_length(calls, 0)
+  expect_length(calls, 3)
+  for (call in calls) expect_equal(call[["max"]], call[["leaves"]])
 })
 
 test_that("the linkage team gives the same trees and forked children use one thread", {
