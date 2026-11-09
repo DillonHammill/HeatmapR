@@ -58,7 +58,7 @@ heat_map(mtcars)
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of the unscaled mtcars data with the 32 cars as rows and the 11 variables as columns, coloured on a single scale from 0 to about 470, so that only displacement (disp) and horsepower (hp) stand out and the other variables all look the same."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-1.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-1.png')
 ```
 
 ## 2. Cell Properties
@@ -90,7 +90,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The unscaled mtcars heatmap with every cell drawn as a circle of the same size, coloured by its value, with the 32 cars as rows and the 11 variables as columns."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-3.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-3.png')
 ```
 
 ```{r, eval = FALSE}
@@ -114,7 +114,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The unscaled mtcars heatmap with every cell drawn as a diamond of the same size, coloured by its value, with the 32 cars as rows and the 11 variables as columns."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-4.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-4.png')
 ```
 
 ### 2.2 Cell Size
@@ -146,7 +146,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The unscaled mtcars heatmap drawn as circles that are both sized and coloured by value, with a colour bar and a size legend, so that the large displacement and horsepower values appear as big circles and the small values shrink to dots."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-5.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-5.png')
 ```
 
 ### 2.3 Cell Colours
@@ -213,7 +213,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 25 randomly sampled rows of the iris data with each value written in its cell, the four measurements coloured on a yellow to black scale, the Species column coloured by species, and the missing values shown as empty grey cells."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-2.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-2.png')
 ```
 
 #### 2.3.1 Uncertainty in Colour
@@ -279,7 +279,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of simulated log2 fold changes for 14 genes over six time points, with the genes clustered by a dendrogram, in which precise estimates use the full blue to red scale and uncertain ones fade towards grey, and a legend with one row of colours for each level of standard error."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-uncertainty.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-uncertainty.png')
 ```
 
 #### 2.3.2 Two Values in Each Cell
@@ -341,7 +341,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of simulated expression of 10 genes in six immune cell types, with each cell split along its diagonal into a control half (upper left) and a stimulated half (lower right) on one colour scale, the genes clustered by a dendrogram and a legend naming the two halves."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-split.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-split.png')
 ```
 
 Split cells need full-size rectangles, so `cell_size` and other `cell_shape`s can't be used with them.
@@ -377,7 +377,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The unscaled mtcars heatmap with every cell outlined by a thick dotted red border."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-6.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-6.png')
 ```
 
 #### 2.4.1 Border Masking
@@ -419,7 +419,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The unscaled mtcars heatmap, titled Border Masking Example, with each value written in its cell and red borders drawn only around the cells whose values are above the median of the whole data set."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-6b.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-6b.png')
 ```
 
 ### 2.5 Cell Text
@@ -459,7 +459,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The unscaled mtcars heatmap, titled mtcars, with each value written in bold black text in its cell."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-7.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-7.png')
 ```
 
 ### 2.6 Large Heatmaps
@@ -519,7 +519,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 5,000 simulated cells by 20 markers drawn as a raster image, with the markers clustered by a dendrogram and the cells cut into three clusters labelled A, B and C: A is high in markers 12 to 20, B in markers 1 to 8 and C in neither."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-raster.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-raster.png')
 ```
 
 Clustering is the slow part of a large heatmap. It needs the distance between every pair of rows, so exact clustering of 10,000 rows takes about 3 seconds and 400 MB of memory, and four times as much for twice the rows. Rows (or columns) beyond `clust_max`, 5000 by default, are clustered in two stages instead. A sample of 5000 rows is clustered exactly and its dendrogram is split into groups of about 200 rows, every row joins the group whose medoid it is closest to, and each group is clustered on its own beneath the sample's dendrogram. The sample is drawn with a fixed seed, so the dendrogram is the same each time. The dendrogram shows the structure of the data down to the groups and within each group, and 100,000 rows take about 2 seconds. `clust_max = Inf` always clusters exactly, and `heat_map_clust()` takes the same limit as `max`. Branch support is only computed for up to `clust_max` rows or columns, and optimal leaf ordering (`tree_order_y = "olo"`) of more than 2000 rows orders blocks of the dendrogram. Distances, linkage and leaf ordering run in compiled C++ code.
@@ -600,7 +600,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 2,000 simulated genes across 24 samples, clustered in both directions with the genes cut into two clusters, in which seven chosen genes (MS4A1, CD79A, IL7R, CD4, CCR7, CD3E and ACTB) are labelled beside the heatmap with leader lines to their rows instead of all the gene names."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-marks.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-marks.png')
 ```
 
 #### 2.7.1 Zooming Into a Band of Rows
@@ -670,7 +670,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Row-scaled heatmap of 2,000 simulated genes across 24 clustered samples, in which a thin band of 20 pathway genes is outlined and joined by a wedge to an enlarged panel on the left that names each gene and shows its values cell by cell."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-zoom.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-zoom.png')
 ```
 
 The panel keeps the cells' shapes, text and distributions and the gaps between clusters. Rows that are far apart in a clustered heatmap make a wide band; to enlarge one cluster, pass its rows, e.g. `zoom_y = heat_map_info(hm)$row_clusters == 2`.
@@ -702,7 +702,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of the z-scored mtcars data transposed so that the 11 variables are rows and the 32 cars are columns, clustered in both directions with dendrograms, with the car names written at a 45 degree angle beneath it."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-rotate.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-rotate.png')
 ```
 
 ### 2.9 Correlation Matrices {#correlation-matrices}
@@ -724,7 +724,7 @@ heat_map_cor(mtcars)
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Correlation heatmap of the mtcars variables, clustered so that correlated variables sit together, with ellipses in the lower triangle, the coefficients written in blue (negative) or red (positive) in the upper triangle and the variable names on the diagonal."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cor.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-cor.png')
 ```
 
 `lower`, `upper` and `diag` take any cell shape - `"circle"` and `"diamond"` are sized by the absolute correlation, and `"none"` leaves a triangle empty - and any other `heat_map()` argument can be added, such as cuts that split the variables into clusters along both axes:
@@ -756,7 +756,7 @@ heat_map_cor(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Spearman correlations of the mtcars variables drawn as ellipses throughout, with the variables split into three clusters along both axes."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cor-2.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-cor-2.png')
 ```
 
 For other layouts, the shapes can be set cell by cell in `heat_map()` with a matrix of shapes, e.g. ellipses for the correlations of each gene with a set of clinical variables and numbers for the strongest ones.
@@ -794,7 +794,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The mtcars heatmap with each column rescaled from 0 to 1, titled mtcars scaled columns, so that differences between the cars are now visible in every variable."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-8.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-8.png')
 ```
 
 ### 3.2 Scaling Rows
@@ -826,7 +826,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The mtcars heatmap with each row converted to z-scores, titled mtcars scaled rows, in which displacement and horsepower are the highest values for every car and the other variables are all low."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-9.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-9.png')
 ```
 
 ## 4. Bar Plots
@@ -870,7 +870,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The unscaled mtcars heatmap, titled heatmap with bar plots, with a bar plot above it showing the values 1 to 11 for the columns and a bar plot to its right showing the values 1 to 32 for the rows, the bars filled with rainbow colours."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-10.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-10.png')
 ```
 
 ### 4.1 Metadata Annotations
@@ -952,7 +952,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 20 simulated genes across 24 samples on a blue-white-red z-score scale, with the samples split into labelled Control, Drug_A and Drug_B groups, coloured Treatment and Sex annotation tracks above the columns with their own legends, and the genes clustered by a dendrogram."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-annotations.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-annotations.png')
 ```
 
 ### 4.2 Box Plots and Violins
@@ -1046,7 +1046,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of the median intensity of six markers in five clusters of simulated cytometry events, each cluster bright only in its defining markers, with violins above showing the distribution of each marker across all events and bars on the right showing the number of events in each cluster."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-side-plots.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-side-plots.png')
 ```
 
 ## 5. Hierarchical Clustering
@@ -1092,7 +1092,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The column-scaled mtcars heatmap, titled Dendrograms, with the cars and the variables reordered by hierarchical clustering and dendrograms drawn to the right of the rows and above the columns."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-11.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-11.png')
 ```
 
 #### 5.1.1 Cosine Distance
@@ -1134,7 +1134,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The column-scaled mtcars heatmap, titled Cosine Distance Clustering, with the cars and the variables clustered on cosine distance and dendrograms drawn to the right of the rows and above the columns."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-11b.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-11b.png')
 ```
 
 **Absolute Distance Thresholds**: When using cosine distance, `tree_cut` values between 0 and 1 are interpreted as absolute cosine distance thresholds rather than proportional tree heights. For example, `tree_cut_x = 0.5` means cluster at cosine distance of 0.5, not at 50% of the tree height. This provides more intuitive control over clustering based on actual distance values.
@@ -1211,7 +1211,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 60 simulated genes across 12 samples clustered in both directions on Pearson correlation distance with optimal leaf ordering, in which the 20 genes that rise and fall together, at different levels, form a block at the bottom whose values increase smoothly from left to right across the reordered samples."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-dist-order.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-dist-order.png')
 ```
 
 #### 5.1.2 Branch Support
@@ -1249,7 +1249,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The column-scaled mtcars heatmap clustered in both directions, with each dendrogram branch drawn as a thick black, thin grey or dashed line according to its bootstrap support and the larger branches labelled with percentages, showing that only small groups such as the Mazda RX4 pair are strongly supported."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-support.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-support.png')
 ```
 
 ### 5.2 Clustering
@@ -1297,7 +1297,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The column-scaled mtcars heatmap, titled Hierarchical Clustering, with dendrograms on both axes cut into 5 groups of cars and 4 groups of variables, separated by gaps."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-12.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-12.png')
 ```
 
 In addition to heatmap splitting, `heat_map()` also supports the labelling of clusters through the `tree_label_x`, `tree_label_text_x`, `tree_label_y` and `tree_label_text_y` arguments.
@@ -1371,7 +1371,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The column-scaled mtcars heatmap, titled Cluster Labels, split into 4 groups of variables and 5 groups of cars, each group marked by a coloured bar numbered 1 to 4 above the columns or 1 to 5 beside the rows."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-13.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13.png')
 ```
 
 #### 5.2.1 Manual Clustering
@@ -1415,7 +1415,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The column-scaled mtcars heatmap, titled Manual Clustering by Size, with the variables kept in their original order and split into groups of 4, 3 and 4 columns labelled Group A, Group B and Group C."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-13b.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13b.png')
 ```
 
 **Method 2: Specify cluster indices** - Provide a vector where each element indicates which cluster that row/column belongs to. Numeric indices are given as the heatmap is displayed - columns from the left, rows from the top, in the dendrogram order when a dendrogram is drawn and in the order of the data otherwise - so you can draw a heatmap, read it, and assign clusters to what you see. Labels given as characters or a factor (e.g. treatments from sample metadata) follow the original order of the data, and named vectors are matched by name. The rows/columns are regrouped so that each cluster is contiguous in the heatmap:
@@ -1460,7 +1460,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The column-scaled mtcars heatmap, titled Manual Clustering by Index, with the variables split into three groups of 4, 3 and 4 columns labelled Low, Medium and High on blue, yellow and red bars."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-13c.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13c.png')
 ```
 
 Manual clusters can be combined with dendrograms by setting `tree_x = TRUE` or `tree_y = TRUE`. The rows or columns are then clustered within each cluster, and the clusters are joined at the top of the dendrogram, so each group (e.g. a treatment, or a cell type) gets its own dendrogram:
@@ -1520,7 +1520,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 40 simulated genes across 24 samples, with the samples split into labelled Control, Drug_A and Drug_B groups that are each clustered by their own dendrogram under a shared root, and the genes clustered so that those raised in the Drug_A samples sit together at the bottom."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-groups.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-groups.png')
 ```
 
 A dendrogram supplied as an `hclust` or `dist` object is kept only when the clusters are contiguous in its order, and is dropped with a warning otherwise.
@@ -1599,7 +1599,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Row z-scored heatmap of 2,000 simulated genes across 12 samples, split by k-means into four clusters separated by gaps and clustered by a dendrogram within each, in which three clusters are high in samples S9 to S12, S1 to S4 and S5 to S8 respectively and one shows no pattern."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-kmeans.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-kmeans.png')
 ```
 
 ### 5.3 Group Summaries
@@ -1665,7 +1665,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Dot plot of eight marker genes in four simulated cell types, with circles coloured by mean expression (z-scored within each gene) and sized by the proportion of cells in which the gene is detected, so that each cell type has two large bright circles for its own markers."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-summarise.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-summarise.png')
 ```
 
 #### 5.3.1 Distributions Inside Cells
@@ -1749,7 +1749,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of the median intensity of six markers in six clusters of simulated cytometry events, with a density curve of each cluster's values and a tick at the median drawn inside every cell, showing that the middling CD4 and CD8 medians of the T mixed cluster come from two separate populations."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-cell-values.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-cell-values.png')
 ```
 
 ## 6. Legends
@@ -1795,7 +1795,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The mtcars heatmap rescaled from 0 to 1 within each column, clustered in both directions and drawn as circles sized and coloured by value, with a colour legend titled colour and a size legend titled size to its right."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-17.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-17.png')
 ```
 
 Legends can also be drawn below the heatmap with `legend_side = "bottom"`, where the colour bars are horizontal and the legends sit side by side, wrapping into rows when they don't fit across the figure. The colour scale itself can be shaped in a few ways: `cell_col_scale_limits = "robust"` uses the 2nd and 98th percentiles of the data so that a few outliers don't wash out the colours, `cell_col_scale_breaks` bins the values into a stepped colour scale, and `legend_col_breaks` chooses the values labelled on the colour legend (names become the labels).
@@ -1835,7 +1835,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The z-scored mtcars heatmap clustered in both directions with the variables cut into three groups, coloured on a stepped blue to red scale whose horizontal legend, labelled low, 0 and high, sits below the heatmap."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-legend-bottom.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-legend-bottom.png')
 ```
 
 `legend_col_density = TRUE` traces the distribution of the values (a kernel density) over the colour legend, so you can see which colours most cells take and how much of the data sits near the ends of the scale. It is useful with robust limits, where the values beyond the limits all take the end colours.
@@ -1889,7 +1889,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 40 simulated genes across 12 samples clustered in both directions, with the colour scale limited to the 2nd and 98th percentiles of the values and a density curve traced over the colour legend showing that most values lie near zero."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-legend-density.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-legend-density.png')
 ```
 
 ### 6.1 Layout
@@ -1973,7 +1973,7 @@ heat_map_complete()
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Two clustered heatmaps side by side, of 60 and 12 genes, with dendrograms, annotation tracks and legends of the same size"}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-layout.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-layout.png')
 ```
 
 ## 7. Complex Layouts
@@ -2035,7 +2035,7 @@ heat_map_complete()
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Three unscaled heatmaps of subsets of the mtcars data arranged in one figure: the Mercedes cars in a large panel on the left, and the Mazda and Toyota cars and the Hornet, Datsun and Volvo cars in two smaller panels on the right, each with its own colour scale."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-14.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-14.png')
 ```
 
 `HeatmapR` also supports layouts with other plots generated using base graphics. For example, we could arrange a heatmap with a scatterplot and a boxplot. 
@@ -2123,7 +2123,7 @@ heat_map_complete()
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "A column-scaled mtcars heatmap drawn as squares sized and coloured by value on the left, beside a scatter plot of horsepower against displacement with a dashed red regression line and a horizontal box plot of displacement on the right."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-15.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-15.png')
 ```
 
 ### 7.1 Heatmaps Beside ggplot2 Plots
@@ -2148,7 +2148,7 @@ p + heat_map_grob(hm) + plot_layout(widths = c(1, 1.5))
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "A scatter plot of miles per gallon against weight for the mtcars data, coloured by the number of cylinders, beside a clustered heatmap of the same cars"}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-ggplot.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-ggplot.png')
 ```
 
 ### 7.2 Heatmap Data for ggplot2 and Other Tools
@@ -2181,7 +2181,7 @@ ggplot(cells) +
 ```
 
 ```{r echo = FALSE, out.width = '75%', fig.align="center", fig.alt = "The mtcars heatmap rebuilt with ggplot2 from heat_map_data(), with a red-blue fill scale, the same row clusters and gaps, and the row dendrogram on the right"}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-ggplot-data.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-ggplot-data.png')
 ```
 
 Drawn straight after `heat_map()`, base graphics land on the cells: `points(cells$x, cells$y)` marks the centre of every cell.
@@ -2235,7 +2235,7 @@ heat_map_complete()
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of the mtcars data rescaled within each column, drawn as circles sized and coloured by value, with dendrograms splitting the cars into 12 groups and the variables into 4 groups."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/tags/v2.0.0/vignettes/HeatmapR/HeatmapR-16.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-16.png')
 ```
 
 ## 9. Describing a Heatmap
