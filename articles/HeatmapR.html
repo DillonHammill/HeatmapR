@@ -96,6 +96,11 @@ clusters, colours and layout of a heatmap for downstream analyses.</li>
 <code><a href="../reference/heat_map_describe.html">heat_map_describe()</a></code> writes a plain-language description
 of a heatmap to use as alternative text for screen readers.</li>
 <li>
+<code><a href="../reference/heat_map_data.html">heat_map_data()</a></code> returns the cells, rows, columns and
+dendrograms of a heatmap as tidy tables, and
+<code><a href="../reference/heat_map_grob.html">heat_map_grob()</a></code> places heatmaps beside <code>ggplot2</code>
+plots.</li>
+<li>
 <code><a href="../reference/heat_map_layout.html">heat_map_layout()</a></code> allows you to create custom plot
 layouts to arrange multiple heatmaps.</li>
 <li>
@@ -1311,6 +1316,73 @@ with a scatterplot and a boxplot.</p>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-15.png" class="r-plt" alt="" width="95%" style="display: block; margin: auto;"></p>
+<div class="section level3">
+<h3 id="heatmaps-beside-ggplot2-plots">7.1 Heatmaps Beside ggplot2 Plots<a class="anchor" aria-label="anchor" href="#heatmaps-beside-ggplot2-plots"></a>
+</h3>
+<p><code><a href="../reference/heat_map_grob.html">heat_map_grob()</a></code> turns a heatmap into a <code>grid</code>
+graphical object (a grob), so it can sit beside <code>ggplot2</code>
+plots in <code>patchwork</code>, <code>cowplot</code> or
+<code>gridExtra</code> layouts. The grob draws the heatmap again
+whenever its space changes, so the dendrograms, legends and text are
+sized for the space the heatmap is given. Arguments passed to
+<code><a href="../reference/heat_map_grob.html">heat_map_grob()</a></code> replace those the heatmap was drawn with,
+e.g. <code>heat_map_grob(hm, title = NULL)</code>. It needs the
+<code>gridGraphics</code> package.</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
+<span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">mtcars</span>,</span>
+<span>  scale <span class="op">=</span> <span class="st">"column"</span>,</span>
+<span>  tree <span class="op">=</span> <span class="st">"both"</span>,</span>
+<span>  tree_cut_y <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"mtcars"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">mtcars</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">wt</span>, <span class="va">mpg</span>, colour <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">cyl</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="st">"Weight (1000 lbs)"</span>, y <span class="op">=</span> <span class="st">"Miles per gallon"</span>, colour <span class="op">=</span> <span class="st">"Cylinders"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">p</span> <span class="op">+</span> <span class="fu"><a href="../reference/heat_map_grob.html">heat_map_grob</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://patchwork.data-imaginist.com/reference/plot_layout.html" class="external-link">plot_layout</a></span><span class="op">(</span>widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1.5</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-ggplot.png" class="r-plt" alt="A scatter plot of miles per gallon against weight for the mtcars data, coloured by the number of cylinders, beside a clustered heatmap of the same cars" width="95%" style="display: block; margin: auto;"></p>
+</div>
+<div class="section level3">
+<h3 id="heatmap-data-for-ggplot2-and-other-tools">7.2 Heatmap Data for ggplot2 and Other Tools<a class="anchor" aria-label="anchor" href="#heatmap-data-for-ggplot2-and-other-tools"></a>
+</h3>
+<p><code><a href="../reference/heat_map_data.html">heat_map_data()</a></code> returns what a heatmap shows as tidy
+tables: one row per cell (the default), row, column or dendrogram
+segment. Rows and columns are listed in the order they are displayed,
+and <code>x</code> and <code>y</code> are the centres of the cells in
+the heatmap’s plot co-ordinates, including the gaps between clusters, so
+the cells can be rebuilt or restyled with <code>ggplot2</code>,
+exported, or used to draw on the heatmap with base graphics.</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_data.html">heat_map_data</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span>
+<span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_data.html">heat_map_data</a></span><span class="op">(</span><span class="va">hm</span>, <span class="st">"rows"</span><span class="op">)</span></span>
+<span><span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_data.html">heat_map_data</a></span><span class="op">(</span><span class="va">hm</span>, <span class="st">"columns"</span><span class="op">)</span></span>
+<span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_data.html">heat_map_data</a></span><span class="op">(</span><span class="va">hm</span>, <span class="st">"tree_y"</span><span class="op">)</span></span>
+<span><span class="co"># Dendrogram to the right of the cells, its heights scaled to 3 cells</span></span>
+<span><span class="va">edge</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">cells</span><span class="op">$</span><span class="va">x</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.5</span></span>
+<span><span class="va">grow</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">h</span><span class="op">)</span> <span class="va">edge</span> <span class="op">+</span> <span class="fl">3</span> <span class="op">*</span> <span class="va">h</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">tree</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">cells</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html" class="external-link">geom_tile</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, fill <span class="op">=</span> <span class="va">value</span><span class="op">)</span>, colour <span class="op">=</span> <span class="st">"white"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_segment.html" class="external-link">geom_segment</a></span><span class="op">(</span></span>
+<span>    data <span class="op">=</span> <span class="va">tree</span>,</span>
+<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu">grow</span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, y <span class="op">=</span> <span class="va">y</span>, xend <span class="op">=</span> <span class="fu">grow</span><span class="op">(</span><span class="va">xend</span><span class="op">)</span>, yend <span class="op">=</span> <span class="va">yend</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_brewer.html" class="external-link">scale_fill_distiller</a></span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"RdBu"</span>, name <span class="op">=</span> <span class="st">"Scaled\nvalue"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_x_continuous</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="va">cols</span><span class="op">$</span><span class="va">x</span>, labels <span class="op">=</span> <span class="va">cols</span><span class="op">$</span><span class="va">column</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">scale_y_continuous</a></span><span class="op">(</span>breaks <span class="op">=</span> <span class="va">rows</span><span class="op">$</span><span class="va">y</span>, labels <span class="op">=</span> <span class="va">rows</span><span class="op">$</span><span class="va">row</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>x <span class="op">=</span> <span class="cn">NULL</span>, y <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_minimal</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span></span>
+<span>    panel.grid <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_blank</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    axis.text.x <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">element_text</a></span><span class="op">(</span>angle <span class="op">=</span> <span class="fl">90</span>, hjust <span class="op">=</span> <span class="fl">1</span>, vjust <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-ggplot-data.png" class="r-plt" alt="The mtcars heatmap rebuilt with ggplot2 from heat_map_data(), with a red-blue fill scale, the same row clusters and gaps, and the row dendrogram on the right" width="75%" style="display: block; margin: auto;"></p>
+<p>Drawn straight after <code><a href="../reference/heat_map.html">heat_map()</a></code>, base graphics land on
+the cells: <code>points(cells$x, cells$y)</code> marks the centre of
+every cell.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="export">8. Export<a class="anchor" aria-label="anchor" href="#export"></a>
@@ -1318,7 +1390,7 @@ with a scatterplot and a boxplot.</p>
 <p><code>HeatmapR</code> supports the export of high resolution images
 using <code><a href="../reference/heat_map_save.html">heat_map_save()</a></code> which allows control over the
 dimensions and resolution of the exported image.</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_save.html">heat_map_save</a></span><span class="op">(</span></span>
 <span>  <span class="st">"mtcars.png"</span>,</span>
 <span>  height <span class="op">=</span> <span class="fl">9.5</span>,</span>
@@ -1351,7 +1423,7 @@ show, the most extreme values, how the rows and columns are clustered
 and what sets each cluster apart, and any annotations, bars, labels or
 panels. Pass it to the <code>fig.alt</code> chunk option in R Markdown
 or Quarto, or use it as a starting point for a figure legend.</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">mtcars</span>,</span>
 <span>  scale <span class="op">=</span> <span class="st">"zscore"</span>,</span>

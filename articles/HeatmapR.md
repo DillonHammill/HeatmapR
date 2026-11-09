@@ -31,6 +31,11 @@ functions in `HeatmapR` as summarised below:
 - [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
   writes a plain-language description of a heatmap to use as alternative
   text for screen readers.
+- [`heat_map_data()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.md)
+  returns the cells, rows, columns and dendrograms of a heatmap as tidy
+  tables, and
+  [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
+  places heatmaps beside `ggplot2` plots.
 - [`heat_map_layout()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.md)
   allows you to create custom plot layouts to arrange multiple heatmaps.
 - [`heat_map_save()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md)
@@ -1358,6 +1363,88 @@ heat_map_complete()
 ```
 
 ![](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-15.png)
+
+### 7.1 Heatmaps Beside ggplot2 Plots
+
+[`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
+turns a heatmap into a `grid` graphical object (a grob), so it can sit
+beside `ggplot2` plots in `patchwork`, `cowplot` or `gridExtra` layouts.
+The grob draws the heatmap again whenever its space changes, so the
+dendrograms, legends and text are sized for the space the heatmap is
+given. Arguments passed to
+[`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
+replace those the heatmap was drawn with,
+e.g. `heat_map_grob(hm, title = NULL)`. It needs the `gridGraphics`
+package.
+
+``` r
+
+library(ggplot2)
+library(patchwork)
+hm <- heat_map(
+  mtcars,
+  scale = "column",
+  tree = "both",
+  tree_cut_y = 3,
+  title = "mtcars"
+)
+p <- ggplot(mtcars, aes(wt, mpg, colour = factor(cyl))) +
+  geom_point(size = 2) +
+  labs(x = "Weight (1000 lbs)", y = "Miles per gallon", colour = "Cylinders") +
+  theme_bw()
+p + heat_map_grob(hm) + plot_layout(widths = c(1, 1.5))
+```
+
+![A scatter plot of miles per gallon against weight for the mtcars data,
+coloured by the number of cylinders, beside a clustered heatmap of the
+same
+cars](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-ggplot.png)
+
+### 7.2 Heatmap Data for ggplot2 and Other Tools
+
+[`heat_map_data()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.md)
+returns what a heatmap shows as tidy tables: one row per cell (the
+default), row, column or dendrogram segment. Rows and columns are listed
+in the order they are displayed, and `x` and `y` are the centres of the
+cells in the heatmap’s plot co-ordinates, including the gaps between
+clusters, so the cells can be rebuilt or restyled with `ggplot2`,
+exported, or used to draw on the heatmap with base graphics.
+
+``` r
+
+cells <- heat_map_data(hm)
+rows <- heat_map_data(hm, "rows")
+cols <- heat_map_data(hm, "columns")
+tree <- heat_map_data(hm, "tree_y")
+# Dendrogram to the right of the cells, its heights scaled to 3 cells
+edge <- max(cells$x) + 0.5
+grow <- function(h) edge + 3 * h / max(tree$x)
+ggplot(cells) +
+  geom_tile(aes(x, y, fill = value), colour = "white") +
+  geom_segment(
+    data = tree,
+    aes(x = grow(x), y = y, xend = grow(xend), yend = yend)
+  ) +
+  scale_fill_distiller(palette = "RdBu", name = "Scaled\nvalue") +
+  scale_x_continuous(breaks = cols$x, labels = cols$column) +
+  scale_y_continuous(breaks = rows$y, labels = rows$row) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)
+  )
+```
+
+![The mtcars heatmap rebuilt with ggplot2 from heat_map_data(), with a
+red-blue fill scale, the same row clusters and gaps, and the row
+dendrogram on the
+right](https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-ggplot-data.png)
+
+Drawn straight after
+[`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
+base graphics land on the cells: `points(cells$x, cells$y)` marks the
+centre of every cell.
 
 ## 8. Export
 

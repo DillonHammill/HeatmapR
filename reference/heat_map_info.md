@@ -51,6 +51,11 @@ a list containing:
 - `colours`, `sizes`: the fill colour and relative size of each cell, in
   the orientation of the original data.
 
+- `centers`: lists `x` and `y` with the centre of each column and row in
+  the original order, in the heatmap's plot co-ordinates (one unit per
+  cell, plus any gaps between clusters), for drawing on top of a
+  heatmap.
+
 - `split_colours`, `split_data`: the fill colour and value (after
   scaling) of the lower right half of each cell (`cell_split`) in the
   orientation of the original data, or `NULL`.

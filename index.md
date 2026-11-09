@@ -84,6 +84,13 @@ text, legends and layouts, **HeatmapR** can:
   returns the order, clusters and layout of a heatmap, and
   [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
   writes alternative text for screen readers.
+- **Work with ggplot2** -
+  [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
+  places heatmaps beside `ggplot2` plots in `patchwork` and `cowplot`
+  layouts, and
+  [`heat_map_data()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.md)
+  returns the cells, rows, columns and dendrograms as tidy data for
+  rebuilding or restyling them.
 
 [TABLE]
 

@@ -20,6 +20,16 @@ describe it in plain language as alternative text.
 - [`print(`*`<heat_map_description>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/print.heat_map_description.md)
   : Print a heatmap description as wrapped text
 
+## Use heatmaps with other tools
+
+Combine heatmaps with ggplot2 plots, or export their contents as tidy
+data.
+
+- [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
+  : Convert a heatmap into a grob for grid and ggplot2 layouts
+- [`heat_map_data()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.md)
+  : Extract the contents of a heatmap as tidy data
+
 ## Prepare data
 
 Scale, summarise and cluster data before (or while) drawing a heatmap.

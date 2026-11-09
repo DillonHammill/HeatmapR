@@ -238,6 +238,18 @@
   when neighbouring labels would overlap across their baselines, which
   leaves them larger than perpendicular labels need on crowded heatmaps,
   and both layouts make room for the text and its overhang.
+- Working with `ggplot2`: new
+  [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
+  turns a heatmap into a grob that redraws itself at the size it is
+  given, so heatmaps sit beside `ggplot2` plots in `patchwork`
+  (`p + heat_map_grob(hm)`), `cowplot` or `gridExtra` layouts (needs
+  `gridGraphics`). New
+  [`heat_map_data()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.md)
+  returns the cells, rows, columns and dendrogram segments of a heatmap
+  as tidy data.frames, in display order and with the cell centres in the
+  heatmap’s plot co-ordinates, for rebuilding heatmaps with `ggplot2`,
+  exporting what is shown, or drawing on the heatmap with base graphics.
+  `heat_map_info()$centers` gives the centre of each row and column.
 - New
   [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
   writes a plain-language description of a heatmap - its size and
