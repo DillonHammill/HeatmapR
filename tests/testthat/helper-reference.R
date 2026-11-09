@@ -290,3 +290,28 @@ ref.sub_merge <- function(merge,
   sub
 }
 
+
+# Branch support resampled and clustered one resample at a time in R, as
+# before resamples were clustered several at once
+ref.tree_support <- function(data, tree, B = 100, dist = "euclidean",
+                             method = "complete", groups = NULL, ...) {
+  data <- as.matrix(data)
+  w <- .leaf_weights(nrow(data))
+  keys <- clade_hash_cpp(.int_merge(tree$merge), w)
+  hits <- .with_seed(1066, {
+    hits <- numeric(nrow(keys))
+    for (b in seq_len(B)) {
+      xb <- data[, sample.int(ncol(data), replace = TRUE), drop = FALSE]
+      hb <- if (is.null(groups)) {
+        .hclust_raw(xb, dist = dist, method = method, ...)
+      } else {
+        .group_tree(xb, groups = groups, dist = dist, method = method, ...)
+      }
+      hits <- hits + clade_in_cpp(keys, clade_hash_cpp(.int_merge(hb$merge), w))
+    }
+    hits
+  })
+  support <- hits / B
+  support[.structural_clades(tree$merge, groups)] <- NA
+  support
+}

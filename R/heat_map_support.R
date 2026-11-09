@@ -94,10 +94,47 @@
   # (CLADES AS TWO EXACT SUMS - COMPARED AS NUMBERS IN COMPILED CODE)
   keys <- clade_hash_cpp(.int_merge(tree$merge), w)
   # FIXED SEED - THE CALLER'S RANDOM NUMBER GENERATOR IS RESTORED
-  hits <- .with_seed(1066, {
-    hits <- numeric(nrow(keys))
-    for(b in seq_len(B)) {
-      xb <- data[, sample.int(ncol(data), replace = TRUE), drop = FALSE]
+  samples <- .with_seed(1066, {
+    lapply(seq_len(B), function(b) sample.int(ncol(data), replace = TRUE))
+  })
+  hits <- numeric(nrow(keys))
+  # RESAMPLES CLUSTERED SEVERAL AT ONCE IN COMPILED CODE WHEN IT COMPUTES THE
+  # DISTANCES AND THE LINKAGE (AS .hclust_raw() WOULD)
+  metric <- if(!is.na(.NN_CHAIN[method]) && is.null(list(...)$members)) {
+    .compiled_metric(data, dist, ...)
+  }
+  if(!is.null(metric)) {
+    # WITHIN GROUPS - THE CLADES OF EACH GROUP (THE MERGES JOINING GROUPS ARE
+    # FIXED BY THEM)
+    members <- if(!is.null(groups)) {
+      m <- split(seq_len(n), factor(groups, levels = seq_len(max(groups))))
+      m[lengths(m) >= 2]
+    }
+    threads <- .threads()
+    # (A FEW RESAMPLES PER THREAD AT A TIME, WITHIN ABOUT 256 MB)
+    chunk <- max(1, min(B, 4 * threads, floor(2^28 / (8 * n * ncol(data)))))
+    for(start in seq(1, B, by = chunk)) {
+      batch <- samples[start:min(B, start + chunk - 1)]
+      xs <- lapply(batch, function(s) {
+        .compiled_metric(data[, s, drop = FALSE], dist, ...)$x
+      })
+      trees <- .cluster_batch(xs, metric, members, method)
+      for(tb in trees) {
+        hb <- if(is.null(members)) {
+          clade_hash_cpp(tb[[1]]$merge, w)
+        } else {
+          do.call(rbind, lapply(seq_along(members), function(g) {
+            clade_hash_cpp(tb[[g]]$merge, w[members[[g]], , drop = FALSE])
+          }))
+        }
+        if(!is.null(hb) && nrow(hb) > 0) {
+          hits <- hits + clade_in_cpp(keys, hb)
+        }
+      }
+    }
+  } else {
+    for(s in samples) {
+      xb <- data[, s, drop = FALSE]
       hb <- if(is.null(groups)) {
         .hclust_raw(xb, dist = dist, method = method, ...)
       } else {
@@ -105,8 +142,7 @@
       }
       hits <- hits + clade_in_cpp(keys, clade_hash_cpp(.int_merge(hb$merge), w))
     }
-    hits
-  })
+  }
   support <- hits / B
   support[.structural_clades(tree$merge, groups)] <- NA
   support

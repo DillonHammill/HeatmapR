@@ -31,6 +31,7 @@ Imports:
   stats,
   graphics,
   grDevices,
+  parallel,
   tools
 LinkingTo:
   cpp11

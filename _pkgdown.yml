@@ -29,6 +29,7 @@ reference:
   - heat_map_scale
   - heat_map_summarise
   - heat_map_clust
+  - heat_map_threads
 - title: Arrange and save heatmaps
   desc: >
     Arrange heatmaps with other plots in custom layouts and save high
