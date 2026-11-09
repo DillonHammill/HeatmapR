@@ -48,6 +48,7 @@ Beyond clustering, scaling and customisable colours, shapes, sizes, text, legend
 * **Cluster with confidence** - correlation and cosine distances, optimal leaf ordering, clustering within your own groups, k-means splits, and bootstrap support drawn on the dendrogram branches (`tree_support_y`).
 * **Handle large data** - raster images for heatmaps with millions of cells, `heat_map_summarise()` for pseudobulk heatmaps and dot plots of groups of cells, and robust, stepped or centred colour scales with the distribution of the values traced over the legend.
 * **Explain the figure** - `heat_map_info()` returns the order, clusters and layout of a heatmap, and `heat_map_describe()` writes alternative text for screen readers.
+* **Work with ggplot2** - `heat_map_grob()` places heatmaps beside `ggplot2` plots in `patchwork` and `cowplot` layouts, and `heat_map_data()` returns the cells, rows, columns and dendrograms as tidy data for rebuilding or restyling them.
 
 <table>
 <tr>
