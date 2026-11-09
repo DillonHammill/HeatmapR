@@ -103,7 +103,8 @@ draw_logo <- function(file,
                       height = 2000,
                       font = "TeX Gyre Adventor",
                       zoom = 1,
-                      label_span = 7) {
+                      label_span = 7,
+                      label_text = 0.84) {
   style <- match.arg(style)
   H <- height
   W <- round(H * sqrt(3) / 2)
@@ -159,7 +160,10 @@ draw_logo <- function(file,
               gp = gpar(fill = "white", col = NA))
     # (CENTRED ON THE HEIGHT OF ITS CAPITALS - THE DESCENDER OF THE "p"
     # HANGS BELOW, AS IN TYPESET TEXT)
-    size <- fit_fontsize("HeatmapR", 0.84 * label_w / res, font)
+    # (THE NAME FILLS label_text OF THE CELL'S VISIBLE WIDTH - WHEN THE CELL
+    # REACHES UNDER THE BORDER, THE WIDTH INSIDE THE HEXAGON)
+    visible_w <- min(label_w, sqrt(3) * (r - border))
+    size <- fit_fontsize("HeatmapR", label_text * visible_w / res, font)
     cap_h <- convertHeight(
       grobHeight(textGrob("H", gp = gpar(fontfamily = font, fontface = 2,
                                          fontsize = size))),
@@ -212,8 +216,9 @@ draw_logo <- function(file,
 }
 
 # The logo used by the package (and its website) - option C, the name in a
-# cell of the heatmap (the zoom is still to be chosen: 1.1 with the name
-# across 7 cells, or 1.4 with label_span = 5)
+# cell of the heatmap, zoomed in until the sides of that cell pass behind the
+# border of the hexagon
 if(sys.nframe() == 0 || identical(environment(), globalenv())) {
-  draw_logo("man/figures/logo.png", style = "full")
+  draw_logo("man/figures/logo.png", style = "full", zoom = 1.24,
+            label_text = 0.9)
 }
