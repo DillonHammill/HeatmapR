@@ -82,9 +82,6 @@ test_that("column marks are vertical below or above the heatmap", {
     expect_true("marks_x" %in% b$component)
     expect_equal(layout_overlaps(b), character(0))
   }
-  # Classic layout
-  hm <- draw(m, mark_x = 1:2, mark_y = "Row3", layout = "classic")
-  expect_equal(layout_overlaps(heat_map_info(hm)$layout), character(0))
 })
 
 test_that("crowded mark labels shrink unless fit_text = FALSE", {

@@ -39,7 +39,7 @@
 #'   heatmap. Clusters stored in the \code{hclust} object are kept unless
 #'   \code{tree_cut_x} is supplied.
 #' @param tree_size_x numeric to control the height of the dendrogram for the x
-#'   axis, set to 1 by default (0.6 inches in the default fit layout).
+#'   axis, set to 1 by default (0.6 inches).
 #' @param tree_scale_x logical indicating whether the branch heights of the x
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
@@ -79,16 +79,14 @@
 #'   \code{tree_kmeans_x = 3}). See \code{tree_kmeans_y}.
 #' @param tree_split_x a numeric to control the spacing between x axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove axis
-#'   tree splits. Each unit is 0.08 inches in the default fit layout and half
-#'   a column in the classic layout.
+#'   tree splits. Each unit is 0.08 inches.
 #' @param tree_label_x logical indicating whether a label should be added for
 #'   each cluster within the x axis tree when \code{tree_cut_x} is specified,
 #'   set to FALSE by default.
 #' @param tree_label_size_x numeric to control the height of the tree cluster
 #'   labels for the x axis tree, set to 0.1 by default. Strips holding label
-#'   text are made tall enough for the text. In the default fit layout the
-#'   strip is at least 0.8 inches x \code{tree_label_size_x} tall, in the
-#'   classic layout \code{tree_label_size_x} cells.
+#'   text are made tall enough for the text; the strip is at least 0.8 inches
+#'   x \code{tree_label_size_x} tall.
 #' @param tree_label_col_x vector of colours to use for x axis tree cluster
 #'   labels, set to "grey40" by default.
 #' @param tree_label_col_alpha_x numeric to control the transparency of the x
@@ -112,7 +110,7 @@
 #'   heatmap. Clusters stored in the \code{hclust} object are kept unless
 #'   \code{tree_cut_y} is supplied.
 #' @param tree_size_y numeric to control the width of the dendrogram for the y
-#'   axis, set to 1 by default (0.6 inches in the default fit layout).
+#'   axis, set to 1 by default (0.6 inches).
 #' @param tree_scale_y logical indicating whether the branch heights of the y
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
@@ -174,16 +172,14 @@
 #'   the clusters.
 #' @param tree_split_y a numeric to control the spacing between y axis tree
 #'   splits, set to 1 by default. Setting the argument to 0 will remove axis
-#'   tree splits. Each unit is 0.08 inches in the default fit layout and half
-#'   a row in the classic layout.
+#'   tree splits. Each unit is 0.08 inches.
 #' @param tree_label_y logical indicating whether a label should be added for
 #'   each cluster within the y axis tree when \code{tree_cut_y} is specified,
 #'   set to FALSE by default.
 #' @param tree_label_size_y numeric to control the width of the tree cluster
 #'   labels for the y axis tree, set to 0.1 by default. Strips holding label
-#'   text are made wide enough for the text. In the default fit layout the
-#'   strip is at least 0.8 inches x \code{tree_label_size_y} wide, in the
-#'   classic layout \code{tree_label_size_y} cells.
+#'   text are made wide enough for the text; the strip is at least 0.8 inches
+#'   x \code{tree_label_size_y} wide.
 #' @param tree_label_col_y vector of colours to use for y axis tree cluster
 #'   labels, set to "grey40" by default.
 #' @param tree_label_col_alpha_y numeric to control the transparency of the y
@@ -269,7 +265,7 @@
 #'   uses 8 colours across the scale (with the default 4 levels), the next 4,
 #'   then 2, and the most uncertain level a single, nearly grey colour.
 #'   Missing uncertainties are treated as the most uncertain. The colour
-#'   legend becomes a key with one row per uncertainty level (fit layout).
+#'   legend becomes a key with one row per uncertainty level.
 #' @param cell_uncertainty_breaks 1 to 5 increasing thresholds between the
 #'   uncertainty levels, set to NULL by default for thresholds at a quarter,
 #'   half and three quarters of the largest uncertainty (4 levels).
@@ -318,7 +314,7 @@
 #'   transparency of cell text, set to 1 by default to use solid colours for
 #'   cell text.
 #' @param bar_size_x numeric to control the height of x axis bar plot, set to 1
-#'   by default (0.6 inches in the default fit layout).
+#'   by default (0.6 inches).
 #' @param bar_values_x a vector of values to display in x axis bar plot,
 #'   supplied in the order matching the original columns of \code{x} or named
 #'   with the column names of \code{x}. The values supplied to
@@ -364,7 +360,7 @@
 #' @param bar_line_col_alpha_x numeric ranging from 0 to 1 to control the
 #'   transparency of bar borders in x axis bar plot, set to 1 by default.
 #' @param bar_size_y numeric to control the width of y axis bar plot, set to 1
-#'   by default (0.6 inches in the default fit layout).
+#'   by default (0.6 inches).
 #' @param bar_values_y a vector of values to display in y axis bar plot,
 #'   supplied in the order matching the original rownames of \code{x} or named
 #'   with the row names of \code{x}. The values supplied to \code{bar_values_y}
@@ -539,8 +535,8 @@
 #'   heatmap and drawn again in a larger panel on the axis text side, joined to
 #'   the band by a wedge, and the enlarged rows are named beside the panel in
 #'   place of the axis text. This shows the detail of a few rows of a large
-#'   heatmap together with the whole. Requires \code{layout = "fit"}; can't be
-#'   combined with \code{mark_x} or \code{mark_y} on the same axis.
+#'   heatmap together with the whole. Can't be combined with \code{mark_x} or
+#'   \code{mark_y} on the same axis.
 #' @param zoom_size_x,zoom_size_y size of the zoom panel relative to the
 #'   heatmap - its height for \code{zoom_x} and its width for \code{zoom_y} -
 #'   between 0.2 and 5, set to 1 by default. Along the band the panel is as long
@@ -580,19 +576,6 @@
 #'   label text should be shrunk to fit the available space when it would
 #'   otherwise overlap, set to TRUE by default. Axis labels that still don't
 #'   fit at half their size are thinned to every second, third, ... label.
-#' @param layout how space is shared between the heatmap and everything around
-#'   it, either \code{"fit"} (the default) or \code{"classic"}. The fit layout
-#'   sizes dendrograms, bar graphs, annotation tracks, the legend and the
-#'   margins in inches from their contents - dendrograms and bar graphs keep
-#'   the same size whatever the shape of the data, the legend is as wide as its
-#'   text, the margins are as wide as the axis text, labels and title, and the
-#'   heatmap body takes the remaining space. In the fit layout
-#'   \code{tree_size_x}, \code{tree_size_y}, \code{bar_size_x} and
-#'   \code{bar_size_y} are multiples of 0.6 inches and \code{legend_size}
-#'   scales the legend keys (colour bars, swatches and size legend shapes). The
-#'   classic layout of HeatmapR 1.1.0 and earlier sizes dendrograms, bar graphs
-#'   and the legend as fractions of the heatmap, so they grow and shrink with
-#'   the number of rows and columns.
 #' @param legend logical indicating whether to include a legend in the heatmap,
 #'   set to TRUE by default to include colour and size legends.
 #'   Alternatively, a character vector containing any of \code{"colour"},
@@ -602,9 +585,9 @@
 #'   non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
 #'   \code{FALSE}, \code{NA} or \code{"none"} to remove the legend.
 #' @param legend_size numeric to control the amount of space allocated to the
-#'   legend, set to 1 by default. In the fit layout (the default) the legend is
-#'   sized from its contents and \code{legend_size} scales the legend keys
-#'   instead.
+#'   legend, set to 1 by default. The legend is sized from its contents and
+#'   \code{legend_size} scales the legend keys (colour bars, swatches and size
+#'   legend shapes).
 #' @param legend_col_scale_size numeric to control the width of the legend
 #'   colour scale relative to the allocated space for the legend, set to 1 by
 #'   default.
@@ -621,7 +604,7 @@
 #'   default) beside the heatmap, opposite the y axis text, or
 #'   \code{"bottom"} below the heatmap with horizontal colour bars and the
 #'   legends side by side (wrapping into rows when they don't fit across the
-#'   figure). \code{"bottom"} requires \code{layout = "fit"}.
+#'   figure).
 #' @param legend_title a vector of up to three elements containing text to be
 #'   displayed above the cell colour, size and levels legends respectively.
 #' @param legend_title_text_font integer to control the font face for the
@@ -880,7 +863,6 @@ heat_map <- function(x,
                      cell_glyph_col = "grey10",
                      cell_glyph_fill = "#FFFFFF8C",
                      fit_text = TRUE,
-                     layout = "fit",
                      popup = TRUE,
                      popup_size = c(7,7),
                      ...) {
@@ -930,24 +912,7 @@ heat_map <- function(x,
       call. = FALSE
     )
   }
-  if(legend_side == "bottom" && identical(layout, "classic")) {
-    warning(
-      "legend_side = \"bottom\" requires layout = \"fit\" - the legend is ",
-      "drawn beside the heatmap.",
-      call. = FALSE
-    )
-    legend_side <- "auto"
-  }
   legend_bottom <- legend_side == "bottom"
-
-  # LAYOUT
-  if(!is.character(layout) || length(layout) != 1 ||
-     !layout %in% c("classic", "fit")) {
-    stop(
-      "'layout' must be either \"classic\" or \"fit\".",
-      call. = FALSE
-    )
-  }
 
   # X AXIS TEXT ANGLE - las CODES OR AN ANGLE IN DEGREES
   rot_x <- .axis_rotation(axis_text_angle_x)
@@ -1474,19 +1439,11 @@ heat_map <- function(x,
   unc_key <- NULL
   if(!is.null(unc_mat)) {
     unc_breaks <- .uncertainty_breaks(unc_mat, cell_uncertainty_breaks)
-    if(identical(layout, "classic")) {
-      warning(
-        "The uncertainty legend requires layout = \"fit\" - the colour ",
-        "legend shows the colours of certain values.",
-        call. = FALSE
-      )
-    } else {
-      unc_key <- list(
-        n_levels = length(unc_breaks) + 1,
-        labels = .uncertainty_labels(unc_breaks),
-        title = cell_uncertainty_title
-      )
-    }
+    unc_key <- list(
+      n_levels = length(unc_breaks) + 1,
+      labels = .uncertainty_labels(unc_breaks),
+      title = cell_uncertainty_title
+    )
   }
 
   # DISTRIBUTIONS INSIDE THE CELLS - VALUES IN THE ORIENTATION OF x
@@ -1869,14 +1826,6 @@ heat_map <- function(x,
       )
     }
   }
-  if((!is.null(zoom_x) || !is.null(zoom_y)) && identical(layout, "classic")) {
-    warning(
-      "The zoom lens requires layout = \"fit\" - nothing is enlarged.",
-      call. = FALSE
-    )
-    zoom_x <- NULL
-    zoom_y <- NULL
-  }
   zoom_x <- .zoom_geom(zoom_x, x_centers)
   zoom_y <- .zoom_geom(zoom_y, y_centers)
 
@@ -2165,7 +2114,6 @@ heat_map <- function(x,
       legend_bottom = legend_bottom,
       legend_spec = legend_spec,
       fit = fit_text,
-      mode = layout,
       title_size = title_text_size,
       axis_label_size_x = axis_label_size_x,
       axis_label_size_y = axis_label_size_y
@@ -2173,12 +2121,11 @@ heat_map <- function(x,
   }
   lay <- .heat_map_layout(layout_inputs())
 
-  # FIT LAYOUT - GAPS BETWEEN CLUSTERS ARE 0.08 INCHES PER UNIT OF tree_split_*,
-  # WHICH NEEDS THE CELL SIZE FROM THE LAYOUT
+  # GAPS BETWEEN CLUSTERS ARE 0.08 INCHES PER UNIT OF tree_split_*, WHICH
+  # NEEDS THE CELL SIZE FROM THE LAYOUT
   split_in <- 0.08
-  if(layout == "fit" &&
-     ((length(unique(cut_x)) > 1 && tree_split_x > 0) ||
-      (length(unique(cut_y)) > 1 && tree_split_y > 0))) {
+  if((length(unique(cut_x)) > 1 && tree_split_x > 0) ||
+     (length(unique(cut_y)) > 1 && tree_split_y > 0)) {
     split_x <- tree_split_x
     split_y <- tree_split_y
     for(pass in seq_len(4)) {
@@ -2372,20 +2319,13 @@ heat_map <- function(x,
     y_splits
   )
 
-  # TITLE & AXIS LABELS - CENTRED ON THE HEATMAP BUT KEPT ON THE DEVICE IN
-  # THE FIT LAYOUT
-  fit_layout <- layout == "fit"
-  title_at <- NA
-  axis_label_x_at <- NA
-  axis_label_y_at <- NA
-  if(fit_layout) {
-    title_at <- .mtext_at(title, title_text_size, title_text_font,
-                          mean(heatmap_xlim), "x")
-    axis_label_x_at <- .mtext_at(axis_label_x, axis_label_size_x,
-                                 axis_label_font_x, mean(heatmap_xlim), "x")
-    axis_label_y_at <- .mtext_at(axis_label_y, axis_label_size_y,
-                                 axis_label_font_y, mean(heatmap_ylim), "y")
-  }
+  # TITLE & AXIS LABELS - CENTRED ON THE HEATMAP BUT KEPT ON THE DEVICE
+  title_at <- .mtext_at(title, title_text_size, title_text_font,
+                        mean(heatmap_xlim), "x")
+  axis_label_x_at <- .mtext_at(axis_label_x, axis_label_size_x,
+                               axis_label_font_x, mean(heatmap_xlim), "x")
+  axis_label_y_at <- .mtext_at(axis_label_y, axis_label_size_y,
+                               axis_label_font_y, mean(heatmap_ylim), "y")
 
   # TITLE
   if (!is.null(title)) {
@@ -2401,11 +2341,7 @@ heat_map <- function(x,
       ),
       las = 0,
       at = title_at,
-      adj = if(fit_layout) {
-        0.5
-      } else {
-        (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
-      }
+      adj = 0.5
     )
   }
 
@@ -2424,11 +2360,7 @@ heat_map <- function(x,
       ),
       las = 0,
       at = axis_label_x_at,
-      adj = if(fit_layout) {
-        0.5
-      } else {
-        (mean(heatmap_xlim) - min(xlim))/diff(range(xlim))
-      }
+      adj = 0.5
     )
   }
 
@@ -2446,11 +2378,7 @@ heat_map <- function(x,
       ),
       las = 0,
       at = axis_label_y_at,
-      adj = if(fit_layout) {
-        0.5
-      } else {
-        (mean(heatmap_ylim) - min(ylim))/diff(range(ylim))
-      }
+      adj = 0.5
     )
   }
 

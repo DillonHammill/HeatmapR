@@ -6,7 +6,7 @@
 #' (grob), so that it can sit beside \pkg{ggplot2} plots in \pkg{patchwork},
 #' \pkg{cowplot} or \pkg{gridExtra} layouts, or be drawn with
 #' \code{grid::grid.draw()}. The grob draws the heatmap again whenever its
-#' space changes, so the fit layout sizes the dendrograms, legends and text
+#' space changes, so the layout sizes the dendrograms, legends and text
 #' for the space the heatmap is given.
 #'
 #' The heatmap is drawn with base graphics and converted to \pkg{grid} by the
