@@ -7,11 +7,11 @@ test_that("heat_map() returns a heat_map object describing the plot", {
   expect_s3_class(hm, "recordedplot")
   info <- heat_map_info(hm)
   expect_equal(info$data, m)
-  # Rows are drawn from the bottom (row 1) to the top
-  expect_equal(info$row_order, 10:1)
+  # Rows are drawn from the top (row 1), as columns are from the left
+  expect_equal(info$row_order, 1:10)
   expect_equal(info$col_order, 1:5)
   expect_equal(info$axis_text_x, colnames(m))
-  expect_equal(info$axis_text_y, rownames(m)[10:1])
+  expect_equal(info$axis_text_y, rownames(m))
   expect_equal(info$col_limits, range(m))
   expect_null(info$tree_x)
   expect_null(info$tree_y)
@@ -57,7 +57,7 @@ test_that("missing values are drawn in cell_col_empty", {
 test_that("unnamed matrices are labelled with row and column indices", {
   info <- heat_map_info(draw(matrix(1:12, 3)))
   expect_equal(info$axis_text_x, 1:4)
-  expect_equal(info$axis_text_y, 3:1)
+  expect_equal(info$axis_text_y, 1:3)
 })
 
 test_that("clustering uses the requested distance and agglomeration methods", {
@@ -68,8 +68,9 @@ test_that("clustering uses the requested distance and agglomeration methods", {
   expect_equal(info$tree_y$order, hclust(dist(m, "manhattan"), "average")$order)
   expect_equal(info$tree_x$order, hclust(dist(t(m), "manhattan"), "average")$order)
   expect_equal(info$tree_y$method, "average")
-  # Dendrogram order is the display order (rows listed from the top)
-  expect_equal(info$row_order, rev(info$tree_y$order))
+  # Dendrogram order is the display order (rows from the top, columns from
+  # the left)
+  expect_equal(info$row_order, info$tree_y$order)
   expect_equal(info$col_order, info$tree_x$order)
 })
 

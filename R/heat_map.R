@@ -107,7 +107,9 @@
 #'   transparency of text in x axis cluster labels, set to 1 by default to use
 #'   solid colours.
 #' @param tree_y logical indicating whether dendrograms should be constructed
-#'   for the y axis (rows), set to NULL by default. Alternatively, a
+#'   for the y axis (rows), set to NULL by default. Rows are drawn from the
+#'   top in the dendrogram order (as columns are from the left), or in the
+#'   order of \code{x} without a dendrogram. Alternatively, a
 #'   pre-computed \code{hclust} or \code{dist} object describing the rows of
 #'   \code{x}, such as \code{heat_map_info(hm)$tree_y} from a previous
 #'   heatmap. Clusters stored in the \code{hclust} object are kept unless
@@ -149,7 +151,7 @@
 #'   for 6 rows in 2 clusters). Numeric cluster indices are given row by row
 #'   from the top of the heatmap as it is displayed without them (in the
 #'   dendrogram order when \code{tree_y} is requested; without a dendrogram
-#'   the last row of \code{x} is at the top). Named indices are matched to the
+#'   in the order of \code{x}). Named indices are matched to the
 #'   row names of \code{x}, and labels (character or factor, e.g. cell types
 #'   from metadata) are given in the original row order of \code{x}. Rows are
 #'   regrouped so that each cluster is contiguous, the first cluster at the
@@ -976,7 +978,8 @@ heat_map <- function(x,
   # COLUMN INDICES - DISPLAY ORDER FROM LEFT TO RIGHT
   col_ind <- c(num_cols, char_cols)
 
-  # ROW INDICES - DISPLAY ORDER FROM BOTTOM TO TOP
+  # ROW INDICES - DISPLAY ORDER FROM TOP TO BOTTOM (REVERSED FOR DRAWING ONCE
+  # THE ROWS ARE ORDERED AND CLUSTERED)
   row_ind <- seq_len(nrow(x))
 
   # SCALING --------------------------------------------------------------------
@@ -1273,9 +1276,8 @@ heat_map <- function(x,
       } else {
         row_ind
       }
-      tree_cut_y <- .display_cut(tree_cut_y, rev(shown))
+      tree_cut_y <- .display_cut(tree_cut_y, shown)
     }
-    # ROWS ARE DRAWN FROM THE BOTTOM BUT CLUSTERS ARE READ FROM THE TOP
     manual <- .manual_clusters(
       tree_cut_y,
       ind = row_ind,
@@ -1283,8 +1285,7 @@ heat_map <- function(x,
       arg = "tree_cut_y",
       margin = "rows",
       keep_order = inherits(tree_y, "hclust"),
-      labels = rownames(x),
-      reverse = TRUE
+      labels = rownames(x)
     )
     # NAMES OF NON-NUMERIC CLUSTERS LABEL THE CLUSTERS BY DEFAULT
     if(.all_na(tree_label_text_y) && !is.null(manual$labels)) {
@@ -1353,7 +1354,15 @@ heat_map <- function(x,
     list("Branch support" = .support_key())
   }
 
-  # CLUSTER ASSIGNMENTS IN DISPLAY ORDER
+  # ROWS ARE ORDERED AND CLUSTERED FROM THE TOP, AS THE COLUMNS ARE FROM THE
+  # LEFT, BUT DRAWN FROM THE BOTTOM - THE ROW ORDER, ROW CLUSTERS AND
+  # DENDROGRAM ARE REVERSED FOR DRAWING (heat_map_info() RETURNS THE TREE AS
+  # COMPUTED, ITS FIRST LEAF AT THE TOP)
+  row_ind <- rev(row_ind)
+  tree_y_info <- tree_y
+  tree_y <- .flip_tree(tree_y)
+
+  # CLUSTER ASSIGNMENTS IN DISPLAY ORDER (ROWS FROM THE BOTTOM)
   cut_x <- if(is.list(tree_x)) tree_x$cut else NULL
   cut_y <- if(is.list(tree_y)) tree_y$cut else NULL
 
@@ -3119,7 +3128,7 @@ heat_map <- function(x,
       NULL
     },
     tree_x = .info_tree(tree_x),
-    tree_y = .info_tree(tree_y),
+    tree_y = .info_tree(tree_y_info),
     support_x = support_x,
     support_y = support_y,
     zoom_x = zoom_x$ind,

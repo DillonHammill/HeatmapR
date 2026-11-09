@@ -89,7 +89,7 @@ test_that("manual cluster indices accept characters and factors", {
   info <- heat_map_info(draw(x, tree_cut_y = c("b", "a", "b", "a", "a")))
   # Cluster 1 ("a") at the top, cluster 2 ("b") at the bottom
   expect_equal(unname(info$row_clusters), c(2L, 1L, 2L, 1L, 1L))
-  expect_equal(info$row_order, c(5L, 4L, 2L, 3L, 1L))
+  expect_equal(info$row_order, c(2L, 4L, 5L, 1L, 3L))
   # Factor levels define the cluster order
   info <- heat_map_info(
     draw(x, tree_cut_y = factor(c("b", "a", "b", "a", "a"), levels = c("b", "a")))

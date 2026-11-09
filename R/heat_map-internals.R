@@ -188,9 +188,6 @@
 #'   preserve a dendrogram order).
 #' @param labels row/column names of the data, used to match named cluster
 #'   indices.
-#' @param reverse TRUE when \code{ind} runs against the reading order (rows
-#'   are drawn from the bottom but read from the top): the first cluster and
-#'   the first cluster size are then placed at the end of \code{ind}.
 #'
 #' @return list containing the updated display order (\code{ind}) and the
 #'   cluster of each position in the display order (\code{cut}), numbered
@@ -203,8 +200,7 @@
                              arg,
                              margin,
                              keep_order = FALSE,
-                             labels = NULL,
-                             reverse = FALSE) {
+                             labels = NULL) {
 
   # MISSING VALUES
   if(anyNA(cut)) {
@@ -238,8 +234,8 @@
     } else {
       codes <- as.integer(factor(cut))
     }
-    # THE FIRST CLUSTER IS PLACED FIRST IN READING ORDER
-    groups <- if(reverse) max(codes) + 1L - codes else codes
+    # THE FIRST CLUSTER IS PLACED FIRST
+    groups <- codes
     # CLUSTERS ALREADY CONTIGUOUS IN A DENDROGRAM ORDER - KEEP THE DENDROGRAM
     if(keep_order && !anyDuplicated(rle(groups[ind])$values)) {
       new_ind <- ind
@@ -263,11 +259,8 @@
             all(cut %% 1 == 0) &&
             all(cut >= 0) &&
             sum(cut) == n) {
-    # EMPTY CLUSTERS ARE DROPPED - SIZES IN READING ORDER
+    # EMPTY CLUSTERS ARE DROPPED
     cut <- cut[cut > 0]
-    if(reverse) {
-      cut <- rev(cut)
-    }
     new_ind <- ind
     new_cut <- rep(
       seq_along(cut),
@@ -960,6 +953,32 @@
     )
   }
   invisible(NULL)
+}
+
+#' Reverse the order of a dendrogram and its clusters
+#'
+#' Rows are ordered from the top (as columns are from the left) but drawn from
+#' the bottom, so the dendrogram of the rows (and the clusters given in its
+#' order) is reversed for drawing, to put its first leaf at the top.
+#' Clusters are numbered again from 1 in the new order. Lists that only hold
+#' clusters (\code{cut}) are reversed in the same way; NULL is returned as is.
+#'
+#' @noRd
+.flip_tree <- function(tree) {
+  if(!is.list(tree)) {
+    return(tree)
+  }
+  if(!is.null(tree$order)) {
+    tree$order <- rev(tree$order)
+  }
+  if(!is.null(tree$cut)) {
+    cut <- rev(tree$cut)
+    tree$cut <- structure(
+      max(cut) + 1L - as.integer(cut),
+      names = names(cut)
+    )
+  }
+  tree
 }
 
 #' Dendrogram returned by heat_map_info() - one cluster per leaf so that it can

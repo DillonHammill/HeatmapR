@@ -325,7 +325,9 @@ transparency of text in x axis cluster labels, set to 1 by default to use
 solid colours.}
 
 \item{tree_y}{logical indicating whether dendrograms should be constructed
-for the y axis (rows), set to NULL by default. Alternatively, a
+for the y axis (rows), set to NULL by default. Rows are drawn from the
+top in the dendrogram order (as columns are from the left), or in the
+order of \code{x} without a dendrogram. Alternatively, a
 pre-computed \code{hclust} or \code{dist} object describing the rows of
 \code{x}, such as \code{heat_map_info(hm)$tree_y} from a previous
 heatmap. Clusters stored in the \code{hclust} object are kept unless
@@ -362,7 +364,7 @@ be supplied to assign each row to a specific cluster (e.g., c(1,1,1,2,2,2)
 for 6 rows in 2 clusters). Numeric cluster indices are given row by row
 from the top of the heatmap as it is displayed without them (in the
 dendrogram order when \code{tree_y} is requested; without a dendrogram
-the last row of \code{x} is at the top). Named indices are matched to the
+in the order of \code{x}). Named indices are matched to the
 row names of \code{x}, and labels (character or factor, e.g. cell types
 from metadata) are given in the original row order of \code{x}. Rows are
 regrouped so that each cluster is contiguous, the first cluster at the

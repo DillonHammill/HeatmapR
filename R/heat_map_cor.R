@@ -50,8 +50,7 @@
 #'   columns and break the triangles.
 #'
 #' @return a \code{heat_map} object (see \code{\link{heat_map}}) whose data
-#'   is the correlation matrix, with its rows in reverse order when
-#'   \code{tree = FALSE} so that the first variable is at the top.
+#'   is the correlation matrix.
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
@@ -79,7 +78,7 @@
 #'   popup = FALSE
 #' )
 #'
-#' @importFrom stats as.dist as.dendrogram as.hclust cor hclust
+#' @importFrom stats as.dist cor hclust
 #' @export
 heat_map_cor <- function(x,
                          method = c("pearson", "spearman", "kendall"),
@@ -116,9 +115,8 @@ heat_map_cor <- function(x,
   }
   dimnames(r) <- list(vars, vars)
 
-  # ONE ORDER FOR ROWS AND COLUMNS - ROWS ARE DRAWN FROM THE BOTTOM, SO THE
-  # ROWS TAKE THE DENDROGRAM IN REVERSE (OR THE DATA IN REVERSE) TO PUT THE
-  # FIRST VARIABLE AT THE TOP LEFT
+  # ONE ORDER FOR ROWS AND COLUMNS - THE SAME DENDROGRAM, OR THE ORDER OF THE
+  # DATA, FROM THE TOP LEFT
   title <- if(given) "r" else c(
     pearson = "r",
     spearman = "rho",
@@ -129,22 +127,15 @@ heat_map_cor <- function(x,
     d[is.na(d)] <- 1
     tree_x <- hclust(as.dist(d), method = clust_method)
     tree_x$dist.method <- paste("1 -", title)
-    tree_y <- as.hclust(rev(as.dendrogram(tree_x)))
-    tree_y$method <- tree_x$method
-    tree_y$dist.method <- tree_x$dist.method
     ord <- tree_x$order
-    row_vars <- seq_len(n)
   } else {
-    tree_x <- tree_y <- NULL
+    tree_x <- NULL
     ord <- seq_len(n)
-    row_vars <- rev(seq_len(n))
-    r <- r[row_vars, , drop = FALSE]
   }
 
   # TRIANGLES - POSITIONS FROM THE TOP (ROWS) AND THE LEFT (COLUMNS)
-  pos_row <- match(row_vars, ord)
-  pos_col <- match(seq_len(n), ord)
-  side <- outer(pos_row, pos_col, function(a, b) sign(b - a))
+  pos <- match(seq_len(n), ord)
+  side <- outer(pos, pos, function(a, b) sign(b - a))
   shapes <- matrix(
     c(lower, diag, upper)[side + 2],
     nrow = n,
@@ -157,7 +148,7 @@ heat_map_cor <- function(x,
   args <- list(
     x = r,
     tree_x = tree_x,
-    tree_y = tree_y,
+    tree_y = tree_x,
     cell_shape = shapes,
     cell_col_scale = "Blue-Red 3",
     cell_col_scale_limits = c(-1, 1),

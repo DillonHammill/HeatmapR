@@ -122,7 +122,7 @@ test_that("heat_map_clust and heat_map reorder leaves", {
   m <- scale(mtcars)
   info <- heat_map_info(draw(m, tree = "both", tree_order_x = "olo", tree_order_y = "mean"))
   ref_y <- .tree_order(hclust(dist(m)), m, "mean")$order
-  expect_equal(rev(info$row_order), ref_y)
+  expect_equal(info$row_order, ref_y)
   ref_x <- .tree_order(hclust(dist(t(m))), t(m), "olo")$order
   expect_equal(info$col_order, ref_x)
   # Within groups
@@ -132,5 +132,5 @@ test_that("heat_map_clust and heat_map reorder leaves", {
   expect_error(draw(m, tree_order_y = "best"), "'tree_order_y' must be")
   # Correlation distances in heat_map()
   info <- heat_map_info(draw(m, tree_y = TRUE, dist_method = "spearman"))
-  expect_equal(rev(info$row_order), hclust(as.dist(1 - cor(t(m), method = "spearman")))$order)
+  expect_equal(info$row_order, hclust(as.dist(1 - cor(t(m), method = "spearman")))$order)
 })

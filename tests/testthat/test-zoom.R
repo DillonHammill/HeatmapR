@@ -59,7 +59,7 @@ test_that("heat_map enlarges a band of rows beside the heatmap", {
     hm <- draw(m, zoom_y = c("Row10", "Row14"), axis_text_side_y = side,
                tree_x = TRUE, title = "Zoom", axis_label_y = "Rows")
     info <- heat_map_info(hm)
-    expect_equal(info$zoom_y, 14:10)
+    expect_equal(info$zoom_y, 10:14)
     # The enlarged rows replace the axis text
     s <- if (side == "left") 2 else 4
     expect_setequal(y_axis_labels(hm, s), paste0("Row", 10:14))
@@ -82,9 +82,10 @@ test_that("heat_map enlarges a band of rows beside the heatmap", {
     expect_setequal(panel[[1]][[5]], as.vector(info$colours[10:14, ]))
   }
   # Hidden axis text - the panel is labelled with the row names
-  # Positions count rows from the top - the last rows of m without a dendrogram
+  # Positions count rows from the top - the first rows of m without a
+  # dendrogram
   hm <- draw(m, zoom_y = 3, axis_text_y = NA)
-  expect_equal(y_axis_labels(hm), "Row28")
+  expect_equal(y_axis_labels(hm), "Row3")
   # Labels supplied for every row in display order
   hm <- draw(m, zoom_y = 1:2, axis_text_y = paste0("gene", 1:30))
   expect_setequal(y_axis_labels(hm), c("gene1", "gene2"))
@@ -152,7 +153,7 @@ test_that("zoom panels check their arguments", {
   expect_error(draw(m, zoom_y = "nope"), "'zoom_y' contains names")
   # Marks on one axis and a zoom panel on the other
   hm <- draw(m, zoom_y = 2:3, mark_x = 1)
-  expect_equal(heat_map_info(hm)$zoom_y, 5:4)
+  expect_equal(heat_map_info(hm)$zoom_y, 2:3)
 })
 
 test_that("zoom lens snapshot", {

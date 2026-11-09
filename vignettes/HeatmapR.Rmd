@@ -36,7 +36,7 @@ knitr::opts_chunk$set(
 
 ## 1. Construct a Basic Heatmap
 
-Constructing a heatmap is as simple loading the **HeatmapR** package and supplying your dataset to the `heat_map()` function. The constructed heatmap will be in the same orientation as the input data and each numeric cell in the heatmap will be coloured using the colour scale supplied to `cell_col_scale`. By default, `heat_map()` uses a hybrid colour blind friendly `viridis` palette to offer high visual contrast.
+Constructing a heatmap is as simple loading the **HeatmapR** package and supplying your dataset to the `heat_map()` function. The constructed heatmap will be in the same orientation as the input data, the first row at the top and the first column at the left as when the data is printed, and each numeric cell in the heatmap will be coloured using the colour scale supplied to `cell_col_scale`. By default, `heat_map()` uses a hybrid colour blind friendly `viridis` palette to offer high visual contrast.
 
 ```{r, echo = FALSE, eval = TRUE}
 library(HeatmapR)
@@ -886,6 +886,45 @@ heat_map(
 )
 ```
 
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-annotations.png",
+  height = 7,
+  width = 9,
+  res = 300
+)
+set.seed(123)
+mat <- matrix(
+  rnorm(20 * 24, sd = 1.5),
+  nrow = 20,
+  ncol = 24,
+  dimnames = list(
+    paste0("Gene_", 1:20),
+    paste0("S", sprintf("%02d", 1:24))
+  )
+)
+meta <- data.frame(
+  Treatment = factor(rep(c("Control", "Drug_A", "Drug_B"), each = 8)),
+  Sex = factor(rep(c("Male", "Female"), times = 12), levels = c("Male", "Female")),
+  row.names = colnames(mat)
+)
+heat_map(
+  mat,
+  annotation_x = meta,
+  annotation_colours = list(
+    Treatment = c(Control = "#4E9FD1", Drug_A = "#E07B54", Drug_B = "#6DBF7E"),
+    Sex = c(Male = "#7B5EA7", Female = "#E8A0BF")
+  ),
+  tree_cut_x = meta$Treatment,
+  tree_label_x = TRUE,
+  tree_y = TRUE,
+  cell_col_scale = c("#2C7BB6", "white", "#D7191C"),
+  cell_col_scale_center = 0,
+  legend_title = "z-score",
+  title = "Metadata annotations"
+)
+```
+
 ```{r echo = FALSE, out.width = '95%', fig.align="center"}
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-annotations.png')
 ```
@@ -1350,7 +1389,7 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/refs/heads/master/vignettes/HeatmapR/HeatmapR-13b.png')
 ```
 
-**Method 2: Specify cluster indices** - Provide a vector where each element indicates which cluster that row/column belongs to. Numeric indices are given as the heatmap is displayed - columns from the left, rows from the top, in the dendrogram order when a dendrogram is drawn - so you can draw a heatmap, read it, and assign clusters to what you see. Labels given as characters or a factor (e.g. treatments from sample metadata) follow the original order of the data, and named vectors are matched by name. The rows/columns are regrouped so that each cluster is contiguous in the heatmap:
+**Method 2: Specify cluster indices** - Provide a vector where each element indicates which cluster that row/column belongs to. Numeric indices are given as the heatmap is displayed - columns from the left, rows from the top, in the dendrogram order when a dendrogram is drawn and in the order of the data otherwise - so you can draw a heatmap, read it, and assign clusters to what you see. Labels given as characters or a factor (e.g. treatments from sample metadata) follow the original order of the data, and named vectors are matched by name. The rows/columns are regrouped so that each cluster is contiguous in the heatmap:
 
 ```{r, eval = FALSE}
 # Manual clustering by assigning cluster indices
@@ -2184,11 +2223,11 @@ each column. Colours show z-score, from dark purple (-1.87) through yellow
 green to dark red (3.21). The highest value is 3.21 (Maserati Bora, carb) and
 the lowest is -1.87 (Ford Pantera L, qsec). Rows are ordered by hierarchical
 clustering (euclidean distance, complete linkage). Rows are split into 3
-groups, numbered from the top: group 1 (5 rows, e.g. Maserati Bora and Ford
-Pantera L) is highest in carb and gear and lowest in qsec and vs; group 2 (12
-rows, e.g. AMC Javelin and Dodge Challenger) is highest in disp and cyl and
-lowest in gear and drat; group 3 (15 rows, e.g. Toyota Corolla and Fiat 128) is
-highest in vs and mpg and lowest in cyl and hp. Columns are ordered by
+groups, numbered from the top: group 1 (15 rows, e.g. Hornet 4 Drive and
+Valiant) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows,
+e.g. Chrysler Imperial and Cadillac Fleetwood) is highest in disp and cyl and
+lowest in gear and drat; group 3 (5 rows, e.g. Ferrari Dino and Mazda RX4) is
+highest in carb and gear and lowest in qsec and vs. Columns are ordered by
 hierarchical clustering (euclidean distance, complete linkage).
 ```
 

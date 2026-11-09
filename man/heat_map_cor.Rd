@@ -56,8 +56,7 @@ columns and break the triangles.}
 }
 \value{
 a \code{heat_map} object (see \code{\link{heat_map}}) whose data
-is the correlation matrix, with its rows in reverse order when
-\code{tree = FALSE} so that the first variable is at the top.
+is the correlation matrix.
 }
 \description{
 \code{heat_map_cor()} draws a correlation matrix as a heatmap whose rows
