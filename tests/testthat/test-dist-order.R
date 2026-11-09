@@ -95,14 +95,6 @@ test_that("mean ordering matches stats::heatmap", {
   expect_identical(.tree_order(h, x, "default"), h)
 })
 
-test_that("min-plus products", {
-  set.seed(5)
-  a <- matrix(runif(12), 3)
-  b <- matrix(runif(20), 4)
-  ref <- outer(seq_len(3), seq_len(5), Vectorize(function(i, j) min(a[i, ] + b[, j])))
-  expect_equal(.min_plus(a, b), ref)
-})
-
 test_that("heat_map_clust and heat_map reorder leaves", {
   x <- as.matrix(mtcars)
   d <- dist(scale(x))
@@ -132,9 +124,14 @@ test_that("heat_map_clust and heat_map reorder leaves", {
   expect_error(draw(m, tree_order_y = "best"), "'tree_order_y' must be")
   # Correlation distances in heat_map()
   # (THE DISTANCES MATCH cor(), BUT TIED DISTANCES - COMMON WITH RANKS - CAN BE
-  # MERGED IN EITHER ORDER, DEPENDING ON THE LAST BITS OF THE ARITHMETIC)
+  # MERGED IN EITHER ORDER, DEPENDING ON THE LAST BITS OF THE ARITHMETIC, SO
+  # THE ORDER IS COMPARED WITH heat_map_clust() AND THE DISTANCES THROUGH
+  # SINGLE LINKAGE HEIGHTS, WHICH DEPEND ONLY ON THE DISTANCES)
   info <- heat_map_info(draw(m, tree_y = TRUE, dist_method = "spearman"))
-  d <- .dist_matrix(m, "spearman")
-  expect_equal(as.vector(d), as.vector(as.dist(1 - cor(t(m), method = "spearman"))))
-  expect_equal(info$row_order, hclust(d)$order)
+  r <- cor(t(m), method = "spearman")
+  expect_equal(as.vector(.dist_matrix(m, "spearman")), as.vector(as.dist(1 - r)))
+  expect_equal(info$row_order, heat_map_clust(m, dist = "spearman")$order)
+  expect_equal(info$tree_y$dist.method, "spearman")
+  expect_equal(.hclust_raw(m, "spearman", "single")$height,
+               hclust(as.dist(1 - r), "single")$height)
 })

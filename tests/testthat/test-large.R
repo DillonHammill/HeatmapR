@@ -230,13 +230,13 @@ test_that("heat_map_clust() switches to two stages above max", {
   # COLUMNS
   cols <- heat_map_clust(t(dat$x), tree = "column", max = 200)
   expect_equal(cols$two_stage[["sample"]], 200)
-  # OTHER LEAF ORDERS - OPTIMAL LEAF ORDERING IN BLOCKS ABOVE 1000 LEAVES
-  big_dat <- clustered_rows(1100)
+  # OTHER LEAF ORDERS - OPTIMAL LEAF ORDERING IN BLOCKS ABOVE 2000 LEAVES
+  big_dat <- clustered_rows(2100)
   D <- as.matrix(dist(big_dat$x))
   cost <- function(o) sum(D[cbind(o[-length(o)], o[-1])])
   olo <- heat_map_clust(big_dat$x, max = 300, order = "olo")
   plain <- heat_map_clust(big_dat$x, max = 300)
-  expect_valid_tree(olo, 1100)
+  expect_valid_tree(olo, 2100)
   expect_lt(cost(olo$order), cost(plain$order))
   expect_equal(ari(cutree(olo, 4), cutree(plain, 4)), 1)
   mean_tree <- heat_map_clust(dat$x, max = 200, order = "mean")
@@ -245,8 +245,8 @@ test_that("heat_map_clust() switches to two stages above max", {
 })
 
 test_that("leaf orders of large trees", {
-  expect_equal(.olo_block(500), 1000L)
-  expect_equal(.olo_block(1e5), 173L)
+  expect_equal(.olo_block(500), 2000L)
+  expect_equal(.olo_block(1e5), 387L)
   expect_equal(.olo_block(1e8), 100L)
   dat <- clustered_rows(400, k = 6)
   tree <- hclust(dist(dat$x))
@@ -282,16 +282,6 @@ test_that("leaves below a merge", {
   }
   expect_equal(.node_leaves(m, -3), 3)
   expect_equal(.merge_order(m), brute(nrow(m)))
-})
-
-test_that("min-plus products", {
-  set.seed(2)
-  a <- matrix(runif(12), 3)
-  b <- matrix(runif(20), 4)
-  brute <- outer(1:3, 1:5, Vectorize(function(i, j) min(a[i, ] + b[, j])))
-  expect_equal(.min_plus(a, b), brute)
-  expect_equal(.min_plus(a[, 1, drop = FALSE], b[1, , drop = FALSE]),
-               outer(a[, 1], b[1, ], "+"))
 })
 
 test_that("heat_map() clusters large margins in two stages", {
@@ -333,9 +323,3 @@ test_that("rows join their nearest medoid", {
   expect_equal(.nearest(a, b, "pearson"), max.col(-.dist_to(a, b, "pearson"), "first"))
 })
 
-test_that("first smallest value of a matrix", {
-  m <- matrix(c(3, 1, 2, 1, 5, 4), 2)
-  expect_equal(.first_min(m), c(2, 1))
-  expect_equal(.first_min(matrix(7)), c(1, 1))
-  expect_equal(.first_min(t(m)), unname(which(t(m) == 1, arr.ind = TRUE)[1, ]))
-})

@@ -217,12 +217,12 @@ by default. See \code{?hclust} for alternatives.}
 \item{clust_max}{the largest number of rows (or columns) clustered exactly,
 set to 5000 by default. Exact clustering needs the distances between every
 pair of rows, so its memory and time grow with the square of their number
-(about 800 MB and 7 seconds for 10,000 rows). Larger margins are
+(about 400 MB and 3 seconds for 10,000 rows). Larger margins are
 clustered in two stages: a sample of \code{clust_max} rows is clustered
 exactly, its dendrogram is split into groups, every row joins the group
 of its nearest group medoid and each group is clustered exactly beneath
 the sample's dendrogram (see \code{\link{heat_map_clust}}). 100,000 rows
-take about 5 seconds. Branch support (\code{tree_support_x},
+take about 2 seconds. Branch support (\code{tree_support_x},
 \code{tree_support_y}) is only computed for up to \code{clust_max} rows or
 columns. Set to \code{Inf} to always cluster exactly.}
 
@@ -254,7 +254,7 @@ either \code{"default"} (the order from \code{hclust}), \code{"olo"}
 (optimal leaf ordering, which flips branches so that neighbouring columns
 are as similar as possible) or \code{"mean"} (branches ordered by their
 mean values, as in \code{\link[stats]{heatmap}}). Optimal leaf ordering
-is exact for up to 1000 columns, which takes about a second; larger
+is exact for up to 2000 columns, which takes about a second; larger
 dendrograms are ordered in blocks (see \code{\link{heat_map_clust}}).}
 
 \item{tree_support_x}{\code{TRUE} or a number of resamples (at least 10)

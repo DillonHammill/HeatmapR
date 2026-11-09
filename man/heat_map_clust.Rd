@@ -51,11 +51,11 @@ greater than or equal to 1 indicating the number of desired clusters.}
 branches to minimise the distances between neighbouring leaves (optimal
 leaf ordering) and \code{"mean"} orders branches by their mean values as
 in \code{\link[stats]{heatmap}}. Optimal leaf ordering is exact for up to
-1000 leaves, which takes about a second; its time grows with the cube of
-the number of leaves, so larger trees are ordered in blocks (of 1000
+2000 leaves, which takes about a second; its time grows with the cube of
+the number of leaves, so larger trees are ordered in blocks (of 2000
 leaves, down to 100 for the largest trees), each ordered exactly, with the
-blocks then ordered and turned to meet their neighbours. 50,000 leaves
-take about 10 seconds.}
+blocks then ordered and turned to meet their neighbours. 200,000 leaves
+take about 3 seconds.}
 
 \item{max}{the largest number of rows (or columns) clustered exactly, set
 to 5000 by default. Exact clustering needs the distances between every
@@ -66,7 +66,7 @@ clustered exactly and its dendrogram split into groups of about 200 rows
 of the data, every row joins the group of its nearest group medoid, and
 each group is clustered exactly beneath the sample's dendrogram. The
 dendrogram then shows the structure of the whole data down to the groups,
-and within each group: 100,000 rows take about 5 seconds. Set to
+and within each group: 100,000 rows take about 2 seconds. Set to
 \code{Inf} to always cluster exactly.}
 
 \item{...}{additional arguments passed to \code{\link{dist}} or

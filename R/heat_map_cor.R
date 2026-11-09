@@ -125,7 +125,7 @@ heat_map_cor <- function(x,
   if(tree) {
     d <- 1 - r
     d[is.na(d)] <- 1
-    tree_x <- hclust(as.dist(d), method = clust_method)
+    tree_x <- .hclust_dist(as.dist(d), method = clust_method)
     tree_x$dist.method <- paste("1 -", title)
     ord <- tree_x$order
   } else {
