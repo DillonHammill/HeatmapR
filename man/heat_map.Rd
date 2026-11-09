@@ -68,6 +68,7 @@ heat_map(
   cell_border_line_width = 1,
   cell_border_line_col = "black",
   cell_border_line_col_alpha = 1,
+  cell_grid_line_col = NA,
   cell_border_mask = NULL,
   cell_text = FALSE,
   cell_text_font = 1,
@@ -429,9 +430,21 @@ transparency of text in y axis cluster labels, set to 1 by default to use
 solid colours.}
 
 \item{cell_shape}{indicates the shape to use for the cells in the heatmap,
-options include \code{"rect"}, \code{"circle"} or \code{"diamond"}.
-Alternatively, a matrix of the same dimensions as \code{x} containing the
-shape to use for each cell.}
+options include \code{"rect"}, \code{"circle"}, \code{"diamond"},
+\code{"ellipse"}, \code{"number"} or \code{"none"}. Circles, diamonds and
+ellipses stay round on cells that aren't square, sized by the shorter
+side of the cells. Ellipses show values between -1 and 1, such as
+correlations, by their shape - the outline of a bivariate normal
+distribution with that correlation, rising to the right for positive
+values, falling for negative values, and narrower the closer the value is
+to -1 or 1 (a circle at 0); values beyond -1 and 1 are drawn as -1 or 1
+with a warning. \code{"number"} writes the value of each cell (or its
+\code{cell_text}) in the colour of the cell instead of filling it,
+darkened where the colour is too light to read, and \code{"none"} leaves
+the cell empty apart from its \code{cell_text}. Alternatively, a matrix of
+the same dimensions as \code{x} containing the shape to use for each
+cell, e.g. ellipses below the diagonal of a correlation matrix and numbers
+above it (see \code{\link{heat_map_cor}}).}
 
 \item{cell_size}{logical indicating whether each cell in the heatmap should
 be scaled by the value in \code{x}, set to FALSE by default. Alternatively,
@@ -549,6 +562,15 @@ than three line widths, as they would hide the cells, unless a
 
 \item{cell_border_line_col_alpha}{numeric to control the transparency of cell
 borders, set to 1 by default to use solid colours.}
+
+\item{cell_grid_line_col}{colour of grid lines drawn around every cell
+(apart from empty cells, see \code{cell_shape = "none"}), behind the
+cells, set to \code{NA} by default to draw no grid. A light
+grid (e.g. \code{"grey85"}) keeps the rows and columns visible when cells
+are drawn as shapes that don't fill them, such as circles, ellipses or
+numbers. The grid uses \code{cell_border_line_type} and
+\code{cell_border_line_width} and is left out, like cell borders, when
+the cells are too small.}
 
 \item{cell_border_mask}{a matrix of the same dimensions as \code{x} containing
 TRUE/FALSE values indicating whether each cell should have a colored border

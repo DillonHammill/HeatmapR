@@ -6,6 +6,7 @@ reference:
 - title: Draw heatmaps
   contents:
   - heat_map
+  - heat_map_cor
   - heat_map-methods
 - title: Inspect and describe heatmaps
   desc: >

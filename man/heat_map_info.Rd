@@ -33,8 +33,9 @@ to right) and rows (from top to bottom) enlarged in a zoom panel
 (\code{zoom_x}, \code{zoom_y}), or \code{NULL}.}
 \item{\code{axis_text_x}, \code{axis_text_y}: axis labels from left to
 right and from top to bottom respectively.}
-\item{\code{colours}, \code{sizes}: the fill colour and relative size of
-each cell, in the orientation of the original data.}
+\item{\code{colours}, \code{sizes}, \code{shapes}: the fill colour,
+relative size and shape of each cell, in the orientation of the original
+data.}
 \item{\code{centers}: lists \code{x} and \code{y} with the centre of
 each column and row in the original order, in the heatmap's plot
 co-ordinates (one unit per cell, plus any gaps between clusters), for
