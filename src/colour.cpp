@@ -1,14 +1,28 @@
-// Cell colours
+// Colours
 //
-// Numeric cells are coloured by a colour ramp in R (colorRamp()), whose
-// channels rgb(maxColorValue = 255) truncates to integers and writes as
-// "#RRGGBB". Writing the strings here (each colour once) gives the same
-// colours without rgb(), toupper() and paste0() over every cell. The channels
-// are left to R because a value can sit within rounding of a whole number,
-// so a different order of floating-point operations (e.g. a fused
-// multiply-add) could truncate it differently. Raster images are passed to
-// the graphics device as packed integers (a nativeRaster), so their colours
-// are never parsed from strings.
+// Colours are handled as packed integers, as the graphics engine stores
+// them (red in the lowest byte, then green, blue and alpha):
+//
+// - Numeric cells are coloured along a ramp with the arithmetic of
+//   grDevices::colorRamp() (stats' approx1() interpolation of each channel,
+//   clamped to [0, 1], times 255) and rgb(maxColorValue = 255), which
+//   truncates to integers.
+// - Transparency is applied with the arithmetic of adjustcolor(): the alpha
+//   channel times the transparency, clamped to [0, 1], and rgb()'s
+//   (unsigned int)(255 * x + 0.5).
+// - Colours are written as "#RRGGBBAA" strings once per distinct colour, and
+//   raster images are passed to the device as packed integers (a
+//   nativeRaster), so their colours are never parsed from strings.
+//
+// A channel can sit within rounding of a whole number (e.g.
+// 60.999999999999993), so the products in these formulas are rounded
+// before they are added (through a volatile): a compiler may otherwise fuse
+// the multiply and the add, which rounds once and can truncate the other
+// way. R's own colorRamp() and rgb() are compiled without fused
+// multiply-adds on Linux and Windows, where the colours are therefore the
+// same as theirs; where R uses them (e.g. Apple silicon), a channel can
+// differ by one step in rare cases (a CIE76 colour difference below 0.9,
+// well below what can be seen).
 
 #include <cpp11.hpp>
 #include <cmath>
@@ -28,100 +42,181 @@ inline int hex_value(char c) {
   return -1;
 }
 
-inline int pack(int r, int g, int b, int a) {
-  uint32_t v = static_cast<uint32_t>(r) | (static_cast<uint32_t>(g) << 8) |
-               (static_cast<uint32_t>(b) << 16) | (static_cast<uint32_t>(a) << 24);
+inline int pack(uint32_t r, uint32_t g, uint32_t b, uint32_t a) {
+  uint32_t v = r | (g << 8) | (b << 16) | (a << 24);
   int out;
   std::memcpy(&out, &v, sizeof(out));
   return out;
 }
 
+inline uint32_t unpack(int x) {
+  uint32_t v;
+  std::memcpy(&v, &x, sizeof(v));
+  return v;
+}
+
+// a * b, rounded before it is used (never fused with a later addition)
+inline double product(double a, double b) {
+  volatile double p = a * b;
+  return p;
+}
+
+// One channel of colorRamp(): approx1() of stats (linear interpolation), for
+// x[0] <= v <= x[n - 1]
+inline double approx_channel(double v, const double* x, const double* y, int n) {
+  int i = 0, j = n - 1;
+  while (i < j - 1) {
+    int ij = (i + j) / 2;
+    if (v < x[ij]) j = ij; else i = ij;
+  }
+  if (v == x[j]) return y[j];
+  if (v == x[i]) return y[i];
+  return y[i] + product(y[j] - y[i], (v - x[i]) / (x[j] - x[i]));
+}
+
+// roundcolor() of colorRamp() times 255, truncated as rgb(maxColorValue =
+// 255) does
+inline uint32_t ramp_byte(double a) {
+  if (a > 1) a = 1;
+  if (a < 0) a = 0;
+  return static_cast<uint32_t>(product(a, 255));
+}
+
+// ScaleAlpha() of rgb(): (unsigned int)(255 * x + 0.5)
+inline uint32_t alpha_byte(double x) {
+  volatile double t = product(255, x) + 0.5;
+  return static_cast<uint32_t>(t);
+}
+
 }  // namespace
 
-// "#RRGGBB" (or "#RRGGBBAA" when alpha is 0 to 255) for the rows of a matrix
-// of red, green and blue intensities in [0, 255], truncated to integers as
-// rgb(maxColorValue = 255) does. NULL if any intensity is missing or outside
-// what rgb() accepts, so that R reports it.
+// Packed colours of positions k along a ramp through colours whose channels
+// (in [0, 1]) are the rows of rgb, at the positions knots (increasing). NULL
+// if any position is missing or off the ramp, where colorRamp() gives NA (so
+// that R reports it).
 [[cpp11::register]]
-SEXP rgb_strings_cpp(cpp11::doubles_matrix<> rgb, int alpha) {
-  if (alpha > 255) cpp11::stop("alpha must be from 0 to 255");
+SEXP ramp_packed_cpp(cpp11::doubles k, cpp11::doubles knots,
+                     cpp11::doubles_matrix<> rgb) {
+  R_xlen_t n = k.size();
+  int nc = knots.size();
+  if (nc < 2 || rgb.nrow() != nc || rgb.ncol() < 3) {
+    cpp11::stop("a ramp needs at least two colours");
+  }
+  const double* x = REAL(knots);
+  const double* ch = REAL(rgb.data());
+  const double* kv = REAL(k);
+  for (R_xlen_t i = 0; i < n; ++i) {
+    if (ISNAN(kv[i]) || kv[i] < x[0] || kv[i] > x[nc - 1]) return R_NilValue;
+  }
+  cpp11::writable::integers out(n);
+  int* o = INTEGER(out);
+  for (R_xlen_t i = 0; i < n; ++i) {
+    uint32_t c[3];
+    for (int j = 0; j < 3; ++j) {
+      c[j] = ramp_byte(approx_channel(kv[i], x, ch + static_cast<size_t>(j) * nc, nc));
+    }
+    o[i] = pack(c[0], c[1], c[2], 255);
+  }
+  return out;
+}
+
+// Packed colours of red, green and blue intensities in [0, 255] (the rows of
+// rgb), truncated to integers as rgb(maxColorValue = 255) does. NULL if any
+// intensity is missing or outside what rgb() accepts, so that R reports it.
+[[cpp11::register]]
+SEXP rgb_packed_cpp(cpp11::doubles_matrix<> rgb) {
   R_xlen_t n = rgb.nrow();
   const double* v = REAL(rgb.data());
   for (R_xlen_t i = 0; i < 3 * n; ++i) {
     if (ISNAN(v[i]) || v[i] <= -1 || v[i] >= 256) return R_NilValue;
   }
+  cpp11::writable::integers out(n);
+  int* o = INTEGER(out);
+  for (R_xlen_t i = 0; i < n; ++i) {
+    o[i] = pack(static_cast<uint32_t>(static_cast<int>(v[i])),
+                static_cast<uint32_t>(static_cast<int>(v[i + n])),
+                static_cast<uint32_t>(static_cast<int>(v[i + 2 * n])), 255);
+  }
+  return out;
+}
+
+// Transparency applied to packed colours as adjustcolor(col, alpha) applies
+// it: the red, green and blue channels are kept and the alpha channel is
+// multiplied by alpha (recycled), clamped to [0, 1]. (Every integer is a
+// colour: NA_integer_ has the bits of "#00000080".)
+[[cpp11::register]]
+cpp11::integers adjust_alpha_cpp(cpp11::integers col, cpp11::doubles alpha) {
+  R_xlen_t n = col.size(), na = alpha.size();
+  if (na == 0) cpp11::stop("alpha must have at least one value");
+  const int* c = INTEGER(col);
+  const double* a = REAL(alpha);
+  cpp11::writable::integers out(n);
+  int* o = INTEGER(out);
+  for (R_xlen_t i = 0; i < n; ++i) {
+    double f = a[na == 1 ? 0 : i % na];
+    if (ISNAN(f)) cpp11::stop("alpha level NA, not in [0,1]");
+    uint32_t v = unpack(c[i]);
+    double x = product(f, (v >> 24) / 255.0);
+    // (INFINITE alpha TIMES A TRANSPARENT COLOUR)
+    if (ISNAN(x)) cpp11::stop("alpha level NaN, not in [0,1]");
+    if (x > 1) x = 1;
+    if (x < 0) x = 0;
+    o[i] = pack(v & 255, (v >> 8) & 255, (v >> 16) & 255, alpha_byte(x));
+  }
+  return out;
+}
+
+// "#RRGGBBAA" for packed colours as rgb() writes colours with an alpha
+// channel, or "#RRGGBB" without it (alpha = false), each distinct colour's
+// string made once
+[[cpp11::register]]
+cpp11::strings packed_strings_cpp(cpp11::integers col, bool alpha) {
+  R_xlen_t n = col.size();
+  const int* c = INTEGER(col);
   cpp11::writable::strings out(n);
   SEXP s = out;
-  // EACH COLOUR'S STRING IS MADE ONCE
-  std::unordered_map<uint32_t, SEXP> made;
-  char buf[10];
+  std::unordered_map<int, SEXP> made;
+  const int len = alpha ? 9 : 7;
+  char buf[9];
   buf[0] = '#';
-  int len = alpha >= 0 ? 9 : 7;
   for (R_xlen_t i = 0; i < n; ++i) {
-    int c[3];
-    for (int j = 0; j < 3; ++j) c[j] = static_cast<int>(v[i + j * n]);
-    uint32_t key = static_cast<uint32_t>(c[0]) | (static_cast<uint32_t>(c[1]) << 8) |
-                   (static_cast<uint32_t>(c[2]) << 16);
-    auto it = made.find(key);
+    auto it = made.find(c[i]);
     if (it != made.end()) {
       SET_STRING_ELT(s, i, it->second);
       continue;
     }
-    for (int j = 0; j < 3; ++j) {
-      buf[1 + 2 * j] = HEX[c[j] >> 4];
-      buf[2 + 2 * j] = HEX[c[j] & 15];
-    }
-    if (alpha >= 0) {
-      buf[7] = HEX[alpha >> 4];
-      buf[8] = HEX[alpha & 15];
+    uint32_t v = unpack(c[i]);
+    for (int j = 0; j < (len - 1) / 2; ++j) {
+      uint32_t b = (v >> (8 * j)) & 255;
+      buf[1 + 2 * j] = HEX[b >> 4];
+      buf[2 + 2 * j] = HEX[b & 15];
     }
     SEXP str = Rf_mkCharLenCE(buf, len, CE_UTF8);
     SET_STRING_ELT(s, i, str);
-    made.emplace(key, str);
+    made.emplace(c[i], str);
   }
   return out;
 }
 
-// The alpha channel appended to opaque "#RRGGBB" colours (in upper case, as
-// adjustcolor() writes them); NA for any other colour
+// Packed colours of red, green, blue and alpha channels (the columns of a
+// 4-row integer matrix, as col2rgb(alpha = TRUE) gives them)
 [[cpp11::register]]
-cpp11::strings alpha_hex_cpp(cpp11::strings col, int alpha) {
-  R_xlen_t n = col.size();
-  if (alpha < 0 || alpha > 255) cpp11::stop("alpha must be from 0 to 255");
-  cpp11::writable::strings out(n);
-  SEXP s = out;
-  SEXP in = col;
-  std::unordered_map<SEXP, SEXP> made;
-  char buf[10];
-  buf[7] = HEX[alpha >> 4];
-  buf[8] = HEX[alpha & 15];
+cpp11::integers pack_channels_cpp(cpp11::integers_matrix<> rgba) {
+  if (rgba.nrow() != 4) cpp11::stop("expected 4 channels");
+  R_xlen_t n = rgba.ncol();
+  const int* v = INTEGER(rgba.data());
+  cpp11::writable::integers out(n);
+  int* o = INTEGER(out);
   for (R_xlen_t i = 0; i < n; ++i) {
-    SEXP c = STRING_ELT(in, i);
-    if (c == NA_STRING || LENGTH(c) != 7 || CHAR(c)[0] != '#') {
-      SET_STRING_ELT(s, i, NA_STRING);
-      continue;
-    }
-    auto it = made.find(c);
-    if (it != made.end()) {
-      SET_STRING_ELT(s, i, it->second);
-      continue;
-    }
-    const char* p = CHAR(c);
-    buf[0] = '#';
-    for (int j = 1; j < 7; ++j) {
-      char ch = p[j];
-      buf[j] = (ch >= 'a' && ch <= 'z') ? static_cast<char>(ch - 'a' + 'A') : ch;
-    }
-    SEXP str = Rf_mkCharLenCE(buf, 9, CE_UTF8);
-    SET_STRING_ELT(s, i, str);
-    made.emplace(c, str);
+    const int* p = v + 4 * i;
+    o[i] = pack(p[0] & 255, p[1] & 255, p[2] & 255, p[3] & 255);
   }
   return out;
 }
 
-// Colours as packed integers, as the graphics engine stores them: "#RRGGBB",
-// "#RRGGBBAA", "transparent" and NA (transparent white); NA_integer_ for any
-// other colour (converted in R)
+// Colours as packed integers: "#RRGGBB", "#RRGGBBAA", "transparent" and NA
+// (transparent white) are converted here; the positions of other colours
+// (converted in R with col2rgb()) are attribute "other"
 [[cpp11::register]]
 cpp11::integers native_colours_cpp(cpp11::strings col) {
   R_xlen_t n = col.size();
@@ -129,6 +224,7 @@ cpp11::integers native_colours_cpp(cpp11::strings col) {
   int* o = INTEGER(out);
   SEXP in = col;
   const int transparent = pack(255, 255, 255, 0);
+  std::vector<double> other;
   for (R_xlen_t i = 0; i < n; ++i) {
     SEXP c = STRING_ELT(in, i);
     if (c == NA_STRING) {
@@ -157,7 +253,11 @@ cpp11::integers native_colours_cpp(cpp11::strings col) {
       o[i] = transparent;
       continue;
     }
-    o[i] = NA_INTEGER;
+    o[i] = transparent;
+    other.push_back(static_cast<double>(i) + 1);
+  }
+  if (!other.empty()) {
+    out.attr("other") = cpp11::writable::doubles(other.begin(), other.end());
   }
   return out;
 }

@@ -1744,8 +1744,27 @@ heat_map <- function(x,
   cell_missing <- (cell_num & is.na(cell_num_val)) |
     (!cell_num & is.na(cell_chr_val))
 
-  # COLOURS
-  cell_fill <- rep(NA_character_, length(cell_row))
+  # TRANSPARENCY - SINGLE VALUE OR ONE VALUE PER CELL IN THE ORIGINAL DATA
+  # (VECTORS ARE RECYCLED DOWN THE COLUMNS OF x LIKE matrix())
+  if(length(cell_col_alpha) > 1) {
+    if(is.null(dim(cell_col_alpha))) {
+      alpha_mat <- matrix(
+        rep_len(as.numeric(cell_col_alpha), n_row * n_col),
+        nrow = n_row,
+        ncol = n_col
+      )
+    } else {
+      .check_dims(cell_col_alpha, x, "cell_col_alpha")
+      alpha_mat <- as.matrix(cell_col_alpha)
+    }
+    cell_alpha <- alpha_mat[cell_ind]
+  } else {
+    cell_alpha <- cell_col_alpha
+  }
+
+  # COLOURS - PACKED INTEGERS (AS THE GRAPHICS ENGINE STORES THEM, SO RASTER
+  # IMAGES TAKE THEM AS THEY ARE), WRITTEN AS "#RRGGBBAA" ONCE PER COLOUR
+  cell_packed <- integer(length(cell_row))
   ind <- cell_num & !cell_missing
   # POSITIONS OF VALUES ALONG THE COLOUR SCALE [0,1]
   col_k <- function(v) {
@@ -1766,24 +1785,28 @@ heat_map <- function(x,
   if(any(ind)) {
     k <- col_k(cell_num_val[ind])
     if(is.null(unc_mat)) {
-      cell_fill[ind] <- .ramp_colours(k, cell_col_scale)
+      cell_packed[ind] <- .ramp_packed(k, cell_col_scale)
     } else {
       # FEWER, GREYER COLOURS FOR MORE UNCERTAIN VALUES
-      cell_fill[ind] <- .vsup_colour(
-        k,
-        .uncertainty_level(unc_mat[cell_ind][ind], unc_breaks),
-        length(unc_breaks) + 1,
-        cell_col_scale
+      cell_packed[ind] <- .native_colours(
+        .vsup_colour(
+          k,
+          .uncertainty_level(unc_mat[cell_ind][ind], unc_breaks),
+          length(unc_breaks) + 1,
+          cell_col_scale
+        )
       )
     }
   }
   ind <- !cell_num & !cell_missing
   if(any(ind)) {
-    cell_fill[ind] <- names(cell_levels)[
+    cell_packed[ind] <- .native_colours(names(cell_levels))[
       match(cell_chr_val[ind], cell_levels)
     ]
   }
-  cell_fill[cell_missing] <- cell_col_empty
+  cell_packed[cell_missing] <- .native_colours(cell_col_empty)
+  cell_packed <- .alpha_packed(cell_packed, cell_alpha)
+  cell_fill <- packed_strings_cpp(cell_packed, TRUE)
 
   # LOWER RIGHT HALVES OF SPLIT CELLS - NA LEAVES A CELL WHOLE
   split_fill <- NULL
@@ -1798,30 +1821,6 @@ heat_map <- function(x,
       )
     }
     split_fill[cell_num & is.na(split_val)] <- cell_col_empty
-  }
-
-  # TRANSPARENCY - SINGLE VALUE OR ONE VALUE PER CELL IN THE ORIGINAL DATA
-  # (VECTORS ARE RECYCLED DOWN THE COLUMNS OF x LIKE matrix())
-  if(length(cell_col_alpha) > 1) {
-    if(is.null(dim(cell_col_alpha))) {
-      alpha_mat <- matrix(
-        rep_len(as.numeric(cell_col_alpha), n_row * n_col),
-        nrow = n_row,
-        ncol = n_col
-      )
-    } else {
-      .check_dims(cell_col_alpha, x, "cell_col_alpha")
-      alpha_mat <- as.matrix(cell_col_alpha)
-    }
-    cell_alpha <- alpha_mat[cell_ind]
-  } else {
-    cell_alpha <- cell_col_alpha
-  }
-  cell_fill <- rep_len(
-    .alpha_col(cell_fill, cell_alpha),
-    length(cell_fill)
-  )
-  if(!is.null(split_fill)) {
     ok <- !is.na(split_fill)
     split_fill[ok] <- .alpha_col(
       split_fill[ok],
@@ -2598,7 +2597,8 @@ heat_map <- function(x,
                 !is.unsorted(x_centers, strictly = TRUE) &&
                 !is.unsorted(y_centers, strictly = TRUE)) {
         c(n_row, n_col)
-      }
+      },
+      packed = cell_packed
     )
   } else {
     .draw_cells(

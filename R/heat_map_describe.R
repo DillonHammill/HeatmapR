@@ -354,10 +354,8 @@ as.character.heat_map_description <- function(x,
   out <- character(0)
   lim <- info$col_limits
   if(length(lim) == 2) {
-    ramp <- .col_scale(arg("cell_col_scale"))
-    rgb_mat <- ramp(c(0, 0.5, 1))
     names <- .colour_name(
-      rgb(rgb_mat[, 1], rgb_mat[, 2], rgb_mat[, 3], maxColorValue = 255)
+      .ramp_colours(c(0, 0.5, 1), .col_scale(arg("cell_col_scale")))
     )
     what <- .describe_text(arg("legend_title"))
     path <- if(names[2] %in% names[c(1, 3)]) {

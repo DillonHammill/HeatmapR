@@ -6,9 +6,26 @@ ramp_rgb <- function(k, colours) {
   grDevices::rgb(m[, 1], m[, 2], m[, 3], maxColorValue = 255)
 }
 
+# The same colours - on macOS, where R's own interpolation fuses multiplies
+# and adds (rounding once), a channel at the edge of a whole number can be
+# one step away
+expect_same_colours <- function(ours, theirs) {
+  if(identical(Sys.info()[["sysname"]], "Darwin")) {
+    a <- grDevices::col2rgb(ours, alpha = TRUE)
+    b <- grDevices::col2rgb(theirs, alpha = TRUE)
+    expect_lte(max(abs(a - b)), 1)
+    expect_identical(nchar(ours), nchar(theirs))
+  } else {
+    expect_identical(ours, theirs)
+  }
+}
+
 test_that("ramp colours are those of colorRamp() and rgb()", {
   set.seed(1)
-  k <- c(0, 1, 0.5, runif(2000), seq(0, 1, length.out = 101), (0:29) / 29)
+  # (3/29 TAKES THE DEFAULT SCALE TO 66.999999999999986 GREEN, WHICH A FUSED
+  # MULTIPLY-ADD ROUNDS UP TO 67)
+  k <- c(0, 1, 0.5, runif(5000), seq(0, 1, length.out = 1001), (0:29) / 29,
+         (0:99) / 99)
   palettes <- list(
     .default_col_scale(),
     c("navy", "white", "firebrick"),
@@ -18,45 +35,71 @@ test_that("ramp colours are those of colorRamp() and rgb()", {
   )
   for (colours in palettes) {
     scale <- .col_scale(colours)
-    expect_identical(.ramp_colours(k, scale), ramp_rgb(k, colours))
-    expect_identical(
+    expect_false(is.null(attr(scale, "ramp")))
+    expect_same_colours(.ramp_colours(k, scale), ramp_rgb(k, colours))
+    expect_same_colours(
       .ramp_colours(k, scale, alpha = 0.4),
-      .alpha_col(ramp_rgb(k, colours), 0.4)
+      grDevices::adjustcolor(ramp_rgb(k, colours), 0.4)
     )
   }
   # PALETTE NAMES, A SINGLE POSITION AND NOTHING TO COLOUR
-  expect_identical(
+  expect_same_colours(
     .ramp_colours(k, .col_scale("viridis")),
     ramp_rgb(k, grDevices::hcl.colors(100, "viridis"))
   )
   expect_identical(.ramp_colours(0.3, .col_scale(c("blue", "yellow"))),
                    ramp_rgb(0.3, c("blue", "yellow")))
   expect_identical(.ramp_colours(numeric(0), .col_scale()), character(0))
-  # RAMPS WITH AN ALPHA CHANNEL - ITS RED, GREEN AND BLUE
+  # POSITIONS OFF THE RAMP GO TO colorRamp() AND rgb(), WHICH REPORT THEM
+  expect_null(ramp_packed_cpp(c(0.5, 1.5), c(0, 1), diag(2)[, c(1, 2, 2)]))
+  expect_error(.ramp_colours(c(0.5, NA), .col_scale()), "not in 0:255")
+  expect_error(ramp_packed_cpp(0.5, 0, matrix(0, 1, 3)), "two colours")
+  # SCALES OF THE USER'S - THEIR INTENSITIES TRUNCATED AS rgb() DOES, AND
+  # THE RED, GREEN AND BLUE OF RAMPS WITH AN ALPHA CHANNEL
   f <- grDevices::colorRamp(c("#FF000000", "#0000FFFF"), alpha = TRUE)
   expect_identical(.ramp_colours(c(0, 0.5), f), ramp_rgb(c(0, 0.5), c("red", "blue")))
-  # INTENSITIES rgb() WOULD REJECT ARE LEFT TO rgb()
+  g <- function(k) cbind(k * 255, 255 - k * 255, 100.999999)
+  expect_identical(.ramp_colours(k, g), grDevices::rgb(g(k), maxColorValue = 255))
+  expect_identical(.ramp_colours(0.5, function(k) c(-0.5, 255.9, 7)), "#00FF07")
   expect_error(.ramp_colours(0.5, function(k) cbind(k * 600, 0, 0)), "not in 0:255")
-  expect_null(rgb_strings_cpp(cbind(c(10, NA), 0, 0), -1L))
-  expect_identical(rgb_strings_cpp(cbind(c(-0.5, 255.9), 0, 0), 16L), c("#00000010", "#FF000010"))
-  expect_error(rgb_strings_cpp(cbind(1, 2, 3), 300L), "alpha")
+  expect_null(rgb_packed_cpp(cbind(c(10, NA), 0, 0)))
 })
 
-test_that("alpha channels are appended as adjustcolor() writes them", {
-  col <- c("#a1b2c3", "#FFFFFF", NA, "red", "#12345678", "transparent", "#ABCDEF")
-  for (alpha in c(0, 0.25, 1)) {
+test_that("transparency is applied as adjustcolor() applies it", {
+  col <- c("#a1b2c3", "#FFFFFF", NA, "red", "#12345678", "transparent", "#ABCDEF",
+           "#000000", "black", 2, "#FEDCBA00")
+  for (alpha in c(0, 0.25, 0.5, 1, 1 / 3, 0.999, 1.5, -1)) {
     expected <- vapply(col, function(z) grDevices::adjustcolor(z, alpha), character(1),
                        USE.NAMES = FALSE)
     expect_identical(.alpha_col(col, alpha), expected, info = alpha)
   }
-  expect_identical(alpha_hex_cpp(c("#abcdef", "red"), 128L), c("#ABCDEF80", NA))
-  expect_error(alpha_hex_cpp("#abcdef", -1L), "alpha")
-  # ONE ALPHA PER COLOUR
+  # EVERY ALPHA CHANNEL AND MANY TRANSPARENCIES
+  set.seed(3)
+  col <- sprintf("#102030%02X", 0:255)
+  for (alpha in c(runif(40), (0:100) / 100)) {
+    expect_identical(.alpha_col(col, alpha), grDevices::adjustcolor(col, alpha))
+  }
+  # ONE ALPHA PER COLOUR, RECYCLED TOGETHER
+  alpha <- runif(256)
   expect_identical(
-    .alpha_col(c("#112233", "blue"), c(0.5, 1)),
-    c(grDevices::adjustcolor("#112233", 0.5), grDevices::adjustcolor("blue", 1))
+    .alpha_col(col, alpha),
+    mapply(grDevices::adjustcolor, col, alpha, USE.NAMES = FALSE)
   )
+  expect_identical(
+    .alpha_col("blue", c(0.5, 1)),
+    c(grDevices::adjustcolor("blue", 0.5), grDevices::adjustcolor("blue", 1))
+  )
+  expect_identical(.alpha_col(c(a = "red"), TRUE), "#FF0000FF")
   expect_identical(.alpha_col(character(0)), character(0))
+  # MISSING TRANSPARENCY, AS adjustcolor() REPORTS IT
+  expect_error(.alpha_col("red", NA), "alpha level NA")
+  expect_identical(.alpha_col("red", Inf), grDevices::adjustcolor("red", Inf))
+  expect_error(.alpha_col("transparent", Inf), "alpha level")
+  expect_error(.alpha_col("red", numeric(0)), "at least one value")
+  # STRINGS OF PACKED COLOURS - NA_integer_ IS "#00000080"
+  expect_identical(packed_strings_cpp(c(NA, 0L, -1L, 255L), TRUE),
+                   c("#00000080", "#00000000", "#FFFFFFFF", "#FF000000"))
+  expect_identical(packed_strings_cpp(c(NA, 255L), FALSE), c("#000000", "#FF0000"))
 })
 
 test_that("colours are packed as the graphics engine stores them", {
@@ -67,7 +110,15 @@ test_that("colours are packed as the graphics engine stores them", {
   packed <- ifelse(packed >= 2^31, packed - 2^32, packed)
   expect_identical(.native_colours(col[-8]), as.integer(packed))
   expect_error(.native_colours("#GGGGGG"), "invalid")
-  expect_identical(native_colours_cpp(c("#000000", "red")), c(-16777216L, NA))
+  expect_identical(
+    native_colours_cpp(c("#000000", "red", "#FFFFFF00", "blue")),
+    structure(c(-16777216L, 16777215L, 16777215L, 16777215L), other = c(2, 4))
+  )
+  # "#00000080" HAS THE BITS OF NA_integer_
+  expect_identical(.native_colours(c("#00000080", "grey50")), c(NA, -8421505L))
+  expect_identical(.native_colours(grDevices::adjustcolor("black", 0.5)), NA_integer_)
+  expect_identical(pack_channels_cpp(grDevices::col2rgb("#00000080", alpha = TRUE)),
+                   NA_integer_)
   # A nativeRaster stores its pixels row by row
   m <- matrix(1:6, 2)
   r <- .native_raster(m)

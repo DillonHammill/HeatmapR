@@ -81,9 +81,7 @@ heat_map_legend <- function(col = NULL,
   }
 
   # LEGENDS SIZED FROM THEIR CONTENTS - BESIDE OR BELOW THE HEATMAP
-  if(!is.function(col_scale)) {
-    col_scale <- colorRamp(col_scale)
-  }
+  col_scale <- .col_scale(col_scale)
   draw_fit <- if(identical(geom$orientation, "bottom")) {
     function(blocks, xlim, ylim, upi, side, ...) {
       .heat_map_legend_bottom(blocks, ...)
@@ -480,11 +478,7 @@ heat_map_legend <- function(col = NULL,
       if(!is.null(b$breaks)) {
         box_k <- .col_k(b$limits[1] + box_k * diff(b$limits), b$limits, b$breaks)
       }
-      cols <- b$ramp(box_k)
-      cols <- adjustcolor(
-        rgb(cols[, 1], cols[, 2], cols[, 3], maxColorValue = 255),
-        b$alpha
-      )
+      cols <- .ramp_colours(box_k, b$ramp, alpha = b$alpha)
       rect(
         xleft = kx[1],
         ybottom = box_y[-length(box_y)],
@@ -796,11 +790,7 @@ heat_map_legend <- function(col = NULL,
       if(!is.null(b$breaks)) {
         k <- .col_k(b$limits[1] + k * diff(b$limits), b$limits, b$breaks)
       }
-      cols <- b$ramp(k)
-      cols <- adjustcolor(
-        rgb(cols[, 1], cols[, 2], cols[, 3], maxColorValue = 255),
-        b$alpha
-      )
+      cols <- .ramp_colours(k, b$ramp, alpha = b$alpha)
       rect(X(edges[-length(edges)]), Y(by[1]), X(edges[-1]), Y(by[2]),
            col = cols, border = cols, xpd = NA)
       rect(X(bx[1]), Y(by[1]), X(bx[2]), Y(by[2]), xpd = NA)
