@@ -12,8 +12,7 @@ struct Tree {
   std::vector<int> order;
 };
 
-Tree nn_chain(const double* D, int n, int method, const double* members,
-              double max_bytes);
+Tree nn_chain(const double* D, int n, int method, const double* members);
 void hclust_form(Tree& tree);
 cpp11::writable::list tree_list(const Tree& tree);
 

@@ -27,17 +27,17 @@ extern "C" SEXP _HeatmapR_native_colours_cpp(SEXP col) {
   END_CPP11
 }
 // linkage.cpp
-cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members, double max_bytes);
-extern "C" SEXP _HeatmapR_hclust_cpp(SEXP d, SEXP n, SEXP method, SEXP members, SEXP max_bytes) {
+cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members);
+extern "C" SEXP _HeatmapR_hclust_cpp(SEXP d, SEXP n, SEXP method, SEXP members) {
   BEGIN_CPP11
-    return cpp11::as_sexp(hclust_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(d), cpp11::as_cpp<cpp11::decay_t<int>>(n), cpp11::as_cpp<cpp11::decay_t<int>>(method), cpp11::as_cpp<cpp11::decay_t<SEXP>>(members), cpp11::as_cpp<cpp11::decay_t<double>>(max_bytes)));
+    return cpp11::as_sexp(hclust_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(d), cpp11::as_cpp<cpp11::decay_t<int>>(n), cpp11::as_cpp<cpp11::decay_t<int>>(method), cpp11::as_cpp<cpp11::decay_t<SEXP>>(members)));
   END_CPP11
 }
 // linkage.cpp
-cpp11::list hclust_rows_cpp(cpp11::doubles_matrix<> x, int metric, double q, int method, double max_bytes);
-extern "C" SEXP _HeatmapR_hclust_rows_cpp(SEXP x, SEXP metric, SEXP q, SEXP method, SEXP max_bytes) {
+cpp11::list hclust_rows_cpp(cpp11::doubles_matrix<> x, int metric, double q, int method);
+extern "C" SEXP _HeatmapR_hclust_rows_cpp(SEXP x, SEXP metric, SEXP q, SEXP method) {
   BEGIN_CPP11
-    return cpp11::as_sexp(hclust_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(method), cpp11::as_cpp<cpp11::decay_t<double>>(max_bytes)));
+    return cpp11::as_sexp(hclust_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(method)));
   END_CPP11
 }
 // linkage.cpp
@@ -138,17 +138,25 @@ extern "C" SEXP _HeatmapR_hash_cpp(SEXP x) {
     return cpp11::as_sexp(hash_cpp(cpp11::as_cpp<cpp11::decay_t<SEXP>>(x)));
   END_CPP11
 }
+// tree.cpp
+cpp11::logicals clade_in_cpp(cpp11::doubles_matrix<> keys, cpp11::doubles_matrix<> other);
+extern "C" SEXP _HeatmapR_clade_in_cpp(SEXP keys, SEXP other) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(clade_in_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(keys), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(other)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_alpha_hex_cpp",         (DL_FUNC) &_HeatmapR_alpha_hex_cpp,         2},
     {"_HeatmapR_apply_order_cpp",       (DL_FUNC) &_HeatmapR_apply_order_cpp,       2},
     {"_HeatmapR_clade_hash_cpp",        (DL_FUNC) &_HeatmapR_clade_hash_cpp,        2},
+    {"_HeatmapR_clade_in_cpp",          (DL_FUNC) &_HeatmapR_clade_in_cpp,          2},
     {"_HeatmapR_cluster_groups_cpp",    (DL_FUNC) &_HeatmapR_cluster_groups_cpp,    5},
     {"_HeatmapR_group_medoids_cpp",     (DL_FUNC) &_HeatmapR_group_medoids_cpp,     4},
     {"_HeatmapR_hash_cpp",              (DL_FUNC) &_HeatmapR_hash_cpp,              1},
-    {"_HeatmapR_hclust_cpp",            (DL_FUNC) &_HeatmapR_hclust_cpp,            5},
-    {"_HeatmapR_hclust_rows_cpp",       (DL_FUNC) &_HeatmapR_hclust_rows_cpp,       5},
+    {"_HeatmapR_hclust_cpp",            (DL_FUNC) &_HeatmapR_hclust_cpp,            4},
+    {"_HeatmapR_hclust_rows_cpp",       (DL_FUNC) &_HeatmapR_hclust_rows_cpp,       4},
     {"_HeatmapR_mean_order_cpp",        (DL_FUNC) &_HeatmapR_mean_order_cpp,        2},
     {"_HeatmapR_merge_order_cpp",       (DL_FUNC) &_HeatmapR_merge_order_cpp,       3},
     {"_HeatmapR_merge_sizes_cpp",       (DL_FUNC) &_HeatmapR_merge_sizes_cpp,       1},

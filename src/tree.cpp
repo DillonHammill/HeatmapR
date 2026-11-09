@@ -8,7 +8,10 @@
 #include <cpp11.hpp>
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <string>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "tree.h"
@@ -343,4 +346,28 @@ std::string hash_cpp(SEXP x) {
   }
   buf[16] = '\0';
   return std::string(buf);
+}
+
+// Whether each row of keys (two sums per clade, from clade_hash_cpp()) is a
+// row of other - the clades of a tree found in another tree
+[[cpp11::register]]
+cpp11::logicals clade_in_cpp(cpp11::doubles_matrix<> keys,
+                             cpp11::doubles_matrix<> other) {
+  struct PairHash {
+    size_t operator()(const std::pair<double, double>& p) const {
+      std::hash<double> h;
+      return h(p.first) * 1000003u ^ h(p.second);
+    }
+  };
+  int nk = keys.nrow(), no = other.nrow();
+  const double* k = REAL(keys.data());
+  const double* o = REAL(other.data());
+  std::unordered_set<std::pair<double, double>, PairHash> found;
+  found.reserve(static_cast<size_t>(no) * 2);
+  for (int i = 0; i < no; ++i) found.emplace(o[i], o[i + no]);
+  cpp11::writable::logicals out(nk);
+  for (int i = 0; i < nk; ++i) {
+    out[i] = found.count(std::make_pair(k[i], k[i + nk])) ? TRUE : FALSE;
+  }
+  return out;
 }

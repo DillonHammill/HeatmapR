@@ -12,12 +12,12 @@ native_colours_cpp <- function(col) {
   .Call(`_HeatmapR_native_colours_cpp`, col)
 }
 
-hclust_cpp <- function(d, n, method, members, max_bytes) {
-  .Call(`_HeatmapR_hclust_cpp`, d, n, method, members, max_bytes)
+hclust_cpp <- function(d, n, method, members) {
+  .Call(`_HeatmapR_hclust_cpp`, d, n, method, members)
 }
 
-hclust_rows_cpp <- function(x, metric, q, method, max_bytes) {
-  .Call(`_HeatmapR_hclust_rows_cpp`, x, metric, q, method, max_bytes)
+hclust_rows_cpp <- function(x, metric, q, method) {
+  .Call(`_HeatmapR_hclust_rows_cpp`, x, metric, q, method)
 }
 
 cluster_groups_cpp <- function(x, groups, metric, q, method) {
@@ -74,4 +74,8 @@ olo_blocks_cpp <- function(merge, max) {
 
 hash_cpp <- function(x) {
   .Call(`_HeatmapR_hash_cpp`, x)
+}
+
+clade_in_cpp <- function(keys, other) {
+  .Call(`_HeatmapR_clade_in_cpp`, keys, other)
 }

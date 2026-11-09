@@ -127,32 +127,12 @@ inline double row_dist(const double* a, const double* b, int p, int metric,
 // Tile size for building full matrices
 const size_t B = 64;
 
-// A full matrix (rows contiguous, so scanning a row for a nearest neighbour
-// reads memory in order), built a tile at a time so that both halves are
-// written to memory close together
+// A full matrix of the distances between a few rows (medoids, a group), built
+// a tile at a time so that both halves are written to memory close together
 struct FullMatrix {
   std::vector<double> F;
   size_t N;
   explicit FullMatrix(size_t n) : F(n * n, 0.0), N(n) {}
-  // FROM THE LOWER TRIANGLE OF A dist OBJECT
-  FullMatrix(const double* D, size_t n) : FullMatrix(n) {
-    std::vector<size_t> col(n);
-    for (size_t j = 0, off = 0; j < n; ++j) {
-      col[j] = off;
-      off += n - j - 1;
-    }
-    for (size_t jb = 0; jb < n; jb += B) {
-      size_t je = std::min(n, jb + B);
-      for (size_t ib = jb; ib < n; ib += B) {
-        size_t ie = std::min(n, ib + B);
-        for (size_t j = jb; j < je; ++j) {
-          for (size_t i = std::max(ib, j + 1); i < ie; ++i) {
-            set(static_cast<int>(i), static_cast<int>(j), D[col[j] + (i - j - 1)]);
-          }
-        }
-      }
-    }
-  }
   // FROM ROWS
   FullMatrix(const Rows& r, int metric, double q) : FullMatrix(r.n) {
     size_t n = r.n;
@@ -180,7 +160,9 @@ struct FullMatrix {
   }
 };
 
-// The lower triangle only, for many leaves
+// The lower triangle of the distances, as in a dist object: the linkage
+// reads and updates it in place (as fast as a full matrix, in half the
+// memory)
 struct Triangle {
   std::vector<double> D;
   size_t N;
@@ -204,11 +186,6 @@ struct Triangle {
     for (double& v : D) v *= v;
   }
 };
-
-// A full matrix up to max_bytes (512 MB from R)
-bool fits_full(int n, double max_bytes) {
-  return static_cast<double>(n) * n * sizeof(double) <= max_bytes;
-}
 
 // LINKAGE ------------------------------------------------------------------
 
@@ -314,32 +291,22 @@ Tree nn_chain_impl(M& d, int n, int method, const double* init) {
 
 // Cluster n leaves from the lower triangle of their distances (as in a dist
 // object)
-Tree nn_chain(const double* D, int n, int method, const double* members,
-              double max_bytes) {
+Tree nn_chain(const double* D, int n, int method, const double* members) {
   Tree tree;
   tree.n = n;
   if (n < 2) {
     return tree;
-  }
-  if (fits_full(n, max_bytes)) {
-    FullMatrix full(D, n);
-    return nn_chain_impl(full, n, method, members);
   }
   Triangle tri(D, n);
   return nn_chain_impl(tri, n, method, members);
 }
 
 // Cluster rows, computing their distances here
-Tree nn_chain_rows(const Rows& rows, int metric, double q, int method,
-                   double max_bytes) {
+Tree nn_chain_rows(const Rows& rows, int metric, double q, int method) {
   Tree tree;
   tree.n = rows.n;
   if (rows.n < 2) {
     return tree;
-  }
-  if (fits_full(rows.n, max_bytes)) {
-    FullMatrix full(rows, metric, q);
-    return nn_chain_impl(full, rows.n, method, nullptr);
   }
   Triangle tri(rows, metric, q);
   return nn_chain_impl(tri, rows.n, method, nullptr);
@@ -413,10 +380,9 @@ cpp11::writable::list tree_list(const Tree& tree) {
 }
 
 [[cpp11::register]]
-cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members,
-                       double max_bytes) {
+cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members) {
   const double* m = Rf_isNull(members) ? nullptr : REAL(members);
-  Tree tree = nn_chain(REAL(d), n, method, m, max_bytes);
+  Tree tree = nn_chain(REAL(d), n, method, m);
   hclust_form(tree);
   return tree_list(tree);
 }
@@ -424,9 +390,9 @@ cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members,
 // The rows of x clustered, their distances computed here (see row_dist())
 [[cpp11::register]]
 cpp11::list hclust_rows_cpp(cpp11::doubles_matrix<> x, int metric, double q,
-                            int method, double max_bytes) {
+                            int method) {
   Rows rows = gather_rows(REAL(x.data()), x.nrow(), x.ncol(), nullptr, x.nrow());
-  Tree tree = nn_chain_rows(rows, metric, q, method, max_bytes);
+  Tree tree = nn_chain_rows(rows, metric, q, method);
   hclust_form(tree);
   return tree_list(tree);
 }
@@ -444,7 +410,7 @@ cpp11::list cluster_groups_cpp(cpp11::doubles_matrix<> x, cpp11::list groups,
     cpp11::check_user_interrupt();
     cpp11::integers idx(groups[g]);
     Rows rows = gather_rows(xv, n, p, INTEGER(idx), static_cast<int>(idx.size()));
-    Tree tree = nn_chain_rows(rows, metric, q, method, 512.0 * 1024 * 1024);
+    Tree tree = nn_chain_rows(rows, metric, q, method);
     hclust_form(tree);
     out[g] = tree_list(tree);
   }

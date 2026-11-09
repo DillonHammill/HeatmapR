@@ -91,10 +91,11 @@
   data <- as.matrix(data)
   n <- nrow(data)
   w <- .leaf_weights(n)
-  keys <- .clade_hash(tree$merge, w)
+  # (CLADES AS TWO EXACT SUMS - COMPARED AS NUMBERS IN COMPILED CODE)
+  keys <- clade_hash_cpp(.int_merge(tree$merge), w)
   # FIXED SEED - THE CALLER'S RANDOM NUMBER GENERATOR IS RESTORED
   hits <- .with_seed(1066, {
-    hits <- numeric(length(keys))
+    hits <- numeric(nrow(keys))
     for(b in seq_len(B)) {
       xb <- data[, sample.int(ncol(data), replace = TRUE), drop = FALSE]
       hb <- if(is.null(groups)) {
@@ -102,7 +103,7 @@
       } else {
         .group_tree(xb, groups = groups, dist = dist, method = method, ...)
       }
-      hits <- hits + (keys %in% .clade_hash(hb$merge, w))
+      hits <- hits + clade_in_cpp(keys, clade_hash_cpp(.int_merge(hb$merge), w))
     }
     hits
   })
