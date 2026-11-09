@@ -94,6 +94,7 @@ HeatmapR 2.0.0 is a major release: a new layout that sizes every part of a heatm
 
 ## Other improvements
 
+* A new logo, drawn by HeatmapR itself: a clustered heatmap in the new default colours, with the name written in one of its cells (`data-raw/logo.R` draws it).
 * Layouts adapt to the space available instead of overlapping. Text is measured on the device and:
   - axis, cell and cluster label text is shrunk when it would overlap (`fit_text = TRUE`), and axis labels that still don't fit at half size are thinned to every second, third, ... label;
   - cluster label strips are sized to fit their text (previously 0.1 cells, so they vanished on larger heatmaps);
