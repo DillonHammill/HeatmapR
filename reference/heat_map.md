@@ -232,20 +232,20 @@ heat_map(
   the largest number of rows (or columns) clustered exactly, set to 5000
   by default. Exact clustering needs the distances between every pair of
   rows, so its memory and time grow with the square of their number
-  (about 400 MB and 3 seconds for 10,000 rows). Larger margins are
-  clustered in two stages: a sample of `clust_max` rows is clustered
-  exactly, its dendrogram is split into groups, every row joins the
-  group of its nearest group medoid and each group is clustered exactly
-  beneath the sample's dendrogram (see
+  (about 400 MB and 1.2 seconds on two cores for 10,000 rows). Larger
+  margins are clustered in two stages: a sample of `clust_max` rows is
+  clustered exactly, its dendrogram is split into groups, every row
+  joins the group of its nearest group medoid and each group is
+  clustered exactly beneath the sample's dendrogram (see
   [`heat_map_clust`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)).
-  100,000 rows take about 2 seconds. Branch support (`tree_support_x`,
-  `tree_support_y`) is only computed for up to `clust_max` rows or
-  columns. Set to `Inf` to always cluster exactly. Rows or columns
-  grouped by `tree_cut_x` or `tree_cut_y` (or `tree_kmeans_x`,
-  `tree_kmeans_y`) are clustered within each group, and the groups share
-  the limit in proportion to their size (at least 50 rows each), so
-  grouped clustering takes no longer than clustering all the rows at
-  once.
+  100,000 rows take about half a second. Branch support
+  (`tree_support_x`, `tree_support_y`) is only computed for up to
+  `clust_max` rows or columns. Set to `Inf` to always cluster exactly.
+  Rows or columns grouped by `tree_cut_x` or `tree_cut_y` (or
+  `tree_kmeans_x`, `tree_kmeans_y`) are clustered within each group, and
+  the groups share the limit in proportion to their size (at least 50
+  rows each), so grouped clustering takes no longer than clustering all
+  the rows at once.
 
 - round:
 
@@ -465,14 +465,16 @@ heat_map(
   number of k-means clusters to split the rows of `x` into, an
   alternative to `tree_cut_y` that is quick for many rows (e.g.
   `tree_kmeans_y = 4`). The rows are clustered on the numeric columns of
-  `x` after scaling, starting from the centres of equal slices of the
-  rows along their first principal component, so the clusters don't
-  depend on the random seed. The clusters are ordered so that similar
-  clusters are neighbours (optimal leaf order of their centres) and then
-  act like groups supplied to `tree_cut_y`: with a dendrogram
-  (`tree_y = TRUE`) the rows are clustered within each k-means cluster,
-  and `tree_split_y` and `tree_label_y` separate and label the clusters.
-  Missing values are replaced by the mean of their column for k-means.
+  `x` after scaling (by the Hartigan-Wong algorithm, giving the clusters
+  [`stats::kmeans()`](https://rdrr.io/r/stats/kmeans.html) gives, in
+  compiled code), starting from the centres of equal slices of the rows
+  along their first principal component, so the clusters don't depend on
+  the random seed. The clusters are ordered so that similar clusters are
+  neighbours (optimal leaf order of their centres) and then act like
+  groups supplied to `tree_cut_y`: with a dendrogram (`tree_y = TRUE`)
+  the rows are clustered within each k-means cluster, and `tree_split_y`
+  and `tree_label_y` separate and label the clusters. Missing values are
+  replaced by the mean of their column for k-means.
   `heat_map_info()$row_clusters` returns the clusters.
 
 - tree_split_y:

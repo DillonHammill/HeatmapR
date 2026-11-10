@@ -57,11 +57,11 @@
 
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>matrix-like object to cluster - its numeric columns. Distances and
-linkage are computed in compiled code (with <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> and
-<code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code> for the methods it doesn't cover). With a
-supplied <code>hclust</code> object and <code>order</code>, the rows of <code>x</code> (or
-its columns when they don't match) are the leaves of the tree.</p></dd>
+<dd><p>matrix-like object to cluster - its numeric columns. Distances,
+linkage and cuts are computed in compiled code (only a distance function
+supplied to <code>dist</code> runs in R). With a supplied <code>hclust</code> object
+and <code>order</code>, the rows of <code>x</code> (or its columns when they don't
+match) are the leaves of the tree.</p></dd>
 
 
 <dt id="arg-tree">tree<a class="anchor" aria-label="anchor" href="#arg-tree"></a></dt>
@@ -128,7 +128,7 @@ clustered exactly and its dendrogram split into groups of about 200 rows
 of the data, every row joins the group of its nearest group medoid, and
 each group is clustered exactly beneath the sample's dendrogram. The
 dendrogram then shows the structure of the whole data down to the groups,
-and within each group: 100,000 rows take about 2 seconds. Set to
+and within each group: 100,000 rows take about half a second. Set to
 <code>Inf</code> to always cluster exactly.</p></dd>
 
 
@@ -150,17 +150,23 @@ sample and the number of groups.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Single, complete, average, McQuitty and Ward linkage are computed
-by the nearest-neighbour chain algorithm, which builds the same tree as
-<code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code> when the distances are distinct. When
-distances are tied (common for integer, binary or rounded data), more
-than one tree is correct and the two can choose differently between tied
-merges, so the tree - and the branches above the tied merges - can
-differ from the one <code>hclust</code> returns while being equally valid.
-Centroid and median linkage use <code>hclust</code> itself. Missing and
-infinite values are left out of the distances between rows (as
-<code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> leaves out missing values); rows that share
-no values can't be clustered.</p>
+    <p>Distances are computed as <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> and
+<code><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></code> compute them. Missing and infinite values are
+left out of each pair of rows: sums over the remaining values are scaled
+up to all the columns (as <code>dist</code> scales them) and correlations use
+the values both rows have (as <code>cor(use =
+"pairwise.complete.obs")</code>; Spearman's ranks the values of each pair);
+rows that share no values can't be clustered. Single linkage is computed
+from a minimum spanning tree (Prim's algorithm, which needs no matrix of
+distances) and centroid and median linkage by <code>hclust</code>'s own
+algorithm, both giving the tree <code>hclust</code> gives. Complete, average,
+McQuitty and Ward linkage are computed by the nearest-neighbour chain
+algorithm, which builds the same tree as <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code>
+when the distances are distinct. When distances are tied (common for
+integer, binary or rounded data), more than one tree is correct and the
+two can choose differently between tied merges, so the tree - and the
+branches above the tied merges - can differ from the one <code>hclust</code>
+returns while being equally valid.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>

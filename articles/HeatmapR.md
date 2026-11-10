@@ -417,22 +417,22 @@ neither.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa
 
 Clustering is the slow part of a large heatmap. It needs the distance
 between every pair of rows, so exact clustering of 10,000 rows takes
-about 3 seconds and 400 MB of memory, and four times as much for twice
-the rows. Rows (or columns) beyond `clust_max`, 5000 by default, are
-clustered in two stages instead. A sample of 5000 rows is clustered
-exactly and its dendrogram is split into groups of about 200 rows, every
-row joins the group whose medoid it is closest to, and each group is
-clustered on its own beneath the sample’s dendrogram. The sample is
-drawn with a fixed seed, so the dendrogram is the same each time. The
-dendrogram shows the structure of the data down to the groups and within
-each group, and 100,000 rows take about 2 seconds. `clust_max = Inf`
-always clusters exactly, and
+about 1.2 seconds on two cores and 400 MB of memory, and four times as
+much for twice the rows. Rows (or columns) beyond `clust_max`, 5000 by
+default, are clustered in two stages instead. A sample of 5000 rows is
+clustered exactly and its dendrogram is split into groups of about 200
+rows, every row joins the group whose medoid it is closest to, and each
+group is clustered on its own beneath the sample’s dendrogram. The
+sample is drawn with a fixed seed, so the dendrogram is the same each
+time. The dendrogram shows the structure of the data down to the groups
+and within each group, and 100,000 rows take about half a second.
+`clust_max = Inf` always clusters exactly, and
 [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
 takes the same limit as `max`. Branch support is only computed for up to
 `clust_max` rows or columns, and optimal leaf ordering
 (`tree_order_y = "olo"`) is exact for up to 4000 rows (0.3 seconds) and
-orders blocks of larger dendrograms. Distances, linkage and leaf
-ordering run in compiled C++ code.
+orders blocks of larger dendrograms. Distances, linkage, cuts, k-means
+and leaf ordering run in compiled C++ code.
 
 ``` r
 

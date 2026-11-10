@@ -46,11 +46,12 @@ these layout issues using solely a base graphics approach.
 - **HeatmapR** handles datasets that contain non-numeric or missing
   data, which means you don’t have to spend ages formatting and
   pre-processing the data beforehand.
-- **HeatmapR** clusters large datasets quickly: distances, linkage and
-  optimal leaf ordering run in compiled C++ code shared between threads
+- **HeatmapR** clusters large datasets quickly: distances, linkage,
+  cuts, k-means and optimal leaf ordering run in compiled C++ code
+  shared between threads
   ([`heat_map_threads()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.md)),
   and rows or columns beyond `clust_max` are clustered in two stages, so
-  100,000 rows take about 2 seconds on two cores.
+  100,000 rows take about half a second on two cores.
 - **HeatmapR** shows sample or feature metadata as annotation tracks
   (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
   labels and bar plots, and adapts the layout so that labels and legends

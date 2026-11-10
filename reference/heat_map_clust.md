@@ -22,13 +22,11 @@ heat_map_clust(
 
 - x:
 
-  matrix-like object to cluster - its numeric columns. Distances and
-  linkage are computed in compiled code (with
-  [`dist`](https://rdrr.io/r/stats/dist.html) and
-  [`hclust`](https://rdrr.io/r/stats/hclust.html) for the methods it
-  doesn't cover). With a supplied `hclust` object and `order`, the rows
-  of `x` (or its columns when they don't match) are the leaves of the
-  tree.
+  matrix-like object to cluster - its numeric columns. Distances,
+  linkage and cuts are computed in compiled code (only a distance
+  function supplied to `dist` runs in R). With a supplied `hclust`
+  object and `order`, the rows of `x` (or its columns when they don't
+  match) are the leaves of the tree.
 
 - tree:
 
@@ -96,8 +94,8 @@ heat_map_clust(
   data, every row joins the group of its nearest group medoid, and each
   group is clustered exactly beneath the sample's dendrogram. The
   dendrogram then shows the structure of the whole data down to the
-  groups, and within each group: 100,000 rows take about 2 seconds. Set
-  to `Inf` to always cluster exactly.
+  groups, and within each group: 100,000 rows take about half a second.
+  Set to `Inf` to always cluster exactly.
 
 - ...:
 
@@ -118,17 +116,24 @@ groups.
 
 ## Details
 
-Single, complete, average, McQuitty and Ward linkage are computed by the
-nearest-neighbour chain algorithm, which builds the same tree as
+Distances are computed as [`dist`](https://rdrr.io/r/stats/dist.html)
+and [`cor`](https://rdrr.io/r/stats/cor.html) compute them. Missing and
+infinite values are left out of each pair of rows: sums over the
+remaining values are scaled up to all the columns (as `dist` scales
+them) and correlations use the values both rows have (as
+`cor(use = "pairwise.complete.obs")`; Spearman's ranks the values of
+each pair); rows that share no values can't be clustered. Single linkage
+is computed from a minimum spanning tree (Prim's algorithm, which needs
+no matrix of distances) and centroid and median linkage by `hclust`'s
+own algorithm, both giving the tree `hclust` gives. Complete, average,
+McQuitty and Ward linkage are computed by the nearest-neighbour chain
+algorithm, which builds the same tree as
 [`hclust`](https://rdrr.io/r/stats/hclust.html) when the distances are
 distinct. When distances are tied (common for integer, binary or rounded
 data), more than one tree is correct and the two can choose differently
 between tied merges, so the tree - and the branches above the tied
 merges - can differ from the one `hclust` returns while being equally
-valid. Centroid and median linkage use `hclust` itself. Missing and
-infinite values are left out of the distances between rows (as
-[`dist`](https://rdrr.io/r/stats/dist.html) leaves out missing values);
-rows that share no values can't be clustered.
+valid.
 
 ## Author
 
