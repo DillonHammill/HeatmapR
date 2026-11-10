@@ -67,11 +67,94 @@
   invisible(x)
 }
 
+## DISTANCES IN COMPILED CODE -------------------------------------------------
+
+# Every distance heat_map() offers is computed by the compiled code
+# (src/metric.cpp), numbered as there; only a distance function supplied by
+# the user is computed in R.
+.METRIC <- c(
+  euclidean = 1L,
+  manhattan = 2L,
+  maximum = 3L,
+  minkowski = 4L,
+  pearson = 5L,
+  spearman = 6L,
+  cosine = 7L,
+  canberra = 8L,
+  binary = 9L,
+  kendall = 10L
+)
+
+#' The distance as the compiled code computes it
+#'
+#' Missing and non-finite values are left out of each pair of rows, as
+#' \code{stats::dist()} and \code{cor(use = "pairwise.complete.obs")} leave
+#' them out; correlations are one minus the correlation (rows without
+#' variation are uncorrelated with every row).
+#'
+#' @return list with the numeric matrix (\code{x}, unchanged apart from its
+#'   storage), the distance's number (\code{code}), the Minkowski power
+#'   (\code{q}), the name stored with dist objects and trees (\code{name}) and
+#'   whether any value is missing or not finite (\code{missing}); NULL for a
+#'   distance function, non-numeric data or a Minkowski power that
+#'   \code{stats::dist()} rejects.
+#'
+#' @noRd
+.compiled_metric <- function(x,
+                             dist,
+                             ...) {
+  x <- as.matrix(x)
+  if(!is.character(dist) || length(dist) != 1 || !is.numeric(x) ||
+     length(x) == 0) {
+    return(NULL)
+  }
+  method <- tolower(dist)
+  code <- .METRIC[method]
+  if(is.na(code)) {
+    return(NULL)
+  }
+  q <- list(...)$p
+  if(is.null(q)) {
+    q <- 2
+  }
+  if(code == 4L && (!is.numeric(q) || length(q) != 1 || !is.finite(q) ||
+                    q <= 0)) {
+    return(NULL)
+  }
+  if(!is.double(x)) {
+    storage.mode(x) <- "double"
+  }
+  list(
+    x = x,
+    code = unname(code),
+    q = if(code == 4L) as.double(q) else 2,
+    # (dist.method AS THE dist OBJECT WOULD HAVE IT)
+    name = if(method == "cosine") NULL else method,
+    missing = !all_finite_cpp(x, .threads())
+  )
+}
+
+#' A dist object from the lower triangle of the distances
+#' @noRd
+.dist_object <- function(v,
+                         n,
+                         labels = NULL,
+                         method = NULL) {
+  structure(
+    v,
+    Size = n,
+    Labels = labels,
+    Diag = FALSE,
+    Upper = FALSE,
+    method = method,
+    class = "dist"
+  )
+}
+
 #' Distances from the rows of a to the rows of b
 #'
-#' Euclidean and correlation-type distances use matrix products; other
-#' distances (and data with missing values) are computed by the same code as
-#' the clustering, a chunk of rows at a time.
+#' Computed by the same code as the clustering; a distance function is
+#' applied to \code{rbind(chunk, b)}, a chunk of rows at a time.
 #'
 #' @return matrix with a row for each row of \code{a} and a column for each row
 #'   of \code{b}.
@@ -83,165 +166,38 @@
                      ...) {
   a <- as.matrix(a)
   b <- as.matrix(b)
-  method <- if(is.character(dist)) tolower(dist) else ""
-  fast <- method %in% c("euclidean", "pearson", "spearman", "cosine") &&
-    !anyNA(a) && !anyNA(b)
-  if(fast) {
-    if(method == "euclidean") {
-      d2 <- outer(rowSums(a^2), rowSums(b^2), "+") - 2 * tcrossprod(a, b)
-      return(sqrt(pmax(d2, 0)))
-    }
-    ua <- .unit_rows(a, method)
-    ub <- .unit_rows(b, method)
-    return(1 - tcrossprod(ua, ub))
-  }
-  # MISSING VALUES - LEFT OUT OF EACH PAIR AS stats::dist() AND cor() LEAVE
-  # THEM OUT, FROM THE CROSS DISTANCES THEMSELVES
-  if(method %in% .CROSS_NA && is.numeric(a) && is.numeric(b)) {
-    q <- list(...)$p
-    return(.cross_na(a, b, method, if(is.null(q)) 2 else q))
-  }
-  # ANY OTHER DISTANCE - DISTANCES WITHIN rbind(chunk, b), A CHUNK AT A TIME
+  na <- nrow(a)
   nb <- nrow(b)
+  metric <- .compiled_metric(rbind(a, b), dist, ...)
+  if(!is.null(metric)) {
+    return(dist_cross_cpp(metric$x, seq_len(na), na + seq_len(nb),
+                          metric$code, metric$q, .threads()))
+  }
   chunk <- max(256L, 2000L - nb)
-  out <- matrix(0, nrow(a), nb)
-  for(start in seq(1, nrow(a), by = chunk)) {
-    i <- start:min(nrow(a), start + chunk - 1)
+  out <- matrix(0, na, nb)
+  for(start in seq(1, na, by = chunk)) {
+    i <- start:min(na, start + chunk - 1)
     d <- as.matrix(.dist_matrix(rbind(a[i, , drop = FALSE], b), dist, ...))
     out[i, ] <- d[seq_along(i), length(i) + seq_len(nb), drop = FALSE]
   }
   out
 }
 
-# Distances .cross_na() computes with missing values
-.CROSS_NA <- c("euclidean", "manhattan", "maximum", "minkowski", "canberra",
-               "pearson", "cosine")
-
-#' Distances between the rows of a and the rows of b with missing values
-#'
-#' Each pair of rows is compared on the columns both have, as
-#' \code{stats::dist()} compares them: sums (euclidean, manhattan, canberra,
-#' minkowski) are scaled up to all the columns, the maximum isn't, and terms
-#' of the Canberra distance with zero numerator and denominator are left out.
-#' Pearson distances are one minus the correlation over the shared columns
-#' (as \code{cor(use = "pairwise.complete.obs")}, a missing correlation
-#' counting as 0) and cosine distances one minus the cosine over them. Pairs
-#' with no columns in common have a missing distance.
-#'
-#' @param q the power of the Minkowski distance.
-#'
-#' @return matrix with a row for each row of \code{a} and a column for each row
-#'   of \code{b}.
-#'
-#' @noRd
-.cross_na <- function(a,
-                      b,
-                      method = "euclidean",
-                      q = 2) {
-  a <- as.matrix(a)
-  b <- as.matrix(b)
-  storage.mode(a) <- "double"
-  storage.mode(b) <- "double"
-  a[!is.finite(a)] <- NA
-  b[!is.finite(b)] <- NA
-  oa <- !is.na(a) * 1
-  ob <- !is.na(b) * 1
-  a0 <- a
-  a0[is.na(a0)] <- 0
-  b0 <- b
-  b0[is.na(b0)] <- 0
-  # NUMBER OF SHARED COLUMNS
-  n <- tcrossprod(oa, ob)
-  p <- ncol(a)
-  if(method %in% c("pearson", "cosine")) {
-    sab <- tcrossprod(a0, b0)
-    saa <- tcrossprod(a0^2, ob)
-    sbb <- tcrossprod(oa, b0^2)
-    if(method == "cosine") {
-      den <- sqrt(saa * sbb)
-      r <- ifelse(den > 0, sab / den, 0)
-      r[n == 0] <- NA
-    } else {
-      sa <- tcrossprod(a0, ob)
-      sb <- tcrossprod(oa, b0)
-      den <- sqrt(pmax(n * saa - sa^2, 0) * pmax(n * sbb - sb^2, 0))
-      r <- ifelse(den > 0 & n > 1, (n * sab - sa * sb) / den, 0)
-    }
-    return(pmin(pmax(1 - r, 0), 2))
-  }
-  # EUCLIDEAN - SQUARED DIFFERENCES OVER THE SHARED COLUMNS FROM
-  # CROSS-PRODUCTS
-  if(method == "euclidean") {
-    s2 <- tcrossprod(a0^2, ob) - 2 * tcrossprod(a0, b0) + tcrossprod(oa, b0^2)
-    out <- sqrt(pmax(s2, 0) * p / n)
-    out[n == 0] <- NA
-    return(out)
-  }
-  # SUMS OVER THE SHARED COLUMNS (THE MAXIMUM FOR "maximum"), A COLUMN AT A
-  # TIME
-  acc <- matrix(0, nrow(a), nrow(b))
-  used <- n
-  for(j in seq_len(p)) {
-    dev <- abs(outer(a[, j], b[, j], "-"))
-    if(method == "canberra") {
-      tot <- outer(abs(a[, j]), abs(b[, j]), "+")
-      skip <- !is.na(dev) & tot <= .Machine$double.xmin &
-        dev <= .Machine$double.xmin
-      dev <- dev / tot
-      dev[skip] <- NA
-      used <- used - skip
-    } else if(method == "euclidean") {
-      dev <- dev^2
-    } else if(method == "minkowski") {
-      dev <- dev^q
-    }
-    dev[is.na(dev)] <- if(method == "maximum") -Inf else 0
-    acc <- if(method == "maximum") pmax(acc, dev) else acc + dev
-  }
-  out <- if(method == "maximum") {
-    acc
-  } else {
-    acc * p / used
-  }
-  if(method == "euclidean") {
-    out <- sqrt(out)
-  } else if(method == "minkowski") {
-    out <- out^(1 / q)
-  }
-  out[used == 0] <- NA
-  out
-}
-
-#' Index of the nearest row of b to each row of a
-#'
-#' Euclidean and correlation-type distances only need cross-products: the
-#' nearest row by euclidean distance has the largest a.b - |b|^2 / 2, and by
-#' correlation or cosine distance the largest cross-product of scaled rows.
-#'
+#' Index of the nearest row of b to each row of a (the first when tied)
 #' @noRd
 .nearest <- function(a,
                      b,
                      dist = "euclidean",
                      ...) {
-  method <- if(is.character(dist)) tolower(dist) else ""
-  if(!method %in% c("euclidean", "pearson", "spearman", "cosine") ||
-     anyNA(a) || anyNA(b)) {
-    d <- .dist_to(a, b, dist, ...)
-    # (A ROW WITHOUT A DISTANCE TO ANY ROW OF b - NO VALUES, OR NONE IN
-    # COMMON - CAN'T JOIN ONE)
-    miss <- is.na(d)
-    if(any(rowSums(miss) == ncol(d))) {
-      .stop_missing_distances()
-    }
-    d[miss] <- Inf
-    return(max.col(-d, ties.method = "first"))
+  d <- .dist_to(a, b, dist, ...)
+  # (A ROW WITHOUT A DISTANCE TO ANY ROW OF b - NO VALUES, OR NONE IN
+  # COMMON - CAN'T JOIN ONE)
+  miss <- is.na(d)
+  if(any(rowSums(miss) == ncol(d))) {
+    .stop_missing_distances()
   }
-  score <- if(method == "euclidean") {
-    tcrossprod(cbind(a, 1), cbind(b, -rowSums(b^2) / 2))
-  } else {
-    tcrossprod(.unit_rows(a, method), .unit_rows(b, method))
-  }
-  max.col(score, ties.method = "first")
+  d[miss] <- Inf
+  max.col(-d, ties.method = "first")
 }
 
 #' Rows scaled so that one minus their cross-products is the distance:
@@ -250,23 +206,20 @@
 #' @noRd
 .unit_rows <- function(x,
                        method) {
+  if(is.numeric(x) && !anyNA(x) && length(x) > 0) {
+    if(!is.double(x)) {
+      storage.mode(x) <- "double"
+    }
+    u <- unit_rows_cpp(x, .METRIC[[method]], .threads())
+    dimnames(u) <- dimnames(x)
+    return(u)
+  }
   if(method == "spearman") {
-    if(is.numeric(x) && !anyNA(x)) {
-      # (AVERAGE RANKS, AS rank() GIVES THEM, IN COMPILED CODE - apply() CALLS
-      # rank() ONCE PER ROW)
-      if(!is.double(x)) {
-        storage.mode(x) <- "double"
-      }
-      r <- row_ranks_cpp(x, .threads())
-      dimnames(r) <- dimnames(x)
-      x <- r
-    } else {
-      p <- ncol(x)
-      x <- t(apply(x, 1, rank))
-      # (ONE COLUMN - apply() GIVES A VECTOR)
-      if(p == 1) {
-        x <- t(x)
-      }
+    p <- ncol(x)
+    x <- t(apply(x, 1, rank))
+    # (ONE COLUMN - apply() GIVES A VECTOR)
+    if(p == 1) {
+      x <- t(x)
     }
   }
   if(method %in% c("pearson", "spearman")) {
@@ -281,10 +234,6 @@
 
 #' One minus the cross-products of the rows of a matrix (e.g. from
 #' .unit_rows()), clipped to [0, 2], as a dist object
-#'
-#' The lower triangle is read straight from the cross-products: as.dist()
-#' builds row and column indices for the whole square matrix, which takes
-#' longer than the cross-products themselves.
 #'
 #' @param method stored as the "method" attribute, unless NULL.
 #' @param max_index the largest index of the square matrix read at once
@@ -315,15 +264,7 @@
   v <- 1 - v
   v[v < 0] <- 0
   v[v > 2] <- 2
-  structure(
-    v,
-    Size = n,
-    Labels = rownames(u),
-    Diag = FALSE,
-    Upper = FALSE,
-    method = method,
-    class = "dist"
-  )
+  .dist_object(v, n, rownames(u), method)
 }
 
 #' Distances between some members of a dist object, as a square matrix
@@ -453,78 +394,30 @@
   )
 }
 
-#' Distances the compiled code computes itself
-#'
-#' Euclidean, Manhattan, maximum and Minkowski distances, and one minus the
-#' correlation (pearson, spearman) or cosine similarity from rows scaled by
-#' \code{.unit_rows()}, for data without missing or infinite values.
-#'
-#' @return list with the matrix to pass (\code{x}), the metric's number
-#'   (\code{code}) and the Minkowski power (\code{q}), or NULL for other
-#'   distances.
-#'
-#' @noRd
-.compiled_metric <- function(x,
-                             dist,
-                             ...) {
-  # (MISSING OR INFINITE VALUES - stats::dist() AND stats::hclust() HANDLE
-  # THEM AS BEFORE)
-  x <- as.matrix(x)
-  if(!is.character(dist) || length(dist) != 1 || !is.numeric(x) ||
-     length(x) == 0 || anyNA(x) || !all(is.finite(range(x)))) {
-    return(NULL)
-  }
-  method <- tolower(dist)
-  q <- list(...)$p
-  if(is.null(q)) {
-    q <- 2
-  }
-  code <- c(euclidean = 1L, manhattan = 2L, maximum = 3L, minkowski = 4L,
-            pearson = 5L, spearman = 5L, cosine = 5L)[method]
-  if(is.na(code) || !is.numeric(q) || length(q) != 1 || !is.finite(q) ||
-     q <= 0) {
-    return(NULL)
-  }
-  if(code == 5L) {
-    x <- .unit_rows(x, method)
-  }
-  if(!is.double(x)) {
-    storage.mode(x) <- "double"
-  }
-  list(
-    x = x,
-    code = code,
-    q = as.double(q),
-    # (dist.method AS THE dist OBJECT WOULD HAVE IT)
-    name = if(method == "cosine") NULL else method
-  )
-}
-
-#' The metric for some of the rows
-#' @noRd
-.metric_rows <- function(metric,
-                         rows) {
-  metric$x <- metric$x[rows, , drop = FALSE]
-  metric
-}
-
 #' Medoid of each group of rows, from distances computed in compiled code
 #'
 #' @param metric from \code{.compiled_metric()}.
-#' @param groups group of each row, numbered 1 to k.
+#' @param groups group of each row of \code{metric$x} (or of \code{rows}),
+#'   numbered 1 to k.
+#' @param rows the rows of \code{metric$x} the groups are of (all rows when
+#'   NULL).
 #'
-#' @return row of the medoid of each group.
+#' @return row (of \code{metric$x}) of the medoid of each group.
 #'
 #' @noRd
 .group_medoids <- function(metric,
-                           groups) {
+                           groups,
+                           rows = NULL) {
+  if(is.null(rows)) {
+    rows <- seq_along(groups)
+  }
   members <- split(
-    seq_along(groups),
+    as.integer(rows),
     factor(groups, levels = seq_len(max(groups)))
   )
   pos <- group_medoids_cpp(
     metric$x,
-    lapply(members, as.integer),
+    members,
     metric$code,
     metric$q,
     .threads()
@@ -538,16 +431,14 @@
 
 #' Group of each row: the index of its nearest medoid
 #'
-#' Metric distances (\code{.compiled_metric()}) use a search in compiled code
-#' that the triangle inequality lets skip most medoids when the data have
-#' structure. A first chunk of rows shows whether it does: if more than a
-#' quarter of the medoids still need to be visited, the rest are compared
-#' with every medoid by matrix products (\code{.nearest()}), which a fast BLAS
-#' does quickly.
+#' Distances that satisfy the triangle inequality use a search in compiled
+#' code that skips most medoids when the data have structure; others (and rows
+#' with missing values) are compared with every medoid, four at a time.
 #'
 #' @param rows the rows of \code{x} to assign.
 #' @param med the rows of \code{x} that are medoids.
-#' @param metric from \code{.compiled_metric()}, or NULL.
+#' @param metric from \code{.compiled_metric()}, or NULL for a distance
+#'   function.
 #'
 #' @noRd
 .assign_rows <- function(x,
@@ -556,65 +447,24 @@
                          metric,
                          dist = "euclidean",
                          ...) {
-  k <- length(med)
-  # MISSING VALUES IN SOME ROWS (NOT THE MEDOIDS) - THE OTHER ROWS STILL USE
-  # THE COMPILED SEARCH, AND ONLY THE ROWS WITH MISSING VALUES THE SLOWER
-  # PAIRWISE DISTANCES
-  if(is.null(metric) && is.character(dist) &&
-     !anyNA(x[med, , drop = FALSE])) {
-    gaps <- rowSums(is.na(x[rows, , drop = FALSE])) > 0
-    if(any(gaps) && !all(gaps)) {
-      sub <- c(med, rows[!gaps])
-      m2 <- .compiled_metric(x[sub, , drop = FALSE], dist, ...)
-      if(!is.null(m2)) {
-        out <- integer(length(rows))
-        out[!gaps] <- .assign_rows(x[sub, , drop = FALSE],
-                                   k + seq_len(sum(!gaps)), seq_len(k), m2,
-                                   dist, ...)
-        out[gaps] <- .assign_rows(x, rows[gaps], med, NULL, dist, ...)
-        return(out)
-      }
-    }
-  }
-  out <- integer(length(rows))
-  done <- 0L
-  prune <- !is.null(metric) && !(metric$code == 4L && metric$q < 1)
-  if(prune && metric$code == 5L) {
-    # (A ROW OF ZEROS AS A MEDOID - THE DISTANCES DON'T ORDER IT CORRECTLY)
-    prune <- all(rowSums(metric$x[med, , drop = FALSE]^2) > 0)
-  }
-  if(prune) {
-    centres <- metric$x[med, , drop = FALSE]
-    probe <- rows[seq_len(min(length(rows), 2000L))]
-    a <- nearest_medoid_cpp(metric$x[probe, , drop = FALSE], centres,
-                            metric$code, metric$q, .threads())
-    out[seq_along(probe)] <- a
-    done <- length(probe)
-    if(attr(a, "evaluations") / length(probe) <= k / 4 &&
-       done < length(rows)) {
-      i <- (done + 1):length(rows)
-      out[i] <- nearest_medoid_cpp(metric$x[rows[i], , drop = FALSE],
-                                   centres, metric$code, metric$q, .threads())
-      done <- length(rows)
-    }
-  }
-  # EVERY MEDOID, BY MATRIX PRODUCTS (ROWS ALREADY SCALED FOR CORRELATIONS:
-  # THE LARGEST CROSS-PRODUCT)
-  if(done < length(rows)) {
-    scaled <- !is.null(metric) && metric$code == 5L
-    xx <- if(scaled) metric$x else x
-    chunk <- max(1L, floor(2e6 / k))
-    for(start in seq(done + 1, length(rows), by = chunk)) {
+  if(is.null(metric)) {
+    # (A DISTANCE FUNCTION - DISTANCES TO EVERY MEDOID, A CHUNK OF ROWS AT A
+    # TIME)
+    out <- integer(length(rows))
+    chunk <- max(1L, floor(2e6 / length(med)))
+    for(start in seq(1, length(rows), by = chunk)) {
       j <- start:min(length(rows), start + chunk - 1)
-      out[j] <- .nearest(
-        xx[rows[j], , drop = FALSE],
-        xx[med, , drop = FALSE],
-        if(scaled) "cosine" else dist,
-        ...
-      )
+      out[j] <- .nearest(x[rows[j], , drop = FALSE], x[med, , drop = FALSE],
+                         dist, ...)
     }
+    return(out)
   }
-  out
+  out <- nearest_medoid_cpp(metric$x, as.integer(rows), as.integer(med),
+                            metric$code, metric$q, .threads())
+  if(anyNA(out)) {
+    .stop_missing_distances()
+  }
+  as.vector(out)
 }
 
 #' Each group of rows clustered on its own by the compiled code
@@ -623,7 +473,7 @@
 #'
 #' @param metric from \code{.compiled_metric()}.
 #' @param groups list of the rows in each group.
-#' @param method a linkage in \code{.NN_CHAIN}.
+#' @param method a linkage in \code{.LINKAGE}.
 #'
 #' @return list of trees with merge, height and order (leaves numbered
 #'   within each group), as \code{hclust()} gives for the group's rows.
@@ -632,32 +482,41 @@
 .cluster_groups <- function(metric,
                             groups,
                             method = "complete") {
-  .cluster_batch(list(metric$x), metric, groups, method)[[1]]
+  .cluster_batch(metric, groups, NULL, method)[[1]]
 }
 
-#' Groups of rows of several matrices, each clustered on its own by the
-#' compiled code, sharing the jobs between threads
+#' Groups of rows clustered on their own by the compiled code, for samples of
+#' the columns, sharing the jobs between threads
 #'
-#' @param xs list of matrices prepared as \code{.compiled_metric()} prepares
-#'   them (\code{metric$x}), with the same rows.
-#' @param metric from \code{.compiled_metric()} (its code and power).
+#' @param metric from \code{.compiled_metric()}.
 #' @param groups list of the rows in each group, or NULL for all rows.
+#' @param samples list of columns (e.g. resampled with replacement), or NULL
+#'   for all the columns.
 #'
-#' @return a list (one element per matrix) of lists of trees (one per group).
+#' @return a list (one element per sample) of lists of trees (one per group).
 #'
 #' @noRd
-.cluster_batch <- function(xs,
-                           metric,
+.cluster_batch <- function(metric,
                            groups = NULL,
+                           samples = NULL,
                            method = "complete") {
-  cluster_batch_cpp(
-    xs,
+  out <- cluster_batch_cpp(
+    metric$x,
     if(!is.null(groups)) lapply(groups, as.integer),
+    if(!is.null(samples)) lapply(samples, as.integer),
     metric$code,
     metric$q,
-    .NN_CHAIN[[method]],
+    .LINKAGE[[method]],
     .threads()
   )
+  for(per in out) {
+    for(tree in per) {
+      if(isTRUE(tree$missing)) {
+        .stop_missing_distances()
+      }
+    }
+  }
+  out
 }
 
 #' Hierarchical clustering of many rows in two stages
@@ -675,7 +534,6 @@
 #' @return \code{hclust} object with unscaled heights and a \code{two_stage}
 #'   element giving the size of the sample and the number of groups.
 #'
-#' @importFrom stats hclust
 #' @noRd
 .hclust_large <- function(x,
                           dist = "euclidean",
@@ -687,12 +545,11 @@
   m <- min(n, max)
   # STAGE 1 - AN EXACT TREE OF A SAMPLE, SPLIT INTO GROUPS
   sample_rows <- .with_seed(2357, sort(sample.int(n, m)))
-  # (DISTANCES IN COMPILED CODE WHEN IT HANDLES THE DISTANCE AND LINKAGE)
-  metric <- if(!is.na(.NN_CHAIN[method])) .compiled_metric(x, dist, ...)
+  metric <- .compiled_metric(x, dist, ...)
   ds <- NULL
   if(!is.null(metric)) {
-    sample_metric <- .metric_rows(metric, sample_rows)
-    hs <- .hclust_rows(x[sample_rows, , drop = FALSE], sample_metric, method)
+    hs <- .hclust_rows(x[sample_rows, , drop = FALSE],
+                       .metric_rows(metric, sample_rows), method)
   } else {
     ds <- .dist_matrix(x[sample_rows, , drop = FALSE], dist, ...)
     hs <- .hclust_dist(ds, method = method)
@@ -703,62 +560,31 @@
     cap = max(2, floor(max / 4 * m / n))
   )
   k <- tg$n
-  med <- sample_rows[if(is.null(ds)) {
-    .group_medoids(sample_metric, tg$groups)
+  med <- if(is.null(ds)) {
+    .group_medoids(metric, tg$groups, sample_rows)
   } else {
-    .medoids(ds, tg$groups)
-  }]
+    sample_rows[.medoids(ds, tg$groups)]
+  }
   ds <- NULL
   # EVERY OTHER ROW JOINS THE GROUP OF ITS NEAREST MEDOID
   groups <- integer(n)
   groups[sample_rows] <- tg$groups
-  rest <- setdiff(seq_len(n), sample_rows)
+  rest <- seq_len(n)[-sample_rows]
   if(length(rest) > 0) {
     groups[rest] <- .assign_rows(x, rest, med, metric, dist, ...)
   }
   # STAGE 2 - EACH GROUP CLUSTERED ON ITS OWN, BELOW THE MERGE ABOVE IT
   members <- split(seq_len(n), factor(groups, levels = seq_len(k)))
   size <- lengths(members)
-  # (GROUPS UP TO max ROWS IN ONE CALL TO THE COMPILED CODE WHEN IT COMPUTES
-  # THE DISTANCE AND THE LINKAGE)
+  # (GROUPS UP TO max ROWS IN ONE CALL TO THE COMPILED CODE)
   trees <- vector("list", k)
   small <- which(size >= 2 & size <= max & size <= n / 2)
   if(!is.null(metric) && length(small) > 0) {
     trees[small] <- .cluster_groups(metric, members[small], method)
-  } else if(length(small) > 0 && is.character(dist) &&
-            !is.na(.NN_CHAIN[method]) && anyNA(x)) {
-    # (MISSING VALUES - THE GROUPS WITHOUT THEM STILL IN ONE CALL)
-    complete <- which(rowSums(is.na(x)) == 0)
-    pos <- integer(n)
-    pos[complete] <- seq_along(complete)
-    ok <- small[vapply(members[small], function(idx) all(pos[idx] > 0),
-                       logical(1))]
-    cm <- if(length(ok) > 0) {
-      .compiled_metric(x[complete, , drop = FALSE], dist, ...)
-    }
-    if(!is.null(cm)) {
-      trees[ok] <- .cluster_groups(
-        cm,
-        lapply(members[ok], function(idx) pos[idx]),
-        method
-      )
-    }
   }
-  merges <- vector("list", k)
-  heights <- vector("list", k)
-  orders <- vector("list", k)
-  root <- integer(k)
-  offset <- 0L
-  for(g in seq_len(k)) {
+  for(g in which(size >= 2 & vapply(trees, is.null, logical(1)))) {
     idx <- members[[g]]
-    if(length(idx) == 1) {
-      root[g] <- -idx
-      orders[[g]] <- idx
-      next
-    }
-    tree <- if(!is.null(trees[[g]])) {
-      trees[[g]]
-    } else if(length(idx) <= n / 2) {
+    trees[[g]] <- if(length(idx) <= n / 2) {
       .hclust_raw(x[idx, , drop = FALSE], dist = dist, method = method,
                   max = max, ...)
     } else {
@@ -766,47 +592,41 @@
       .hclust_blocks(x[idx, , drop = FALSE], dist = dist, method = method,
                      max = max, ...)
     }
-    h <- tree$height
-    top_g <- max(h)
-    if(top_g > tg$parent_height[g] && top_g > 0) {
-      # (pmin() - ROUNDING MUST NOT LIFT THE TOP ABOVE THE PARENT)
-      h <- pmin(h * tg$parent_height[g] / top_g, tg$parent_height[g])
-    }
-    mz <- tree$merge
-    leaf <- mz < 0
-    mz[leaf] <- -idx[-mz[leaf]]
-    mz[!leaf] <- mz[!leaf] + offset
-    merges[[g]] <- mz
-    heights[[g]] <- h
-    orders[[g]] <- idx[tree$order]
-    offset <- offset + nrow(mz)
-    root[g] <- offset
   }
-  merge <- do.call(rbind, c(list(matrix(integer(0), ncol = 2)), merges))
-  # THE SAMPLE'S MERGES ABOVE THE GROUPS
-  top <- tg$top
-  up <- top > 0
-  top[!up] <- root[-tg$top[!up]]
-  top[up] <- nrow(merge) + tg$top[up]
-  merge <- rbind(merge, top)
-  height <- c(unlist(heights, use.names = FALSE), tg$top_height)
-  ord <- unlist(orders, use.names = FALSE)
-  storage.mode(merge) <- "integer"
+  # THE GROUPS' TREES BELOW THE SAMPLE'S MERGES ABOVE THEM (IN COMPILED
+  # CODE: EACH GROUP'S HEIGHTS SCALED UNDER ITS PARENT, MERGES SORTED BY
+  # HEIGHT)
+  tree <- join_groups_cpp(
+    members,
+    lapply(trees, function(t) if(!is.null(t)) .int_merge(t$merge)),
+    lapply(trees, function(t) if(!is.null(t)) as.double(t$height)),
+    lapply(trees, function(t) if(!is.null(t)) as.integer(t$order)),
+    .int_merge(tg$top),
+    as.double(tg$top_height),
+    as.double(tg$parent_height),
+    n
+  )
   tree <- structure(
     list(
-      merge = merge,
-      height = height,
-      order = ord,
+      merge = tree$merge,
+      height = tree$height,
+      order = tree$order,
       labels = rownames(x),
       method = method,
       dist.method = hs$dist.method
     ),
     class = "hclust"
   )
-  tree <- .sort_merges(tree)
-  tree$order <- ord
   tree$two_stage <- c(sample = m, groups = k)
   tree
+}
+
+#' The metric for some of the rows
+#' @noRd
+.metric_rows <- function(metric,
+                         rows) {
+  metric$x <- metric$x[rows, , drop = FALSE]
+  metric
 }
 
 #' Merges in order of height (as in hclust), when every child stays before

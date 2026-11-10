@@ -66,13 +66,20 @@ heat_map_scale <- function(x,
     )
   )
 
-  # SCALING FUNCTION
-  fun <- switch(
-    method,
-    "range" = .scale_range,
-    "mean" = .scale_mean,
-    "zscore" = .scale_zscore
-  )
+  # A NUMERIC MATRIX - SCALED AS IT IS (NO COPIES OF THE COLUMNS)
+  if(is.matrix(x) && length(num_cols) == ncol(x)) {
+    if(!is.double(x)) {
+      storage.mode(x) <- "double"
+    }
+    scaled <- scale_cpp(
+      x,
+      if(scale == "column") 2L else 1L,
+      match(method, c("range", "mean", "zscore")),
+      .threads()
+    )
+    attributes(scaled) <- attributes(x)
+    return(scaled)
+  }
 
   # NUMERIC DATA
   num_data <- x[, num_cols, drop = FALSE]
@@ -81,12 +88,16 @@ heat_map_scale <- function(x,
   }
   storage.mode(num_data) <- "double"
 
-  # SCALING - APPLY() RETURNS ROW RESULTS AS COLUMNS SO TRANSPOSE BACK
-  if(scale == "column") {
-    num_data[] <- apply(num_data, 2, fun)
-  } else {
-    num_data[] <- t(apply(num_data, 1, fun))
-  }
+  # SCALING IN COMPILED CODE, WITH THE ARITHMETIC OF THE R HELPERS BELOW
+  # (apply() CALLS THEM ONCE PER COLUMN OR ROW)
+  scaled <- scale_cpp(
+    num_data,
+    if(scale == "column") 2L else 1L,
+    match(method, c("range", "mean", "zscore")),
+    .threads()
+  )
+  attributes(scaled) <- attributes(num_data)
+  num_data <- scaled
 
   # REPLACE ORIGINAL DATA - DATA.FRAME COLUMNS ARE REPLACED ONE AT A TIME SO
   # THAT A SINGLE COLUMN IS NOT STORED AS A MATRIX

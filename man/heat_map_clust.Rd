@@ -17,11 +17,11 @@ heat_map_clust(
 )
 }
 \arguments{
-\item{x}{matrix-like object to cluster - its numeric columns. Distances and
-linkage are computed in compiled code (with \code{\link[stats]{dist}} and
-\code{\link[stats]{hclust}} for the methods it doesn't cover). With a
-supplied \code{hclust} object and \code{order}, the rows of \code{x} (or
-its columns when they don't match) are the leaves of the tree.}
+\item{x}{matrix-like object to cluster - its numeric columns. Distances,
+linkage and cuts are computed in compiled code (only a distance function
+supplied to \code{dist} runs in R). With a supplied \code{hclust} object
+and \code{order}, the rows of \code{x} (or its columns when they don't
+match) are the leaves of the tree.}
 
 \item{tree}{indicates whether hierarchical clustering should be performed by
 \code{"row"} or \code{"column"}. Optionally a custom object of class
@@ -87,7 +87,7 @@ clustered exactly and its dendrogram split into groups of about 200 rows
 of the data, every row joins the group of its nearest group medoid, and
 each group is clustered exactly beneath the sample's dendrogram. The
 dendrogram then shows the structure of the whole data down to the groups,
-and within each group: 100,000 rows take about 2 seconds. Set to
+and within each group: 100,000 rows take about half a second. Set to
 \code{Inf} to always cluster exactly.}
 
 \item{...}{additional arguments passed to \code{\link{dist}} (e.g.
@@ -110,17 +110,23 @@ sample and the number of groups.
 Perform hierarchical clustering for heatmap
 }
 \details{
-Single, complete, average, McQuitty and Ward linkage are computed
-by the nearest-neighbour chain algorithm, which builds the same tree as
-\code{\link[stats]{hclust}} when the distances are distinct. When
-distances are tied (common for integer, binary or rounded data), more
-than one tree is correct and the two can choose differently between tied
-merges, so the tree - and the branches above the tied merges - can
-differ from the one \code{hclust} returns while being equally valid.
-Centroid and median linkage use \code{hclust} itself. Missing and
-infinite values are left out of the distances between rows (as
-\code{\link[stats]{dist}} leaves out missing values); rows that share
-no values can't be clustered.
+Distances are computed as \code{\link[stats]{dist}} and
+\code{\link[stats]{cor}} compute them. Missing and infinite values are
+left out of each pair of rows: sums over the remaining values are scaled
+up to all the columns (as \code{dist} scales them) and correlations use
+the values both rows have (as \code{cor(use =
+"pairwise.complete.obs")}; Spearman's ranks the values of each pair);
+rows that share no values can't be clustered. Single linkage is computed
+from a minimum spanning tree (Prim's algorithm, which needs no matrix of
+distances) and centroid and median linkage by \code{hclust}'s own
+algorithm, both giving the tree \code{hclust} gives. Complete, average,
+McQuitty and Ward linkage are computed by the nearest-neighbour chain
+algorithm, which builds the same tree as \code{\link[stats]{hclust}}
+when the distances are distinct. When distances are tied (common for
+integer, binary or rounded data), more than one tree is correct and the
+two can choose differently between tied merges, so the tree - and the
+branches above the tied merges - can differ from the one \code{hclust}
+returns while being equally valid.
 }
 \examples{
 # Hierarchical clustering

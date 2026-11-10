@@ -27,9 +27,6 @@
 // down), so the sums of distances from each row to each cluster are updated
 // from the smaller half of each split instead of recomputed.
 //
-// CUTS. cutree() takes time growing with the square of the number of leaves
-// (22 seconds for 200,000); cut_k_cpp() joins the leaves of the first n - k
-// merges in one pass and numbers the clusters as cutree() does.
 
 #include <cpp11.hpp>
 #include <algorithm>
@@ -43,6 +40,7 @@
 
 #include "distance.h"
 #include "linkage.h"
+#include "metric.h"
 #include "parallel.h"
 #include "tree.h"
 
@@ -66,36 +64,27 @@ inline double sp_dot(const double* x, const double* y, int m) {
   return (s0 + s1) + (s2 + s3);
 }
 
-// DISTANCES BETWEEN ROWS: COMPUTED FROM THE ROWS (A METRIC OF row_dist()) OR
+// DISTANCES BETWEEN ROWS: COMPUTED FROM THE ROWS (A DISTANCE OF metric.h) OR
 // READ FROM A dist OBJECT ---------------------------------------------------
 
 struct Distances {
   int n = 0;
-  // rows, one after another (p values each)
-  std::vector<double> X;
-  int p = 0, metric = 1;
-  double q = 2;
-  dist::Dist4 k4 = nullptr;
-  std::vector<const double*> rows;
+  int p = 0;
+  // the rows, prepared for their distance (metric.h)
+  std::shared_ptr<metric::Data> data;
   // the lower triangle of a dist object
   const double* d = nullptr;
   std::vector<size_t> doff;
 
-  static Distances from_rows(const double* x, int n_total, int p, int metric, double q) {
+  static Distances from_rows(const double* x, int n_total, int p, int code, double q,
+                             int threads = 1) {
+    if (!metric::valid_code(code)) cpp11::stop("unknown distance code %d", code);
     Distances D;
     D.n = n_total;
     D.p = p;
-    D.metric = metric;
-    D.q = q;
-    D.X.resize(static_cast<size_t>(n_total) * p);
-    for (int i = 0; i < n_total; ++i) {
-      for (int k = 0; k < p; ++k) {
-        D.X[static_cast<size_t>(i) * p + k] = x[i + static_cast<size_t>(k) * n_total];
-      }
-    }
-    D.rows.resize(n_total);
-    for (int i = 0; i < n_total; ++i) D.rows[i] = &D.X[static_cast<size_t>(i) * p];
-    D.k4 = dist::kernel4(metric);
+    D.data = std::make_shared<metric::Data>(metric::make_data(
+        x, static_cast<size_t>(n_total), p, nullptr, n_total, nullptr, p, code, q, false,
+        threads));
     return D;
   }
   static Distances from_dist(const double* d, int n) {
@@ -108,24 +97,25 @@ struct Distances {
     }
     return D;
   }
+  // (MISSING DISTANCES - ROWS THAT SHARE NO VALUES - ARE INFINITE)
   double operator()(int i, int j) const {
     if (i == j) return 0;
+    double v;
     if (d != nullptr) {
       int a = std::max(i, j), b = std::min(i, j);
-      double v = d[doff[b] + (a - b - 1)];
-      return std::isnan(v) ? SP_INF : v;
+      v = d[doff[b] + (a - b - 1)];
+    } else {
+      v = metric::dist(*data, i, j);
     }
-    return dist::row_dist(rows[i], rows[j], p, metric, q);
+    return std::isnan(v) ? SP_INF : v;
   }
   // Distances from row i to the rows idx[0..m)
-  void to(int i, const int* idx, int m, std::vector<const double*>& ptr, double* out) const {
+  void to(int i, const int* idx, int m, metric::Scratch& w, double* out) const {
     if (d != nullptr) {
       for (int t = 0; t < m; ++t) out[t] = (*this)(i, idx[t]);
       return;
     }
-    ptr.resize(m);
-    for (int t = 0; t < m; ++t) ptr[t] = rows[idx[t]];
-    dist::row_dists(rows[i], ptr.data(), static_cast<size_t>(m), p, metric, q, k4, out);
+    metric::to_rows(*data, i, idx, 0, m, out, w);
   }
 };
 
@@ -159,10 +149,10 @@ Graph knn_graph(const Distances& D, int k, int threads) {
     }
     const int block = 256;
     double di[block];
-    std::vector<const double*> ptr;
+    metric::Scratch w;
     for (int j0 = 0; j0 < n; j0 += block) {
       int len = std::min(block, n - j0);
-      D.to(i, all.data() + j0, len, ptr, di);
+      D.to(i, all.data() + j0, len, w, di);
       for (int t = 0; t < len; ++t) {
         int j = j0 + t;
         double v = std::isnan(di[t]) ? SP_INF : di[t];
@@ -793,14 +783,14 @@ void check_merge(cpp11::integers merge) {
 
 }  // namespace
 
-// The spectral order (1-based) of the rows of x (rows scaled as
-// .compiled_metric() scales them), with distances of the metric (see
-// row_dist()) and k nearest neighbours
+// The spectral order (1-based) of the rows of x, with the distance `metric`
+// (a code of metric.h, as .compiled_metric() gives it) and k nearest
+// neighbours
 [[cpp11::register]]
 cpp11::integers spectral_rows_cpp(cpp11::doubles_matrix<> x, int metric, double q, int k,
                                   int threads) {
   if (k < 1) cpp11::stop("'k' must be positive");
-  Distances D = Distances::from_rows(REAL(x.data()), x.nrow(), x.ncol(), metric, q);
+  Distances D = Distances::from_rows(REAL(x.data()), x.nrow(), x.ncol(), metric, q, threads);
   return as_r_order(spectral_order(D, k, threads));
 }
 
@@ -860,7 +850,7 @@ cpp11::doubles silhouette_dist_cpp(cpp11::integers merge, cpp11::integers sample
 }
 
 // The same with distances of a metric between the rows x of the sample (in
-// its order; see row_dist())
+// its order; a distance code of metric.h)
 [[cpp11::register]]
 cpp11::doubles silhouette_rows_cpp(cpp11::integers merge, cpp11::integers sample,
                                    cpp11::doubles_matrix<> x, int metric, double q, int K,
@@ -886,42 +876,5 @@ cpp11::doubles silhouette_rows_cpp(cpp11::integers merge, cpp11::integers sample
   std::vector<double> s = silhouettes(INTEGER(merge), k, INTEGER(sample), m, K, at, threads);
   cpp11::writable::doubles out(static_cast<R_xlen_t>(s.size()));
   std::copy(s.begin(), s.end(), REAL(out));
-  return out;
-}
-
-// The clusters of the tree cut into k (the leaves of the first n - k merges
-// joined), numbered by their first leaf - as cutree(k = ) numbers them
-[[cpp11::register]]
-cpp11::integers cut_k_cpp(cpp11::integers merge, int k) {
-  check_merge(merge);
-  int km = Rf_nrows(merge), n = km + 1;
-  if (k < 1 || k > n) cpp11::stop("'k' must be from 1 to %d", n);
-  const int* m = INTEGER(merge);
-  std::vector<int> parent(n);
-  std::iota(parent.begin(), parent.end(), 0);
-  auto find = [&](int v) {
-    while (parent[v] != v) {
-      parent[v] = parent[parent[v]];
-      v = parent[v];
-    }
-    return v;
-  };
-  // A LEAF OF EACH MERGE, TO JOIN THROUGH
-  std::vector<int> rep(km);
-  for (int z = 0; z < n - k; ++z) {
-    int a = m[z], b = m[z + km];
-    int ra = find(a < 0 ? -a - 1 : rep[a - 1]);
-    int rb = find(b < 0 ? -b - 1 : rep[b - 1]);
-    parent[std::max(ra, rb)] = std::min(ra, rb);
-    rep[z] = std::min(ra, rb);
-  }
-  cpp11::writable::integers out(n);
-  std::vector<int> number(n, 0);
-  int next = 0;
-  for (int i = 0; i < n; ++i) {
-    int r = find(i);
-    if (number[r] == 0) number[r] = ++next;
-    out[i] = number[r];
-  }
   return out;
 }

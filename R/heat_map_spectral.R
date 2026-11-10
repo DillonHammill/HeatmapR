@@ -112,7 +112,7 @@
 #' @noRd
 .cutree_k <- function(tree,
                       k) {
-  out <- cut_k_cpp(.int_merge(tree$merge), as.integer(k))
+  out <- cut_tree_cpp(.int_merge(tree$merge), as.integer(k), NULL)
   names(out) <- tree$labels
   out
 }

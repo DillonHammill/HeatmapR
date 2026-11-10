@@ -10,12 +10,18 @@ test_that("cell_border_mask selects the cells with borders", {
   m <- test_matrix(2, 3)
   mask <- matrix(c(TRUE, FALSE, FALSE, TRUE, TRUE, FALSE), 2)
   hm <- draw(m, cell_border_mask = mask, cell_border_line_col = "red", legend = FALSE)
-  # Cells are drawn column by column from the top row (row 1) down
-  drawn_mask <- mask[cbind(rep(1:2, 3), rep(1:3, each = 2))]
-  expect_equal(
-    cell_rects(hm, 6)[[6]],
-    ifelse(drawn_mask, grDevices::adjustcolor("red"), "transparent")
-  )
+  # The cells without borders are drawn first (as seamless tiles), then the
+  # masked cells with their borders
+  rects <- drawn(hm, "C_rect")
+  red <- grDevices::adjustcolor("red")
+  framed <- Filter(function(r) all(r[[6]] %in% red), rects)
+  expect_length(framed, 1)
+  # (cells are 1 x 1 from the bottom left, rows counted from the top)
+  at <- paste(2 - framed[[1]][[2]], framed[[1]][[1]] + 1)
+  masked <- which(mask, arr.ind = TRUE)
+  expect_setequal(at, paste(masked[, 1], masked[, 2]))
+  plain <- Filter(function(r) length(r[[1]]) == sum(!mask) && all(is.na(r[[6]])), rects)
+  expect_length(plain, 1)
   expect_error(draw(m, cell_border_mask = c(TRUE, FALSE)), "must be a matrix or data.frame")
   expect_error(draw(m, cell_border_mask = matrix(TRUE, 3, 3)), "same dimensions")
   expect_error(draw(m, cell_border_mask = matrix(1, 2, 3)), "logical")

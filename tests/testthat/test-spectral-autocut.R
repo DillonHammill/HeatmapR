@@ -47,7 +47,7 @@ test_that("fast cuts number clusters as cutree", {
   for (h in c(0, 1, 2.5, 4, 100)) {
     expect_equal(.cut_height(tree, h), cutree(tree, h = h))
   }
-  expect_error(cut_k_cpp(.int_merge(tree$merge), 0L), "")
+  expect_error(cut_tree_cpp(.int_merge(tree$merge), 0L, NULL), "")
 })
 
 test_that("silhouettes of every cut match direct computation", {

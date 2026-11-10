@@ -2,11 +2,11 @@
 
 #' Perform hierarchical clustering for heatmap
 #'
-#' @param x matrix-like object to cluster - its numeric columns. Distances and
-#'   linkage are computed in compiled code (with \code{\link[stats]{dist}} and
-#'   \code{\link[stats]{hclust}} for the methods it doesn't cover). With a
-#'   supplied \code{hclust} object and \code{order}, the rows of \code{x} (or
-#'   its columns when they don't match) are the leaves of the tree.
+#' @param x matrix-like object to cluster - its numeric columns. Distances,
+#'   linkage and cuts are computed in compiled code (only a distance function
+#'   supplied to \code{dist} runs in R). With a supplied \code{hclust} object
+#'   and \code{order}, the rows of \code{x} (or its columns when they don't
+#'   match) are the leaves of the tree.
 #' @param tree indicates whether hierarchical clustering should be performed by
 #'   \code{"row"} or \code{"column"}. Optionally a custom object of class
 #'   \code{"dist"} (clustered using \code{method}) or \code{"hclust"} which will
@@ -65,23 +65,29 @@
 #'   of the data, every row joins the group of its nearest group medoid, and
 #'   each group is clustered exactly beneath the sample's dendrogram. The
 #'   dendrogram then shows the structure of the whole data down to the groups,
-#'   and within each group: 100,000 rows take about 2 seconds. Set to
+#'   and within each group: 100,000 rows take about half a second. Set to
 #'   \code{Inf} to always cluster exactly.
 #' @param ... additional arguments passed to \code{\link{dist}} (e.g.
 #'   \code{p}) or \code{\link{hclust}} (\code{members}); others are ignored
 #'   with a warning.
 #'
-#' @details Single, complete, average, McQuitty and Ward linkage are computed
-#'   by the nearest-neighbour chain algorithm, which builds the same tree as
-#'   \code{\link[stats]{hclust}} when the distances are distinct. When
-#'   distances are tied (common for integer, binary or rounded data), more
-#'   than one tree is correct and the two can choose differently between tied
-#'   merges, so the tree - and the branches above the tied merges - can
-#'   differ from the one \code{hclust} returns while being equally valid.
-#'   Centroid and median linkage use \code{hclust} itself. Missing and
-#'   infinite values are left out of the distances between rows (as
-#'   \code{\link[stats]{dist}} leaves out missing values); rows that share
-#'   no values can't be clustered.
+#' @details Distances are computed as \code{\link[stats]{dist}} and
+#'   \code{\link[stats]{cor}} compute them. Missing and infinite values are
+#'   left out of each pair of rows: sums over the remaining values are scaled
+#'   up to all the columns (as \code{dist} scales them) and correlations use
+#'   the values both rows have (as \code{cor(use =
+#'   "pairwise.complete.obs")}; Spearman's ranks the values of each pair);
+#'   rows that share no values can't be clustered. Single linkage is computed
+#'   from a minimum spanning tree (Prim's algorithm, which needs no matrix of
+#'   distances) and centroid and median linkage by \code{hclust}'s own
+#'   algorithm, both giving the tree \code{hclust} gives. Complete, average,
+#'   McQuitty and Ward linkage are computed by the nearest-neighbour chain
+#'   algorithm, which builds the same tree as \code{\link[stats]{hclust}}
+#'   when the distances are distinct. When distances are tied (common for
+#'   integer, binary or rounded data), more than one tree is correct and the
+#'   two can choose differently between tied merges, so the tree - and the
+#'   branches above the tied merges - can differ from the one \code{hclust}
+#'   returns while being equally valid.
 #'
 #' @return object of class \code{hclust} which describes the tree produced by
 #'   the clustering process. Branch heights are rescaled to the range
@@ -308,13 +314,11 @@ heat_map_clust <- function(x,
     # COSINE DISTANCE WITH CUT < 1 - use as actual distance threshold
     if(cut < 1 && is.character(dist) && tolower(dist) == "cosine") {
       # CUT USING ORIGINAL (UNSCALED) HEIGHTS
-      tmp <- tree
-      tmp$height <- original_heights
-      tree$cut <- .cut_height(tmp, cut)
+      k <- .cut_k(original_heights, cut)
     # HEIGHT - proportional cut (0 to 1) for non-cosine distances
     } else if(cut < 1) {
-      tree$cut <- .cut_height(
-        tree,
+      k <- .cut_k(
+        tree$height,
         min(tree$height) + cut * diff(range(tree$height))
       )
     # K CLUSTERS
@@ -327,16 +331,14 @@ heat_map_clust <- function(x,
           )
         )
       }
-      tree$cut <- .cutree_k(tree, cut)
+      k <- cut
     }
-    # ORDER CLUSTERS
-    tree$cut <- tree$cut[tree$order]
+    # CLUSTERS IN LEAF ORDER, NUMBERED ALONG IT (COMPILED - cutree() TAKES
+    # TIME GROWING WITH THE SQUARE OF THE NUMBER OF LEAVES)
     tree$cut <- structure(
-      rep(
-        1:max(tree$cut),
-        times = table(tree$cut)[as.character(unique(tree$cut))]
-      ),
-      names = names(tree$cut)
+      cut_tree_cpp(.int_merge(tree$merge), as.integer(k),
+                   as.integer(tree$order)),
+      names = tree$labels[tree$order]
     )
   }
 
@@ -353,7 +355,23 @@ heat_map_clust <- function(x,
 #' @noRd
 .cut_height <- function(tree,
                         h) {
-  .cutree_k(tree, 1 + sum(tree$height > h))
+  structure(
+    cut_tree_cpp(.int_merge(tree$merge), as.integer(.cut_k(tree$height, h)),
+                 NULL),
+    names = tree$labels
+  )
+}
+
+#' Number of clusters of a cut at height h (as cutree(h = ) gives it, and one
+#' more than the merges above h for heights that aren't sorted)
+#' @noRd
+.cut_k <- function(heights,
+                   h) {
+  n <- length(heights) + 1L
+  if(!is.unsorted(heights)) {
+    return(n + 1L - which.max(c(heights, Inf) > h))
+  }
+  1L + sum(heights > h)
 }
 
 #' Rescale tree branch heights to [0, 1] for display
@@ -415,9 +433,10 @@ heat_map_clust <- function(x,
                               dist = "euclidean",
                               method = "complete",
                               ...) {
-  # DISTANCES AND LINKAGE IN COMPILED CODE WHEN IT HANDLES BOTH
+  # DISTANCES AND LINKAGE IN COMPILED CODE (UNLESS THE DISTANCE IS A
+  # FUNCTION OR THE LEAVES HAVE SIZES)
   members <- list(...)$members
-  metric <- if(is.null(members) && !is.na(.NN_CHAIN[method])) {
+  metric <- if(is.null(members)) {
     .compiled_metric(x, dist, ...)
   }
   if(!is.null(metric)) {
@@ -429,47 +448,20 @@ heat_map_clust <- function(x,
 
 ## LINKAGE ---------------------------------------------------------------------
 
-# Linkages computed by the compiled nearest-neighbour chain (src/linkage.cpp),
-# numbered as in stats::hclust; the others (centroid, median) use
-# stats::hclust
-.NN_CHAIN <- c(
+# Linkages of the compiled code (src/linkage.cpp), numbered as in
+# stats::hclust: single linkage by a minimum spanning tree, centroid and
+# median linkage by hclust()'s own algorithm, the others by the
+# nearest-neighbour chain
+.LINKAGE <- c(
   ward.D = 1L,
   single = 2L,
   complete = 3L,
   average = 4L,
   mcquitty = 5L,
+  median = 6L,
+  centroid = 7L,
   ward.D2 = 8L
 )
-
-#' Distances of the rows with missing values, computed pairwise
-#'
-#' The other distances come from the rows without missing values (as
-#' cross-products); only the pairs with a row in \code{gaps} are computed
-#' with \code{.cross_na()}.
-#'
-#' @param d dist object between the rows of \code{x} (wrong for the rows in
-#'   \code{gaps}).
-#' @param gaps the rows of \code{x} with missing values.
-#'
-#' @noRd
-.patch_gaps <- function(d,
-                        x,
-                        gaps,
-                        method) {
-  n <- nrow(x)
-  if(length(gaps) == 0 || n < 2) {
-    return(d)
-  }
-  dg <- .cross_na(x[gaps, , drop = FALSE], x, method)
-  i <- rep(gaps, times = n)
-  j <- rep(seq_len(n), each = length(gaps))
-  keep <- i != j
-  lo <- pmin(i, j)[keep]
-  hi <- pmax(i, j)[keep]
-  # (INDEX OF (hi, lo) IN THE LOWER TRIANGLE OF A dist OBJECT)
-  d[n * (lo - 1) - lo * (lo - 1) / 2 + hi - lo] <- as.vector(dg)[keep]
-  d
-}
 
 #' The error for rows or columns that can't be clustered
 #' @noRd
@@ -484,12 +476,12 @@ heat_map_clust <- function(x,
 
 #' Hierarchical clustering of a dist object
 #'
-#' Single, complete, average, McQuitty and Ward linkage are computed by the
-#' nearest-neighbour chain algorithm in compiled code, which finds the same
-#' merges as stats::hclust() in less time and returns the same hclust object.
-#' Only merges at exactly equal heights (e.g. tied distances) can come out in
-#' a different order. Other methods, missing or infinite distances go to
-#' stats::hclust().
+#' Every linkage is computed in compiled code and returns the hclust object
+#' stats::hclust() returns: centroid and median linkage exactly (by
+#' hclust()'s own algorithm), single linkage from a minimum spanning tree and
+#' the others by the nearest-neighbour chain, which finds the same merges -
+#' only merges at exactly equal heights (e.g. tied distances) can come out in
+#' a different order. Infinite distances go to stats::hclust().
 #'
 #' @param members initial cluster sizes, as for \code{hclust()}.
 #'
@@ -499,18 +491,18 @@ heat_map_clust <- function(x,
                          method = "complete",
                          members = NULL) {
   n <- attr(d, "Size")
-  code <- .NN_CHAIN[method]
+  code <- .LINKAGE[method]
   # (stats::hclust() FAILS ON MISSING DISTANCES WITH AN OBSCURE MESSAGE)
   if(anyNA(d)) {
     .stop_missing_distances()
   }
-  if(is.na(code) || is.null(n) || n < 2 || anyNA(d) ||
-     !all(is.finite(range(d))) || (!is.null(members) &&
-                                   length(members) != n)) {
-    return(hclust(d, method = method, members = members))
-  }
   if(!is.double(d)) {
     storage.mode(d) <- "double"
+  }
+  if(is.na(code) || is.null(n) || n < 2 ||
+     !all_finite_cpp(d, .threads()) || (!is.null(members) &&
+                                        length(members) != n)) {
+    return(hclust(d, method = method, members = members))
   }
   r <- hclust_cpp(d, n, code, if(is.null(members)) NULL else as.double(members),
                   .threads())
@@ -534,14 +526,17 @@ heat_map_clust <- function(x,
 #' so no dist object is built.
 #'
 #' @param metric from \code{.compiled_metric()}.
-#' @param method a linkage in \code{.NN_CHAIN}.
+#' @param method a linkage in \code{.LINKAGE}.
 #'
 #' @noRd
 .hclust_rows <- function(x,
                          metric,
                          method = "complete") {
-  r <- hclust_rows_cpp(metric$x, metric$code, metric$q, .NN_CHAIN[[method]],
+  r <- hclust_rows_cpp(metric$x, metric$code, metric$q, .LINKAGE[[method]],
                        .threads())
+  if(isTRUE(r$missing)) {
+    .stop_missing_distances()
+  }
   structure(
     list(
       merge = r$merge,
@@ -700,47 +695,17 @@ heat_map_clust <- function(x,
     }
     return(d)
   }
-  method <- tolower(dist)
-  # INFINITE VALUES CAN'T BE PLACED - LEFT OUT LIKE MISSING VALUES
-  if(is.numeric(x) && any(is.infinite(x))) {
-    x[is.infinite(x)] <- NA
+  # COMPILED - MISSING AND INFINITE VALUES ARE LEFT OUT OF EACH PAIR
+  metric <- .compiled_metric(x, dist, ...)
+  if(!is.null(metric)) {
+    return(.dist_object(
+      dist_rows_cpp(metric$x, metric$code, metric$q, .threads()),
+      nrow(x),
+      rownames(x),
+      metric$name
+    ))
   }
-  if(method == "cosine") {
-    gaps <- which(rowSums(is.na(x)) > 0)
-    if(length(gaps) == 0 || !is.numeric(x)) {
-      return(.cosine_dist(x))
-    }
-    full <- x
-    full[gaps, ] <- 0
-    return(.patch_gaps(.cosine_dist(full), x, gaps, "cosine"))
-  }
-  # CORRELATIONS AS CROSS-PRODUCTS OF SCALED ROWS - MUCH FASTER THAN cor()
-  # WITH PAIRWISE COMPLETE OBSERVATIONS, WHICH IS ONLY NEEDED WITH MISSING
-  # VALUES
-  if(method %in% c("pearson", "spearman") && !anyNA(x)) {
-    return(.cross_dist(.unit_rows(x, method), method))
-  }
-  # PEARSON WITH MISSING VALUES - PAIRWISE COMPLETE CORRELATIONS FROM
-  # CROSS-PRODUCTS (cor() COMPUTES THEM ONE PAIR AT A TIME)
-  if(method == "pearson" && is.numeric(x)) {
-    gaps <- which(rowSums(is.na(x)) > 0)
-    full <- x
-    full[gaps, ] <- 0
-    d <- .cross_dist(.unit_rows(full, "pearson"), "pearson")
-    return(.patch_gaps(d, x, gaps, "pearson"))
-  }
-  if(method %in% c("pearson", "spearman", "kendall")) {
-    # ONE MINUS THE CORRELATION - ROWS WITHOUT VARIATION ARE UNCORRELATED
-    r <- suppressWarnings(
-      cor(t(x), method = method,
-          use = if(anyNA(x)) "pairwise.complete.obs" else "everything")
-    )
-    r[is.na(r)] <- 0
-    diag(r) <- 1
-    d <- as.dist(1 - r)
-    attr(d, "method") <- method
-    return(d)
-  }
+  # (NON-NUMERIC DATA OR AN INVALID POWER - stats::dist() REPORTS IT)
   dots <- list(...)
   do.call(
     stats::dist,
@@ -960,6 +925,12 @@ heat_map_clust <- function(x,
 #'
 #' @noRd
 .first_pc <- function(m) {
+  # (COMPILED - THE COVARIANCE MATRIX IN ONE PASS OVER THE DATA, THEN POWER
+  # ITERATION ON IT)
+  if(ncol(m) >= 2 && ncol(m) <= 4096 && is.double(m) &&
+     all_finite_cpp(m, .threads())) {
+    return(first_pc_cpp(m, .threads()))
+  }
   m <- sweep(m, 2, colMeans(m))
   if(ncol(m) == 1) {
     return(m[, 1])
@@ -983,17 +954,25 @@ heat_map_clust <- function(x,
 
 #' k-means from given centres - NULL when it fails (e.g. an empty cluster)
 #'
-#' Warnings about the number of transfer steps on large data are dropped -
-#' the clusters are still used for display.
+#' The Hartigan-Wong algorithm of \code{stats::kmeans()}, ported to compiled
+#' code with the same steps and arithmetic (so the same clusters), without
+#' kmeans()'s copies of the data. Running out of iterations or transfer steps
+#' on large data still gives clusters, which are used for display.
 #'
-#' @importFrom stats kmeans
 #' @noRd
 .try_kmeans <- function(m,
                         centres) {
-  tryCatch(
-    suppressWarnings(kmeans(m, centres, iter.max = 100)),
-    error = function(e) NULL
-  )
+  centres <- as.matrix(centres)
+  storage.mode(centres) <- "double"
+  if(anyDuplicated(centres) || nrow(m) < nrow(centres) ||
+     ncol(centres) != ncol(m)) {
+    return(NULL)
+  }
+  fit <- kmeans_hw_cpp(m, centres, 100L, .threads())
+  if(fit$ifault %in% c(1L, 3L)) {
+    return(NULL)
+  }
+  list(cluster = fit$cluster, centers = fit$centers)
 }
 
 #' Deterministic k-means clusters of the rows of a matrix
@@ -1026,13 +1005,16 @@ heat_map_clust <- function(x,
     )
   }
   m <- as.matrix(m)
-  storage.mode(m) <- "double"
+  # (A DOUBLE MATRIX ISN'T COPIED)
+  if(!is.double(m)) {
+    storage.mode(m) <- "double"
+  }
   if(ncol(m) == 0) {
     stop("'", arg, "' requires numeric data to cluster.", call. = FALSE)
   }
   # MISSING & INFINITE VALUES - THE MEAN OF THEIR COLUMN
-  m[!is.finite(m)] <- NA
-  if(anyNA(m)) {
+  if(!all_finite_cpp(m, .threads())) {
+    m[!is.finite(m)] <- NA
     mu <- colMeans(m, na.rm = TRUE)
     mu[!is.finite(mu)] <- 0
     miss <- which(is.na(m), arr.ind = TRUE)
@@ -1043,7 +1025,12 @@ heat_map_clust <- function(x,
   pc <- .first_pc(m)
   start <- integer(n)
   start[order(pc)] <- ceiling(seq_len(n) * k / n)
-  centres <- rowsum(m, start) / tabulate(start, k)
+  centres <- if(all(tabulate(start, k) > 0)) {
+    # rowsum(m, start) / tabulate(start, k), IN COMPILED CODE
+    group_means_cpp(m, as.integer(start), as.integer(k), .threads())
+  } else {
+    rowsum(m, start) / tabulate(start, k)
+  }
   # k DISTINCT ROWS SPREAD ALONG THE FIRST PRINCIPAL COMPONENT
   spread <- function() {
     u <- which(distinct)
@@ -1058,7 +1045,9 @@ heat_map_clust <- function(x,
   # A CLUSTER - SO THE DISTINCT ROWS, SLOW TO FIND FOR LARGE DATA, ARE ONLY
   # NEEDED WHEN THAT FAILS)
   if(is.null(fit)) {
-    distinct <- !duplicated(m)
+    # (ROWS WITH THE SAME NUMBERS - NOT duplicated(), WHICH COMPARES THEIR
+    # 15-DIGIT STRINGS AND IS SLOW FOR LARGE DATA)
+    distinct <- distinct_rows_cpp(m)
     if(k > sum(distinct)) {
       stop(
         "'", arg, "' asks for ", k, " clusters but there are only ",
