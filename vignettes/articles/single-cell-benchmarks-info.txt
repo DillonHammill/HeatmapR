@@ -1,0 +1,13 @@
+R: R version 4.3.3 (2024-02-29)
+cpu: Intel(R) Xeon(R) Processor @ 2.10GHz
+cores: 2
+memory_gb: 7.8
+date: 2026-11-10
+HeatmapR: 2.0.0.9000
+Seurat: 5.0.1
+SeuratObject: 5.0.1
+scran: 1.30.2
+scuttle: 1.12.0
+SingleCellExperiment: 1.24.0
+Matrix: 1.6.5
+presto: FALSE

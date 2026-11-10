@@ -23,6 +23,7 @@ articles:
   contents:
   - articles/ordering
   - articles/large-data
+  - articles/single-cell
   - articles/cells
   - articles/integration
 - title: Performance
