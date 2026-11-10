@@ -50,15 +50,28 @@ better visualisation, set to FALSE by default.}
 
 \item{cut}{value from 0 to less than 1 specifying the tree cutpoint as a
 proportion of the tree height (for non-cosine distances) or as an absolute
-cosine distance threshold (when \code{dist = "cosine"}), or a value
-greater than or equal to 1 indicating the number of desired clusters.}
+cosine distance threshold (when \code{dist = "cosine"}), a value
+greater than or equal to 1 indicating the number of desired clusters, or
+\code{"auto"} to choose the number of clusters from the data. An
+automatic cut tries 2 to 20 clusters and keeps the one with the largest
+mean silhouette width (Rousseeuw 1987: each leaf compares its mean
+distance to the rest of its cluster with that to the nearest other
+cluster, from -1 to 1), unless no cut reaches 0.25 - the width below
+which Kaufman and Rousseeuw (1990) find no substantial structure - when
+the tree isn't cut. Trees with more than \code{max} leaves are scored on
+a sample of \code{max} leaves (fixed seed); 5000 leaves take well under
+a second.}
 
 \item{order}{how the branches of the dendrogram are ordered:
 \code{"default"} keeps the order from \code{hclust}, \code{"olo"} flips
 branches to minimise the distances between neighbouring leaves (optimal
 leaf ordering) and \code{"mean"} orders branches by their mean values
 (\code{\link[stats]{heatmap}} orders them by the sum of their leaves'
-means instead, which favours small branches). Optimal leaf ordering is exact for up to
+means instead, which favours small branches). \code{"spectral"} orders
+branches by the mean position of their leaves in a spectral order
+(recursive spectral bisection of the graph joining each leaf to its 6
+nearest neighbours), so that gradients and trajectories run in one
+direction across the dendrogram. Optimal leaf ordering is exact for up to
 4000 leaves, which takes well under a second; its time grows with the cube of
 the number of leaves (and its memory with the square), so larger trees are
 ordered in blocks (of 4000 leaves, down to 100 for the largest trees), each
@@ -86,7 +99,10 @@ object of class \code{hclust} which describes the tree produced by
 the clustering process. Branch heights are rescaled to the range
 \code{[0, 1]} for display. When \code{cut} is supplied, the returned object
 also contains a \code{cut} element holding the cluster assigned to each
-leaf in dendrogram order. A tree clustered in two stages (more than
+leaf in dendrogram order (an automatic cut also adds an \code{auto_cut}
+element: the number of clusters \code{k}, 1 when the tree isn't cut,
+the mean silhouette width of each cut tried and the number of leaves
+scored). A tree clustered in two stages (more than
 \code{max} rows) has a \code{two_stage} element giving the size of the
 sample and the number of groups.
 }
@@ -115,6 +131,10 @@ returns while being equally valid.
 \examples{
 # Hierarchical clustering
 heat_map_hclust <- heat_map_clust(mtcars, cut = 5)
+
+# Number of clusters chosen by mean silhouette width
+heat_map_hclust <- heat_map_clust(scale(mtcars), cut = "auto")
+heat_map_hclust$auto_cut$k
 
 }
 \author{

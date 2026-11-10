@@ -128,6 +128,26 @@ scale_cpp <- function(x, margin, method, threads) {
   .Call(`_HeatmapR_scale_cpp`, x, margin, method, threads)
 }
 
+spectral_rows_cpp <- function(x, metric, q, k, threads) {
+  .Call(`_HeatmapR_spectral_rows_cpp`, x, metric, q, k, threads)
+}
+
+refine_rows_cpp <- function(x, order, metric, q) {
+  .Call(`_HeatmapR_refine_rows_cpp`, x, order, metric, q)
+}
+
+spectral_dist_cpp <- function(d, n, k, threads) {
+  .Call(`_HeatmapR_spectral_dist_cpp`, d, n, k, threads)
+}
+
+silhouette_dist_cpp <- function(merge, sample, d, K, threads) {
+  .Call(`_HeatmapR_silhouette_dist_cpp`, merge, sample, d, K, threads)
+}
+
+silhouette_rows_cpp <- function(merge, sample, x, metric, q, K, threads) {
+  .Call(`_HeatmapR_silhouette_rows_cpp`, merge, sample, x, metric, q, K, threads)
+}
+
 merge_sizes_cpp <- function(merge) {
   .Call(`_HeatmapR_merge_sizes_cpp`, merge)
 }

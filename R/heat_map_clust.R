@@ -30,14 +30,27 @@
 #'   better visualisation, set to FALSE by default.
 #' @param cut value from 0 to less than 1 specifying the tree cutpoint as a
 #'   proportion of the tree height (for non-cosine distances) or as an absolute
-#'   cosine distance threshold (when \code{dist = "cosine"}), or a value
-#'   greater than or equal to 1 indicating the number of desired clusters.
+#'   cosine distance threshold (when \code{dist = "cosine"}), a value
+#'   greater than or equal to 1 indicating the number of desired clusters, or
+#'   \code{"auto"} to choose the number of clusters from the data. An
+#'   automatic cut tries 2 to 20 clusters and keeps the one with the largest
+#'   mean silhouette width (Rousseeuw 1987: each leaf compares its mean
+#'   distance to the rest of its cluster with that to the nearest other
+#'   cluster, from -1 to 1), unless no cut reaches 0.25 - the width below
+#'   which Kaufman and Rousseeuw (1990) find no substantial structure - when
+#'   the tree isn't cut. Trees with more than \code{max} leaves are scored on
+#'   a sample of \code{max} leaves (fixed seed); 5000 leaves take well under
+#'   a second.
 #' @param order how the branches of the dendrogram are ordered:
 #'   \code{"default"} keeps the order from \code{hclust}, \code{"olo"} flips
 #'   branches to minimise the distances between neighbouring leaves (optimal
 #'   leaf ordering) and \code{"mean"} orders branches by their mean values
 #'   (\code{\link[stats]{heatmap}} orders them by the sum of their leaves'
-#'   means instead, which favours small branches). Optimal leaf ordering is exact for up to
+#'   means instead, which favours small branches). \code{"spectral"} orders
+#'   branches by the mean position of their leaves in a spectral order
+#'   (recursive spectral bisection of the graph joining each leaf to its 6
+#'   nearest neighbours), so that gradients and trajectories run in one
+#'   direction across the dendrogram. Optimal leaf ordering is exact for up to
 #'   4000 leaves, which takes well under a second; its time grows with the cube of
 #'   the number of leaves (and its memory with the square), so larger trees are
 #'   ordered in blocks (of 4000 leaves, down to 100 for the largest trees), each
@@ -80,7 +93,10 @@
 #'   the clustering process. Branch heights are rescaled to the range
 #'   \code{[0, 1]} for display. When \code{cut} is supplied, the returned object
 #'   also contains a \code{cut} element holding the cluster assigned to each
-#'   leaf in dendrogram order. A tree clustered in two stages (more than
+#'   leaf in dendrogram order (an automatic cut also adds an \code{auto_cut}
+#'   element: the number of clusters \code{k}, 1 when the tree isn't cut,
+#'   the mean silhouette width of each cut tried and the number of leaves
+#'   scored). A tree clustered in two stages (more than
 #'   \code{max} rows) has a \code{two_stage} element giving the size of the
 #'   sample and the number of groups.
 #'
@@ -92,6 +108,10 @@
 #' @examples
 #' # Hierarchical clustering
 #' heat_map_hclust <- heat_map_clust(mtcars, cut = 5)
+#'
+#' # Number of clusters chosen by mean silhouette width
+#' heat_map_hclust <- heat_map_clust(scale(mtcars), cut = "auto")
+#' heat_map_hclust$auto_cut$k
 #'
 #' @export
 heat_map_clust <- function(x,
@@ -114,10 +134,20 @@ heat_map_clust <- function(x,
   # CLUSTERING AND LEAF ORDER, THEN BRANCH HEIGHTS AND CUT (heat_map() KEEPS
   # THE STEPS APART SO THAT A REDRAW WITH A NEW CUT, SCALE OR ORDER REUSES THE
   # CLUSTERING)
+  .check_cut(cut)
   steps <- .clust_steps(x, tree, dist = dist, method = method, max = max,
                         order = order, ...)
-  .finish_tree(steps$ordered, scale = scale, cut = cut, dist = dist)
-
+  cut <- .resolve_cut(cut, steps$raw, .clust_prep(x, tree), dist = dist,
+                      max = max, ...)
+  out <- .finish_tree(steps$ordered, scale = scale, cut = cut$cut, dist = dist)
+  if(!is.null(cut$auto)) {
+    # (NO CLUSTERS FOUND - NOR ANY STORED IN A SUPPLIED TREE)
+    if(cut$auto$k == 1) {
+      out$cut <- NULL
+    }
+    out$auto_cut <- cut$auto
+  }
+  out
 }
 
 #' The data and supplied tree behind heat_map_clust(), without clustering
@@ -205,7 +235,7 @@ heat_map_clust <- function(x,
   out <- list(raw = raw)
   if(ordered) {
     out$ordered <- .clust_order(raw, prep, order = order, dist = dist, d = d,
-                                ...)
+                                max = max, ...)
   }
   out
 }
@@ -221,32 +251,25 @@ heat_map_clust <- function(x,
                          order = "default",
                          dist = "euclidean",
                          d = NULL,
+                         max = 5000,
                          ...) {
   if(identical(order, "default")) {
     return(raw)
   }
   # CLUSTERED DATA - ITS ROWS ARE THE LEAVES
   if(!is.null(prep$rows)) {
-    return(.tree_order(raw, prep$rows, order = order, dist = dist, d = d, ...))
+    return(.tree_order(raw, prep$rows, order = order, dist = dist, d = d,
+                       max = max, ...))
   }
   # SUPPLIED DISTANCES ORDER THE LEAVES
-  if(identical(order, "olo") && !is.null(prep$dist) &&
-     length(raw$order) <= .OLO_MAX) {
+  if(!is.null(prep$dist) &&
+     (identical(order, "spectral") ||
+      (identical(order, "olo") && length(raw$order) <= .OLO_MAX))) {
     return(.tree_order(raw, NULL, order = order, d = prep$dist))
   }
   # OTHERWISE DISTANCES FROM THE DATA, WHEN IT MATCHES THE TREE
-  rows <- if(nrow(as.matrix(prep$x)) == length(raw$order)) {
-    as.matrix(prep$x)
-  } else {
-    t(as.matrix(prep$x))
-  }
-  if(nrow(rows) != length(raw$order)) {
-    stop(
-      "'x' must match the leaves of 'tree' to reorder them.",
-      call. = FALSE
-    )
-  }
-  .tree_order(raw, rows, order = order, dist = dist, ...)
+  rows <- .leaf_rows(prep$x, length(raw$order))
+  .tree_order(raw, rows, order = order, dist = dist, max = max, ...)
 }
 
 #' Branch heights and clusters of a tree from .clust_steps()
@@ -283,8 +306,8 @@ heat_map_clust <- function(x,
     if(!is.numeric(cut) || length(cut) != 1 || is.na(cut) || cut < 0 ||
        (cut >= 1 && cut != round(cut))) {
       stop(
-        "'cut' must be a single non-negative number - below 1 (a height) or ",
-        "a whole number of clusters.",
+        "'cut' must be \"auto\" or a single non-negative number - below 1 ",
+        "(a height) or a whole number of clusters.",
         call. = FALSE
       )
     }
@@ -324,12 +347,11 @@ heat_map_clust <- function(x,
 
 #' Cut a tree at a height
 #'
-#' A tree with inversions (centroid and median linkage) has heights that
-#' aren't sorted, which \code{cutree(h = )} rejects: it is cut into one more
-#' cluster than the number of merges above the height, as a tree without
-#' inversions would be.
+#' Into one more cluster than the number of merges above the height, as
+#' \code{cutree(h = )} cuts a tree - also a tree with inversions (centroid
+#' and median linkage), whose heights aren't sorted, which \code{cutree()}
+#' rejects.
 #'
-#' @importFrom stats cutree
 #' @noRd
 .cut_height <- function(tree,
                         h) {
@@ -394,11 +416,11 @@ heat_map_clust <- function(x,
   if(nrow(x) > max) {
     tree <- .hclust_large(x, dist = dist, method = method, max = max, ...)
     return(.tree_order(tree, x, order = order, dist = dist, block = block,
-                       ...))
+                       max = max, ...))
   }
   r <- .hclust_unordered(x, dist = dist, method = method, ...)
   .tree_order(r$tree, x, order = order, dist = dist, d = r$d, block = block,
-              ...)
+              max = max, ...)
 }
 
 #' Hierarchical clustering of the rows of a matrix, before the leaf order
@@ -795,12 +817,25 @@ heat_map_clust <- function(x,
                         dist = "euclidean",
                         d = NULL,
                         block = NULL,
+                        max = 5000,
                         ...) {
   if(identical(order, "default") || nrow(tree$merge) < 2) {
     return(tree)
   }
   if(order == "mean") {
     return(.mean_order(tree, rowMeans(as.matrix(x), na.rm = TRUE)))
+  }
+  # BRANCHES ORDERED BY THE MEAN POSITION OF THEIR LEAVES IN THE SPECTRAL
+  # ORDER - THE DENDROGRAM FOLLOWS IT AS FAR AS ITS BRANCHES ALLOW
+  if(order == "spectral") {
+    pos <- if(!is.null(d)) {
+      .spectral_order(NULL, d = d)
+    } else {
+      .spectral_order(x, dist = dist, max = max, ...)
+    }
+    rank <- integer(length(pos))
+    rank[pos] <- seq_along(pos)
+    return(.mean_order(tree, rank))
   }
   # TOO MANY LEAVES TO ORDER EXACTLY - IN BLOCKS (block: THE SIZE OF THE
   # BLOCKS OF A LARGER TREE THIS ONE IS PART OF)
@@ -872,9 +907,9 @@ heat_map_clust <- function(x,
 .check_order <- function(order,
                          arg = "order") {
   if(!is.character(order) || length(order) != 1 ||
-     !order %in% c("default", "olo", "mean")) {
+     !order %in% c("default", "olo", "mean", "spectral")) {
     stop(
-      "'", arg, "' must be \"default\", \"olo\" or \"mean\".",
+      "'", arg, "' must be \"default\", \"olo\", \"mean\" or \"spectral\".",
       call. = FALSE
     )
   }

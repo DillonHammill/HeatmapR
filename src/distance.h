@@ -308,6 +308,17 @@ inline Dist4 kernel4(int metric) {
   return dist4_scalar;
 }
 
+// Distances from row a to the rows b[0..n), as row_dist() computes them, four
+// at a time with the kernel for the metric (k4; null: one at a time)
+inline void row_dists(const double* a, const double* const* b, size_t n, int p, int metric,
+                      double q, Dist4 k4, double* out) {
+  size_t i = 0;
+  if (k4 != nullptr) {
+    for (; i + 4 <= n; i += 4) k4(a, b + i, p, metric, out + i);
+  }
+  for (; i < n; ++i) out[i] = row_dist(a, b[i], p, metric, q);
+}
+
 }  // namespace dist
 
 #endif
