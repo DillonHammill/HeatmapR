@@ -1057,6 +1057,9 @@
   }
   band_in <- 0
   legend <- legend_measure(shape_in)
+  # SMALLEST DISTANCES BETWEEN CELL CENTRES (PLOT UNITS)
+  spacing_x <- .min_spacing(p$x_centers)
+  spacing_y <- .min_spacing(p$y_centers)
 
   for(iter in seq_len(12)) {
 
@@ -1228,14 +1231,14 @@
     # SPACE FOR EACH AXIS LABEL (INCHES) - THE ENLARGED CELLS OF THE ZOOM
     # PANELS ON THE AXIS TEXT SIDE
     space_x <- if(length(zoom_on(zx, p$side_x)) == 0) {
-      .min_spacing(p$x_centers) / upi_x
+      spacing_x / upi_x
     } else {
-      .min_spacing(p$x_centers) * cell_x_in
+      spacing_x * cell_x_in
     }
     space_y <- if(length(zoom_on(zy, p$side_y)) == 0) {
-      .min_spacing(p$y_centers) / upi_y
+      spacing_y / upi_y
     } else {
-      .min_spacing(p$y_centers) * cell_y_in
+      spacing_y * cell_y_in
     }
 
     # ANNOTATION NAMES - SHRUNK TO FIT ANNOTATION TRACKS THAT WERE SHRUNK
