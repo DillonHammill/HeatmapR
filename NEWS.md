@@ -128,6 +128,7 @@ HeatmapR 2.0.0 is a major release: a new layout that sizes every part of a heatm
   - bar graph axis labels are placed beyond their tick labels, and a gap is added between the heatmap and a bar graph only when their labels would touch;
   - column (row) labels wider than their cells at the edge of the heatmap move the row (column) annotation tracks out, so they don't cover the annotation names;
   - margins set with `margins` that are too small for the axis text and label beside them shrink that text (to 40% at most) rather than drawing it over itself.
+* Cluster label text is white on dark label strips and black on light ones (`tree_label_text_col_x`/`tree_label_text_col_y = "auto"`, the new default), whichever contrasts more with each strip's colour. The default dark grey strips had black text, at a contrast of 3.7:1 (below the 4.5:1 that the Web Content Accessibility Guidelines ask of text); white text on them reaches 5.7:1.
 * Circle and diamond cells stay round when the cells aren't square: they are sized by the shorter side of the cells (as in the size legend) instead of stretching into ovals and flat diamonds.
 * Cell borders are left out when cells are smaller than three line widths (e.g. more than about 200 rows on a 7 inch device with the default borders), instead of turning the heatmap black. Borders requested with `cell_border_mask` are always drawn.
 * Missing (`NA`) axis labels no longer get a tick mark, so `axis_text_y = NA` removes the y axis text of a large heatmap instead of leaving a solid bar of ticks.
