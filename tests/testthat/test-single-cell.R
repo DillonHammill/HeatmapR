@@ -86,7 +86,13 @@ test_that("cells of a data.frame are grouped, annotated and downsampled", {
   expect_equal(unname(info$data[, "CD3"]), cells$CD3[keep])
   # Groups in their sorted order from the top, labelled
   expect_equal(as.vector(table(info$row_clusters)), c(20, 5, 20))
-  expect_true(all(c("B", "NK", "T") %in% drawn_text(hm)))
+  y <- numeric(0)
+  for(z in drawn(hm, "C_text")) {
+    lab <- as.character(z[[2]])
+    hit <- lab %in% c("B", "NK", "T")
+    y[lab[hit]] <- z[[1]]$y[hit]
+  }
+  expect_true(y[["B"]] > y[["NK"]] && y[["NK"]] > y[["T"]])
   args <- attr(hm, "heat_map_args")
   expect_identical(args$tree_cut_y, factor(cells$cluster[keep]))
   expect_true(args$tree_label_y)
