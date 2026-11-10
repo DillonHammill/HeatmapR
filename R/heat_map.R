@@ -699,6 +699,10 @@
 #'   legend, so that you can see which colours most cells take and how many
 #'   values sit near the limits of the scale (e.g. with
 #'   \code{cell_col_scale_limits = "robust"}), set to FALSE by default.
+#' @param legend_size_format the text of the size legend: \code{NULL} (the
+#'   default) for its values, \code{"percent"} for values between 0 and 1 (e.g.
+#'   the proportion of cells detected) shown as percentages, or a function
+#'   taking the values and returning their labels.
 #' @param legend_side where to draw the legend, either \code{"auto"} (the
 #'   default) beside the heatmap, opposite the y axis text, or
 #'   \code{"bottom"} below the heatmap with horizontal colour bars and the
@@ -1017,6 +1021,7 @@ heat_map <- function(x,
                      legend_col_scale_size = 1,
                      legend_col_breaks = NULL,
                      legend_col_density = FALSE,
+                     legend_size_format = NULL,
                      legend_title = NULL,
                      legend_title_text_font = 2,
                      legend_title_text_size = 1,
@@ -2441,7 +2446,10 @@ heat_map <- function(x,
       legend_ticks$labels
     },
     size_labels = if("size" %in% legend_types) {
-      .legend_size_labels(c(cell_size_min, cell_size_max))
+      .legend_size_text(
+        .legend_size_labels(c(cell_size_min, cell_size_max)),
+        legend_size_format
+      )
     },
     levels_labels = if("levels" %in% legend_types) {
       unique(unname(cell_levels))
@@ -2486,6 +2494,7 @@ heat_map <- function(x,
       col_density = legend_density,
       col_uncertainty = unc_key,
       size = if("size" %in% legend_drawn) c(cell_size_min, cell_size_max),
+      size_format = legend_size_format,
       levels = if("levels" %in% legend_drawn) {
         list(labels = unique(unname(cell_levels)))
       },
@@ -3439,6 +3448,7 @@ heat_map <- function(x,
       levels = legend_levels,
       annotations = legend_annots,
       size_fun = size_fun,
+      size_format = legend_size_format,
       xlim = legend_xlim,
       ylim = ylim,
       upi = lay$upi,

@@ -250,6 +250,27 @@ extern "C" SEXP _HeatmapR_sparse_group_medians_cpp(SEXP i, SEXP p, SEXP x, SEXP 
     return cpp11::as_sexp(sparse_group_medians_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(i), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(p), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(nrow), cpp11::as_cpp<cpp11::decay_t<int>>(ncol), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(sel), cpp11::as_cpp<cpp11::decay_t<bool>>(cells_by_column), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(group), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
+// sparse.cpp
+cpp11::doubles_matrix<> sparse_group_auc_cpp(cpp11::integers i, cpp11::integers p, cpp11::doubles x, int nrow, int ncol, cpp11::integers sel, bool cells_by_column, cpp11::integers group, int n_groups, int threads);
+extern "C" SEXP _HeatmapR_sparse_group_auc_cpp(SEXP i, SEXP p, SEXP x, SEXP nrow, SEXP ncol, SEXP sel, SEXP cells_by_column, SEXP group, SEXP n_groups, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(sparse_group_auc_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(i), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(p), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(nrow), cpp11::as_cpp<cpp11::decay_t<int>>(ncol), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(sel), cpp11::as_cpp<cpp11::decay_t<bool>>(cells_by_column), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(group), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// sparse.cpp
+cpp11::list dense_group_sums_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel, bool cells_by_column, cpp11::integers group, int n_groups, double threshold, int threads);
+extern "C" SEXP _HeatmapR_dense_group_sums_cpp(SEXP x, SEXP sel, SEXP cells_by_column, SEXP group, SEXP n_groups, SEXP threshold, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(dense_group_sums_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(sel), cpp11::as_cpp<cpp11::decay_t<bool>>(cells_by_column), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(group), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups), cpp11::as_cpp<cpp11::decay_t<double>>(threshold), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// sparse.cpp
+cpp11::doubles_matrix<> dense_group_auc_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel, bool cells_by_column, cpp11::integers group, int n_groups, int threads);
+extern "C" SEXP _HeatmapR_dense_group_auc_cpp(SEXP x, SEXP sel, SEXP cells_by_column, SEXP group, SEXP n_groups, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(dense_group_auc_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(sel), cpp11::as_cpp<cpp11::decay_t<bool>>(cells_by_column), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(group), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
 // spectral.cpp
 cpp11::integers spectral_rows_cpp(cpp11::doubles_matrix<> x, int metric, double q, int k, int threads);
 extern "C" SEXP _HeatmapR_spectral_rows_cpp(SEXP x, SEXP metric, SEXP q, SEXP k, SEXP threads) {
@@ -409,6 +430,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_clade_in_cpp",             (DL_FUNC) &_HeatmapR_clade_in_cpp,              2},
     {"_HeatmapR_cluster_batch_cpp",        (DL_FUNC) &_HeatmapR_cluster_batch_cpp,         7},
     {"_HeatmapR_cut_tree_cpp",             (DL_FUNC) &_HeatmapR_cut_tree_cpp,              3},
+    {"_HeatmapR_dense_group_auc_cpp",      (DL_FUNC) &_HeatmapR_dense_group_auc_cpp,       6},
+    {"_HeatmapR_dense_group_sums_cpp",     (DL_FUNC) &_HeatmapR_dense_group_sums_cpp,      7},
     {"_HeatmapR_dist_cross_cpp",           (DL_FUNC) &_HeatmapR_dist_cross_cpp,            6},
     {"_HeatmapR_dist_rows_cpp",            (DL_FUNC) &_HeatmapR_dist_rows_cpp,             4},
     {"_HeatmapR_distinct_rows_cpp",        (DL_FUNC) &_HeatmapR_distinct_rows_cpp,         1},
@@ -448,6 +471,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_silhouette_dist_cpp",      (DL_FUNC) &_HeatmapR_silhouette_dist_cpp,       5},
     {"_HeatmapR_silhouette_rows_cpp",      (DL_FUNC) &_HeatmapR_silhouette_rows_cpp,       7},
     {"_HeatmapR_sparse_dense_cpp",         (DL_FUNC) &_HeatmapR_sparse_dense_cpp,          9},
+    {"_HeatmapR_sparse_group_auc_cpp",     (DL_FUNC) &_HeatmapR_sparse_group_auc_cpp,     10},
     {"_HeatmapR_sparse_group_medians_cpp", (DL_FUNC) &_HeatmapR_sparse_group_medians_cpp, 10},
     {"_HeatmapR_sparse_group_sums_cpp",    (DL_FUNC) &_HeatmapR_sparse_group_sums_cpp,    11},
     {"_HeatmapR_spectral_dist_cpp",        (DL_FUNC) &_HeatmapR_spectral_dist_cpp,         4},

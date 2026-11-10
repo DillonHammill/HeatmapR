@@ -11,6 +11,8 @@
 #'   \code{limits} and \code{ramp} (continuous).
 #' @param size_fun function mapping values to relative cell sizes, shared with
 #'   the cells of the heatmap so that the legend matches the cells.
+#' @param size_format the text of the size legend (see
+#'   \code{legend_size_format} in \code{heat_map()}).
 #' @param upi plot units per inch along x and y, computed from the current plot
 #'   when NULL.
 #' @param geom legend geometry from the layout.
@@ -26,6 +28,7 @@ heat_map_legend <- function(col = NULL,
                             levels = NULL,
                             annotations = NULL,
                             size_fun = NULL,
+                            size_format = NULL,
                             xlim,
                             ylim,
                             upi = NULL,
@@ -94,6 +97,7 @@ heat_map_legend <- function(col = NULL,
       blocks = .legend_blocks(
         col = col,
         size = size,
+        size_format = size_format,
         levels = levels,
         annotations = annotations,
         title = title,
@@ -158,6 +162,8 @@ heat_map_legend <- function(col = NULL,
 #'
 #' @param col limits of the colour scale or NULL.
 #' @param size limits of the size scale or NULL.
+#' @param size_format the text of the size legend (see
+#'   \code{legend_size_format} in \code{heat_map()}).
 #' @param levels list with the \code{labels} (and \code{colours}) of the levels
 #'   legend or NULL.
 #' @param annotations annotation legends as returned by
@@ -170,6 +176,7 @@ heat_map_legend <- function(col = NULL,
 #' @noRd
 .legend_blocks <- function(col = NULL,
                            size = NULL,
+                           size_format = NULL,
                            levels = NULL,
                            annotations = NULL,
                            title = NA,
@@ -224,10 +231,13 @@ heat_map_legend <- function(col = NULL,
     )
   }
   if(length(size) >= 2) {
+    # (THE VALUES SIZE THE SHAPES; THE LABELS ARE THEIR TEXT)
+    values <- .legend_size_labels(size)
     blocks[[length(blocks) + 1]] <- block(
       "shape",
-      .legend_size_labels(size),
-      2
+      .legend_size_text(values, size_format),
+      2,
+      values = values
     )
   }
   if(length(levels$labels) > 0) {
@@ -530,7 +540,7 @@ heat_map_legend <- function(col = NULL,
       yc <- Y(t + (rows - 0.5) * b$row_h)
       xc <- X(0.5 * b$key_w)
       if(b$kind == "shape") {
-        r <- 0.5 * size_fun(b$labels) * b$key_w
+        r <- 0.5 * size_fun(b$values) * b$key_w
         rx <- r * upi[["x"]]
         ry <- r * upi[["y"]]
         if(grepl("^r", shape, ignore.case = TRUE)) {
@@ -827,7 +837,7 @@ heat_map_legend <- function(col = NULL,
       ky <- yb - (row_i + 0.5) * b$item_h
       h <- b$key_w / 2
       if(b$kind == "shape") {
-        r <- 0.5 * size_fun(b$labels) * b$key_w
+        r <- 0.5 * size_fun(b$values) * b$key_w
         if(grepl("^r", shape, ignore.case = TRUE)) {
           rect(X(kx - r), Y(ky - r), X(kx + r), Y(ky + r), col = "black",
                xpd = NA)
