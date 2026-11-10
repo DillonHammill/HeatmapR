@@ -3,22 +3,34 @@
 #' Scale numeric data prior to constructing heat_map
 #'
 #' Apply column-wise or row-wise scaling to numeric columns in a matrix or
-#' data.frame prior to constructing a \code{heat_map}.
+#' data.frame prior to constructing a \code{heat_map}, or transform them for
+#' cytometry data.
 #'
 #' @param x matrix-like object to be scaled.
 #' @param scale indicates whether the data should be scaled by \code{"row"} or
 #'   \code{"column"}, set to \code{"column"} by default. Abbreviations such as
 #'   \code{"col"} are accepted, as are \code{"x"} and \code{"y"} as aliases for
 #'   \code{"column"} and \code{"row"}.
-#' @param method type of scaling to perform, can be either \code{"range"},
-#'   \code{"mean"} or \code{"zscore"} (unique abbreviations such as \code{"z"}
-#'   are accepted). Range scaling normalizes the data to have limits between 0
-#'   and 1. Mean scaling subtracts the mean (calculated excluding missing
-#'   values) from each value and divides the result by the range. Z-score
-#'   scaling subtracts the mean from each value and then divides the result by
-#'   the standard deviation. Rows or columns with no variation are mapped to
-#'   0.5 for range scaling and 0 for mean and z-score scaling, rather than
-#'   \code{NaN}.
+#' @param method type of scaling to perform, one of \code{"range"},
+#'   \code{"mean"}, \code{"zscore"}, \code{"quantile"} or \code{"asinh"}
+#'   (unique abbreviations such as \code{"z"} are accepted). Range scaling
+#'   normalizes the data to have limits between 0 and 1. Mean scaling
+#'   subtracts the mean (calculated excluding missing values) from each value
+#'   and divides the result by the range. Z-score scaling subtracts the mean
+#'   from each value and then divides the result by the standard deviation.
+#'   Rows or columns with no variation are mapped to 0.5 for range scaling
+#'   and 0 for mean and z-score scaling, rather than \code{NaN}. Quantile
+#'   scaling maps the \code{q} and \code{1 - q} quantiles of each column
+#'   (row) to 0 and 1 and clips the values beyond them, as CATALYST scales
+#'   mass cytometry data, so that a few extreme cells don't compress the
+#'   colours of the rest; when the two quantiles are equal, values above them
+#'   are 1 and the others 0. The \code{"asinh"} transform takes the inverse
+#'   hyperbolic sine of each value divided by \code{cofactor}, the usual
+#'   transform of cytometry intensities (it ignores \code{scale}).
+#' @param cofactor the cofactor of the \code{"asinh"} transform: one number
+#'   (5 by default, as for mass cytometry; about 150 is common for flow
+#'   cytometry), or one per numeric column (in order, or named by column).
+#' @param q the quantile of quantile scaling, set to 0.01 by default.
 #'
 #' @return a matrix or data.frame containing the scaled data.
 #'
@@ -42,10 +54,19 @@
 #' scale = "row",
 #' method = "zscore")
 #'
+#' # Cytometry: asinh transform with cofactor 5, then each marker scaled to
+#' # 0-1 between its 1st and 99th percentiles
+#' events <- matrix(rexp(3000, 1 / 200), ncol = 3,
+#'                  dimnames = list(NULL, c("CD3", "CD4", "CD8")))
+#' events <- heat_map_scale(events, method = "asinh", cofactor = 5)
+#' events <- heat_map_scale(events, method = "quantile", q = 0.01)
+#'
 #' @export
 heat_map_scale <- function(x,
                            scale = "column",
-                           method = "range") {
+                           method = "range",
+                           cofactor = 5,
+                           q = 0.01) {
 
   # SCALE NUMERIC COLUMNS ONLY
   num_cols <- .numeric_cols(x)
@@ -58,13 +79,27 @@ heat_map_scale <- function(x,
   # MARGIN & METHOD
   scale <- .scale_margin(scale)
   method <- .scale_method(method)
+  if(!is.numeric(q) || length(q) != 1 || is.na(q) || q < 0 || q >= 0.5) {
+    stop("'q' must be a number from 0 to less than 0.5.", call. = FALSE)
+  }
+  if(method == "asinh") {
+    cofactor <- .scale_cofactor(cofactor, colnames(x)[num_cols],
+                                length(num_cols))
+  }
 
   # MESSAGE
   message(
-    paste0(
-      "Applying ", method, " scaling to each ", scale, "..."
-    )
+    if(method == "asinh") {
+      paste0(
+        "Applying the asinh transform (cofactor ",
+        if(length(unique(cofactor)) == 1) cofactor[1] else "per column",
+        ")..."
+      )
+    } else {
+      paste0("Applying ", method, " scaling to each ", scale, "...")
+    }
   )
+  method_code <- match(method, .scale_methods())
 
   # A NUMERIC MATRIX - SCALED AS IT IS (NO COPIES OF THE COLUMNS)
   if(is.matrix(x) && length(num_cols) == ncol(x)) {
@@ -74,7 +109,9 @@ heat_map_scale <- function(x,
     scaled <- scale_cpp(
       x,
       if(scale == "column") 2L else 1L,
-      match(method, c("range", "mean", "zscore")),
+      method_code,
+      q,
+      as.double(cofactor),
       .threads()
     )
     attributes(scaled) <- attributes(x)
@@ -93,7 +130,9 @@ heat_map_scale <- function(x,
   scaled <- scale_cpp(
     num_data,
     if(scale == "column") 2L else 1L,
-    match(method, c("range", "mean", "zscore")),
+    method_code,
+    q,
+    as.double(cofactor),
     .threads()
   )
   attributes(scaled) <- attributes(num_data)
@@ -155,23 +194,72 @@ heat_map_scale <- function(x,
   c("column", "row")[ind]
 }
 
+#' The scaling methods, in the order of their codes in scale_cpp()
+#' @noRd
+.scale_methods <- function() {
+  c("range", "mean", "zscore", "quantile", "asinh")
+}
+
 #' Resolve the scaling method
 #' @noRd
 .scale_method <- function(method) {
-  methods <- c("range", "mean", "zscore")
+  methods <- .scale_methods()
   if(!is.character(method) || length(method) != 1 || is.na(method)) {
-    stop("'method' must be one of \"range\", \"mean\" or \"zscore\"!")
+    stop(
+      "'method' must be one of \"range\", \"mean\", \"zscore\", ",
+      "\"quantile\" or \"asinh\"!"
+    )
   }
   ind <- pmatch(tolower(method), methods)
   if(is.na(ind)) {
     stop(
       paste0(
         "'", method, "' is not a supported scaling method. ",
-        "Use one of \"range\", \"mean\" or \"zscore\"."
+        "Use one of \"range\", \"mean\", \"zscore\", \"quantile\" or ",
+        "\"asinh\"."
       )
     )
   }
   methods[ind]
+}
+
+#' The cofactor of each column for the asinh transform
+#'
+#' @param cofactor one positive number, or one per column (in order, or named
+#'   by column).
+#' @param labels the names of the columns.
+#' @param n the number of columns.
+#'
+#' @noRd
+.scale_cofactor <- function(cofactor,
+                            labels,
+                            n) {
+  if(!is.numeric(cofactor) || length(cofactor) == 0 || anyNA(cofactor) ||
+     any(!is.finite(cofactor)) || any(cofactor <= 0)) {
+    stop("'cofactor' must hold positive numbers.", call. = FALSE)
+  }
+  if(length(cofactor) == 1 && is.null(names(cofactor))) {
+    return(cofactor)
+  }
+  if(!is.null(names(cofactor))) {
+    if(is.null(labels) || !all(labels %in% names(cofactor))) {
+      stop(
+        "'cofactor' must name a cofactor for every column: ",
+        paste(utils::head(setdiff(labels, names(cofactor)), 5),
+              collapse = ", "),
+        " missing.",
+        call. = FALSE
+      )
+    }
+    return(unname(cofactor[labels]))
+  }
+  if(length(cofactor) != n) {
+    stop(
+      "'cofactor' must be one number, or one per column (", n, ").",
+      call. = FALSE
+    )
+  }
+  unname(cofactor)
 }
 
 #' Scale a vector based on its range

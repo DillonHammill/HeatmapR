@@ -238,11 +238,11 @@ test_that("heat_map_summarise() groups cells by metadata column", {
     "not summarised: sample"
   )
   expect_identical(
-    s,
+    plain(s),
     heat_map_summarise(cells[, 1:3], group_y = cells$cluster, fun = "median")
   )
   expect_identical(
-    heat_map_summarise(cells, features = "CD19", group_by = "cluster"),
+    plain(heat_map_summarise(cells, features = "CD19", group_by = "cluster")),
     heat_map_summarise(cells[, "CD19", drop = FALSE], group_y = cells$cluster)
   )
   # Groups named by cell
@@ -438,18 +438,18 @@ test_that("SingleCellExperiment objects are read by assay, features and metadata
   expect_identical(attr(hm, "heat_map_args")$annotation_y$batch, sce$batch[keep])
   # Summaries of the assay asked for
   expect_identical(
-    heat_map_summarise(sce, features = 1:5, group_by = "cluster", assay = "counts"),
+    plain(heat_map_summarise(sce, features = 1:5, group_by = "cluster", assay = "counts")),
     heat_map_summarise(t(as.matrix(counts))[, 1:5], group_y = sce$cluster)
   )
   expect_identical(
-    heat_map_summarise(sce, group_by = "cluster", fun = "median", assay = 2),
+    plain(heat_map_summarise(sce, group_by = "cluster", fun = "median", assay = 2)),
     heat_map_summarise(dense, group_y = sce$cluster, fun = "median")
   )
   expect_error(heat_map_summarise(sce, group_by = "cluster", assay = "x"), "\"counts\", \"logcounts\"")
   # Names of a vector of features (e.g. from unlist()) don't name the columns
   named <- c(first = "ENSG2", second = "ENSG9")
   expect_identical(
-    heat_map_summarise(sce, features = named, group_by = "cluster"),
+    plain(heat_map_summarise(sce, features = named, group_by = "cluster")),
     heat_map_summarise(dense[, c("ENSG2", "ENSG9")], group_y = sce$cluster)
   )
   # Dense assays and the "exprs" assay of cytometry experiments
@@ -458,7 +458,7 @@ test_that("SingleCellExperiment objects are read by assay, features and metadata
     colData = data.frame(cluster = sce$cluster)
   )
   expect_identical(
-    heat_map_summarise(ex, group_by = "cluster"),
+    plain(heat_map_summarise(ex, group_by = "cluster")),
     heat_map_summarise(dense, group_y = sce$cluster)
   )
 })
@@ -482,21 +482,21 @@ test_that("Seurat objects are read by assay, layer, features and metadata", {
     "\"counts\" layer"
   )
   expect_identical(
-    s,
+    plain(s),
     heat_map_summarise(t(as.matrix(counts))[, 1:3], group_y = meta$cluster)
   )
   logc <- log1p(counts)
   seu <- SeuratObject::SetAssayData(seu, layer = "data", new.data = logc)
   dense <- t(as.matrix(logc))
   expect_identical(
-    heat_map_summarise(seu, features = c("G2", "G5"), group_by = "cluster",
-                       fun = "detected"),
+    plain(heat_map_summarise(seu, features = c("G2", "G5"), group_by = "cluster",
+                       fun = "detected")),
     heat_map_summarise(dense[, c("G2", "G5")], group_y = meta$cluster,
                        fun = "detected")
   )
   expect_identical(
-    heat_map_summarise(seu, features = "G2", group_by = "cluster",
-                       assay = c("RNA", "counts")),
+    plain(heat_map_summarise(seu, features = "G2", group_by = "cluster",
+                       assay = c("RNA", "counts"))),
     heat_map_summarise(t(as.matrix(counts))[, "G2", drop = FALSE],
                        group_y = meta$cluster)
   )
@@ -559,7 +559,7 @@ test_that("flowFrame and flowSet objects are read by marker or channel", {
   hm <- draw(ff, group_by = "cluster")
   expect_identical(colnames(heat_map_info(hm)$data), c("FSC-A", "CD3", "CD19"))
   expect_identical(
-    heat_map_summarise(ff, features = c("CD3", "CD19"), group_by = "cluster", fun = "median"),
+    plain(heat_map_summarise(ff, features = c("CD3", "CD19"), group_by = "cluster", fun = "median")),
     heat_map_summarise(
       `colnames<-`(e[, 2:3], c("CD3", "CD19")),
       group_y = e[, "cluster"],
@@ -584,7 +584,7 @@ test_that("flowFrame and flowSet objects are read by marker or channel", {
   )
   all <- rbind(methods::slot(frames$b.fcs, "exprs"), methods::slot(frames$a.fcs, "exprs"))
   expect_identical(
-    heat_map_summarise(fs, features = "CD3", group_by = "sample"),
+    plain(heat_map_summarise(fs, features = "CD3", group_by = "sample")),
     heat_map_summarise(
       `colnames<-`(all[, 2, drop = FALSE], "CD3"),
       group_y = factor(rep(c("b.fcs", "a.fcs"), c(100, 200)), levels = c("b.fcs", "a.fcs"))

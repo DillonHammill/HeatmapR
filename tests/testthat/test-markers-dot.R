@@ -116,7 +116,8 @@ test_that("dense cell summaries equal heat_map_summarise() of the dense data", {
     for(fun in c("mean", "sum", "n", "detected")) {
       for(x in list(case$d, as.data.frame(case$d))) {
         expect_identical(
-          heat_map_summarise(x, group_by = case$g, fun = fun, threshold = 0.2),
+          plain(heat_map_summarise(x, group_by = case$g, fun = fun,
+                                   threshold = 0.2)),
           suppressWarnings(heat_map_summarise(case$d, group_y = case$g, fun = fun,
                                               threshold = 0.2))
         )
@@ -261,9 +262,10 @@ test_that("heat_map_dot() draws scaled means as colour and detection as area", {
   on.exit(grDevices::dev.off())
   hm <- heat_map_dot(cells, features = feats, group_by = "cluster", popup = FALSE)
   args <- attr(hm, "heat_map_args")
-  means <- heat_map_summarise(cells, features = feats, group_by = "cluster")
-  detected <- heat_map_summarise(cells, features = feats, group_by = "cluster",
-                                 fun = "detected")
+  means <- plain(heat_map_summarise(cells, features = feats,
+                                    group_by = "cluster"))
+  detected <- plain(heat_map_summarise(cells, features = feats,
+                                       group_by = "cluster", fun = "detected"))
   z <- suppressMessages(heat_map_scale(means, "column", "zscore"))
   expect_identical(args$x, pmin(pmax(z, -2.5), 2.5))
   expect_identical(args$cell_size, detected)

@@ -230,27 +230,57 @@ as.character.heat_map_description <- function(x,
 #' The scaling applied by heat_map()
 #' @noRd
 .describe_scaling <- function(scale,
-                              method) {
+                              method,
+                              q = 0.01,
+                              transform = NULL,
+                              cofactor = 5) {
+  trans <- if(identical(transform, "asinh")) {
+    paste0(
+      "asinh-transformed (cofactor ",
+      if(length(unique(cofactor)) == 1) cofactor[1] else "set per column",
+      ")"
+    )
+  }
   if(is.null(scale) || isFALSE(scale)) {
-    return(NULL)
+    return(trans)
   }
   if(isTRUE(scale)) {
     scale <- "column"
   }
   if(is.character(scale) && length(scale) == 1 &&
-     tolower(scale) %in% c("range", "mean", "zscore")) {
+     tolower(scale) %in% c("range", "mean", "zscore", "quantile")) {
     method <- tolower(scale)
     scale <- "column"
   }
   margin <- .scale_margin(scale)
   method <- .scale_method(method)
   within <- paste("within each", margin)
-  switch(
+  scaled <- switch(
     method,
     "range" = paste("rescaled from 0 to 1", within),
     "mean" = paste("centred on the mean and divided by the range", within),
-    "zscore" = paste("converted to z-scores", within)
+    "zscore" = paste("converted to z-scores", within),
+    "quantile" = paste0(
+      "rescaled from 0 to 1 between the ", .describe_percentile(q), " and ",
+      .describe_percentile(1 - q), " percentiles ", within
+    ),
+    "asinh" = "asinh-transformed"
   )
+  paste(c(trans, scaled), collapse = " and ")
+}
+
+#' A quantile as an ordinal percentile ("1st", "99th", "2.5th")
+#' @noRd
+.describe_percentile <- function(p) {
+  v <- signif(100 * p, 4)
+  suffix <- if(v != round(v)) {
+    "th"
+  } else if(v %% 100 %in% 11:13) {
+    "th"
+  } else {
+    c("th", "st", "nd", "rd", rep("th", 6))[v %% 10 + 1]
+  }
+  paste0(format(v, trim = TRUE), suffix)
 }
 
 #' Size, title and scaling
@@ -261,7 +291,13 @@ as.character.heat_map_description <- function(x,
   title <- .describe_text(arg("title"))
   label_y <- .describe_text(arg("axis_label_y"))
   label_x <- .describe_text(arg("axis_label_x"))
-  scaling <- .describe_scaling(arg("scale"), arg("scale_method"))
+  scaling <- .describe_scaling(
+    arg("scale"),
+    arg("scale_method"),
+    arg("scale_q"),
+    arg("transform"),
+    arg("cofactor")
+  )
   paste0(
     "Heatmap",
     if(!is.null(title)) paste0(" titled \"", title, "\""),
@@ -769,13 +805,33 @@ as.character.heat_map_description <- function(x,
         type <- if(dist) "box" else "bar"
       }
       label <- .describe_text(arg(paste0("bar_axis_label_", axis)))
+      counts <- identical(bars, "n")
       out <- c(
         out,
         paste0(
-          switch(type, "bar" = "Bars", "box" = "Box plots", "violin" = "Violins"),
+          switch(
+            type,
+            "bar" = "Bars",
+            "box" = "Box plots",
+            "violin" = "Violins",
+            "stack" = "Stacked bars",
+            "fill" = "Stacked bars"
+          ),
           " beside the heatmap show ",
           if(type == "bar") {
-            if(is.null(label)) "a value" else label
+            if(!is.null(label)) label else if(counts) "the number of cells" else
+              "a value"
+          } else if(type == "stack") {
+            if(!is.null(label)) {
+              paste(label, "in each part")
+            } else if(counts) {
+              "the number of cells in each part"
+            } else {
+              "the size of each part"
+            }
+          } else if(type == "fill") {
+            paste("the share of", if(counts) "cells" else "the total",
+                  "in each part")
           } else {
             paste("the distribution of", if(is.null(label)) "the values" else label)
           },

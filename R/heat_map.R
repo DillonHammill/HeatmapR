@@ -14,13 +14,15 @@
 #'   constructing the heatmap (\code{TRUE} scales each column). Additional
 #'   options include \code{"column"} or \code{"row"} to indicate whether
 #'   scaling should be performed within each column or each row. For
-#'   convenience, the name of a scaling method (\code{"range"}, \code{"mean"}
-#'   or \code{"zscore"}) can also be supplied to apply that method to each
-#'   column.
+#'   convenience, the name of a scaling method (\code{"range"}, \code{"mean"},
+#'   \code{"zscore"} or \code{"quantile"}) can also be supplied to apply that
+#'   method to each column.
 #' @param scale_method indicates the type of scaling to perform on \code{rows}
 #'   or \code{columns} as indicated by \code{scale}, options include
-#'   \code{"range"}, \code{"mean"} or \code{"zscore"}. Set to \code{"range"} by
-#'   default.
+#'   \code{"range"}, \code{"mean"}, \code{"zscore"} or \code{"quantile"}
+#'   (0 to 1 between the \code{scale_q} and \code{1 - scale_q} quantiles,
+#'   clipped, as CATALYST scales cytometry data); see
+#'   \code{\link{heat_map_scale}}. Set to \code{"range"} by default.
 #' @param dist_method indicates the type of distance metric to use when
 #'   constructing dendrograms, set to \code{"euclidean"} distance by default.
 #'   See \code{?dist} for alternatives. Also supports \code{"cosine"} for
@@ -401,15 +403,25 @@
 #'   plot or violin (\code{bar_type_x}), supply a list with a numeric vector
 #'   for each column (named or in the original order), a matrix or data.frame
 #'   with one column for each column of \code{x}, or \code{TRUE} for the
-#'   values of each column of the heatmap (after scaling).
+#'   values of each column of the heatmap (after scaling). For stacked bars
+#'   (\code{bar_type_x = "stack"} or \code{"fill"}), supply a matrix with one
+#'   column per column of \code{x} and one row per part (e.g. counts per
+#'   condition). \code{"n"} shows the number of cells in each group of a
+#'   summary from \code{\link{heat_map_summarise}(group_by = ...)}, or with
+#'   stacked bars their numbers in each part of \code{stack_by}.
 #' @param bar_type_x the type of plot drawn for \code{bar_values_x}:
 #'   \code{"bar"} (one value per column), \code{"box"} (box plots of the
 #'   values of each column, with the median, quartiles, whiskers to the most
 #'   extreme values within 1.5 times the interquartile range and points beyond
 #'   them) or \code{"violin"} (densities of the values of each column, with a
-#'   line at the median). Set to \code{NULL} by default to draw bars for a
-#'   vector and box plots for distributions. \code{bar_fill_x} and the
-#'   \code{bar_line_*_x} arguments style the boxes and violins.
+#'   line at the median), \code{"stack"} (stacked bars of the parts of each
+#'   column, e.g. the number of cells of each condition in each cluster) or
+#'   \code{"fill"} (stacked bars of the proportions of the parts). Set to
+#'   \code{NULL} by default to draw bars for a vector and box plots for
+#'   distributions. \code{bar_fill_x} and the \code{bar_line_*_x} arguments
+#'   style the boxes and violins; for stacked bars \code{bar_fill_x} gives
+#'   one colour per part (named by part or in order), and the parts get a
+#'   legend.
 #' @param bar_axis_label_x axis label to use for the x axis bar plot.
 #' @param bar_axis_label_adj_x scalar \[-1, 1\] to adjust the position of the x
 #'   axis bar graph label relative to the x axis, set to 0 by default.
@@ -445,7 +457,12 @@
 #'   hierarchical clustering. As for \code{bar_values_x}, a list (one numeric
 #'   vector per row), a matrix or data.frame with one row per row of
 #'   \code{x}, or \code{TRUE} (the values of each row of the heatmap) shows
-#'   the distribution of each row as a box plot or violin. The axis of the
+#'   the distribution of each row as a box plot or violin, and a matrix with
+#'   one row per row of \code{x} and one column per part gives stacked bars
+#'   (\code{bar_type_y = "stack"} or \code{"fill"}). \code{"n"} shows the
+#'   number of cells in each group of a summary from
+#'   \code{\link{heat_map_summarise}(group_by = ...)}, or with stacked bars
+#'   their numbers in each part of \code{stack_by}. The axis of the
 #'   row bar graph is drawn on the x axis side with the x axis text font,
 #'   size, colour, adjustment and tick length (and that of the column bar
 #'   graph on the y axis side with the y axis settings); its numbers are
@@ -779,6 +796,15 @@
 #'   \code{FALSE} by default. The groups and annotations of the cells are
 #'   then drawn along the x axis (\code{tree_cut_x}, \code{annotation_x});
 #'   other arguments refer to the heatmap as drawn.
+#' @param transform \code{"asinh"} to transform the values with the inverse
+#'   hyperbolic sine of each value divided by \code{cofactor} before any
+#'   scaling (the usual transform of cytometry intensities), or \code{NULL}
+#'   (default) to draw the values as they are.
+#' @param cofactor the cofactor of \code{transform = "asinh"}: one number (5
+#'   by default, as for mass cytometry; about 150 is common for flow
+#'   cytometry) or one per column, named by column.
+#' @param scale_q the quantile of \code{scale_method = "quantile"}, set to
+#'   0.01 by default.
 #' @param ... additional arguments passed to \code{\link{heat_map_clust}} (and
 #'   on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other
 #'   arguments are ignored with a warning, which catches misspelled argument
@@ -1057,6 +1083,9 @@ heat_map <- function(x,
                      group_max = NULL,
                      annotation_by = NULL,
                      swap_axes = FALSE,
+                     transform = NULL,
+                     cofactor = 5,
+                     scale_q = 0.01,
                      ...) {
 
   # ARGUMENTS ------------------------------------------------------------------
@@ -1089,6 +1118,15 @@ heat_map <- function(x,
 
   # ARGUMENTS PASSED THROUGH ... ARE ONLY USED BY dist() AND hclust()
   .check_dots(list(...))
+
+  # GROUP SIZES OF A SUMMARY (heat_map_summarise(group_by = ...)) AS BARS -
+  # READ BEFORE THE DATA ARE CONVERTED
+  bar_n_x <- identical(bar_values_x, "n")
+  bar_n_y <- identical(bar_values_y, "n")
+  bar_values_x <- .bar_counts(bar_values_x, x, bar_type_x, "x")
+  bar_values_y <- .bar_counts(bar_values_y, x, bar_type_y, "y")
+  bar_title_x <- attr(bar_values_x, "title")
+  bar_title_y <- attr(bar_values_y, "title")
 
   # SINGLE-CELL DATA - THE CHOSEN CELLS AND FEATURES, GROUPS AS CLUSTERS AND
   # ANNOTATIONS AS TRACKS (THE REDRAW DRAWS THEM AS GIVEN)
@@ -1153,6 +1191,27 @@ heat_map <- function(x,
   # SECOND VALUE IN EACH CELL - THE LOWER RIGHT HALF, ON THE SAME SCALE
   split_mat <- .check_cell_split(cell_split, x)
 
+  # TRANSFORM - E.G. THE ASINH OF CYTOMETRY INTENSITIES, BEFORE ANY SCALING
+  if(!is.null(transform) && !isFALSE(transform)) {
+    if(!identical(transform, "asinh")) {
+      stop("'transform' must be \"asinh\" or NULL.", call. = FALSE)
+    }
+    cofactor <- .scale_cofactor(cofactor, colnames(x)[num_cols],
+                                length(num_cols))
+    x[, num_cols] <- heat_map_scale(
+      x[, num_cols, drop = FALSE],
+      method = "asinh",
+      cofactor = cofactor
+    )
+    if(!is.null(split_mat)) {
+      split_mat[, num_cols] <- suppressMessages(heat_map_scale(
+        split_mat[, num_cols, drop = FALSE],
+        method = "asinh",
+        cofactor = cofactor
+      ))
+    }
+  }
+
   # ROW/COLUMN SCALING
   if(!is.null(scale) && !isFALSE(scale)) {
     # DEFAULT - COLUMN-WISE
@@ -1162,7 +1221,7 @@ heat_map <- function(x,
     # SCALING METHOD SUPPLIED TO SCALE - COLUMN-WISE
     if(is.character(scale) &&
        length(scale) == 1 &&
-       tolower(scale) %in% c("range", "mean", "zscore")) {
+       tolower(scale) %in% c("range", "mean", "zscore", "quantile")) {
       scale_method <- tolower(scale)
       scale <- "column"
     }
@@ -1171,7 +1230,8 @@ heat_map <- function(x,
       x[, num_cols] <- heat_map_scale(
         x[, num_cols, drop = FALSE],
         scale = scale,
-        method = scale_method
+        method = scale_method,
+        q = scale_q
       )
     # SPLIT CELLS - EACH COLUMN (ROW) OF x IS SCALED TOGETHER WITH THE SAME
     # COLUMN (ROW) OF cell_split, SO THAT THE TWO HALVES STAY COMPARABLE
@@ -1183,7 +1243,8 @@ heat_map <- function(x,
       both <- heat_map_scale(
         if(by_row) cbind(x_num, split_num) else rbind(x_num, split_num),
         scale = scale,
-        method = scale_method
+        method = scale_method,
+        q = scale_q
       )
       if(by_row) {
         x[, num_cols] <- both[, seq_len(ncol(x_num)), drop = FALSE]
@@ -1842,6 +1903,42 @@ heat_map <- function(x,
     }
   }
 
+  # STACKED BARS - ONE COLOUR PER PART AND A LEGEND OF THE PARTS
+  bar_legends <- list()
+  for(axis in c("x", "y")) {
+    type <- get(paste0("bar_type_", axis))
+    values <- get(paste0("bar_values_", axis))
+    if(is.null(values) || !type %in% c("stack", "fill")) {
+      next
+    }
+    stack <- .bar_stack(
+      values,
+      get(paste0("bar_fill_", axis)),
+      paste0("bar_fill_", axis) %in% names(hm_args),
+      get(paste0("bar_title_", axis))
+    )
+    assign(paste0("bar_fill_", axis), stack$fill)
+    if(!.legend_off(legend)) {
+      bar_legends[[paste0("bar_", axis)]] <- stack$legend
+    }
+  }
+
+  # BAR AXIS LABELS FOR GROUP SIZES
+  if(bar_n_x && is.null(bar_axis_label_x)) {
+    bar_axis_label_x <- if(identical(bar_type_x, "fill")) {
+      "Share of cells"
+    } else {
+      "Cells"
+    }
+  }
+  if(bar_n_y && is.null(bar_axis_label_y)) {
+    bar_axis_label_y <- if(identical(bar_type_y, "fill")) {
+      "Share of cells"
+    } else {
+      "Cells"
+    }
+  }
+
   # CELL ARGUMENTS -------------------------------------------------------------
 
   # UNCERTAINTY OF EACH VALUE - VALUE-SUPPRESSING COLOURS
@@ -2405,6 +2502,7 @@ heat_map <- function(x,
   # ANNOTATION LEGENDS & LEGEND KEYS (BRANCH SUPPORT) - DRAWN AS SWATCHES
   legend_annots <- c(
     if(annotation_legend) c(annot_x$legends, annot_y$legends),
+    bar_legends,
     legend_keys
   )
 
