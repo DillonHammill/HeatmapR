@@ -63,6 +63,12 @@ reference:
   - heat_map_downsample
   - heat_map_clust
   - heat_map_threads
+- title: Example data
+  desc: >
+    Simulated single-cell RNA, cytometry and trajectory data for trying the
+    functions.
+  contents:
+  - heat_map_example
 - title: Arrange and save heatmaps
   desc: >
     Arrange heatmaps with other plots in custom layouts and save high

@@ -47,7 +47,9 @@ a data.frame of class \code{heat_map_markers} with one row per
 feature kept for a group, in the order of the groups and, within each
 group, from the highest AUC: \code{group} (a factor), \code{feature},
 \code{auc}, \code{logfc} (the difference between the means in and out of
-the group), \code{mean_in}, \code{mean_out}, \code{detected_in} and
+the group), \code{p_value} and \code{p_adj} (the p-value of the
+rank-sum test and its adjusted value), \code{mean_in}, \code{mean_out},
+\code{detected_in} and
 \code{detected_out} (the proportions of cells detected in and out of the
 group) and \code{top} (\code{TRUE} for the top markers of each group). Its
 \code{"features"} attribute lists the top markers of each group. Given to
@@ -72,6 +74,15 @@ mean in the group exceeds their mean in the other cells by at least
 \code{min_logfc}. Each feature marks the group where its AUC is highest,
 and the \code{n} features with the highest AUC in each group are its top
 markers.
+
+Each AUC has the p-value of the Wilcoxon rank-sum test of the group
+against the other cells (two-sided, from the normal approximation with
+corrections for ties and continuity, as \code{wilcox.test(exact = FALSE)}
+finds it), and the p-values of each group are adjusted for the false
+discovery rate by Benjamini and Hochberg's method over every feature
+scored, not only those kept. With thousands of cells nearly every marker
+has a tiny p-value, so the AUC and the difference of the means are the
+better guides to how well a feature marks a group.
 
 The AUC is found from one ranking of each feature's values. The zeros of
 sparse data share one rank, so only the non-zero values are sorted; the

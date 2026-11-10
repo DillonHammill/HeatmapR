@@ -428,8 +428,12 @@ void grouped_values(const Csc& m, bool cells_by_column, const std::vector<int>& 
 // out of the group - the chance that a cell of the group has the larger
 // value, ties counting half. v[off[g]] .. v[off[g + 1] - 1] are the values of
 // group g (sorted on return) and zeros[g] its zeros not among them; out[g] is
-// NA for a group without cells or with every cell.
-void group_auc(double* v, const size_t* off, const double* zeros, size_t G, double* out) {
+// NA for a group without cells or with every cell. u[g] is the statistic
+// itself (as wilcox.test() gives it, for the p-value) and the sum of t^3 - t
+// over the values tied t times among all the cells (for the variance of the
+// statistic) is returned.
+double group_auc(double* v, const size_t* off, const double* zeros, size_t G, double* out,
+                 double* u) {
   std::vector<double> rank_sum(G, 0.0), n(G, 0.0), run(G, 0.0);
   std::vector<size_t> pos(G), touched;
   touched.reserve(G);
@@ -446,11 +450,12 @@ void group_auc(double* v, const size_t* off, const double* zeros, size_t G, doub
     N += n[g];
     if (off[g + 1] > off[g]) heads.push(Head(v[off[g]], g));
   }
-  double before = 0.0;
+  double before = 0.0, tie_sum = 0.0;
   bool zeros_ranked = Z == 0;
   auto rank_zeros = [&](double r) {
     for (size_t g = 0; g < G; ++g) rank_sum[g] += zeros[g] * r;
   };
+  auto tied = [&](double t) { tie_sum += t * t * t - t; };
   while (!heads.empty()) {
     double value = heads.top().first;
     double ties = 0.0;
@@ -474,20 +479,29 @@ void group_auc(double* v, const size_t* off, const double* zeros, size_t G, doub
         rank_zeros(r);
         for (size_t g : touched) rank_sum[g] += run[g] * r;
         before += ties;
+        tied(ties);
         continue;
       }
       rank_zeros(before + (Z + 1) / 2);
       before += Z;
+      tied(Z);
     }
     double r = before + (ties + 1) / 2;
     for (size_t g : touched) rank_sum[g] += run[g] * r;
     before += ties;
+    tied(ties);
   }
-  if (!zeros_ranked) rank_zeros(before + (Z + 1) / 2);
+  if (!zeros_ranked) {
+    rank_zeros(before + (Z + 1) / 2);
+    tied(Z);
+  }
   for (size_t g = 0; g < G; ++g) {
     double n1 = n[g], n2 = N - n[g];
-    out[g] = n1 > 0 && n2 > 0 ? (rank_sum[g] - n1 * (n1 + 1) / 2) / (n1 * n2) : NA_REAL;
+    double w = rank_sum[g] - n1 * (n1 + 1) / 2;
+    out[g] = n1 > 0 && n2 > 0 ? w / (n1 * n2) : NA_REAL;
+    u[g] = n1 > 0 && n2 > 0 ? w : NA_REAL;
   }
+  return tie_sum;
 }
 
 }  // namespace
@@ -523,13 +537,14 @@ cpp11::doubles_matrix<> sparse_group_medians_cpp(cpp11::integers i, cpp11::integ
 // The AUC (see group_auc()) of each feature sel (1-based, distinct) of a
 // sparse matrix of cells (see sparse_dense_cpp()) in each group 1..n_groups
 // of the cells (group: one per cell, NA for none) against the other cells
-// with a group, leaving out missing values: an n_groups x length(sel)
-// matrix.
+// with a group, leaving out missing values: a list of "auc" and "u" (the
+// rank-sum statistic), n_groups x length(sel) matrices, and "ties" (the sum of
+// t^3 - t over the tied values of each feature).
 [[cpp11::register]]
-cpp11::doubles_matrix<> sparse_group_auc_cpp(cpp11::integers i, cpp11::integers p,
-                                             cpp11::doubles x, int nrow, int ncol,
-                                             cpp11::integers sel, bool cells_by_column,
-                                             cpp11::integers group, int n_groups, int threads) {
+cpp11::list sparse_group_auc_cpp(cpp11::integers i, cpp11::integers p,
+                                 cpp11::doubles x, int nrow, int ncol,
+                                 cpp11::integers sel, bool cells_by_column,
+                                 cpp11::integers group, int n_groups, int threads) {
   Csc m(i, p, x, nrow, ncol);
   const int nfeat = cells_by_column ? nrow : ncol;
   const int ncells = cells_by_column ? ncol : nrow;
@@ -537,13 +552,19 @@ cpp11::doubles_matrix<> sparse_group_auc_cpp(cpp11::integers i, cpp11::integers 
   std::vector<int> grp = cell_groups(group, ncells, n_groups);
   const size_t nf = feat.size();
   const size_t G = static_cast<size_t>(n_groups);
-  cpp11::writable::doubles_matrix<> out(n_groups, static_cast<int>(nf));
+  cpp11::writable::doubles_matrix<> out(n_groups, static_cast<int>(nf)),
+      u(n_groups, static_cast<int>(nf));
+  cpp11::writable::doubles ties(static_cast<R_xlen_t>(nf));
   double* o = REAL(out.data());
+  double* uu = REAL(u.data());
+  double* tt = REAL(ties.data());
+  std::fill(tt, tt + nf, NA_REAL);
   grouped_values(m, cells_by_column, grp, feat, G, threads,
                  [&](size_t f, double* v, const size_t* off, const double*, const double* zeros) {
-                   group_auc(v, off, zeros, G, o + f * G);
+                   tt[f] = group_auc(v, off, zeros, G, o + f * G, uu + f * G);
                  });
-  return out;
+  using namespace cpp11::literals;
+  return cpp11::writable::list({"auc"_nm = out, "u"_nm = u, "ties"_nm = ties});
 }
 
 // The features sel (1-based, distinct) of a dense matrix of cells: with
@@ -647,16 +668,21 @@ cpp11::doubles_matrix<> dense_group_medians_cpp(cpp11::doubles_matrix<> x,
 // The AUC (see group_auc()) of each feature sel of a dense matrix of cells
 // (see Dense) in each group 1..n_groups of its cells (group: one per cell, NA
 // for none) against the other cells with a group, leaving out missing
-// values: an n_groups x length(sel) matrix.
+// values: a list of "auc", "u" and "ties" as sparse_group_auc_cpp() returns.
 [[cpp11::register]]
-cpp11::doubles_matrix<> dense_group_auc_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel,
-                                            bool cells_by_column, cpp11::integers group,
-                                            int n_groups, int threads) {
+cpp11::list dense_group_auc_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel,
+                                bool cells_by_column, cpp11::integers group,
+                                int n_groups, int threads) {
   Dense d(x, sel, cells_by_column);
   std::vector<int> grp = cell_groups(group, static_cast<int>(d.ncells), n_groups);
   const size_t nf = d.feat.size(), G = static_cast<size_t>(n_groups);
-  cpp11::writable::doubles_matrix<> out(n_groups, static_cast<int>(nf));
+  cpp11::writable::doubles_matrix<> out(n_groups, static_cast<int>(nf)),
+      u(n_groups, static_cast<int>(nf));
+  cpp11::writable::doubles ties(static_cast<R_xlen_t>(nf));
   double* o = REAL(out.data());
+  double* uu = REAL(u.data());
+  double* tt = REAL(ties.data());
+  std::fill(tt, tt + nf, NA_REAL);
   std::vector<double> zeros(G, 0.0);
   double work = static_cast<double>(d.ncells) * nf;
   par::parallel_for(nf, work >= 262144.0 ? threads : 1, [&](size_t f) {
@@ -672,7 +698,8 @@ cpp11::doubles_matrix<> dense_group_auc_cpp(cpp11::doubles_matrix<> x, cpp11::in
       double value = d.at(c, f);
       if (grp[c] >= 0 && !std::isnan(value)) v[fill[grp[c]]++] = value;
     }
-    group_auc(v.data(), off.data(), zeros.data(), G, o + f * G);
+    tt[f] = group_auc(v.data(), off.data(), zeros.data(), G, o + f * G, uu + f * G);
   });
-  return out;
+  using namespace cpp11::literals;
+  return cpp11::writable::list({"auc"_nm = out, "u"_nm = u, "ties"_nm = ties});
 }

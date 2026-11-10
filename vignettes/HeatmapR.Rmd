@@ -22,9 +22,15 @@ knitr::opts_chunk$set(
 **HeatmapR** is a lightweight R package that uses base graphics to facilitate the creation of high quality complex heatmaps that can be easily arranged with other plots. In this vignette, we will explore the key features of `HeatmapR` and describe the usage of each of the key functions in `HeatmapR` as summarised below:
 
 -   `heat_map()` convenient wrapper around all `HeatmapR` functions providing an intuitive way to create complex heatmaps using base graphics.
+-   `heat_map_cor()` draws correlation matrices, with one order for the rows and columns and different shapes in each triangle.
+-   `heat_map_dot()` draws dot plots of groups of cells: the colour of each dot shows a group's mean and its size the proportion of cells in which the feature is detected.
 -   `heat_map_clust()` is used inside `heat_map()` to perform hierarchical clustering on the dataset, in compiled code that builds the same trees as `stats::hclust()`.
--   `heat_map_scale()` is used inside `heat_map()` to apply column- or row-wise mean, z-score or range scaling to the dataset prior to constructing the heatmap.
--   `heat_map_summarise()` reduces groups of rows or columns to one summary each (e.g. the mean expression of each cell type), or keeps the values of each group for distributions inside the cells.
+-   `heat_map_scale()` is used inside `heat_map()` to apply column- or row-wise mean, z-score, range or quantile scaling, or the asinh transform of cytometry data, to the dataset prior to constructing the heatmap.
+-   `heat_map_summarise()` reduces groups of rows or columns to one summary each (e.g. the mean expression of each cell type, or the median of each marker in each cluster), or keeps the values of each group for distributions inside the cells.
+-   `heat_map_markers()` ranks the marker features of groups of cells by their AUC, with Wilcoxon p-values, and `heat_map_downsample()` keeps at most a number of cells of each group.
+-   `heat_map_smooth()` smooths features along a trajectory (e.g. pseudotime) for heatmaps of genes ordered by when they peak.
+-   `heat_map_example()` simulates the single-cell RNA, cytometry and trajectory data used in the examples and guides.
+-   `heat_map_threads()` sets the number of threads shared by the compiled code.
 -   `heat_map_info()` returns the data, row and column order, clusters, colours and layout of a heatmap for downstream analyses.
 -   `heat_map_describe()` writes a plain-language description of a heatmap to use as alternative text for screen readers.
 -   `heat_map_data()` returns the cells, rows, columns and dendrograms of a heatmap as tidy tables, and `heat_map_grob()` places heatmaps beside `ggplot2` plots.
@@ -34,7 +40,7 @@ knitr::opts_chunk$set(
 -   `heat_map_complete()` can be called when creating complex layouts to indicate when the resulting layout should be saved to file using `heat_map_save()`.
 -   `heat_map_reset()` resets all **HeatmapR** associated settings in case things are not working as they should.
 
-The [HeatmapR website](https://dillonhammill.github.io/HeatmapR/) has guides that go further, with every figure drawn as the site is built: [ordering rows and columns](https://dillonhammill.github.io/HeatmapR/articles/ordering.html), [large heatmaps](https://dillonhammill.github.io/HeatmapR/articles/large-data.html), [more than colour](https://dillonhammill.github.io/HeatmapR/articles/cells.html) (uncertainty, split cells, distributions and annotations), [working with heatmaps](https://dillonhammill.github.io/HeatmapR/articles/integration.html) (redraws, tidy data, `ggplot2` and alternative text), and a [speed comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html) with other heatmap packages.
+The [HeatmapR website](https://dillonhammill.github.io/HeatmapR/) has guides that go further, with every figure drawn as the site is built: [ordering rows and columns](https://dillonhammill.github.io/HeatmapR/articles/ordering.html), [large heatmaps](https://dillonhammill.github.io/HeatmapR/articles/large-data.html), [single-cell data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html) (SingleCellExperiment, Seurat and cytometry data, markers, dot plots and trajectories), [more than colour](https://dillonhammill.github.io/HeatmapR/articles/cells.html) (uncertainty, split cells, distributions and annotations), [working with heatmaps](https://dillonhammill.github.io/HeatmapR/articles/integration.html) (redraws, tidy data, `ggplot2` and alternative text), and a [speed comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html) with other heatmap packages.
 
 ## 1. Construct a Basic Heatmap
 
