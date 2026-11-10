@@ -202,8 +202,8 @@ heat_map_downsample <- function(groups,
   if(n_assays == 0) {
     stop("'x' has no assays.", call. = FALSE)
   }
-  # DEFAULT - LOG-NORMALISED COUNTS, CATALYST'S TRANSFORMED EXPRESSION, THE
-  # FIRST ASSAY
+  # DEFAULT - LOG-NORMALISED COUNTS, THEN TRANSFORMED CYTOMETRY EXPRESSION
+  # ("exprs"), THEN THE FIRST ASSAY
   if(is.null(assay)) {
     found <- intersect(c("logcounts", "exprs"), assays)
     assay <- if(length(found) > 0) found[1] else 1L
