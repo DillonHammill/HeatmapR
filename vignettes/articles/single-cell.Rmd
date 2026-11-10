@@ -214,25 +214,102 @@ heat_map(fs, features = c("CD3", "CD4", "CD8"), group_by = "cluster",
          group_max = 500, annotation_by = "sample")
 ```
 
-Below, 200,000 simulated events with 12 markers in eight clusters: the median of each marker in each cluster, with the distribution behind each median drawn inside its cell from 2,000 events of each cluster.
+Mass cytometry intensities are usually transformed with asinh(x / 5) (a cofactor of about 150 for flow cytometry) and each marker then scaled from 0 to 1 between its 1st and 99th percentiles, so that a few bright events don't compress the colours of all the others, as CATALYST's `plotExprHeatmap()` does. `heat_map_summarise()` does both: `transform = "asinh"` with `cofactor`, and `scale = "quantile"` with `q`, applied to the medians of the clusters (`scale_when = "last"`, the default) or to the events before summarising them (`"first"`). The quantile scaling gives CATALYST's numbers.
 
-```{r cytometry, fig.width = 8, fig.height = 5, fig.alt = "Heatmap of the median of 12 markers in eight clusters of 200,000 simulated cytometry events, scaled within each marker, with a density of each cluster's values inside every cell."}
+Below, 200,000 simulated events with 12 markers in eight clusters, from eight samples in two conditions. Cluster C3 is twice as common in the stimulated samples, and HLA-DR rises in clusters C5 and C6 under stimulation.
+
+```{r cytometry-data}
 set.seed(2)
 n <- 2e5
-cluster <- sample(paste0("C", 1:8), n, replace = TRUE)
-centres <- matrix(rexp(8 * 12, 0.6), 8, dimnames = list(paste0("C", 1:8), NULL))
-events <- as.data.frame(centres[cluster, ] + matrix(rnorm(n * 12, sd = 0.5), n))
-names(events) <- c("CD3", "CD4", "CD8", "CD19", "CD20", "CD56", "CD16",
-                   "CD14", "CD11c", "HLA-DR", "CD45RA", "CCR7")
+markers <- c("CD3", "CD4", "CD8", "CD19", "CD20", "CD56", "CD16", "CD14",
+             "CD11c", "HLA-DR", "CD45RA", "CCR7")
+samples <- data.frame(
+  sample = paste0("S", 1:8),
+  condition = rep(c("control", "stimulated"), each = 4)
+)
+sample <- sample(samples$sample, n, replace = TRUE)
+condition <- samples$condition[match(sample, samples$sample)]
+# C3 TWICE AS COMMON IN STIMULATED SAMPLES
+p <- c(2, 2, 1, 2, 2, 2, 2, 2)
+cluster <- ifelse(
+  condition == "control",
+  sample(paste0("C", 1:8), n, replace = TRUE, prob = p),
+  sample(paste0("C", 1:8), n, replace = TRUE, prob = replace(p, 3, 2))
+)
+# INTENSITIES ON THE ASINH SCALE, THEN BACK TO RAW INTENSITIES
+centres <- matrix(rexp(8 * 12, 0.5), 8, dimnames = list(paste0("C", 1:8), markers))
+level <- centres[cluster, ] + matrix(rnorm(n * 12, sd = 0.6), n)
+stim <- condition == "stimulated" & cluster %in% c("C5", "C6")
+level[stim, "HLA-DR"] <- level[stim, "HLA-DR"] + 1.5
+events <- as.data.frame(5 * sinh(pmax(level, 0)))
 events$cluster <- cluster
-medians <- heat_map_summarise(events, group_by = "cluster", fun = "median")
-sub <- events[heat_map_downsample(events$cluster, 2000), ]
+events$sample <- sample
+events$condition <- condition
+```
+
+The medians of each cluster, with `stack_by` counting the events of each condition in each cluster. The summary keeps the number of events in each cluster and in each part of it (its `"n"` and `"stack"` attributes), which `bar_values_y = "n"` draws as bars beside the clusters, stacked by condition with `bar_type_y = "stack"` (`"fill"` draws the proportions instead):
+
+```{r cytometry, fig.width = 8, fig.height = 5, fig.alt = "Heatmap of the median of 12 markers in eight clusters of 200,000 simulated cytometry events, asinh-transformed and scaled from 0 to 1 within each marker, with dendrograms of the clusters and markers and, beside the clusters, bars of their numbers of events split into control and stimulated."}
+medians <- heat_map_summarise(
+  events,
+  features = markers,
+  group_by = "cluster",
+  fun = "median",
+  transform = "asinh",
+  cofactor = 5,
+  scale = "quantile",
+  q = 0.01,
+  stack_by = "condition"
+)
+attr(medians, "stack")
 heat_map(
   medians,
-  scale = "column",
-  cell_values = heat_map_summarise(sub, group_by = "cluster", fun = "values"),
   tree = "both",
+  bar_values_y = "n",
+  bar_type_y = "stack",
+  bar_size_y = 1.6,
+  bar_fill_y = c(control = "grey60", stimulated = "#D7191C"),
+  legend_title = "Scaled median",
   title = "Median of each cluster"
+)
+```
+
+The distribution behind each median can be drawn inside its cell, here from 2,000 events of each cluster:
+
+```{r cytometry-values, fig.width = 8, fig.height = 5, fig.alt = "Heatmap of the asinh-transformed median of 12 markers in eight clusters, scaled within each marker, with a density of each cluster's values inside every cell."}
+sub <- events[heat_map_downsample(events$cluster, 2000), ]
+heat_map(
+  heat_map_summarise(sub, features = markers, group_by = "cluster",
+                     fun = "median", transform = "asinh"),
+  scale = "column",
+  cell_values = heat_map_summarise(sub, features = markers, group_by = "cluster",
+                                   fun = "values", transform = "asinh"),
+  tree = "both",
+  title = "Distributions behind the medians"
+)
+```
+
+Grouping by cluster and sample (`group_by = c("cluster", "sample")`) gives the median of each cluster in each sample, the view of differential states. The summary keeps the metadata that is the same for every event of each row, here the sample and its condition (its `"groups"` attribute), so that `heat_map()` can group and annotate its rows by them:
+
+```{r cytometry-states, fig.width = 7, fig.height = 9, fig.alt = "Heatmap of the median of HLA-DR, CD45RA and CCR7 in each of eight clusters in each of eight samples, grouped by cluster with labelled strips and annotated by sample and condition, with bars of the number of events in each row; HLA-DR is higher in the stimulated samples of clusters C5 and C6."}
+states <- heat_map_summarise(
+  events,
+  features = c("HLA-DR", "CD45RA", "CCR7"),
+  group_by = c("cluster", "sample"),
+  fun = "median",
+  transform = "asinh",
+  scale = "quantile"
+)
+head(attr(states, "groups"))
+heat_map(
+  states,
+  group_by = "cluster",
+  annotation_by = c("sample", "condition"),
+  axis_text_y = NA,
+  bar_values_y = "n",
+  bar_size_y = 1.6,
+  legend_title = "Scaled median",
+  title = "Median of each cluster in each sample"
 )
 ```
 
