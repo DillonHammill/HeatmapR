@@ -17,7 +17,7 @@ current device and don't open new devices in non-interactive sessions.
 
 0 errors | 0 warnings | 1 note
 
-* installed size is 8.4Mb (libs 7.1Mb with debugging symbols, 0.7Mb
+* installed size is 9.0Mb (libs 7.6Mb with debugging symbols, 0.8Mb
   without): the package now contains compiled code.
 
 The local check also reported notes and warnings from the sandbox it ran in
