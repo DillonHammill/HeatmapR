@@ -44,11 +44,12 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      # R-devel on macOS has no binary packages, so vdiffr is built from source
-      # and needs the libpng headers and library in /opt/R/arm64
-      - name: Install libpng (macOS R-devel)
+      # R-devel on macOS has no binary packages, so packages are built from
+      # source: vdiffr needs the libpng headers and library in /opt/R/arm64,
+      # and dotCall64 (for SeuratObject) needs gettext's libintl
+      - name: Install libpng and gettext (macOS R-devel)
         if: runner.os == 'macOS' && matrix.config.r == 'devel'
-        run: sudo Rscript -e 'source("https://mac.R-project.org/bin/install.R"); install.libs("libpng")'
+        run: sudo Rscript -e 'source("https://mac.R-project.org/bin/install.R"); install.libs("libpng"); install.libs("gettext")'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
