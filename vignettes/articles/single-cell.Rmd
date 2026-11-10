@@ -28,7 +28,7 @@ knitr::opts_chunk$set(
 | `group_max` | the most cells to show from each group, so small groups stay visible |
 | `annotation_by` | metadata columns drawn as annotation tracks |
 
-Cells are rows and features columns, as in scanpy, CATALYST and cytometry data; `swap_axes = TRUE` gives Seurat's genes-as-rows layout.
+Cells are rows and features columns, as in scanpy and cytometry data; `swap_axes = TRUE` gives Seurat's genes-as-rows layout.
 
 ```{r}
 library(HeatmapR)
@@ -214,7 +214,7 @@ heat_map(fs, features = c("CD3", "CD4", "CD8"), group_by = "cluster",
          group_max = 500, annotation_by = "sample")
 ```
 
-Mass cytometry intensities are usually transformed with asinh(x / 5) (a cofactor of about 150 for flow cytometry) and each marker then scaled from 0 to 1 between its 1st and 99th percentiles, so that a few bright events don't compress the colours of all the others, as CATALYST's `plotExprHeatmap()` does. `heat_map_summarise()` does both: `transform = "asinh"` with `cofactor`, and `scale = "quantile"` with `q`, applied to the medians of the clusters (`scale_when = "last"`, the default) or to the events before summarising them (`"first"`). The quantile scaling gives CATALYST's numbers.
+Mass cytometry intensities are usually transformed with asinh(x / 5) (a cofactor of about 150 for flow cytometry) and each marker then scaled from 0 to 1 between its 1st and 99th percentiles, so that a few bright events don't compress the colours of all the others. `heat_map_summarise()` does both: `transform = "asinh"` with `cofactor`, and `scale = "quantile"` with `q`, applied to the medians of the clusters (`scale_when = "last"`, the default) or to the events before summarising them (`"first"`).
 
 Below, 200,000 simulated events with 12 markers in eight clusters, from eight samples in two conditions. Cluster C3 is twice as common in the stimulated samples, and HLA-DR rises in clusters C5 and C6 under stimulation.
 
