@@ -10,7 +10,9 @@
 // of merges at exactly equal heights.
 //
 // Distances come from a dist object or are computed here from the rows of a
-// matrix, without building a dist object in R. Distances, groups of rows and
+// matrix, without building a dist object in R: four at a time by the SIMD
+// kernels of distance.h (exactly the values of the scalar code), in tiles of
+// two blocks of rows that stay in the cache. Distances, groups of rows and
 // the search for the nearest medoid are shared between threads
 // (parallel.h); the chain itself follows one cluster at a time.
 
@@ -27,6 +29,7 @@
 #include <vector>
 
 #include "tree.h"
+#include "distance.h"
 #include "linkage.h"
 #include "parallel.h"
 
@@ -74,69 +77,28 @@ Rows gather_rows(const double* x, int n_total, int p, const int* idx, int s) {
   return r;
 }
 
-// Distance between two rows. Metrics: 1 euclidean, 2 manhattan, 3 maximum,
-// 4 minkowski (power q), 5 one minus the cross-product clipped to [0, 2]
-// (rows scaled by .unit_rows()). Sums are kept in four parts, so that each
-// addition needn't wait for the one before: the result can differ from
-// stats::dist() in the last bit, which matters only for exactly tied
-// distances (and not for integer data, whose sums are exact).
-inline double row_dist(const double* a, const double* b, int p, int metric,
-                       double q) {
-  double s0 = 0, s1 = 0, s2 = 0, s3 = 0;
-  int k = 0;
-  switch (metric) {
-    case 1:
-      for (; k + 4 <= p; k += 4) {
-        double d0 = a[k] - b[k], d1 = a[k + 1] - b[k + 1];
-        double d2 = a[k + 2] - b[k + 2], d3 = a[k + 3] - b[k + 3];
-        s0 += d0 * d0;
-        s1 += d1 * d1;
-        s2 += d2 * d2;
-        s3 += d3 * d3;
-      }
-      for (; k < p; ++k) {
-        double d = a[k] - b[k];
-        s0 += d * d;
-      }
-      return std::sqrt((s0 + s1) + (s2 + s3));
-    case 2:
-      for (; k + 4 <= p; k += 4) {
-        s0 += std::fabs(a[k] - b[k]);
-        s1 += std::fabs(a[k + 1] - b[k + 1]);
-        s2 += std::fabs(a[k + 2] - b[k + 2]);
-        s3 += std::fabs(a[k + 3] - b[k + 3]);
-      }
-      for (; k < p; ++k) s0 += std::fabs(a[k] - b[k]);
-      return (s0 + s1) + (s2 + s3);
-    case 3: {
-      double v = -INF;
-      for (; k < p; ++k) {
-        double dev = std::fabs(a[k] - b[k]);
-        if (dev > v) v = dev;
-      }
-      return v;
-    }
-    case 4:
-      for (; k + 4 <= p; k += 4) {
-        s0 += std::pow(std::fabs(a[k] - b[k]), q);
-        s1 += std::pow(std::fabs(a[k + 1] - b[k + 1]), q);
-        s2 += std::pow(std::fabs(a[k + 2] - b[k + 2]), q);
-        s3 += std::pow(std::fabs(a[k + 3] - b[k + 3]), q);
-      }
-      for (; k < p; ++k) s0 += std::pow(std::fabs(a[k] - b[k]), q);
-      return std::pow((s0 + s1) + (s2 + s3), 1.0 / q);
-    default: {
-      for (; k + 4 <= p; k += 4) {
-        s0 += a[k] * b[k];
-        s1 += a[k + 1] * b[k + 1];
-        s2 += a[k + 2] * b[k + 2];
-        s3 += a[k + 3] * b[k + 3];
-      }
-      for (; k < p; ++k) s0 += a[k] * b[k];
-      double v = 1 - ((s0 + s1) + (s2 + s3));
-      return v < 0 ? 0 : (v > 2 ? 2 : v);
-    }
+// Distances between rows - row_dist() and the kernels that compute four at
+// once (distance.h)
+using dist::row_dist;
+
+// Rows per block of the distance triangles: blocks of about 256 KB, so that
+// the rows of two blocks stay in cache while the distances between them are
+// computed (a multiple of four, from 16 to 512 rows)
+inline size_t dist_block(int p) {
+  size_t b = 262144 / (sizeof(double) * static_cast<size_t>(std::max(1, p)));
+  b = std::max<size_t>(16, std::min<size_t>(512, b));
+  return b - b % 4;
+}
+
+// Distances from row a to the rows b[0..n), as row_dist() computes them, four
+// at a time with the kernel for the metric (k4; null: one at a time)
+inline void row_dists(const double* a, const double* const* b, size_t n, int p, int metric,
+                      double q, dist::Dist4 k4, double* out) {
+  size_t i = 0;
+  if (k4 != nullptr) {
+    for (; i + 4 <= n; i += 4) k4(a, b + i, p, metric, out + i);
   }
+  for (; i < n; ++i) out[i] = row_dist(a, b[i], p, metric, q);
 }
 
 // DISTANCE STORAGE ---------------------------------------------------------
@@ -164,15 +126,19 @@ struct FullMatrix {
       for (size_t ib = jb; ib < n; ib += B) tiles.emplace_back(jb, ib);
     }
     double work = 0.5 * static_cast<double>(n) * n * r.p;
+    dist::Dist4 k4 = dist::kernel4(metric);
     par::parallel_for(tiles.size(), threads_for(work, threads), [&](size_t t) {
       size_t jb = tiles[t].first, ib = tiles[t].second;
       size_t je = std::min(n, jb + B), ie = std::min(n, ib + B);
+      const double* rows[B];
+      double d[B];
       for (size_t j = jb; j < je; ++j) {
         const double* xj = r.row(static_cast<int>(j));
-        for (size_t i = std::max(ib, j + 1); i < ie; ++i) {
-          set(static_cast<int>(i), static_cast<int>(j),
-              row_dist(r.row(static_cast<int>(i)), xj, r.p, metric, q));
-        }
+        size_t i0 = std::max(ib, j + 1);
+        if (i0 >= ie) continue;
+        for (size_t i = i0; i < ie; ++i) rows[i - i0] = r.row(static_cast<int>(i));
+        row_dists(xj, rows, ie - i0, r.p, metric, q, k4, d);
+        for (size_t i = i0; i < ie; ++i) set(static_cast<int>(i), static_cast<int>(j), d[i - i0]);
       }
     });
   }
@@ -199,14 +165,26 @@ struct Triangle {
     size_t n = r.n;
     if (n < 2) return;
     double work = 0.5 * static_cast<double>(n) * n * r.p;
-    size_t grain = std::max<size_t>(1, 65536 / (n * std::max(1, r.p)));
-    par::parallel_for(n - 1, threads_for(work, threads), [&](size_t j) {
-      size_t idx = dist_index(n, j, j + 1);
-      const double* xj = r.row(static_cast<int>(j));
-      for (size_t i = j + 1; i < n; ++i) {
-        D[idx++] = row_dist(r.row(static_cast<int>(i)), xj, r.p, metric, q);
+    dist::Dist4 k4 = dist::kernel4(metric);
+    // (ROW POINTERS: ROW i AT rows[i])
+    std::vector<const double*> rows(n);
+    for (size_t i = 0; i < n; ++i) rows[i] = r.row(static_cast<int>(i));
+    // TILES OF TWO BLOCKS OF ROWS (THE BLOCK OF j, AND A LATER ONE OF i)
+    size_t bs = dist_block(r.p), nb = (n + bs - 1) / bs;
+    std::vector<std::pair<size_t, size_t>> tiles;
+    for (size_t jb = 0; jb < nb; ++jb) {
+      for (size_t ib = jb; ib < nb; ++ib) tiles.emplace_back(jb, ib);
+    }
+    par::parallel_for(tiles.size(), threads_for(work, threads), [&](size_t t) {
+      size_t j0 = tiles[t].first * bs, j1 = std::min(n, j0 + bs);
+      size_t ib0 = tiles[t].second * bs, ib1 = std::min(n, ib0 + bs);
+      for (size_t j = j0; j < j1; ++j) {
+        size_t i0 = std::max(ib0, j + 1);
+        if (i0 >= ib1) continue;
+        row_dists(rows[j], rows.data() + i0, ib1 - i0, r.p, metric, q, k4,
+                  &D[dist_index(n, j, i0)]);
       }
-    }, grain);
+    });
   }
   double get(int i, int j) const {
     return i < j ? D[dist_index(N, i, j)] : D[dist_index(N, j, i)];
@@ -494,11 +472,38 @@ Tree nn_chain_impl(M& d, int n, int method, const double* init, int threads = 1)
 
 // The full (symmetric) matrix of the distances between rows idx (1-based) of
 // an n_total x p matrix x (column-major), as row_dist() computes them
-std::vector<double> full_distances(const double* x, int n_total, int p,
-                                   const int* idx, int s, int metric, double q) {
+// Distances between rows idx[0..s) (1-based) of x, in that order, as the
+// columns of an upper triangle - column j holds the distances from row j to
+// rows 0 to j - 1 and starts after j (j - 1) / 2 values - on up to `threads`
+// threads (as optimal leaf ordering keeps them)
+std::unique_ptr<double[]> upper_distances(const double* x, int n_total, int p,
+                                          const int* idx, int s, int metric, double q,
+                                          int threads) {
   Rows rows = gather_rows(x, n_total, p, idx, s);
-  FullMatrix full(rows, metric, q);
-  return std::move(full.F);
+  size_t total = s > 1 ? static_cast<size_t>(s) * (s - 1) / 2 : 1;
+  std::unique_ptr<double[]> out(new double[total]);
+  double work = 0.5 * static_cast<double>(s) * s * std::max(1, p);
+  dist::Dist4 k4 = dist::kernel4(metric);
+  std::vector<const double*> ptr(std::max(0, s));
+  for (int i = 0; i < s; ++i) ptr[i] = rows.row(i);
+  // TILES OF TWO BLOCKS OF ROWS (THE BLOCK OF j, AND AN EARLIER ONE OF i)
+  size_t n = static_cast<size_t>(std::max(0, s));
+  size_t bs = dist_block(p), nb = (n + bs - 1) / bs;
+  std::vector<std::pair<size_t, size_t>> tiles;
+  for (size_t jb = 0; jb < nb; ++jb) {
+    for (size_t ib = 0; ib <= jb; ++ib) tiles.emplace_back(jb, ib);
+  }
+  par::parallel_for(tiles.size(), threads_for(work, threads), [&](size_t t) {
+    size_t j0 = tiles[t].first * bs, j1 = std::min(n, j0 + bs);
+    size_t i0 = tiles[t].second * bs;
+    for (size_t j = std::max<size_t>(j0, 1); j < j1; ++j) {
+      size_t i1 = std::min(i0 + bs, j);
+      if (i0 >= i1) continue;
+      row_dists(ptr[j], ptr.data() + i0, i1 - i0, p, metric, q, k4,
+                out.get() + j * (j - 1) / 2 + i0);
+    }
+  });
+  return out;
 }
 
 // Cluster n leaves from the lower triangle of their distances (as in a dist
@@ -624,6 +629,18 @@ cpp11::list hclust_rows_cpp(cpp11::doubles_matrix<> x, int metric, double q,
   Tree tree = nn_chain_rows(rows, metric, q, method, threads);
   hclust_form(tree);
   return tree_list(tree);
+}
+
+// Distances between the rows of x as the linkage computes them - the lower
+// triangle, as in a dist object (for tests)
+[[cpp11::register]]
+cpp11::doubles row_distances_cpp(cpp11::doubles_matrix<> x, int metric, double q,
+                                 int threads) {
+  Rows rows = gather_rows(REAL(x.data()), x.nrow(), x.ncol(), nullptr, x.nrow());
+  Triangle tri(rows, metric, q, threads);
+  cpp11::writable::doubles out(static_cast<R_xlen_t>(tri.D.size()));
+  std::copy(tri.D.begin(), tri.D.end(), REAL(out));
+  return out;
 }
 
 // Groups of rows of several matrices, each clustered on its own: the trees of
@@ -845,4 +862,11 @@ cpp11::integers group_medoids_cpp(cpp11::doubles_matrix<> x,
   cpp11::writable::integers res(G);
   std::copy(out.begin(), out.end(), INTEGER(res));
   return res;
+}
+
+// The distance kernel ("auto", "avx2", "neon" or "scalar"; for tests) - the
+// one now used
+std::string set_distance_kernel(const std::string& kernel) {
+  dist::kernel_choice() = kernel;
+  return dist::kernel_name();
 }

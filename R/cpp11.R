@@ -32,6 +32,10 @@ hclust_rows_cpp <- function(x, metric, q, method, threads) {
   .Call(`_HeatmapR_hclust_rows_cpp`, x, metric, q, method, threads)
 }
 
+row_distances_cpp <- function(x, metric, q, threads) {
+  .Call(`_HeatmapR_row_distances_cpp`, x, metric, q, threads)
+}
+
 cluster_batch_cpp <- function(xs, groups, metric, q, method, threads) {
   .Call(`_HeatmapR_cluster_batch_cpp`, xs, groups, metric, q, method, threads)
 }
@@ -50,6 +54,10 @@ group_medoids_cpp <- function(x, groups, metric, q, threads) {
 
 olo_order_cpp <- function(merge, d, full, threads) {
   .Call(`_HeatmapR_olo_order_cpp`, merge, d, full, threads)
+}
+
+kernel_settings_cpp <- function(olo, bounds, distance) {
+  .Call(`_HeatmapR_kernel_settings_cpp`, olo, bounds, distance)
 }
 
 olo_rows_batch_cpp <- function(x, leaves, merges, metric, q, threads) {

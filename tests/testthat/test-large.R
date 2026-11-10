@@ -230,7 +230,9 @@ test_that("heat_map_clust() switches to two stages above max", {
   # COLUMNS
   cols <- heat_map_clust(t(dat$x), tree = "column", max = 200)
   expect_equal(cols$two_stage[["sample"]], 200)
-  # OTHER LEAF ORDERS - OPTIMAL LEAF ORDERING IN BLOCKS ABOVE 2000 LEAVES
+  # OTHER LEAF ORDERS - OPTIMAL LEAF ORDERING IN BLOCKS ABOVE THE BLOCK SIZE
+  # (2000 LEAVES HERE, TO KEEP THE TEST SMALL)
+  local_mocked_bindings(.olo_block = function(n) 2000L)
   big_dat <- clustered_rows(2100)
   D <- as.matrix(dist(big_dat$x))
   cost <- function(o) sum(D[cbind(o[-length(o)], o[-1])])
@@ -245,8 +247,10 @@ test_that("heat_map_clust() switches to two stages above max", {
 })
 
 test_that("leaf orders of large trees", {
-  expect_equal(.olo_block(500), 2000L)
-  expect_equal(.olo_block(1e5), 387L)
+  expect_equal(.olo_block(500), 4000L)
+  expect_equal(.olo_block(4000), 4000L)
+  expect_equal(.olo_block(4001), 3999L)
+  expect_equal(.olo_block(1e5), 800L)
   expect_equal(.olo_block(1e8), 100L)
   dat <- clustered_rows(400, k = 6)
   tree <- hclust(dist(dat$x))

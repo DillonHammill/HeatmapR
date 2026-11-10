@@ -66,6 +66,96 @@ test_that("optimal leaf ordering matches the R code it replaced", {
   expect_identical(.olo_order(hclust(dist(1:2))$merge, dist(1:2)), c(1L, 2L))
 })
 
+test_that("optimal leaf ordering is the same with every kernel, with or without bounds", {
+  # TREES LARGE ENOUGH FOR THE TILED PRODUCTS AND THEIR BOUNDS (INNER
+  # DIMENSIONS OF 64 LEAVES OR MORE), WITH TIED AND MISSING DISTANCES
+  set.seed(11)
+  x <- matrix(rnorm(300 * 4), 300) + rep(sample(0:3 * 3, 300, TRUE), 4)
+  ties <- matrix(sample(0:2, 260 * 3, TRUE), 260)
+  d_na <- dist(x)
+  d_na[sample(length(d_na), 50)] <- NA
+  cases <- list(
+    list(d = dist(x), tree = hclust(dist(x), "average")),
+    list(d = dist(x, "manhattan"), tree = hclust(dist(x, "manhattan"), "complete")),
+    list(d = dist(ties), tree = hclust(dist(ties), "average")),
+    list(d = as.dist(1 - cor(t(x))), tree = hclust(as.dist(1 - cor(t(x))), "ward.D2")),
+    list(d = d_na, tree = hclust(dist(x), "single"))
+  )
+  on.exit(kernel_settings_cpp("auto", TRUE, "auto"), add = TRUE)
+  for (case in cases) {
+    m <- case$tree$merge
+    # (MISSING DISTANCES COUNT AS INFINITE)
+    d_ref <- case$d
+    d_ref[is.na(d_ref)] <- Inf
+    expected <- ref.olo_order(m, d_ref)
+    for (kernel in c("avx2", "sse2", "neon", "generic")) {
+      for (bounds in c(TRUE, FALSE)) {
+        kernel_settings_cpp(kernel, bounds, "auto")
+        expect_identical(.olo_order(m, case$d), expected)
+        expect_identical(.olo_order(m, as.matrix(case$d)), expected)
+      }
+    }
+  }
+  # THE SETTINGS - KERNELS THE PROCESSOR LACKS FALL BACK TO THE GENERIC ONES
+  s <- kernel_settings_cpp("generic", FALSE, "scalar")
+  expect_identical(s, list(olo = "generic", bounds = FALSE, distance = "scalar"))
+  expect_true(kernel_settings_cpp("avx2", TRUE, "avx2")$olo %in% c("avx2", "generic"))
+  expect_true(kernel_settings_cpp("neon", TRUE, "neon")$distance %in% c("neon", "scalar"))
+  expect_true(kernel_settings_cpp("auto", TRUE, "auto")$bounds)
+  expect_true(kernel_settings_cpp("auto", TRUE, "auto")$olo %in% c("avx2", "sse2", "neon", "generic"))
+  expect_error(kernel_settings_cpp("sve", TRUE, "auto"), "unknown kernel")
+  expect_error(kernel_settings_cpp("auto", TRUE, "sse2"), "unknown kernel")
+  expect_error(olo_order_cpp(.int_merge(m), c(1, 2, 3), FALSE, 1L), "between the 300 leaves")
+})
+
+test_that("distance kernels give exactly the distances of the scalar code", {
+  on.exit(kernel_settings_cpp("auto", TRUE, "auto"), add = TRUE)
+  set.seed(13)
+  for (p in c(1, 3, 4, 5, 8, 31)) {
+    x <- matrix(rnorm(23 * p), 23)
+    for (metric in c(1L, 2L, 3L, 5L)) {
+      kernel_settings_cpp("auto", TRUE, "scalar")
+      expected <- row_distances_cpp(x, metric, 2, 1L)
+      for (kernel in c("auto", "avx2", "neon")) {
+        kernel_settings_cpp("auto", TRUE, kernel)
+        expect_identical(row_distances_cpp(x, metric, 2, 1L), expected)
+      }
+    }
+    # stats::dist() DISTANCES, UP TO ROUNDING
+    expect_equal(row_distances_cpp(x, 1L, 2, 1L), as.vector(dist(x)))
+    expect_equal(row_distances_cpp(x, 2L, 2, 1L), as.vector(dist(x, "manhattan")))
+    expect_equal(row_distances_cpp(x, 3L, 2, 1L), as.vector(dist(x, "maximum")))
+    expect_equal(row_distances_cpp(x, 4L, 3, 1L), as.vector(dist(x, "minkowski", p = 3)))
+  }
+  # WIDE ROWS - SEVERAL BLOCKS OF 32 ROWS (THE TRIANGLE AS dist() HAS IT, AND
+  # BY POSITION FOR LEAF ORDERING)
+  wide <- matrix(rnorm(150 * 1000), 150)
+  kernel_settings_cpp("auto", TRUE, "scalar")
+  expected <- row_distances_cpp(wide, 1L, 2, 1L)
+  expect_equal(expected, as.vector(dist(wide)))
+  m_wide <- .int_merge(hclust(dist(wide), "average")$merge)
+  ord_wide <- olo_rows_batch_cpp(wide, list(1:150), list(m_wide), 1L, 2, 1L)[[1]]
+  expect_identical(ord_wide, .olo_order(m_wide, dist(wide)))
+  for (kernel in c("auto", "avx2", "neon")) {
+    kernel_settings_cpp("auto", TRUE, kernel)
+    expect_identical(row_distances_cpp(wide, 1L, 2, 2L), expected)
+    expect_identical(olo_rows_batch_cpp(wide, list(1:150), list(m_wide), 1L, 2, 2L)[[1]], ord_wide)
+  }
+  # MEDOIDS (SMALL FULL MATRICES) AND BLOCKS OF ROWS FOR LEAF ORDERING
+  x <- matrix(rnorm(400 * 7), 400) + rep(sample(0:3 * 2, 400, TRUE), 7)
+  groups <- list(1:150, 151:400)
+  leaves <- list(1:250, 251:400)
+  merges <- lapply(leaves, function(l) .int_merge(hclust(dist(x[l, ]), "average")$merge))
+  kernel_settings_cpp("auto", TRUE, "scalar")
+  medoids <- group_medoids_cpp(x, groups, 1L, 2, 1L)
+  orders <- olo_rows_batch_cpp(x, leaves, merges, 1L, 2, 1L)
+  for (kernel in c("auto", "avx2", "neon")) {
+    kernel_settings_cpp("auto", TRUE, kernel)
+    expect_identical(group_medoids_cpp(x, groups, 1L, 2, 1L), medoids)
+    expect_identical(olo_rows_batch_cpp(x, leaves, merges, 1L, 2, 1L), orders)
+  }
+})
+
 test_that("compiled linkage gives stats::hclust() trees", {
   set.seed(3)
   for (i in 1:30) {

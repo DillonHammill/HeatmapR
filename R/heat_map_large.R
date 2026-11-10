@@ -11,19 +11,22 @@
 # above it. Distances, linkage, medoids, the nearest-medoid search and leaf
 # ordering run in compiled code (src/linkage.cpp, src/olo.cpp).
 
-# Largest number of leaves ordered exactly by optimal leaf ordering
-.OLO_MAX <- 2000
+# Largest number of leaves ordered exactly by optimal leaf ordering (about
+# 0.3 seconds and 150 MB for 4000 leaves; memory grows with the square of the
+# number of leaves)
+.OLO_MAX <- 4000
 
 #' Block size for the optimal leaf ordering of a tree with n leaves
 #'
 #' Ordering a block of b leaves exactly takes time growing with b^3 (about
-#' 0.2 seconds for 1000 leaves), so the n / b blocks of a large tree take time
-#' growing with n * b^2. Larger trees get smaller blocks (down to 100 leaves)
-#' to keep the time to about 3 seconds.
+#' 0.01 seconds for 1000 leaves and 0.3 seconds for 4000), so the n / b blocks
+#' of a large tree take time growing with n * b^2. Larger trees get smaller
+#' blocks (down to 100 leaves), with n * b^2 at most .OLO_MAX^3: about as long
+#' as ordering .OLO_MAX leaves exactly.
 #'
 #' @noRd
 .olo_block <- function(n) {
-  as.integer(max(100, min(.OLO_MAX, floor(sqrt(1.5e10 / n)))))
+  as.integer(max(100, min(.OLO_MAX, floor(sqrt(.OLO_MAX^3 / n)))))
 }
 
 #' Evaluate an expression with a fixed random seed, restoring the caller's

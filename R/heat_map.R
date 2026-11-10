@@ -65,7 +65,7 @@
 #'   are as similar as possible) or \code{"mean"} (branches ordered by their
 #'   mean values - \code{\link[stats]{heatmap}} orders them by the sum of
 #'   their columns' means instead, which favours small branches). Optimal leaf ordering
-#'   is exact for up to 2000 columns, which takes about a second; larger
+#'   is exact for up to 4000 columns, which takes well under a second; larger
 #'   dendrograms are ordered in blocks (see \code{\link{heat_map_clust}}).
 #' @param tree_cut_x either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for x axis dendrogram (proportional for non-cosine distances,

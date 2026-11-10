@@ -38,11 +38,11 @@
 #'   leaf ordering) and \code{"mean"} orders branches by their mean values
 #'   (\code{\link[stats]{heatmap}} orders them by the sum of their leaves'
 #'   means instead, which favours small branches). Optimal leaf ordering is exact for up to
-#'   2000 leaves, which takes about a second; its time grows with the cube of
-#'   the number of leaves, so larger trees are ordered in blocks (of 2000
-#'   leaves, down to 100 for the largest trees), each ordered exactly, with the
-#'   blocks then ordered and turned to meet their neighbours. 200,000 leaves
-#'   take about 3 seconds.
+#'   4000 leaves, which takes well under a second; its time grows with the cube of
+#'   the number of leaves (and its memory with the square), so larger trees are
+#'   ordered in blocks (of 4000 leaves, down to 100 for the largest trees), each
+#'   ordered exactly, with the blocks then ordered and turned to meet their
+#'   neighbours. 200,000 leaves take about a second.
 #' @param max the largest number of rows (or columns) clustered exactly, set
 #'   to 5000 by default. Exact clustering needs the distances between every
 #'   pair of rows, so its memory and time grow with the square of their
@@ -797,7 +797,11 @@ heat_map_clust <- function(x,
 #' distances between adjacent leaves (Bar-Joseph et al. 2001). For each node,
 #' the cost of every ordering that starts at a leaf of its left branch and ends
 #' at a leaf of its right branch is built from its branches with min-plus
-#' matrix products, and the best ordering is traced back from the root.
+#' matrix products, and the best ordering is traced back from the root. The
+#' products run in tiled compiled kernels that skip, as the early termination
+#' of Bar-Joseph et al. does, the steps that bounds show can't improve a cost
+#' (src/olo.cpp); the costs and so the order are exactly those of the
+#' straightforward recurrences.
 #'
 #' @param merge merge matrix of an hclust object.
 #' @param d distances between the leaves (\code{dist} object or matrix).
@@ -849,8 +853,10 @@ heat_map_clust <- function(x,
     ord <- .olo_large(tree$merge, x, dist = dist, max = block, ...)
     return(.apply_order(tree, ord))
   }
+  # DISTANCES FROM THE DATA - COMPUTED IN COMPILED CODE, IN THE LEAF ORDER
+  # THE ORDERING NEEDS, WHEN THE METRIC ALLOWS (ONE BLOCK: THE EXACT ORDER)
   if(is.null(d)) {
-    d <- .dist_matrix(x, dist, ...)
+    return(.apply_order(tree, .olo_large(tree$merge, x, dist = dist, max = n, ...)))
   }
   .apply_order(tree, .olo_order(tree$merge, d))
 }
