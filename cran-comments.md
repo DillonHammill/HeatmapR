@@ -17,8 +17,8 @@ current device and don't open new devices in non-interactive sessions.
 
 0 errors | 0 warnings | 1 note
 
-* installed size is 6.5Mb (libs 3.8Mb with debugging symbols, help 1.8Mb):
-  the package now contains compiled code.
+* installed size is 9.0Mb (libs 7.6Mb with debugging symbols, 0.8Mb
+  without): the package now contains compiled code.
 
 The local check also reported notes and warnings from the sandbox it ran in
 (no internet access for the incoming and URL checks, no `inconsolata.sty`

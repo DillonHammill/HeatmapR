@@ -5,11 +5,46 @@
 #include "cpp11/declarations.hpp"
 #include <R_ext/Visibility.h>
 
+// cells.cpp
+SEXP cells_gather_cpp(SEXP m, cpp11::integers rows, cpp11::integers cols, int threads);
+extern "C" SEXP _HeatmapR_cells_gather_cpp(SEXP m, SEXP rows, SEXP cols, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cells_gather_cpp(cpp11::as_cpp<cpp11::decay_t<SEXP>>(m), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(rows), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(cols), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// cells.cpp
+cpp11::doubles finite_range_cpp(cpp11::doubles_matrix<> m, cpp11::integers cols, SEXP m2);
+extern "C" SEXP _HeatmapR_finite_range_cpp(SEXP m, SEXP cols, SEXP m2) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(finite_range_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(m), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(cols), cpp11::as_cpp<cpp11::decay_t<SEXP>>(m2)));
+  END_CPP11
+}
+// cells.cpp
+cpp11::integers cells_scatter_cpp(cpp11::integers values, cpp11::integers rows, cpp11::integers cols);
+extern "C" SEXP _HeatmapR_cells_scatter_cpp(SEXP values, SEXP rows, SEXP cols) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cells_scatter_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(values), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(rows), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(cols)));
+  END_CPP11
+}
+// cells.cpp
+cpp11::integers raster_block_cpp(cpp11::integers packed, int nrow, int r0, int r1, int c0, int c1, int ky, int kx);
+extern "C" SEXP _HeatmapR_raster_block_cpp(SEXP packed, SEXP nrow, SEXP r0, SEXP r1, SEXP c0, SEXP c1, SEXP ky, SEXP kx) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(raster_block_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(packed), cpp11::as_cpp<cpp11::decay_t<int>>(nrow), cpp11::as_cpp<cpp11::decay_t<int>>(r0), cpp11::as_cpp<cpp11::decay_t<int>>(r1), cpp11::as_cpp<cpp11::decay_t<int>>(c0), cpp11::as_cpp<cpp11::decay_t<int>>(c1), cpp11::as_cpp<cpp11::decay_t<int>>(ky), cpp11::as_cpp<cpp11::decay_t<int>>(kx)));
+  END_CPP11
+}
 // colour.cpp
 SEXP ramp_packed_cpp(cpp11::doubles k, cpp11::doubles knots, cpp11::doubles_matrix<> rgb);
 extern "C" SEXP _HeatmapR_ramp_packed_cpp(SEXP k, SEXP knots, SEXP rgb) {
   BEGIN_CPP11
     return cpp11::as_sexp(ramp_packed_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(k), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(knots), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb)));
+  END_CPP11
+}
+// colour.cpp
+SEXP ramp_cells_cpp(cpp11::doubles v, double lo, double hi, cpp11::doubles knots, cpp11::doubles_matrix<> rgb, int empty, int threads);
+extern "C" SEXP _HeatmapR_ramp_cells_cpp(SEXP v, SEXP lo, SEXP hi, SEXP knots, SEXP rgb, SEXP empty, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(ramp_cells_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(v), cpp11::as_cpp<cpp11::decay_t<double>>(lo), cpp11::as_cpp<cpp11::decay_t<double>>(hi), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(knots), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb), cpp11::as_cpp<cpp11::decay_t<int>>(empty), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // colour.cpp
@@ -47,6 +82,34 @@ extern "C" SEXP _HeatmapR_native_colours_cpp(SEXP col) {
     return cpp11::as_sexp(native_colours_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::strings>>(col)));
   END_CPP11
 }
+// kmeans.cpp
+cpp11::doubles first_pc_cpp(cpp11::doubles_matrix<> x, int threads);
+extern "C" SEXP _HeatmapR_first_pc_cpp(SEXP x, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(first_pc_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// kmeans.cpp
+cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> centres, int iter_max, int threads);
+extern "C" SEXP _HeatmapR_kmeans_hw_cpp(SEXP x, SEXP centres, SEXP iter_max, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(kmeans_hw_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(centres), cpp11::as_cpp<cpp11::decay_t<int>>(iter_max), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// kmeans.cpp
+cpp11::doubles_matrix<> group_means_cpp(cpp11::doubles_matrix<> x, cpp11::integers groups, int k, int threads);
+extern "C" SEXP _HeatmapR_group_means_cpp(SEXP x, SEXP groups, SEXP k, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(group_means_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(groups), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// kmeans.cpp
+cpp11::logicals distinct_rows_cpp(cpp11::doubles_matrix<> x);
+extern "C" SEXP _HeatmapR_distinct_rows_cpp(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(distinct_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x)));
+  END_CPP11
+}
 // linkage.cpp
 cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members, int threads);
 extern "C" SEXP _HeatmapR_hclust_cpp(SEXP d, SEXP n, SEXP method, SEXP members, SEXP threads) {
@@ -55,17 +118,24 @@ extern "C" SEXP _HeatmapR_hclust_cpp(SEXP d, SEXP n, SEXP method, SEXP members, 
   END_CPP11
 }
 // linkage.cpp
-cpp11::list hclust_rows_cpp(cpp11::doubles_matrix<> x, int metric, double q, int method, int threads);
-extern "C" SEXP _HeatmapR_hclust_rows_cpp(SEXP x, SEXP metric, SEXP q, SEXP method, SEXP threads) {
+cpp11::doubles row_distances_cpp(cpp11::doubles_matrix<> x, int metric, double q, int threads);
+extern "C" SEXP _HeatmapR_row_distances_cpp(SEXP x, SEXP metric, SEXP q, SEXP threads) {
   BEGIN_CPP11
-    return cpp11::as_sexp(hclust_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(method), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+    return cpp11::as_sexp(row_distances_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // linkage.cpp
-cpp11::list cluster_batch_cpp(cpp11::list xs, SEXP groups, int metric, double q, int method, int threads);
-extern "C" SEXP _HeatmapR_cluster_batch_cpp(SEXP xs, SEXP groups, SEXP metric, SEXP q, SEXP method, SEXP threads) {
+cpp11::list hclust_rows_cpp(cpp11::doubles_matrix<> x, int code, double q, int method, int threads);
+extern "C" SEXP _HeatmapR_hclust_rows_cpp(SEXP x, SEXP code, SEXP q, SEXP method, SEXP threads) {
   BEGIN_CPP11
-    return cpp11::as_sexp(cluster_batch_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(xs), cpp11::as_cpp<cpp11::decay_t<SEXP>>(groups), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(method), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+    return cpp11::as_sexp(hclust_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(code), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(method), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// linkage.cpp
+cpp11::list cluster_batch_cpp(cpp11::doubles_matrix<> x, SEXP groups, SEXP samples, int code, double q, int method, int threads);
+extern "C" SEXP _HeatmapR_cluster_batch_cpp(SEXP x, SEXP groups, SEXP samples, SEXP code, SEXP q, SEXP method, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cluster_batch_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<SEXP>>(groups), cpp11::as_cpp<cpp11::decay_t<SEXP>>(samples), cpp11::as_cpp<cpp11::decay_t<int>>(code), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(method), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // linkage.cpp
@@ -76,17 +146,45 @@ extern "C" SEXP _HeatmapR_row_ranks_cpp(SEXP x, SEXP threads) {
   END_CPP11
 }
 // linkage.cpp
-cpp11::integers nearest_medoid_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> medoids, int metric, double q, int threads);
-extern "C" SEXP _HeatmapR_nearest_medoid_cpp(SEXP x, SEXP medoids, SEXP metric, SEXP q, SEXP threads) {
+cpp11::integers nearest_medoid_cpp(cpp11::doubles_matrix<> x, cpp11::integers rows, cpp11::integers med, int code, double q, int threads);
+extern "C" SEXP _HeatmapR_nearest_medoid_cpp(SEXP x, SEXP rows, SEXP med, SEXP code, SEXP q, SEXP threads) {
   BEGIN_CPP11
-    return cpp11::as_sexp(nearest_medoid_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(medoids), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+    return cpp11::as_sexp(nearest_medoid_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(rows), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(med), cpp11::as_cpp<cpp11::decay_t<int>>(code), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // linkage.cpp
-cpp11::integers group_medoids_cpp(cpp11::doubles_matrix<> x, cpp11::list groups, int metric, double q, int threads);
-extern "C" SEXP _HeatmapR_group_medoids_cpp(SEXP x, SEXP groups, SEXP metric, SEXP q, SEXP threads) {
+cpp11::integers group_medoids_cpp(cpp11::doubles_matrix<> x, cpp11::list groups, int code, double q, int threads);
+extern "C" SEXP _HeatmapR_group_medoids_cpp(SEXP x, SEXP groups, SEXP code, SEXP q, SEXP threads) {
   BEGIN_CPP11
-    return cpp11::as_sexp(group_medoids_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(groups), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+    return cpp11::as_sexp(group_medoids_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(groups), cpp11::as_cpp<cpp11::decay_t<int>>(code), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// metric.cpp
+bool all_finite_cpp(cpp11::doubles x, int threads);
+extern "C" SEXP _HeatmapR_all_finite_cpp(SEXP x, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(all_finite_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// metric.cpp
+cpp11::doubles dist_rows_cpp(cpp11::doubles_matrix<> x, int code, double q, int threads);
+extern "C" SEXP _HeatmapR_dist_rows_cpp(SEXP x, SEXP code, SEXP q, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(dist_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(code), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// metric.cpp
+cpp11::doubles_matrix<> dist_cross_cpp(cpp11::doubles_matrix<> x, cpp11::integers a, cpp11::integers b, int code, double q, int threads);
+extern "C" SEXP _HeatmapR_dist_cross_cpp(SEXP x, SEXP a, SEXP b, SEXP code, SEXP q, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(dist_cross_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(a), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(b), cpp11::as_cpp<cpp11::decay_t<int>>(code), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// metric.cpp
+cpp11::doubles_matrix<> unit_rows_cpp(cpp11::doubles_matrix<> x, int code, int threads);
+extern "C" SEXP _HeatmapR_unit_rows_cpp(SEXP x, SEXP code, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(unit_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(code), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // olo.cpp
@@ -97,10 +195,17 @@ extern "C" SEXP _HeatmapR_olo_order_cpp(SEXP merge, SEXP d, SEXP full, SEXP thre
   END_CPP11
 }
 // olo.cpp
-cpp11::list olo_rows_batch_cpp(cpp11::doubles_matrix<> x, cpp11::list leaves, cpp11::list merges, int metric, double q, int threads);
-extern "C" SEXP _HeatmapR_olo_rows_batch_cpp(SEXP x, SEXP leaves, SEXP merges, SEXP metric, SEXP q, SEXP threads) {
+cpp11::list kernel_settings_cpp(std::string olo, bool bounds, std::string distance);
+extern "C" SEXP _HeatmapR_kernel_settings_cpp(SEXP olo, SEXP bounds, SEXP distance) {
   BEGIN_CPP11
-    return cpp11::as_sexp(olo_rows_batch_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(leaves), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(merges), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+    return cpp11::as_sexp(kernel_settings_cpp(cpp11::as_cpp<cpp11::decay_t<std::string>>(olo), cpp11::as_cpp<cpp11::decay_t<bool>>(bounds), cpp11::as_cpp<cpp11::decay_t<std::string>>(distance)));
+  END_CPP11
+}
+// olo.cpp
+cpp11::list olo_rows_batch_cpp(cpp11::doubles_matrix<> x, cpp11::list leaves, cpp11::list merges, int code, double q, int threads);
+extern "C" SEXP _HeatmapR_olo_rows_batch_cpp(SEXP x, SEXP leaves, SEXP merges, SEXP code, SEXP q, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(olo_rows_batch_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(leaves), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(merges), cpp11::as_cpp<cpp11::decay_t<int>>(code), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // parallel.cpp
@@ -115,6 +220,13 @@ cpp11::doubles parallel_check_cpp(int n, int threads, int fail_at, bool nested);
 extern "C" SEXP _HeatmapR_parallel_check_cpp(SEXP n, SEXP threads, SEXP fail_at, SEXP nested) {
   BEGIN_CPP11
     return cpp11::as_sexp(parallel_check_cpp(cpp11::as_cpp<cpp11::decay_t<int>>(n), cpp11::as_cpp<cpp11::decay_t<int>>(threads), cpp11::as_cpp<cpp11::decay_t<int>>(fail_at), cpp11::as_cpp<cpp11::decay_t<bool>>(nested)));
+  END_CPP11
+}
+// scale.cpp
+cpp11::doubles_matrix<> scale_cpp(cpp11::doubles_matrix<> x, int margin, int method, int threads);
+extern "C" SEXP _HeatmapR_scale_cpp(SEXP x, SEXP margin, SEXP method, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(scale_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(margin), cpp11::as_cpp<cpp11::decay_t<int>>(method), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // tree.cpp
@@ -194,36 +306,92 @@ extern "C" SEXP _HeatmapR_clade_in_cpp(SEXP keys, SEXP other) {
     return cpp11::as_sexp(clade_in_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(keys), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(other)));
   END_CPP11
 }
+// tree.cpp
+cpp11::integers cut_tree_cpp(cpp11::integers merge, int k, SEXP order);
+extern "C" SEXP _HeatmapR_cut_tree_cpp(SEXP merge, SEXP k, SEXP order) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cut_tree_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(merge), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<SEXP>>(order)));
+  END_CPP11
+}
+// tree.cpp
+cpp11::list join_groups_cpp(cpp11::list members, cpp11::list merges, cpp11::list heights, cpp11::list orders, cpp11::integers top, cpp11::doubles top_height, cpp11::doubles parent_height, int n);
+extern "C" SEXP _HeatmapR_join_groups_cpp(SEXP members, SEXP merges, SEXP heights, SEXP orders, SEXP top, SEXP top_height, SEXP parent_height, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(join_groups_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(members), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(merges), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(heights), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(orders), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(top), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(top_height), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(parent_height), cpp11::as_cpp<cpp11::decay_t<int>>(n)));
+  END_CPP11
+}
+// tree.cpp
+int merge_check_cpp(cpp11::doubles m, int k, int n);
+extern "C" SEXP _HeatmapR_merge_check_cpp(SEXP m, SEXP k, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(merge_check_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(m), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<int>>(n)));
+  END_CPP11
+}
+// tree.cpp
+bool order_check_cpp(cpp11::doubles order, int n);
+extern "C" SEXP _HeatmapR_order_check_cpp(SEXP order, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(order_check_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(order), cpp11::as_cpp<cpp11::decay_t<int>>(n)));
+  END_CPP11
+}
+// tree.cpp
+SEXP map_centers_cpp(cpp11::doubles pos, cpp11::doubles centers);
+extern "C" SEXP _HeatmapR_map_centers_cpp(SEXP pos, SEXP centers) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(map_centers_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(pos), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(centers)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_adjust_alpha_cpp",      (DL_FUNC) &_HeatmapR_adjust_alpha_cpp,      2},
+    {"_HeatmapR_all_finite_cpp",        (DL_FUNC) &_HeatmapR_all_finite_cpp,        2},
     {"_HeatmapR_apply_order_cpp",       (DL_FUNC) &_HeatmapR_apply_order_cpp,       2},
+    {"_HeatmapR_cells_gather_cpp",      (DL_FUNC) &_HeatmapR_cells_gather_cpp,      4},
+    {"_HeatmapR_cells_scatter_cpp",     (DL_FUNC) &_HeatmapR_cells_scatter_cpp,     3},
     {"_HeatmapR_clade_hash_cpp",        (DL_FUNC) &_HeatmapR_clade_hash_cpp,        2},
     {"_HeatmapR_clade_in_cpp",          (DL_FUNC) &_HeatmapR_clade_in_cpp,          2},
-    {"_HeatmapR_cluster_batch_cpp",     (DL_FUNC) &_HeatmapR_cluster_batch_cpp,     6},
+    {"_HeatmapR_cluster_batch_cpp",     (DL_FUNC) &_HeatmapR_cluster_batch_cpp,     7},
+    {"_HeatmapR_cut_tree_cpp",          (DL_FUNC) &_HeatmapR_cut_tree_cpp,          3},
+    {"_HeatmapR_dist_cross_cpp",        (DL_FUNC) &_HeatmapR_dist_cross_cpp,        6},
+    {"_HeatmapR_dist_rows_cpp",         (DL_FUNC) &_HeatmapR_dist_rows_cpp,         4},
+    {"_HeatmapR_distinct_rows_cpp",     (DL_FUNC) &_HeatmapR_distinct_rows_cpp,     1},
+    {"_HeatmapR_finite_range_cpp",      (DL_FUNC) &_HeatmapR_finite_range_cpp,      3},
+    {"_HeatmapR_first_pc_cpp",          (DL_FUNC) &_HeatmapR_first_pc_cpp,          2},
+    {"_HeatmapR_group_means_cpp",       (DL_FUNC) &_HeatmapR_group_means_cpp,       4},
     {"_HeatmapR_group_medoids_cpp",     (DL_FUNC) &_HeatmapR_group_medoids_cpp,     5},
     {"_HeatmapR_hardware_threads_cpp",  (DL_FUNC) &_HeatmapR_hardware_threads_cpp,  0},
     {"_HeatmapR_hash_cpp",              (DL_FUNC) &_HeatmapR_hash_cpp,              1},
     {"_HeatmapR_hclust_cpp",            (DL_FUNC) &_HeatmapR_hclust_cpp,            5},
     {"_HeatmapR_hclust_rows_cpp",       (DL_FUNC) &_HeatmapR_hclust_rows_cpp,       5},
+    {"_HeatmapR_join_groups_cpp",       (DL_FUNC) &_HeatmapR_join_groups_cpp,       8},
+    {"_HeatmapR_kernel_settings_cpp",   (DL_FUNC) &_HeatmapR_kernel_settings_cpp,   3},
+    {"_HeatmapR_kmeans_hw_cpp",         (DL_FUNC) &_HeatmapR_kmeans_hw_cpp,         4},
+    {"_HeatmapR_map_centers_cpp",       (DL_FUNC) &_HeatmapR_map_centers_cpp,       2},
     {"_HeatmapR_mean_order_cpp",        (DL_FUNC) &_HeatmapR_mean_order_cpp,        2},
+    {"_HeatmapR_merge_check_cpp",       (DL_FUNC) &_HeatmapR_merge_check_cpp,       3},
     {"_HeatmapR_merge_order_cpp",       (DL_FUNC) &_HeatmapR_merge_order_cpp,       3},
     {"_HeatmapR_merge_sizes_cpp",       (DL_FUNC) &_HeatmapR_merge_sizes_cpp,       1},
     {"_HeatmapR_native_colours_cpp",    (DL_FUNC) &_HeatmapR_native_colours_cpp,    1},
-    {"_HeatmapR_nearest_medoid_cpp",    (DL_FUNC) &_HeatmapR_nearest_medoid_cpp,    5},
+    {"_HeatmapR_nearest_medoid_cpp",    (DL_FUNC) &_HeatmapR_nearest_medoid_cpp,    6},
     {"_HeatmapR_olo_blocks_cpp",        (DL_FUNC) &_HeatmapR_olo_blocks_cpp,        2},
     {"_HeatmapR_olo_order_cpp",         (DL_FUNC) &_HeatmapR_olo_order_cpp,         4},
     {"_HeatmapR_olo_rows_batch_cpp",    (DL_FUNC) &_HeatmapR_olo_rows_batch_cpp,    6},
+    {"_HeatmapR_order_check_cpp",       (DL_FUNC) &_HeatmapR_order_check_cpp,       2},
     {"_HeatmapR_pack_channels_cpp",     (DL_FUNC) &_HeatmapR_pack_channels_cpp,     1},
     {"_HeatmapR_packed_strings_cpp",    (DL_FUNC) &_HeatmapR_packed_strings_cpp,    2},
     {"_HeatmapR_parallel_check_cpp",    (DL_FUNC) &_HeatmapR_parallel_check_cpp,    4},
+    {"_HeatmapR_ramp_cells_cpp",        (DL_FUNC) &_HeatmapR_ramp_cells_cpp,        7},
     {"_HeatmapR_ramp_packed_cpp",       (DL_FUNC) &_HeatmapR_ramp_packed_cpp,       3},
+    {"_HeatmapR_raster_block_cpp",      (DL_FUNC) &_HeatmapR_raster_block_cpp,      8},
     {"_HeatmapR_rgb_packed_cpp",        (DL_FUNC) &_HeatmapR_rgb_packed_cpp,        1},
+    {"_HeatmapR_row_distances_cpp",     (DL_FUNC) &_HeatmapR_row_distances_cpp,     4},
     {"_HeatmapR_row_ranks_cpp",         (DL_FUNC) &_HeatmapR_row_ranks_cpp,         2},
+    {"_HeatmapR_scale_cpp",             (DL_FUNC) &_HeatmapR_scale_cpp,             4},
     {"_HeatmapR_structural_clades_cpp", (DL_FUNC) &_HeatmapR_structural_clades_cpp, 2},
     {"_HeatmapR_sub_merge_cpp",         (DL_FUNC) &_HeatmapR_sub_merge_cpp,         2},
     {"_HeatmapR_tree_segments_cpp",     (DL_FUNC) &_HeatmapR_tree_segments_cpp,     3},
+    {"_HeatmapR_unit_rows_cpp",         (DL_FUNC) &_HeatmapR_unit_rows_cpp,         3},
     {NULL, NULL, 0}
 };
 }

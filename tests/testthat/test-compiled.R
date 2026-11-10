@@ -66,13 +66,103 @@ test_that("optimal leaf ordering matches the R code it replaced", {
   expect_identical(.olo_order(hclust(dist(1:2))$merge, dist(1:2)), c(1L, 2L))
 })
 
+test_that("optimal leaf ordering is the same with every kernel, with or without bounds", {
+  # TREES LARGE ENOUGH FOR THE TILED PRODUCTS AND THEIR BOUNDS (INNER
+  # DIMENSIONS OF 64 LEAVES OR MORE), WITH TIED AND MISSING DISTANCES
+  set.seed(11)
+  x <- matrix(rnorm(300 * 4), 300) + rep(sample(0:3 * 3, 300, TRUE), 4)
+  ties <- matrix(sample(0:2, 260 * 3, TRUE), 260)
+  d_na <- dist(x)
+  d_na[sample(length(d_na), 50)] <- NA
+  cases <- list(
+    list(d = dist(x), tree = hclust(dist(x), "average")),
+    list(d = dist(x, "manhattan"), tree = hclust(dist(x, "manhattan"), "complete")),
+    list(d = dist(ties), tree = hclust(dist(ties), "average")),
+    list(d = as.dist(1 - cor(t(x))), tree = hclust(as.dist(1 - cor(t(x))), "ward.D2")),
+    list(d = d_na, tree = hclust(dist(x), "single"))
+  )
+  on.exit(kernel_settings_cpp("auto", TRUE, "auto"), add = TRUE)
+  for (case in cases) {
+    m <- case$tree$merge
+    # (MISSING DISTANCES COUNT AS INFINITE)
+    d_ref <- case$d
+    d_ref[is.na(d_ref)] <- Inf
+    expected <- ref.olo_order(m, d_ref)
+    for (kernel in c("avx2", "sse2", "neon", "generic")) {
+      for (bounds in c(TRUE, FALSE)) {
+        kernel_settings_cpp(kernel, bounds, "auto")
+        expect_identical(.olo_order(m, case$d), expected)
+        expect_identical(.olo_order(m, as.matrix(case$d)), expected)
+      }
+    }
+  }
+  # THE SETTINGS - KERNELS THE PROCESSOR LACKS FALL BACK TO THE GENERIC ONES
+  s <- kernel_settings_cpp("generic", FALSE, "scalar")
+  expect_identical(s, list(olo = "generic", bounds = FALSE, distance = "scalar"))
+  expect_true(kernel_settings_cpp("avx2", TRUE, "avx2")$olo %in% c("avx2", "generic"))
+  expect_true(kernel_settings_cpp("neon", TRUE, "neon")$distance %in% c("neon", "scalar"))
+  expect_true(kernel_settings_cpp("auto", TRUE, "auto")$bounds)
+  expect_true(kernel_settings_cpp("auto", TRUE, "auto")$olo %in% c("avx2", "sse2", "neon", "generic"))
+  expect_error(kernel_settings_cpp("sve", TRUE, "auto"), "unknown kernel")
+  expect_error(kernel_settings_cpp("auto", TRUE, "sse2"), "unknown kernel")
+  expect_error(olo_order_cpp(.int_merge(m), c(1, 2, 3), FALSE, 1L), "between the 300 leaves")
+})
+
+test_that("distance kernels give exactly the distances of the scalar code", {
+  on.exit(kernel_settings_cpp("auto", TRUE, "auto"), add = TRUE)
+  set.seed(13)
+  for (p in c(1, 3, 4, 5, 8, 31)) {
+    x <- matrix(rnorm(23 * p), 23)
+    for (metric in c(1L, 2L, 3L, 5L)) {
+      kernel_settings_cpp("auto", TRUE, "scalar")
+      expected <- row_distances_cpp(x, metric, 2, 1L)
+      for (kernel in c("auto", "avx2", "neon")) {
+        kernel_settings_cpp("auto", TRUE, kernel)
+        expect_identical(row_distances_cpp(x, metric, 2, 1L), expected)
+      }
+    }
+    # stats::dist() DISTANCES, UP TO ROUNDING
+    expect_equal(row_distances_cpp(x, 1L, 2, 1L), as.vector(dist(x)))
+    expect_equal(row_distances_cpp(x, 2L, 2, 1L), as.vector(dist(x, "manhattan")))
+    expect_equal(row_distances_cpp(x, 3L, 2, 1L), as.vector(dist(x, "maximum")))
+    expect_equal(row_distances_cpp(x, 4L, 3, 1L), as.vector(dist(x, "minkowski", p = 3)))
+  }
+  # WIDE ROWS - SEVERAL BLOCKS OF 32 ROWS (THE TRIANGLE AS dist() HAS IT, AND
+  # BY POSITION FOR LEAF ORDERING)
+  wide <- matrix(rnorm(150 * 1000), 150)
+  kernel_settings_cpp("auto", TRUE, "scalar")
+  expected <- row_distances_cpp(wide, 1L, 2, 1L)
+  expect_equal(expected, as.vector(dist(wide)))
+  m_wide <- .int_merge(hclust(dist(wide), "average")$merge)
+  ord_wide <- olo_rows_batch_cpp(wide, list(1:150), list(m_wide), 1L, 2, 1L)[[1]]
+  expect_identical(ord_wide, .olo_order(m_wide, dist(wide)))
+  for (kernel in c("auto", "avx2", "neon")) {
+    kernel_settings_cpp("auto", TRUE, kernel)
+    expect_identical(row_distances_cpp(wide, 1L, 2, 2L), expected)
+    expect_identical(olo_rows_batch_cpp(wide, list(1:150), list(m_wide), 1L, 2, 2L)[[1]], ord_wide)
+  }
+  # MEDOIDS (SMALL FULL MATRICES) AND BLOCKS OF ROWS FOR LEAF ORDERING
+  x <- matrix(rnorm(400 * 7), 400) + rep(sample(0:3 * 2, 400, TRUE), 7)
+  groups <- list(1:150, 151:400)
+  leaves <- list(1:250, 251:400)
+  merges <- lapply(leaves, function(l) .int_merge(hclust(dist(x[l, ]), "average")$merge))
+  kernel_settings_cpp("auto", TRUE, "scalar")
+  medoids <- group_medoids_cpp(x, groups, 1L, 2, 1L)
+  orders <- olo_rows_batch_cpp(x, leaves, merges, 1L, 2, 1L)
+  for (kernel in c("auto", "avx2", "neon")) {
+    kernel_settings_cpp("auto", TRUE, kernel)
+    expect_identical(group_medoids_cpp(x, groups, 1L, 2, 1L), medoids)
+    expect_identical(olo_rows_batch_cpp(x, leaves, merges, 1L, 2, 1L), orders)
+  }
+})
+
 test_that("compiled linkage gives stats::hclust() trees", {
   set.seed(3)
   for (i in 1:30) {
     n <- sample(c(2, 3, 5, 20, 80, 150), 1)
     x <- matrix(rnorm(n * 5), n, dimnames = list(paste0("r", seq_len(n)), NULL))
     d <- dist(x)
-    for (method in names(.NN_CHAIN)) {
+    for (method in names(.LINKAGE)) {
       ours <- .hclust_dist(d, method)
       theirs <- hclust(d, method)
       expect_identical(ours$merge, theirs$merge, info = method)
@@ -99,10 +189,13 @@ test_that("compiled linkage gives stats::hclust() trees", {
   expect_equal(ours$height, hclust(dist(x), "single")$height)
   expect_equal(ours$order, .merge_order(ours$merge))
   expect_true(all(ours$merge < seq_len(39)))
-  # OTHER METHODS AND PARTIAL NAMES GO TO stats::hclust(); MISSING DISTANCES FAIL
+  # CENTROID AND MEDIAN LINKAGE BY hclust()'S OWN ALGORITHM - IDENTICAL, WITH
+  # INVERSIONS; PARTIAL NAMES; MISSING DISTANCES FAIL
   d <- dist(matrix(rnorm(30), 10))
-  expect_identical(.hclust_dist(d, "centroid")$merge, hclust(d, "centroid")$merge)
-  expect_identical(.hclust_dist(d, "median")$order, hclust(d, "median")$order)
+  for (method in c("centroid", "median")) {
+    expect_identical(.hclust_dist(d, method)[c("merge", "height", "order")],
+                     hclust(d, method)[c("merge", "height", "order")])
+  }
   expect_identical(.hclust_dist(d, "ave")$merge, hclust(d, "average")$merge)
   d[3] <- NA
   expect_error(.hclust_dist(d), "distances are missing")
@@ -137,15 +230,17 @@ test_that("groups are clustered in one call with the same distances", {
     ref <- hclust(.dist_matrix(x[groups[[g]], , drop = FALSE], "spearman"), "single")
     expect_equal(trees[[g]]$height, ref$height, tolerance = 1e-12)
   }
-  # DISTANCES THE COMPILED CODE LEAVES TO R
-  expect_null(.compiled_metric(x, "canberra"))
-  expect_null(.compiled_metric(x, "kendall"))
+  # EVERY BUILT-IN DISTANCE IS COMPILED, MISSING VALUES INCLUDED; ONLY
+  # DISTANCE FUNCTIONS AND INVALID POWERS ARE LEFT TO R
+  expect_identical(.compiled_metric(x, "canberra")$code, 8L)
+  expect_identical(.compiled_metric(x, "kendall")$code, 10L)
   expect_null(.compiled_metric(x, function(m) dist(m)))
   expect_null(.compiled_metric(x, "minkowski", p = -1))
+  expect_false(.compiled_metric(x, "euclidean")$missing)
   x[1, 1] <- Inf
-  expect_null(.compiled_metric(x, "euclidean"))
+  expect_true(.compiled_metric(x, "euclidean")$missing)
   x[1, 1] <- NA
-  expect_null(.compiled_metric(x, "euclidean"))
+  expect_true(.compiled_metric(x, "euclidean")$missing)
   # INTEGER DATA, DATA FRAMES AND TEXT
   m <- .compiled_metric(matrix(1:6, 3), "euclidean")
   expect_true(is.double(m$x))
@@ -159,7 +254,7 @@ test_that("distances from rows give the trees of dist objects", {
   set.seed(6)
   x <- matrix(sample(0:9, 300, TRUE), 60, dimnames = list(paste0("r", 1:60), NULL))
   for (d in c("euclidean", "manhattan", "maximum")) {
-    for (method in names(.NN_CHAIN)) {
+    for (method in names(.LINKAGE)) {
       rows <- .hclust_rows(x, .compiled_metric(x, d), method)
       from_dist <- .hclust_dist(dist(x, d), method)
       expect_identical(rows[c("merge", "height", "order")],
@@ -180,8 +275,7 @@ test_that("rows join their nearest medoid by pruned search or matrix products", 
   for (dist in c("euclidean", "manhattan", "maximum", "minkowski", "pearson",
                  "cosine")) {
     metric <- .compiled_metric(x, dist, p = 3)
-    expected <- if (metric$code == 5L) brute(metric$x, "cosine") else brute(x, dist)
-    expect_identical(.assign_rows(x, rows, med, metric, dist, p = 3), expected,
+    expect_identical(.assign_rows(x, rows, med, metric, dist, p = 3), brute(x, dist),
                      info = dist)
   }
   # NOISE - THE SEARCH VISITS MOST MEDOIDS, SO MATRIX PRODUCTS AFTER THE FIRST
@@ -193,7 +287,7 @@ test_that("rows join their nearest medoid by pruned search or matrix products", 
   x[med[3], ] <- 0
   metric <- .compiled_metric(x, "cosine")
   expect_identical(.assign_rows(x, rows, med, metric, "cosine"),
-                   brute(metric$x, "cosine"))
+                   brute(x, "cosine"))
   expect_identical(.assign_rows(x, rows, med, NULL, "canberra"), brute(x, "canberra"))
 })
 

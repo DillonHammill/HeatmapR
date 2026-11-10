@@ -41,6 +41,16 @@
                           cols,
                           type = c("numeric", "character")) {
   type <- match.arg(type)
+  # A NUMERIC (OR LOGICAL) MATRIX WITH VALUES IN EVERY COLUMN - THE SAME
+  # VALUES AS DOUBLES, IN ONE COPY
+  if(type == "numeric" && is.matrix(x) && !is.object(x) &&
+     typeof(x) %in% c("double", "integer", "logical") &&
+     identical(as.integer(cols), seq_len(ncol(x)))) {
+    out <- x
+    attributes(out) <- list(dim = dim(x))
+    storage.mode(out) <- "double"
+    return(out)
+  }
   out <- matrix(
     if(type == "numeric") NA_real_ else NA_character_,
     nrow = nrow(x),
@@ -80,6 +90,22 @@
     return(c(0, 1))
   }
   range(x)
+}
+
+#' .finite_range() of some columns of a numeric matrix (and of the same
+#' columns of a second matrix), without copying them
+#' @noRd
+.finite_range_cols <- function(m,
+                               cols,
+                               m2 = NULL) {
+  if(!is.null(m2)) {
+    storage.mode(m2) <- "double"
+  }
+  r <- finite_range_cpp(m, as.integer(cols), m2)
+  if(length(r) == 0) {
+    return(c(0, 1))
+  }
+  r
 }
 
 #' Validate custom scale limits
@@ -206,20 +232,25 @@
   if(anyNA(m) || any(m != round(m))) {
     bad("'merge' must hold whole numbers")
   }
-  leaves <- -m[m < 0]
-  if(length(leaves) != n || any(leaves > n) || anyDuplicated(leaves)) {
+  # (IN COMPILED CODE: EACH LEAF ONCE, THEN EACH MERGE ONCE AND AFTER WHAT IT
+  # JOINS)
+  why <- merge_check_cpp(as.double(m), as.integer(k), as.integer(n))
+  if(why == 1) {
     bad("each leaf must be joined once in 'merge'")
   }
-  nodes <- m[m > 0]
-  if(length(nodes) != max(0, k - 1) || anyDuplicated(nodes) ||
-     any(nodes >= rep(seq_len(k), 2)[m > 0])) {
+  if(why == 2) {
     bad("each merge must join leaves or earlier merges, each once")
   }
   if(length(tree$height) != k || anyNA(tree$height)) {
     bad("'height' must hold one value for each merge")
   }
-  if(anyNA(tree$order) || !setequal(tree$order, seq_len(n)) ||
-     anyDuplicated(tree$order)) {
+  ok <- if(is.numeric(tree$order)) {
+    order_check_cpp(as.double(tree$order), as.integer(n))
+  } else {
+    !anyNA(tree$order) && setequal(tree$order, seq_len(n)) &&
+      !anyDuplicated(tree$order)
+  }
+  if(!ok) {
     bad("'order' must hold each leaf once")
   }
   invisible(TRUE)
@@ -762,6 +793,91 @@
   )
   out[ind] <- values
   out
+}
+
+#' Where each of 1, ..., n is in ind - match(seq_len(n), ind) - without
+#' hashing when ind is a permutation of them
+#' @noRd
+.positions <- function(ind,
+                       n) {
+  if(length(ind) == n && is.numeric(ind) && !anyNA(ind) &&
+     all(ind >= 1 & ind <= n & ind == round(ind))) {
+    pos <- integer(n)
+    pos[ind] <- seq_len(n)
+    if(all(pos > 0)) {
+      return(pos)
+    }
+  }
+  match(seq_len(n), ind)
+}
+
+#' The values of a matrix in the orientation of the data for each cell in
+#' display order
+#'
+#' The same as \code{m[cbind(rep(rows, length(cols)), rep(cols, each =
+#' length(rows)))]}: the columns \code{cols} from left to right, each with
+#' the rows \code{rows} from the top down.
+#'
+#' @noRd
+.cells_of <- function(m,
+                      rows,
+                      cols) {
+  if(is.matrix(m) && !is.object(m)) {
+    out <- cells_gather_cpp(m, as.integer(rows), as.integer(cols), .threads())
+    if(!is.null(out)) {
+      return(out)
+    }
+  }
+  m[cbind(rep(rows, times = length(cols)), rep(cols, each = length(rows)))]
+}
+
+#' A cell matrix of heat_map_info() with the same value in every cell, as
+#' \code{.pack_cells()} stores it
+#' @noRd
+.uniform_cells <- function(value,
+                           x) {
+  # (THE VALUE AS .cell_matrix() WOULD STORE IT)
+  value <- .cell_matrix(value, cbind(1L, 1L), matrix(0, 1, 1))[[1]]
+  if(nrow(x) * ncol(x) < 64) {
+    return(matrix(value, nrow = nrow(x), ncol = ncol(x), dimnames = dimnames(x)))
+  }
+  structure(
+    list(value = value, dim = c(nrow(x), ncol(x)), dimnames = dimnames(x)),
+    class = "heat_map_packed"
+  )
+}
+
+#' The cell colours of heat_map_info(), stored compactly
+#'
+#' @param packed the colour of each cell in display order, packed (see
+#'   \code{.native_colours()}).
+#' @param rows,cols the rows and columns of the data in display order (rows
+#'   from the top).
+#' @param x the data.
+#'
+#' @return the packed colours in the orientation of the data (class
+#'   \code{"heat_map_packed"}, which \code{.unpack_cells()} writes as
+#'   "#RRGGBBAA" strings), one colour when they are all the same (as
+#'   \code{.pack_cells()} stores it), or the strings for small heatmaps.
+#'
+#' @noRd
+.cell_info_colours <- function(packed,
+                               rows,
+                               cols,
+                               x) {
+  if(length(packed) < 64) {
+    ind <- cbind(rep(rows, times = length(cols)), rep(cols, each = length(rows)))
+    return(.cell_matrix(packed_strings_cpp(packed, TRUE), ind, x))
+  }
+  colours <- cells_scatter_cpp(as.integer(packed), as.integer(rows), as.integer(cols))
+  if(isTRUE(attr(colours, "same"))) {
+    return(.uniform_cells(packed_strings_cpp(colours[1], TRUE), x))
+  }
+  attr(colours, "same") <- NULL
+  structure(
+    list(colours = colours, dim = c(nrow(x), ncol(x)), dimnames = dimnames(x)),
+    class = "heat_map_packed"
+  )
 }
 
 #' Draw axis tick marks and labels
@@ -1588,10 +1704,13 @@ heat_map_info <- function(x) {
   m
 }
 
-#' A cell matrix stored by .pack_cells()
+#' A cell matrix stored by .pack_cells() (or packed colours stored by
+#' .cell_info_colours())
 #' @noRd
 .unpack_cells <- function(p) {
-  values <- if(is.null(p$codes)) {
+  values <- if(!is.null(p$colours)) {
+    packed_strings_cpp(p$colours, TRUE)
+  } else if(is.null(p$codes)) {
     rep(p$value, prod(p$dim))
   } else {
     p$levels[p$codes]
@@ -2093,6 +2212,9 @@ print.heat_map <- function(x, ...) {
 #'   grid out from the centres.
 #' @param packed the fill colours as packed integers (from
 #'   \code{.native_colours()}), if known.
+#' @param centers with \code{grid}, a list with the centres of the columns
+#'   (\code{x}, from the left) and of the rows (\code{y}, from the top), if
+#'   known - the cell centres are then only used for the borders.
 #'
 #' @importFrom graphics rasterImage segments rect par
 #' @noRd
@@ -2105,18 +2227,26 @@ print.heat_map <- function(x, ...) {
                                res = 150,
                                max_px = 2e6,
                                grid = NULL,
-                               packed = NULL) {
+                               packed = NULL,
+                               centers = NULL) {
 
   # CELL COLOURS IN DISPLAY ORDER - ROW 1 AT THE TOP (AS PACKED INTEGERS)
   if(is.null(packed)) {
     packed <- .native_colours(fill)
   }
   if(!is.null(grid)) {
-    # A FULL GRID - COLUMNS LEFT TO RIGHT, EACH FROM THE TOP ROW DOWN
+    # A FULL GRID - COLUMNS LEFT TO RIGHT, EACH FROM THE TOP ROW DOWN (THE
+    # PACKED COLOURS ARE ITS COLUMNS)
     keep <- TRUE
-    xs <- x[seq(1, by = grid[1], length.out = grid[2])]
-    ys <- y[seq_len(grid[1])]
-    img <- matrix(packed, nrow = grid[1], ncol = grid[2])
+    if(is.null(centers)) {
+      xs <- x[seq(1, by = grid[1], length.out = grid[2])]
+      ys <- y[seq_len(grid[1])]
+    } else {
+      xs <- centers$x
+      ys <- centers$y
+    }
+    img <- as.integer(packed)
+    n_img <- grid[1]
   } else {
     keep <- !is.na(x) & !is.na(y)
     xs <- sort(unique(x[keep]))
@@ -2128,6 +2258,8 @@ print.heat_map <- function(x, ...) {
     )
     img[match(y[keep], ys) + (match(x[keep], xs) - 1L) * length(ys)] <-
       packed[keep]
+    n_img <- nrow(img)
+    img <- as.vector(img)
   }
 
   # INCHES PER PLOT UNIT
@@ -2141,7 +2273,6 @@ print.heat_map <- function(x, ...) {
   runs_y <- lapply(runs_y, function(z) rev(length(ys) + 1 - z))
   for(rx in runs_x) {
     for(ry in runs_y) {
-      block <- img[ry, rx, drop = FALSE]
       # ENLARGE SO THAT EACH CELL SPANS SEVERAL PIXELS, WITHIN max_px
       kx <- max(1, round(res * ipu[1]))
       ky <- max(1, round(res * ipu[2]))
@@ -2153,15 +2284,16 @@ print.heat_map <- function(x, ...) {
           ky <- max(1, min(ky - 1, floor(max_px / (n * kx))))
         }
       }
-      if(kx > 1 || ky > 1) {
-        block <- block[
-          rep(seq_len(nrow(block)), each = ky),
-          rep(seq_len(ncol(block)), each = kx),
-          drop = FALSE
-        ]
-      }
+      # THE BLOCK'S ROWS AND COLUMNS ARE RUNS (ry INCREASING)
+      block <- structure(
+        raster_block_cpp(img, n_img, ry[1], ry[length(ry)], rx[1], rx[length(rx)],
+                         ky, kx),
+        dim = c(length(ry) * ky, length(rx) * kx),
+        class = "nativeRaster",
+        channels = 4L
+      )
       rasterImage(
-        .native_raster(block),
+        block,
         xleft = min(xs[rx]) - 0.5,
         ybottom = min(ys[ry]) - 0.5,
         xright = max(xs[rx]) + 0.5,

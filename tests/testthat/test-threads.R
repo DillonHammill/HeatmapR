@@ -89,7 +89,11 @@ test_that("clustering, ordering and support don't depend on the number of thread
       large = tree_parts(.hclust_large(x, method = "complete", max = 600)),
       large_cor = tree_parts(.hclust_large(x, dist = "pearson", method = "average",
                                            max = 600)),
-      nearest = nearest_medoid_cpp(x, x[1:300, ], 1L, 2, .threads()),
+      nearest = nearest_medoid_cpp(x, 301:6000, 1:300, 1L, 2, .threads()),
+      nearest_cor = nearest_medoid_cpp(x, 301:6000, 1:300, 5L, 2, .threads()),
+      single_rows = tree_parts(heat_map_clust(x[1:2500, ], method = "single", max = Inf)),
+      centroid = tree_parts(heat_map_clust(x[1:2000, ], method = "centroid", max = Inf)),
+      dist = .dist_matrix(x[1:1200, ], "manhattan"),
       medoids = .group_medoids(.compiled_metric(x, "manhattan"), rep(1:40, 150)),
       olo = heat_map_clust(x[1:450, ], order = "olo")$order,
       olo_large = .olo_large(heat_map_clust(x[1:3000, ])$merge, x[1:3000, ], max = 150),
@@ -180,7 +184,7 @@ test_that("blocks ordered several at once take the orders of their distances", {
   # CORRELATIONS - EQUALLY SHORT ORDERS
   u <- .unit_rows(x, "pearson")
   path <- function(o) sum(1 - rowSums(u[o[-1], , drop = FALSE] * u[o[-length(o)], , drop = FALSE]))
-  batch <- olo_rows_batch_cpp(u, lapply(leaves, as.integer), subs, 5L, 2, 2L)
+  batch <- olo_rows_batch_cpp(x * 1.0, lapply(leaves, as.integer), subs, 5L, 2, 2L)
   for (b in which(lengths(leaves) >= 3)) {
     l <- leaves[[b]]
     expect_equal(path(batch[[b]]),
@@ -190,9 +194,9 @@ test_that("blocks ordered several at once take the orders of their distances", {
   expect_error(olo_rows_batch_cpp(u, list(1:3), list(), 1L, 2, 1L), "one merge matrix")
   expect_error(olo_rows_batch_cpp(u, list(1:3), list(NULL), 1L, 2, 1L), "needs its merges")
   expect_error(olo_rows_batch_cpp(u, list(c(1, 2)), list(NULL), 1L, 2, 1L), "integer")
-  expect_error(cluster_batch_cpp(list(u), list(c(1, 2)), 1L, 2, 3L, 1L), "integer")
+  expect_error(cluster_batch_cpp(u, list(c(1, 2)), NULL, 1L, 2, 3L, 1L), "integer")
   # GROUPS OF ONE ROW, AND ONE LEAF FROM A dist OBJECT
-  one <- cluster_batch_cpp(list(u), list(5L, 6:8), 1L, 2, 3L, 2L)[[1]]
+  one <- cluster_batch_cpp(u, list(5L, 6:8), NULL, 1L, 2, 3L, 2L)[[1]]
   expect_identical(dim(one[[1]]$merge), c(0L, 2L))
   expect_identical(one[[1]]$order, 1L)
   expect_identical(nrow(one[[2]]$merge), 2L)
@@ -202,4 +206,28 @@ test_that("blocks ordered several at once take the orders of their distances", {
   ord <- .olo_large(tree$merge, x[1:300, ], dist = "canberra", max = 40)
   expect_identical(.apply_order(tree, ord)$order, ord)
   expect_error(group_medoids_cpp(u, list(c(1, 2)), 1L, 2, 1L), "integer")
+})
+
+test_that("optimal leaf ordering gives the same order on one or two threads", {
+  # LARGE ENOUGH FOR THE PRODUCTS AND THE DISTANCES BY POSITION TO BE SHARED
+  # BETWEEN THREADS
+  set.seed(12)
+  x <- matrix(rnorm(1600 * 5), 1600) + rep(sample(0:5 * 3, 1600, TRUE), 5)
+  d <- dist(x)
+  m <- hclust(d, "average")$merge
+  on.exit(kernel_settings_cpp("auto", TRUE, "auto"), add = TRUE)
+  for (bounds in c(TRUE, FALSE)) {
+    kernel_settings_cpp("auto", bounds, "auto")
+    one <- with_threads(1, .olo_order(m, d))
+    expect_identical(with_threads(2, .olo_order(m, d)), one)
+    expect_identical(with_threads(2, .olo_order(m, as.matrix(d))), one)
+  }
+  kernel_settings_cpp("generic", TRUE, "scalar")
+  expect_identical(with_threads(2, .olo_order(m, d)), one)
+  # BLOCKS OF ROWS
+  leaves <- list(1:1500, 1501:1600)
+  merges <- lapply(leaves, function(l) .int_merge(hclust(dist(x[l, ]), "average")$merge))
+  batch <- with_threads(2, olo_rows_batch_cpp(x, leaves, merges, 1L, 2, 2L))
+  expect_identical(batch[[1]], .olo_order(merges[[1]], dist(x[leaves[[1]], ])))
+  expect_identical(batch[[2]], 1500L + .olo_order(merges[[2]], dist(x[leaves[[2]], ])))
 })

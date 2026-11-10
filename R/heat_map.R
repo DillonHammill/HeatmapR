@@ -28,12 +28,13 @@
 #' @param clust_max the largest number of rows (or columns) clustered exactly,
 #'   set to 5000 by default. Exact clustering needs the distances between every
 #'   pair of rows, so its memory and time grow with the square of their number
-#'   (about 400 MB and 3 seconds for 10,000 rows). Larger margins are
+#'   (about 400 MB and 1.2 seconds on two cores for 10,000 rows). Larger
+#'   margins are
 #'   clustered in two stages: a sample of \code{clust_max} rows is clustered
 #'   exactly, its dendrogram is split into groups, every row joins the group
 #'   of its nearest group medoid and each group is clustered exactly beneath
 #'   the sample's dendrogram (see \code{\link{heat_map_clust}}). 100,000 rows
-#'   take about 2 seconds. Branch support (\code{tree_support_x},
+#'   take about half a second. Branch support (\code{tree_support_x},
 #'   \code{tree_support_y}) is only computed for up to \code{clust_max} rows or
 #'   columns. Set to \code{Inf} to always cluster exactly. Rows or columns
 #'   grouped by \code{tree_cut_x} or \code{tree_cut_y} (or
@@ -65,7 +66,7 @@
 #'   are as similar as possible) or \code{"mean"} (branches ordered by their
 #'   mean values - \code{\link[stats]{heatmap}} orders them by the sum of
 #'   their columns' means instead, which favours small branches). Optimal leaf ordering
-#'   is exact for up to 2000 columns, which takes about a second; larger
+#'   is exact for up to 4000 columns, which takes well under a second; larger
 #'   dendrograms are ordered in blocks (see \code{\link{heat_map_clust}}).
 #' @param tree_cut_x either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for x axis dendrogram (proportional for non-cosine distances,
@@ -185,7 +186,9 @@
 #' @param tree_kmeans_y number of k-means clusters to split the rows of
 #'   \code{x} into, an alternative to \code{tree_cut_y} that is quick for many
 #'   rows (e.g. \code{tree_kmeans_y = 4}). The rows are clustered on the
-#'   numeric columns of \code{x} after scaling, starting from the centres of
+#'   numeric columns of \code{x} after scaling (by the Hartigan-Wong
+#'   algorithm, giving the clusters \code{stats::kmeans()} gives, in compiled
+#'   code), starting from the centres of
 #'   equal slices of the rows along their first principal component, so the
 #'   clusters don't depend on the random seed. The clusters are ordered so
 #'   that similar clusters are neighbours (optimal leaf order of their
@@ -1543,8 +1546,10 @@ heat_map <- function(x,
   # NUMERIC VALUES - NA FOR NON-NUMERIC COLUMNS
   num_mat <- .value_matrix(x, num_cols, "numeric")
 
-  # CHARACTER VALUES - NA FOR NUMERIC COLUMNS
-  chr_mat <- .value_matrix(x, char_cols, "character")
+  # CHARACTER VALUES - NA FOR NUMERIC COLUMNS (NULL WITHOUT CHARACTER COLUMNS)
+  chr_mat <- if(length(char_cols) > 0) {
+    .value_matrix(x, char_cols, "character")
+  }
 
   # SPLIT CELLS - LABELS, NO UNCERTAINTY AND A LEGEND KEY
   if(!is.null(split_mat)) {
@@ -1583,7 +1588,7 @@ heat_map <- function(x,
       lims <- .check_limits(cell_col_scale_limits, "cell_col_scale_limits")
     # DATA LIMITS
     } else {
-      lims <- .finite_range(col_values())
+      lims <- .finite_range_cols(num_mat, num_cols, split_mat)
     }
     # BREAKS DEFINE THE LIMITS
     if(!is.null(col_breaks)) {
@@ -1735,7 +1740,7 @@ heat_map <- function(x,
         lims <- .check_limits(cell_size_scale_limits, "cell_size_scale_limits")
       # DATA LIMITS
       } else {
-        lims <- .finite_range(size_mat[, size_cols])
+        lims <- .finite_range_cols(size_mat, size_cols)
       }
       cell_size_min <- lims[1]
       cell_size_max <- lims[2]
@@ -1850,21 +1855,36 @@ heat_map <- function(x,
 
   # CELL PROPERTIES - ONE ELEMENT PER CELL IN DISPLAY ORDER --------------------
 
-  # DISPLAY GRID - COLUMNS LEFT TO RIGHT, ROWS TOP TO BOTTOM (DRAWING ORDER)
+  # DISPLAY GRID - COLUMNS LEFT TO RIGHT, ROWS TOP TO BOTTOM (DRAWING ORDER).
+  # VECTORS WITH AN ELEMENT PER CELL THAT ONLY SOME HEATMAPS USE ARE MADE
+  # WHEN THEY ARE FIRST USED (delayedAssign()) - A LARGE HEATMAP OF
+  # RECTANGLES DRAWN AS A RASTER IMAGE NEEDS FEW OF THEM. NONE OF THEIR
+  # INPUTS CHANGE ONCE THEY ARE SET UP HERE, EXCEPT THE CENTRES, WHICH ARE
+  # SET UP AGAIN WITH THEM.
   n_row <- nrow(x)
   n_col <- ncol(x)
-  cell_row <- rep(rev(row_ind), times = n_col)
-  cell_col <- rep(col_ind, each = n_row)
-  cell_x <- rep(x_centers, each = n_row)
-  cell_y <- rep(rev(y_centers), times = n_col)
-  cell_ind <- cbind(cell_row, cell_col)
-  cell_num <- cell_col %in% num_cols
+  n_cells <- n_row * n_col
+  disp_row <- rev(row_ind)
+  delayedAssign("cell_row", rep(disp_row, times = n_col))
+  delayedAssign("cell_col", rep(col_ind, each = n_row))
+  delayedAssign("cell_x", rep(x_centers, each = n_row))
+  delayedAssign("cell_y", rep(rev(y_centers), times = n_col))
+  delayedAssign("cell_ind", cbind(cell_row, cell_col))
+  delayedAssign("cell_num", rep(col_ind %in% num_cols, each = n_row))
+  # VALUES OF A MATRIX IN THE ORIENTATION OF x FOR EACH CELL
+  cells_of <- function(m) {
+    .cells_of(m, disp_row, col_ind)
+  }
 
   # VALUES
-  cell_num_val <- num_mat[cell_ind]
-  cell_chr_val <- chr_mat[cell_ind]
-  cell_missing <- (cell_num & is.na(cell_num_val)) |
-    (!cell_num & is.na(cell_chr_val))
+  cell_num_val <- cells_of(num_mat)
+  delayedAssign("cell_chr_val", if(is.null(chr_mat)) {
+    rep(NA_character_, n_cells)
+  } else {
+    cells_of(chr_mat)
+  })
+  delayedAssign("cell_missing", (cell_num & is.na(cell_num_val)) |
+    (!cell_num & is.na(cell_chr_val)))
 
   # TRANSPARENCY - SINGLE VALUE OR ONE VALUE PER CELL IN THE ORIGINAL DATA
   # (VECTORS ARE RECYCLED DOWN THE COLUMNS OF x LIKE matrix())
@@ -1879,15 +1899,13 @@ heat_map <- function(x,
       .check_dims(cell_col_alpha, x, "cell_col_alpha")
       alpha_mat <- as.matrix(cell_col_alpha)
     }
-    cell_alpha <- alpha_mat[cell_ind]
+    cell_alpha <- cells_of(alpha_mat)
   } else {
     cell_alpha <- cell_col_alpha
   }
 
   # COLOURS - PACKED INTEGERS (AS THE GRAPHICS ENGINE STORES THEM, SO RASTER
   # IMAGES TAKE THEM AS THEY ARE), WRITTEN AS "#RRGGBBAA" ONCE PER COLOUR
-  cell_packed <- integer(length(cell_row))
-  ind <- cell_num & !cell_missing
   # POSITIONS OF VALUES ALONG THE COLOUR SCALE [0,1]
   col_k <- function(v) {
     if(!is.null(col_breaks)) {
@@ -1904,37 +1922,65 @@ heat_map <- function(x,
     }
     k
   }
-  if(any(ind)) {
-    k <- col_k(cell_num_val[ind])
-    if(is.null(unc_mat)) {
-      cell_packed[ind] <- .ramp_packed(k, cell_col_scale)
-    } else {
-      # FEWER, GREYER COLOURS FOR MORE UNCERTAIN VALUES
-      cell_packed[ind] <- .native_colours(
-        .vsup_colour(
-          k,
-          .uncertainty_level(unc_mat[cell_ind][ind], unc_breaks),
-          length(unc_breaks) + 1,
-          cell_col_scale
+  empty_packed <- .native_colours(cell_col_empty)
+  # NUMERIC CELLS ALONG A RAMP AND MISSING ONES EMPTY, IN ONE PASS (col_k()
+  # AND .ramp_packed() OF EVERY CELL)
+  cell_packed <- NULL
+  ramp <- attr(cell_col_scale, "ramp")
+  if(length(num_cols) > 0 && is.null(col_breaks) && is.null(unc_mat) &&
+     !is.null(ramp) && length(empty_packed) == 1) {
+    cell_packed <- ramp_cells_cpp(
+      cell_num_val,
+      cell_min,
+      cell_max,
+      ramp$knots,
+      ramp$channels,
+      empty_packed,
+      .threads()
+    )
+  }
+  if(is.null(cell_packed)) {
+    cell_packed <- integer(n_cells)
+    ind <- cell_num & !cell_missing
+    if(any(ind)) {
+      k <- col_k(cell_num_val[ind])
+      if(is.null(unc_mat)) {
+        cell_packed[ind] <- .ramp_packed(k, cell_col_scale)
+      } else {
+        # FEWER, GREYER COLOURS FOR MORE UNCERTAIN VALUES
+        cell_packed[ind] <- .native_colours(
+          .vsup_colour(
+            k,
+            .uncertainty_level(cells_of(unc_mat)[ind], unc_breaks),
+            length(unc_breaks) + 1,
+            cell_col_scale
+          )
         )
-      )
+      }
+    }
+    cell_packed[cell_missing] <- empty_packed
+  }
+  # (CELLS OF CHARACTER COLUMNS HAVE NO NUMERIC VALUE - THE RAMP LEFT THEM
+  # EMPTY)
+  if(length(char_cols) > 0) {
+    ind <- !cell_num & !cell_missing
+    if(any(ind)) {
+      cell_packed[ind] <- .native_colours(names(cell_levels))[
+        match(cell_chr_val[ind], cell_levels)
+      ]
     }
   }
-  ind <- !cell_num & !cell_missing
-  if(any(ind)) {
-    cell_packed[ind] <- .native_colours(names(cell_levels))[
-      match(cell_chr_val[ind], cell_levels)
-    ]
+  # (TRANSPARENCY 1 LEAVES EVERY COLOUR AS IT IS)
+  if(!identical(cell_alpha, 1)) {
+    cell_packed <- .alpha_packed(cell_packed, cell_alpha)
   }
-  cell_packed[cell_missing] <- .native_colours(cell_col_empty)
-  cell_packed <- .alpha_packed(cell_packed, cell_alpha)
-  cell_fill <- packed_strings_cpp(cell_packed, TRUE)
+  delayedAssign("cell_fill", packed_strings_cpp(cell_packed, TRUE))
 
   # LOWER RIGHT HALVES OF SPLIT CELLS - NA LEAVES A CELL WHOLE
   split_fill <- NULL
   if(!is.null(split_mat)) {
-    split_val <- split_mat[cell_ind]
-    split_fill <- rep(NA_character_, length(cell_row))
+    split_val <- cells_of(split_mat)
+    split_fill <- rep(NA_character_, n_cells)
     split_ind <- cell_num & !is.na(split_val)
     if(any(split_ind)) {
       split_fill[split_ind] <- .ramp_colours(
@@ -1958,19 +2004,30 @@ heat_map <- function(x,
   }
 
   # SIZES
-  cell_sizes <- rep(1, length(cell_row))
-  if(!is.null(size_mat)) {
-    ind <- cell_col %in% size_cols
-    cell_sizes[ind] <- size_fun(size_mat[cell_ind][ind])
+  if(is.null(size_mat)) {
+    delayedAssign("cell_sizes", rep(1, n_cells))
+  } else {
+    cell_sizes <- rep(1, n_cells)
+    ind <- rep(col_ind %in% size_cols, each = n_row)
+    cell_sizes[ind] <- size_fun(cells_of(size_mat)[ind])
   }
 
   # SHAPES
-  cell_shapes <- if(is.null(shape_mat)) {
-    rep(cell_shape, length(cell_row))
+  if(is.null(shape_mat)) {
+    delayedAssign("cell_shapes", rep(cell_shape, n_cells))
   } else {
-    shape_mat[cell_ind]
+    cell_shapes <- cells_of(shape_mat)
   }
-  if(!is.null(split_mat) && (!is.null(size_mat) || any(cell_shapes != "rect"))) {
+  # WHETHER ANY (OR ALL) CELLS HAVE A SHAPE
+  any_shape <- function(shape) {
+    if(is.null(shape_mat)) cell_shape %in% shape else any(cell_shapes %in% shape)
+  }
+  all_rect <- if(is.null(shape_mat)) {
+    cell_shape == "rect"
+  } else {
+    all(cell_shapes == "rect")
+  }
+  if(!is.null(split_mat) && (!is.null(size_mat) || !all_rect)) {
     stop(
       "'cell_split' requires full-size rectangular cells - remove 'cell_size' ",
       "and use cell_shape = \"rect\".",
@@ -1978,44 +2035,53 @@ heat_map <- function(x,
     )
   }
   # ELLIPSES SHOW VALUES FROM -1 TO 1
-  cell_r <- ifelse(cell_num, cell_num_val, NA_real_)
-  if(any(abs(cell_r[cell_shapes == "ellipse"]) > 1 + 1e-8, na.rm = TRUE)) {
-    warning(
-      "Ellipses show values between -1 and 1 (e.g. correlations) - larger ",
-      "values are drawn as -1 or 1.",
-      call. = FALSE
-    )
+  if(any_shape("ellipse")) {
+    cell_r <- ifelse(cell_num, cell_num_val, NA_real_)
+    if(any(abs(cell_r[cell_shapes == "ellipse"]) > 1 + 1e-8, na.rm = TRUE)) {
+      warning(
+        "Ellipses show values between -1 and 1 (e.g. correlations) - larger ",
+        "values are drawn as -1 or 1.",
+        call. = FALSE
+      )
+    }
+    cell_r <- pmin(pmax(cell_r, -1), 1)
+  } else {
+    delayedAssign("cell_r", pmin(pmax(ifelse(cell_num, cell_num_val, NA_real_), -1), 1))
   }
-  cell_r <- pmin(pmax(cell_r, -1), 1)
 
   # BORDERS
   border_col_adjusted <- adjustcolor(
     cell_border_line_col,
     cell_border_line_col_alpha
   )
-  cell_borders <- if(is.null(mask_mat)) {
-    rep(border_col_adjusted, length.out = length(cell_row))
+  if(is.null(mask_mat)) {
+    delayedAssign("cell_borders", rep(border_col_adjusted, length.out = n_cells))
   } else {
-    ifelse(
-      mask_mat[cell_ind] %in% TRUE,
+    cell_borders <- ifelse(
+      cells_of(mask_mat) %in% TRUE,
       border_col_adjusted,
       "transparent"
     )
   }
 
   # TEXT
-  cell_texts <- if(is.null(text_mat)) {
-    rep(NA_character_, length(cell_row))
+  if(is.null(text_mat)) {
+    delayedAssign("cell_texts", rep(NA_character_, n_cells))
   } else {
-    text_mat[cell_ind]
+    cell_texts <- cells_of(text_mat)
   }
 
   # NUMBERS - THE CELL TEXT (OR THE VALUE) OF EACH "number" CELL, WRITTEN IN
   # THE COLOUR OF THE CELL
-  cell_number <- cell_shapes == "number" & !cell_missing
-  number_texts <- rep(NA_character_, length(cell_row))
-  number_cols <- rep(NA_character_, length(cell_row))
-  if(any(cell_number)) {
+  if(any_shape("number")) {
+    cell_number <- cell_shapes == "number" & !cell_missing
+  } else {
+    delayedAssign("cell_number", logical(n_cells))
+  }
+  any_number <- any_shape("number") && any(cell_number)
+  if(any_number) {
+    number_texts <- rep(NA_character_, n_cells)
+    number_cols <- rep(NA_character_, n_cells)
     number_texts[cell_number] <- ifelse(
       is.na(cell_texts[cell_number]),
       ifelse(
@@ -2026,6 +2092,39 @@ heat_map <- function(x,
       cell_texts[cell_number]
     )
     number_cols[cell_number] <- .readable_col(cell_fill[cell_number])
+  } else {
+    delayedAssign("number_texts", rep(NA_character_, n_cells))
+    delayedAssign("number_cols", rep(NA_character_, n_cells))
+  }
+
+  # THE PROPERTIES OF SOME CELLS (INDICES INTO THE CELLS IN DISPLAY ORDER) -
+  # ELEMENTS OF THE VECTORS ABOVE, WITHOUT MAKING THE VECTORS (THE ZOOM
+  # PANELS DRAW A FEW CELLS OF A LARGE HEATMAP)
+  cells_x <- function(i) x_centers[(i - 1L) %/% n_row + 1L]
+  cells_y <- function(i) rev(y_centers)[(i - 1L) %% n_row + 1L]
+  cells_ind <- function(i) {
+    cbind(disp_row[(i - 1L) %% n_row + 1L], col_ind[(i - 1L) %/% n_row + 1L])
+  }
+  cells_sizes <- function(i) {
+    if(is.null(size_mat)) rep(1, length(i)) else cell_sizes[i]
+  }
+  cells_shapes <- function(i) {
+    if(is.null(shape_mat)) rep(cell_shape, length(i)) else cell_shapes[i]
+  }
+  cells_texts <- function(i) {
+    if(is.null(text_mat)) rep(NA_character_, length(i)) else cell_texts[i]
+  }
+  cells_number <- function(i) {
+    if(any_shape("number")) cell_number[i] else logical(length(i))
+  }
+  # (ONLY ELLIPSES USE cell_r)
+  cells_r <- function(i) cell_r[i]
+  cells_borders_all <- function(i) {
+    if(is.null(mask_mat)) {
+      border_col_adjusted[(i - 1L) %% length(border_col_adjusted) + 1L]
+    } else {
+      cell_borders_all[i]
+    }
   }
 
   # AXES SIDES -----------------------------------------------------------------
@@ -2425,8 +2524,8 @@ heat_map <- function(x,
       y_layout <- .axis_layout(nrow(x), cut_y, split_y)
       y_centers <- y_layout$centers
       y_splits <- y_layout$splits
-      cell_x <- rep(x_centers, each = n_row)
-      cell_y <- rep(rev(y_centers), times = n_col)
+      delayedAssign("cell_x", rep(x_centers, each = n_row))
+      delayedAssign("cell_y", rep(rev(y_centers), times = n_col))
       heatmap_xlim <- c(min(x_centers) - 0.5, max(x_centers) + 0.5)
       heatmap_ylim <- c(min(y_centers) - 0.5, max(y_centers) + 0.5)
       if(!is.null(marks_x)) {
@@ -2717,19 +2816,23 @@ heat_map <- function(x,
   # THEY WOULD HIDE THE CELLS (LINE WIDTH 1 IS 1/96 INCH); BORDERS FROM A
   # cell_border_mask ARE ALWAYS DRAWN
   border_min_in <- 3 * max(cell_border_line_width) / 96
-  cell_borders_all <- cell_borders
+  if(is.null(mask_mat)) {
+    delayedAssign("cell_borders_all", rep(border_col_adjusted, length.out = n_cells))
+  } else {
+    cell_borders_all <- cell_borders
+  }
   cell_text_size_all <- cell_text_size
   border_hidden_x <- lay$cell_in[1] < border_min_in
   border_hidden_y <- lay$cell_in[2] < border_min_in
   if((border_hidden_x || border_hidden_y) && is.null(mask_mat)) {
-    cell_borders <- rep(NA_character_, length(cell_borders))
+    delayedAssign("cell_borders", rep(NA_character_, n_cells))
     border_col_cells <- NA_character_
   } else {
     border_col_cells <- border_col_adjusted
   }
 
   # GRID LINES AROUND EVERY CELL THAT ISN'T EMPTY, BEHIND THE CELLS
-  cell_gridded <- cell_shapes != "none" | !is.na(cell_texts)
+  delayedAssign("cell_gridded", cell_shapes != "none" | !is.na(cell_texts))
   if(grid_drawn) {
     .draw_cell_outlines(
       x = cell_x[cell_gridded],
@@ -2744,9 +2847,8 @@ heat_map <- function(x,
   # VECTORISED SHAPES OTHERWISE
   cell_raster_drawn <- .use_raster(
     cell_raster,
-    n = length(cell_fill),
-    eligible = is.null(size_mat) && all(cell_shapes == "rect") &&
-      is.null(split_mat)
+    n = n_cells,
+    eligible = is.null(size_mat) && all_rect && is.null(split_mat)
   )
   if(cell_raster_drawn) {
     .draw_cells_raster(
@@ -2761,7 +2863,8 @@ heat_map <- function(x,
                 !is.unsorted(y_centers, strictly = TRUE)) {
         c(n_row, n_col)
       },
-      packed = cell_packed
+      packed = cell_packed,
+      centers = list(x = x_centers, y = rev(y_centers))
     )
   } else {
     .draw_cells(
@@ -2806,7 +2909,7 @@ heat_map <- function(x,
   }
 
   # CELL TEXT - SHRUNK TO FIT INSIDE THE CELLS
-  ind <- !is.na(cell_texts) & !cell_number
+  ind <- if(!is.null(text_mat)) !is.na(cell_texts) & !cell_number
   if(any(ind)) {
     if(fit_text) {
       cell_text_size <- .fit_cell_text(
@@ -2830,15 +2933,17 @@ heat_map <- function(x,
   }
 
   # NUMBERS IN THE COLOURS OF THEIR CELLS - SHRUNK TO FIT INSIDE THE CELLS
-  .draw_cell_numbers(
-    x = cell_x[cell_number],
-    y = cell_y[cell_number],
-    labels = number_texts[cell_number],
-    col = number_cols[cell_number],
-    size = cell_text_size_all,
-    font = cell_text_font,
-    cell_in = if(fit_text) lay$cell_in
-  )
+  if(any_number) {
+    .draw_cell_numbers(
+      x = cell_x[cell_number],
+      y = cell_y[cell_number],
+      labels = number_texts[cell_number],
+      col = number_cols[cell_number],
+      size = cell_text_size_all,
+      font = cell_text_font,
+      cell_in = if(fit_text) lay$cell_in
+    )
+  }
 
   # ZOOM LENS - THE BAND, THE WEDGE AND THE ENLARGED CELLS, DRAWN WITH USER
   # CO-ORDINATES THAT PUT THE CELLS OF THE BAND IN THE PANEL
@@ -2851,56 +2956,66 @@ heat_map <- function(x,
     ax <- zp$ax
     z <- zp$z
     .draw_zoom_band(z, ax, heatmap_xlim, heatmap_ylim)
-    panel <- if(ax == "x") {
-      cell_col %in% zp$band$ind
+    # THE CELLS OF THE BAND (INDICES INTO THE CELLS IN DISPLAY ORDER,
+    # INCREASING) AND THEIR CENTRES ALONG THE AXIS
+    in_band <- if(ax == "x") {
+      band_cols <- which(col_ind %in% zp$band$ind)
+      rep(seq_len(n_row), times = length(band_cols)) +
+        rep((band_cols - 1L) * n_row, each = n_row)
     } else {
-      cell_row %in% zp$band$ind
+      band_rows <- which(disp_row %in% zp$band$ind)
+      rep(band_rows, times = n_col) +
+        rep((seq_len(n_col) - 1L) * n_row, each = length(band_rows))
     }
+    along_cells <- if(ax == "x") cells_x(in_band) else cells_y(in_band)
     # EACH RUN OF ROWS BETWEEN CLUSTER GAPS ON ITS OWN, SO THAT THE GAPS KEEP
     # THEIR SIZE IN THE PANEL
-    in_band <- panel
-    along_cells <- if(ax == "x") cell_x else cell_y
     for(z in .zoom_pieces(z, zp$band$centers)) {
-      panel <- in_band & along_cells > z$lim[1] & along_cells < z$lim[2]
+      panel <- in_band[along_cells > z$lim[1] & along_cells < z$lim[2]]
+      panel_x <- cells_x(panel)
+      panel_y <- cells_y(panel)
+      panel_texts <- cells_texts(panel)
+      panel_number <- cells_number(panel)
       panel_in <- .zoom_cell_in(z, ax, heatmap_xlim, heatmap_ylim, lay$upi)
       old_par <- par(
         usr = .zoom_usr(z, ax, heatmap_xlim, heatmap_ylim),
         xpd = NA
       )
       if(!is.na(cell_grid_line_col) && min(panel_in) >= border_min_in) {
+        gridded <- cells_shapes(panel) != "none" | !is.na(panel_texts)
         .draw_cell_outlines(
-          x = cell_x[panel & cell_gridded],
-          y = cell_y[panel & cell_gridded],
+          x = panel_x[gridded],
+          y = panel_y[gridded],
           col = cell_grid_line_col,
           line_type = cell_border_line_type,
           line_width = cell_border_line_width
         )
       }
       .draw_cells(
-        x = cell_x[panel],
-        y = cell_y[panel],
-        size = cell_sizes[panel],
-        shape = cell_shapes[panel],
-        fill = cell_fill[panel],
+        x = panel_x,
+        y = panel_y,
+        size = cells_sizes(panel),
+        shape = cells_shapes(panel),
+        fill = packed_strings_cpp(cell_packed[panel], TRUE),
         border = if(min(panel_in) < border_min_in && is.null(mask_mat)) {
-          rep(NA_character_, sum(panel))
+          rep(NA_character_, length(panel))
         } else {
-          cell_borders_all[panel]
+          cells_borders_all(panel)
         },
         line_type = cell_border_line_type,
         line_width = cell_border_line_width,
         cell_in = panel_in,
-        value = cell_r[panel]
+        value = cells_r(panel)
       )
       if(!is.null(split_fill)) {
         .draw_split_cells(
-          x = cell_x[panel],
-          y = cell_y[panel],
+          x = panel_x,
+          y = panel_y,
           fill = split_fill[panel],
           border = if(min(panel_in) < border_min_in && is.null(mask_mat)) {
             NA_character_
           } else {
-            cell_borders_all[panel]
+            cells_borders_all(panel)
           },
           line_type = cell_border_line_type,
           line_width = cell_border_line_width,
@@ -2908,26 +3023,27 @@ heat_map <- function(x,
         )
       }
       if(!is.null(cell_values)) {
+        panel_ind <- cells_ind(panel)
         .draw_cell_glyphs(
-          values = cell_values[cell_ind[panel, , drop = FALSE]],
-          x = cell_x[panel],
-          y = cell_y[panel],
-          lo = glyph_range$lo[cell_ind[panel, , drop = FALSE]],
-          hi = glyph_range$hi[cell_ind[panel, , drop = FALSE]],
+          values = cell_values[panel_ind],
+          x = panel_x,
+          y = panel_y,
+          lo = glyph_range$lo[panel_ind],
+          hi = glyph_range$hi[panel_ind],
           glyph = cell_glyph,
           col = cell_glyph_col,
           fill = cell_glyph_fill
         )
       }
-      ind <- panel & !is.na(cell_texts) & !cell_number
+      ind <- !is.na(panel_texts) & !panel_number
       if(any(ind)) {
         text(
-          x = cell_x[ind],
-          y = cell_y[ind],
-          labels = cell_texts[ind],
+          x = panel_x[ind],
+          y = panel_y[ind],
+          labels = panel_texts[ind],
           font = cell_text_font,
           cex = if(fit_text) {
-            .fit_cell_text(cell_texts[ind], cell_text_size_all, cell_text_font,
+            .fit_cell_text(panel_texts[ind], cell_text_size_all, cell_text_font,
                            panel_in)
           } else {
             cell_text_size_all
@@ -2938,16 +3054,18 @@ heat_map <- function(x,
           )
         )
       }
-      ind <- panel & cell_number
-      .draw_cell_numbers(
-        x = cell_x[ind],
-        y = cell_y[ind],
-        labels = number_texts[ind],
-        col = number_cols[ind],
-        size = cell_text_size_all,
-        font = cell_text_font,
-        cell_in = if(fit_text) panel_in
-      )
+      if(any(panel_number)) {
+        ind <- panel[panel_number]
+        .draw_cell_numbers(
+          x = panel_x[panel_number],
+          y = panel_y[panel_number],
+          labels = number_texts[ind],
+          col = number_cols[ind],
+          size = cell_text_size_all,
+          font = cell_text_font,
+          cell_in = if(fit_text) panel_in
+        )
+      }
       if(is.na(cell_grid_line_col) || min(panel_in) < border_min_in) {
         if(ax == "x") {
           heat_map_border(.zoom_splits(x_splits, z$lim), y_splits)
@@ -3193,7 +3311,7 @@ heat_map <- function(x,
       col_uncertainty = unc_key,
       col_scale_size = legend_col_scale_size,
       col_alpha = legend_alpha,
-      shape = .main_shape(cell_shapes),
+      shape = .main_shape(if(is.null(shape_mat)) cell_shape else cell_shapes),
       text_font = legend_text_font,
       text_size = legend_text_size,
       text_col = legend_text_col,
@@ -3315,14 +3433,17 @@ heat_map <- function(x,
 
   # RECORD HEATMAP -------------------------------------------------------------
 
-  # HEATMAP INFORMATION
+  # HEATMAP INFORMATION - POSITIONS OF THE ROWS AND COLUMNS OF x IN DISPLAY
+  # ORDER (ROWS FROM THE BOTTOM)
+  row_pos <- .positions(row_ind, n_row)
+  col_pos <- .positions(col_ind, n_col)
   hm_info <- list(
     data = x,
     row_order = rev(row_ind),
     col_order = col_ind,
     row_clusters = if(!is.null(cut_y)) {
       structure(
-        max(cut_y) + 1L - as.integer(cut_y[match(seq_len(n_row), row_ind)]),
+        max(cut_y) + 1L - as.integer(cut_y[row_pos]),
         names = rownames(x)
       )
     } else {
@@ -3330,7 +3451,7 @@ heat_map <- function(x,
     },
     col_clusters = if(!is.null(cut_x)) {
       structure(
-        as.integer(cut_x[match(seq_len(n_col), col_ind)]),
+        as.integer(cut_x[col_pos]),
         names = colnames(x)
       )
     } else {
@@ -3344,20 +3465,28 @@ heat_map <- function(x,
     zoom_y = .zoom_info(zoom_y, from_top = TRUE),
     axis_text_x = axis_text_x,
     axis_text_y = rev(axis_text_y),
-    colours = .cell_matrix(cell_fill, cell_ind, x),
+    colours = .cell_info_colours(cell_packed, disp_row, col_ind, x),
     split_colours = if(!is.null(split_fill)) {
       .cell_matrix(split_fill, cell_ind, x)
     },
     split_data = split_mat,
-    sizes = .cell_matrix(cell_sizes, cell_ind, x),
-    shapes = .cell_matrix(cell_shapes, cell_ind, x),
+    sizes = if(is.null(size_mat)) {
+      .uniform_cells(1, x)
+    } else {
+      .cell_matrix(cell_sizes, cell_ind, x)
+    },
+    shapes = if(is.null(shape_mat)) {
+      .uniform_cells(cell_shape, x)
+    } else {
+      .cell_matrix(cell_shapes, cell_ind, x)
+    },
     centers = list(
       x = stats::setNames(
-        x_centers[match(seq_len(n_col), col_ind)],
+        x_centers[col_pos],
         colnames(x)
       ),
       y = stats::setNames(
-        y_centers[match(seq_len(n_row), row_ind)],
+        y_centers[row_pos],
         rownames(x)
       )
     ),
