@@ -300,11 +300,15 @@ test_that("zoom panels draw their cells' borders from the mask", {
   mask <- matrix(rep_len(c(TRUE, FALSE, FALSE), 32), 8, 4)
   hm <- draw(m, cell_border_mask = mask, cell_border_line_col = "red", zoom_y = 3:5,
              legend = FALSE)
-  rects <- Filter(function(r) length(r[[1]]) == 12, drawn(hm, "C_rect"))
-  expect_length(rects, 1)
+  # (BORDERED CELLS ARE DRAWN AS RECTANGLES OF THEIR OWN, THE OTHERS TILED)
+  red <- grDevices::adjustcolor("red")
+  bordered <- Filter(function(r) length(r[[6]]) > 0 && all(r[[6]] == red), drawn(hm, "C_rect"))
   # THE BAND'S CELLS, COLUMN BY COLUMN FROM ITS TOP ROW
   info <- heat_map_info(hm)
   rows <- info$row_order[info$row_order %in% 3:5]
   band <- mask[cbind(rep(rows, 4), rep(info$col_order, each = 3))]
-  expect_identical(rects[[1]][[6]], ifelse(band, grDevices::adjustcolor("red"), "transparent"))
+  expect_identical(
+    sort(vapply(bordered, function(r) length(r[[1]]), integer(1))),
+    sort(c(sum(band), sum(mask)))
+  )
 })

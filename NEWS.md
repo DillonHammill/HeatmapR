@@ -70,6 +70,7 @@ HeatmapR 2.0.0 is a major release: a new layout that sizes every part of a heatm
 
 ## Bug fixes
 
+* Cells drawn without borders (small cells, whose borders are left out, `cell_border_line_col = NA` or cells outside a `cell_border_mask`) and annotation tracks no longer show faint lines between neighbouring rows or columns. Anti-aliasing drew the shared edge of two touching rectangles partly transparent in both, so the background showed through as hairline seams at some sizes - in PNG files and in PDF and SVG viewers. Each opaque cell now reaches one device unit (a pixel, or a point in a PDF) into the cell to its right and the one above it, which are drawn after it and cover the overlap; cells along cluster gaps and the edges of the heatmap, transparent cells and cells with borders are drawn as before. Cells with masked borders are drawn after the others, so their borders are no longer half covered by their neighbours.
 * Row-wise scaling (`scale = "row"` in `heat_map()` or `heat_map_scale()`) returned transposed values, silently scrambling the data. Values are now scaled within each row as documented.
 * Rows of a matrix without row names were labelled in reverse order on the y axis.
 * The cell size legend computed its shapes from the colour scale limits instead of the size limits. A `cell_size` matrix on a different scale to `x` could fill the plot with black shapes, and `legend = "size"` on its own drew nothing.

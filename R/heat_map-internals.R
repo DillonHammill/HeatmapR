@@ -983,6 +983,121 @@
   )
 }
 
+#' Rectangles that tile without seams
+#'
+#' Anti-aliasing draws the shared edge of two touching rectangles partly
+#' transparent in both, so the background shows through as a faint line
+#' between them - in bitmap devices (png) and in PDF and SVG viewers alike.
+#' Opaque rectangles without borders are drawn from left to right and from
+#' the bottom up, and each reaches one device unit (a pixel, or a point in a
+#' PDF), but no further than the rectangle it touches, into the opaque
+#' rectangle to its right and the one above it; that rectangle is drawn
+#' later and covers the overlap, so only the seam is filled. Rectangles with
+#' borders or transparent fills are drawn afterwards as they are, in their
+#' original order.
+#'
+#' @importFrom graphics rect grconvertX grconvertY
+#' @importFrom grDevices col2rgb
+#' @noRd
+.rect_tiles <- function(xleft,
+                        ybottom,
+                        xright,
+                        ytop,
+                        col,
+                        border = NA,
+                        lty = 1,
+                        lwd = 1,
+                        ...) {
+  n <- max(length(xleft), length(ybottom), length(xright), length(ytop))
+  if(min(length(xleft), length(ybottom), length(xright), length(ytop)) == 0) {
+    return(invisible(NULL))
+  }
+  xleft <- rep(xleft, length.out = n)
+  ybottom <- rep(ybottom, length.out = n)
+  xright <- rep(xright, length.out = n)
+  ytop <- rep(ytop, length.out = n)
+  col <- rep(col, length.out = n)
+  border <- rep(border, length.out = n)
+  lty <- rep(lty, length.out = n)
+  lwd <- rep(lwd, length.out = n)
+  # OPAQUE FILLS, AND RECTANGLES DRAWN WITHOUT A BORDER (NA COLOURS ARE
+  # TRANSPARENT)
+  alpha <- function(v) {
+    u <- unique(v)
+    col2rgb(u, alpha = TRUE)[4, ][match(v, u)]
+  }
+  opaque <- alpha(col) == 255
+  tile <- opaque & alpha(border) == 0 & is.finite(xleft) & is.finite(ybottom) &
+    is.finite(xright) & is.finite(ytop)
+  # ONE DEVICE UNIT IN USER CO-ORDINATES
+  ux <- abs(diff(grconvertX(c(0, 1), "device", "user")))
+  uy <- abs(diff(grconvertY(c(0, 1), "device", "user")))
+  if(any(tile) && is.finite(ux) && is.finite(uy) && ux > 0 && uy > 0) {
+    # EDGES THAT TOUCH - TO A MILLIONTH OF THE SMALLEST RECTANGLE - AS
+    # INTEGER IDS (A SHARED NUMBERING FOR THE EDGES THAT MEET)
+    w <- xright - xleft
+    h <- ytop - ybottom
+    sizes <- abs(c(w, h))
+    tol <- 1e-6 * min(sizes[sizes > 0], 1)
+    ids <- function(a, b) {
+      a <- round(a / tol)
+      b <- round(b / tol)
+      u <- unique(c(a, b))
+      list(match(a, u), match(b, u))
+    }
+    pair <- function(a, b) {
+      v <- a * (max(b) + 1) + b
+      match(v, unique(v))
+    }
+    xs <- ids(xright, xleft)
+    ys <- ids(ytop, ybottom)
+    yrow <- ids(ybottom, ytop)
+    xcol <- ids(xleft, xright)
+    row <- pair(yrow[[1]], yrow[[2]])
+    column <- pair(xcol[[1]], xcol[[2]])
+    # (THE RIGHT NEIGHBOUR SHARES THE ROW, THE UPPER ONE THE COLUMN)
+    ends <- pair(c(xs[[1]], xs[[2]]), c(row, row))
+    right <- match(ends[seq_len(n)], ends[n + seq_len(n)])
+    ends <- pair(c(ys[[1]], ys[[2]]), c(column, column))
+    up <- match(ends[seq_len(n)], ends[n + seq_len(n)])
+    right[!is.na(right) & !opaque[right]] <- NA
+    up[!is.na(up) & !opaque[up]] <- NA
+    dx <- ifelse(is.na(right), 0, pmin(ux, abs(w[right])))
+    dy <- ifelse(is.na(up), 0, pmin(uy, abs(h[up])))
+    dx[!tile] <- 0
+    dy[!tile] <- 0
+    # LEFT TO RIGHT, BOTTOM UP (THE NEIGHBOURS ARE DRAWN AFTER)
+    ord <- which(tile)
+    ord <- ord[order(xleft[ord], ybottom[ord])]
+    rect(
+      xleft = xleft[ord],
+      ybottom = ybottom[ord],
+      xright = xright[ord] + dx[ord],
+      ytop = ytop[ord] + dy[ord],
+      col = col[ord],
+      border = NA,
+      ...
+    )
+  } else {
+    tile[] <- FALSE
+  }
+  rest <- which(!tile)
+  if(length(rest) > 0) {
+    rect(
+      xleft = xleft[rest],
+      ybottom = ybottom[rest],
+      xright = xright[rest],
+      ytop = ytop[rest],
+      col = col[rest],
+      border = border[rest],
+      lty = lty[rest],
+      lwd = lwd[rest],
+      ...
+    )
+  }
+  invisible(NULL)
+}
+
 #' Draw heatmap cells with one graphics call per shape
 #'
 #' Circles, diamonds and ellipses stay round on cells that aren't square -
@@ -1015,7 +1130,7 @@
   ind <- keep & shape == "rect"
   if(any(ind)) {
     h <- 0.5 * size[ind]
-    rect(
+    .rect_tiles(
       xleft = x[ind] - h,
       ybottom = y[ind] - h,
       xright = x[ind] + h,
@@ -1918,7 +2033,7 @@ print.heat_map <- function(x, ...) {
     a <- starts[z]
     b <- starts[z] + size
     if(axis == "x") {
-      rect(
+      .rect_tiles(
         xleft = centers - 0.5,
         ybottom = a,
         xright = centers + 0.5,
@@ -1939,7 +2054,7 @@ print.heat_map <- function(x, ...) {
         xpd = TRUE
       )
     } else {
-      rect(
+      .rect_tiles(
         xleft = a,
         ybottom = centers - 0.5,
         xright = b,

@@ -185,7 +185,10 @@ test_that("borders are left out when cells are too small to show them", {
   mask <- matrix(FALSE, 400, 10)
   mask[1, 1] <- TRUE
   hm <- draw(m, cell_raster = FALSE, cell_border_mask = mask, legend = FALSE)
-  expect_equal(sum(cell_rects(hm)[[6]] != "transparent"), 1)
+  framed <- vapply(drawn(hm, "C_rect"), function(z) {
+    sum(!is.na(z[[5]]) & !is.na(z[[6]]) & z[[6]] != "transparent")
+  }, numeric(1))
+  expect_equal(sum(framed), 1)
   # Small heatmaps keep their borders
   hm <- draw(test_matrix(), cell_raster = FALSE)
   expect_false(any(is.na(cell_rects(hm)[[6]])))
