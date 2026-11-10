@@ -96,17 +96,6 @@ struct TauCounts {
   long long s = 0, xa = 0, xb = 0;
 };
 
-// Scratch space of one thread
-struct Scratch {
-  std::vector<double> a, b, ra, rb, y, buf;
-  std::vector<int> o;
-};
-
-Scratch& scratch() {
-  static thread_local Scratch w;
-  return w;
-}
-
 // Inversions of y[0..m) (pairs i < j with y[i] > y[j]), sorting it - bottom-up
 // merge sort
 long long inversions(double* y, int m, std::vector<double>& buf) {
@@ -214,7 +203,7 @@ inline double tau_pairwise(const TauCounts& c, int m) {
 
 inline double one_minus(double r) { return std::isnan(r) ? 1 : 1 - r; }
 
-double kendall_complete(const Data& a, int i, const Data& b, int j) {
+double kendall_complete(const Data& a, int i, const Data& b, int j, Scratch& w) {
   if (!a.S.empty() && !b.S.empty()) {
     const int8_t* u = a.S.data() + a.P * i;
     const int8_t* v = b.S.data() + b.P * j;
@@ -224,7 +213,7 @@ double kendall_complete(const Data& a, int i, const Data& b, int j) {
     if (xa == 0 || xb == 0) return 1;
     return 1 - clamp1(static_cast<double>(2 * s) / (xa * xb));
   }
-  return one_minus(tau_complete(tau_counts(a.row(i), b.row(j), a.p, scratch())));
+  return one_minus(tau_complete(tau_counts(a.row(i), b.row(j), a.p, w)));
 }
 
 // PAIRS WITH MISSING VALUES - AS R COMPUTES THEM ----------------------------
@@ -448,16 +437,15 @@ void ranks_shared(const double* x, const int* ox, int p, const unsigned char* us
 }
 
 double spearman_na(const double* a, const double* b, int p, const int* oa,
-                   const int* ob) {
-  Scratch& w = scratch();
+                   const int* ob, Scratch& w) {
   int m = shared(a, b, p, w);
   if (m <= 1) return 1;
   w.ra.resize(m);
   w.rb.resize(m);
   if (oa != nullptr && ob != nullptr) {
     // RANKS FROM EACH ROW'S ORDER, IN ONE PASS
-    static thread_local std::vector<unsigned char> use;
-    static thread_local std::vector<int> pos;
+    std::vector<unsigned char>& use = w.use;
+    std::vector<int>& pos = w.pos;
     use.assign(p, 0);
     pos.resize(p);
     int q = 0;
@@ -497,14 +485,13 @@ double spearman_na(const double* a, const double* b, int p, const int* oa,
   return 1 - clamp1(ans);
 }
 
-double kendall_na(const double* a, const double* b, int p) {
-  Scratch& w = scratch();
+double kendall_na(const double* a, const double* b, int p, Scratch& w) {
   int m = shared(a, b, p, w);
   // (tau_counts() USES THE OTHER SCRATCH VECTORS)
   return one_minus(tau_pairwise(tau_counts(w.a.data(), w.b.data(), m, w), m));
 }
 
-double incomplete(const Data& da, int i, const Data& db, int j) {
+double incomplete(const Data& da, int i, const Data& db, int j, Scratch& w) {
   const double* a = da.raw_row(i);
   const double* b = db.raw_row(j);
   int p = da.p;
@@ -520,12 +507,12 @@ double incomplete(const Data& da, int i, const Data& db, int j) {
     case SPEARMAN:
       return spearman_na(a, b, p,
                          da.order.empty() ? nullptr : da.order.data() + static_cast<size_t>(i) * p,
-                         db.order.empty() ? nullptr : db.order.data() + static_cast<size_t>(j) * p);
-    default: return kendall_na(a, b, p);
+                         db.order.empty() ? nullptr : db.order.data() + static_cast<size_t>(j) * p, w);
+    default: return kendall_na(a, b, p, w);
   }
 }
 
-inline double complete(const Data& da, int i, const Data& db, int j) {
+inline double complete(const Data& da, int i, const Data& db, int j, Scratch& w) {
   const double* a = da.row(i);
   const double* b = db.row(j);
   int p = da.p;
@@ -538,7 +525,7 @@ inline double complete(const Data& da, int i, const Data& db, int j) {
     case BINARY:
       if (!da.bits.empty() && !db.bits.empty()) return binary_bits(da, i, db, j);
       return binary(a, b, p);
-    case KENDALL: return kendall_complete(da, i, db, j);
+    case KENDALL: return kendall_complete(da, i, db, j, w);
     default: return dot_dist(a, b, p);
   }
 }
@@ -599,9 +586,9 @@ bool all_finite(const double* x, size_t n, int threads) {
   return true;
 }
 
-double between(const Data& a, int i, const Data& b, int j) {
-  if (a.missing(i) || b.missing(j) || pairwise(a) || pairwise(b)) return incomplete(a, i, b, j);
-  return complete(a, i, b, j);
+double between(const Data& a, int i, const Data& b, int j, Scratch& w) {
+  if (a.missing(i) || b.missing(j) || pairwise(a) || pairwise(b)) return incomplete(a, i, b, j, w);
+  return complete(a, i, b, j, w);
 }
 
 namespace {
@@ -633,7 +620,7 @@ struct Dot { int p; double operator()(const double* a, const double* b) const { 
 
 // Distances from row j to rows lo..hi-1, into out
 template <class K>
-void fill_segment(const Data& d, int j, int lo, int hi, double* out, K kernel) {
+void fill_segment(const Data& d, int j, int lo, int hi, double* out, K kernel, Scratch& w) {
   const double* xj = d.row(j);
   if (!d.any_miss) {
     for (int i = lo; i < hi; ++i) out[i - lo] = kernel(d.row(i), xj);
@@ -641,30 +628,30 @@ void fill_segment(const Data& d, int j, int lo, int hi, double* out, K kernel) {
   }
   bool mj = d.miss[j] != 0;
   for (int i = lo; i < hi; ++i) {
-    out[i - lo] = (mj || d.miss[i]) ? incomplete(d, i, d, j) : kernel(d.row(i), xj);
+    out[i - lo] = (mj || d.miss[i]) ? incomplete(d, i, d, j, w) : kernel(d.row(i), xj);
   }
 }
 
 // The scalar kernels for rows lo..hi-1 (each kernel inlined)
-void segment(const Data& d, int j, int lo, int hi, double* out) {
+void segment(const Data& d, int j, int lo, int hi, double* out, Scratch& w) {
   const int p = d.p;
   switch (d.code) {
-    case EUCLIDEAN: fill_segment(d, j, lo, hi, out, Euclid{p}); break;
-    case MANHATTAN: fill_segment(d, j, lo, hi, out, Manhattan{p}); break;
-    case MAXIMUM: fill_segment(d, j, lo, hi, out, Maximum{p}); break;
-    case MINKOWSKI: fill_segment(d, j, lo, hi, out, Minkowski{p, d.q}); break;
-    case CANBERRA: fill_segment(d, j, lo, hi, out, Canberra{p}); break;
+    case EUCLIDEAN: fill_segment(d, j, lo, hi, out, Euclid{p}, w); break;
+    case MANHATTAN: fill_segment(d, j, lo, hi, out, Manhattan{p}, w); break;
+    case MAXIMUM: fill_segment(d, j, lo, hi, out, Maximum{p}, w); break;
+    case MINKOWSKI: fill_segment(d, j, lo, hi, out, Minkowski{p, d.q}, w); break;
+    case CANBERRA: fill_segment(d, j, lo, hi, out, Canberra{p}, w); break;
     case BINARY:
       if (!d.bits.empty()) {
-        for (int i = lo; i < hi; ++i) out[i - lo] = dist(d, i, j);
+        for (int i = lo; i < hi; ++i) out[i - lo] = dist(d, i, j, w);
       } else {
-        fill_segment(d, j, lo, hi, out, Binary{p});
+        fill_segment(d, j, lo, hi, out, Binary{p}, w);
       }
       break;
     case KENDALL:
-      for (int i = lo; i < hi; ++i) out[i - lo] = dist(d, i, j);
+      for (int i = lo; i < hi; ++i) out[i - lo] = dist(d, i, j, w);
       break;
-    default: fill_segment(d, j, lo, hi, out, Dot{p}); break;
+    default: fill_segment(d, j, lo, hi, out, Dot{p}, w); break;
   }
 }
 
@@ -672,7 +659,8 @@ void segment(const Data& d, int j, int lo, int hi, double* out) {
 
 // Distances from row j to rows idx[0..m) of d (or rows lo, lo + 1, ... when
 // idx is null), four at a time with AVX2 when it runs
-void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out) {
+void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out,
+             Scratch& w) {
   int t = 0;
   dist::Dist4 k4 = pairwise(d) || d.missing(j) ? nullptr : kernel_for(d.code, d.p);
   if (k4 != nullptr) {
@@ -691,18 +679,24 @@ void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out) {
       } else {
         for (int u = 0; u < 4; ++u) {
           int i = idx == nullptr ? lo + t + u : idx[t + u];
-          out[t + u] = dist(d, i, j);
+          out[t + u] = dist(d, i, j, w);
         }
       }
     }
   }
   for (; t < m; ++t) {
     int i = idx == nullptr ? lo + t : idx[t];
-    out[t] = dist(d, i, j);
+    out[t] = dist(d, i, j, w);
   }
 }
 
-void between4(const Data& a, int i, const Data& b, const int* js, double* out) {
+void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out) {
+  Scratch w;
+  to_rows(d, j, idx, lo, m, out, w);
+}
+
+void between4(const Data& a, int i, const Data& b, const int* js, double* out,
+              Scratch& w) {
   dist::Dist4 k4 = kernel_for(a.code, a.p);
   if (k4 != nullptr && !pairwise(a) && !pairwise(b) && !a.missing(i) && !b.missing(js[0]) &&
       !b.missing(js[1]) && !b.missing(js[2]) && !b.missing(js[3])) {
@@ -710,7 +704,7 @@ void between4(const Data& a, int i, const Data& b, const int* js, double* out) {
     k4(a.row(i), r, a.p, simd_kind(a.code, a.p), out);
     return;
   }
-  for (int t = 0; t < 4; ++t) out[t] = between(a, i, b, js[t]);
+  for (int t = 0; t < 4; ++t) out[t] = between(a, i, b, js[t], w);
 }
 
 // The lower triangle of all the distances (as in a dist object), a tile of
@@ -733,17 +727,17 @@ void triangle(const Data& d, double* out, int threads) {
   par::parallel_for(tiles.size(), work < 1048576.0 ? 1 : threads, [&](size_t t) {
     int j0 = tiles[t].first * B, i0 = tiles[t].second * B;
     int j1 = std::min(n, j0 + B), i1 = std::min(n, i0 + B);
-    std::vector<double> buf(B);
+    Scratch w;
     for (int j = j0; j < j1; ++j) {
       int lo = std::max(i0, j + 1);
       if (lo >= i1) continue;
       size_t start = static_cast<size_t>(n) * j - static_cast<size_t>(j) * (j + 1) / 2 + (lo - j - 1);
       if (simd) {
-        to_rows(d, j, nullptr, lo, i1 - lo, out + start);
+        to_rows(d, j, nullptr, lo, i1 - lo, out + start, w);
       } else if (every) {
-        for (int i = lo; i < i1; ++i) out[start + (i - lo)] = dist(d, i, j);
+        for (int i = lo; i < i1; ++i) out[start + (i - lo)] = dist(d, i, j, w);
       } else {
-        segment(d, j, lo, i1, out + start);
+        segment(d, j, lo, i1, out + start, w);
       }
     }
   });
@@ -782,7 +776,7 @@ void prepare_row(Data& d, int i, std::vector<double>& r, std::vector<int>& o) {
 }  // namespace
 
 void load_row(Data& d, const double* x, size_t n_total, int p_total, size_t r,
-              int code, double q, bool keep_raw) {
+              int code, double q, bool keep_raw, Scratch& w) {
   d.n = 1;
   d.p = p_total;
   d.code = code;
@@ -799,11 +793,7 @@ void load_row(Data& d, const double* x, size_t n_total, int p_total, size_t r,
   d.raw.clear();
   if (scaled(code)) {
     if (d.any_miss || keep_raw) d.raw = d.X;
-    if (!d.any_miss) {
-      static thread_local std::vector<double> rb;
-      static thread_local std::vector<int> ob;
-      prepare_row(d, 0, rb, ob);
-    }
+    if (!d.any_miss) prepare_row(d, 0, w.ra, w.o);
   }
   if (code == KENDALL) {
     size_t P = static_cast<size_t>(p_total) * (p_total > 1 ? p_total - 1 : 0) / 2;

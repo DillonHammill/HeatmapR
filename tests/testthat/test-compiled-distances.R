@@ -14,6 +14,20 @@ messy_rows <- function(n = 50, p = 9, seed = 1) {
   x
 }
 
+# Whether R's own compiled code fuses multiply-adds (e.g. R built for
+# x86-64-v3): stats::dist() and stats::hclust() then round differently from
+# the compiled code of HeatmapR in the last bit, so only equality up to
+# rounding can be expected. The probe: dist() against the same sum of
+# products, each rounded on its own, in R.
+r_fuses <- function() {
+  set.seed(99)
+  x <- matrix(rnorm(2 * 64), 2)
+  d <- x[1, ] - x[2, ]
+  s <- 0
+  for (k in seq_along(d)) s <- s + d[k] * d[k]
+  !identical(as.vector(dist(x)), sqrt(s))
+}
+
 # One minus the correlation as heat_map() defines it (missing correlations
 # count as zero)
 cor_dist <- function(x, method) {
@@ -40,11 +54,16 @@ test_that("compiled distances match stats::dist(), with and without missing valu
       expect_identical(attr(d, "Size"), nrow(z))
     }
   }
-  # PAIRS WITH MISSING VALUES FOLLOW stats::dist()'S ARITHMETIC EXACTLY
+  # PAIRS WITH MISSING VALUES FOLLOW stats::dist()'S ARITHMETIC EXACTLY (WHEN
+  # R DOESN'T FUSE MULTIPLY-ADDS)
   d <- as.matrix(.dist_matrix(x, "euclidean"))
   ref <- as.matrix(dist(x))
   gaps <- which(rowSums(is.na(x)) > 0)
-  expect_identical(d[gaps, ], ref[gaps, ])
+  if (r_fuses()) {
+    expect_equal(d[gaps, ], ref[gaps, ], tolerance = 1e-14)
+  } else {
+    expect_identical(d[gaps, ], ref[gaps, ])
+  }
   # INFINITE VALUES ARE LEFT OUT LIKE MISSING ONES
   z <- complete
   z[2, 3] <- Inf
@@ -100,6 +119,7 @@ test_that("SIMD kernels give the distances of the scalar code for every distance
 })
 
 test_that("hclust()'s algorithm, compiled, gives hclust()'s trees exactly", {
+  skip_if(r_fuses(), "R's compiled code fuses multiply-adds, so hclust() rounds differently")
   as_list <- function(expr) {
     Sys.setenv(HEATMAPR_LINKAGE = "list")
     on.exit(Sys.unsetenv("HEATMAPR_LINKAGE"))
@@ -127,6 +147,20 @@ test_that("hclust()'s algorithm, compiled, gives hclust()'s trees exactly", {
     theirs <- hclust(d, method, members = w)
     expect_identical(ours[c("merge", "height", "order")],
                      unclass(theirs)[c("merge", "height", "order")], info = method)
+  }
+})
+
+test_that("centroid and median linkage give hclust()'s trees, up to rounding", {
+  set.seed(18)
+  d <- dist(matrix(rnorm(200 * 4), 200))
+  for (method in c("centroid", "median", "average", "ward.D2")) {
+    Sys.setenv(HEATMAPR_LINKAGE = "list")
+    ours <- hclust_cpp(unclass(d), 200L, .LINKAGE[[method]], NULL, 2L)
+    Sys.unsetenv("HEATMAPR_LINKAGE")
+    theirs <- hclust(d, method)
+    expect_identical(ours$merge, theirs$merge, info = method)
+    expect_identical(ours$order, theirs$order, info = method)
+    expect_equal(ours$height, theirs$height, tolerance = 1e-12, info = method)
   }
 })
 

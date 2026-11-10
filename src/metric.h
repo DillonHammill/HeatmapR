@@ -108,6 +108,15 @@ inline double search_value(int code, double d) {
   return (scaled(code) || code == KENDALL) ? std::sqrt(2 * d) : d;
 }
 
+// Scratch space for the distances that need it (pairs with missing values,
+// Spearman's ranks, Kendall's tau counted pair by pair): one per task, so
+// that threads don't share it (empty until a distance needs it)
+struct Scratch {
+  std::vector<double> a, b, ra, rb, y, buf;
+  std::vector<int> o, pos;
+  std::vector<unsigned char> use;
+};
+
 // Rows (1-based indices into an n_total-row matrix, or all rows when null)
 // and columns (1-based, or all p_total columns) of a column-major matrix,
 // prepared for the distance `code`. keep_raw keeps the unscaled values of
@@ -120,17 +129,24 @@ Data make_data(const double* x, size_t n_total, int p_total, const int* rows,
 // One row r (0-based) of x loaded into d (n = 1), prepared as make_data()
 // prepares rows, reusing d's storage
 void load_row(Data& d, const double* x, size_t n_total, int p_total, size_t r,
-              int code, double q, bool keep_raw);
+              int code, double q, bool keep_raw, Scratch& w);
 
 // Distance between row i of a and row j of b (prepared for the same code
 // and columns); NaN when they share no values (or for Kendall and Spearman
 // never, as a missing correlation counts as zero)
-double between(const Data& a, int i, const Data& b, int j);
+double between(const Data& a, int i, const Data& b, int j, Scratch& w);
+inline double between(const Data& a, int i, const Data& b, int j) {
+  Scratch w;
+  return between(a, i, b, j, w);
+}
 
+inline double dist(const Data& d, int i, int j, Scratch& w) { return between(d, i, d, j, w); }
 inline double dist(const Data& d, int i, int j) { return between(d, i, d, j); }
 
-// between() for four rows js[0..3] of b at once (with AVX2 when it runs)
-void between4(const Data& a, int i, const Data& b, const int* js, double* out);
+// between() for four rows js[0..3] of b at once (with SIMD kernels when they
+// run)
+void between4(const Data& a, int i, const Data& b, const int* js, double* out,
+              Scratch& w);
 
 // Every distance between the rows of d, as the lower triangle of a dist
 // object (n * (n - 1) / 2 values), in tiles shared between threads
@@ -138,6 +154,8 @@ void triangle(const Data& d, double* out, int threads);
 
 // Distances from row j of d to its rows idx[0..m) (rows lo, lo + 1, ...
 // when idx is null), into out
+void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out,
+             Scratch& w);
 void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out);
 
 // Average ranks (as rank() gives them) of v[0..m) into r

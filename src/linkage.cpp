@@ -799,7 +799,8 @@ struct RowSource {
   const metric::Data* d;
   std::atomic<bool> gap{false};
   void dists(int u, const int* v, int m, double* out) {
-    metric::to_rows(*d, u, v, 0, m, out);
+    metric::Scratch w;
+    metric::to_rows(*d, u, v, 0, m, out, w);
     for (int t = 0; t < m; ++t) {
       if (std::isnan(out[t])) {
         gap.store(true, std::memory_order_relaxed);
@@ -917,11 +918,12 @@ std::unique_ptr<double[]> upper_distances(const double* x, int n_total, int p,
   par::parallel_for(tiles.size(), threads_for(work, threads), [&](size_t t) {
     size_t j0 = tiles[t].first * bs, j1 = std::min(n, j0 + bs);
     size_t i0 = tiles[t].second * bs;
+    metric::Scratch w;
     for (size_t j = std::max<size_t>(j0, 1); j < j1; ++j) {
       size_t i1 = std::min(i0 + bs, j);
       if (i0 >= i1) continue;
       metric::to_rows(d, static_cast<int>(j), nullptr, static_cast<int>(i0),
-                      static_cast<int>(i1 - i0), out.get() + j * (j - 1) / 2 + i0);
+                      static_cast<int>(i1 - i0), out.get() + j * (j - 1) / 2 + i0, w);
     }
   });
   return out;
@@ -1254,10 +1256,11 @@ cpp11::integers nearest_medoid_cpp(cpp11::doubles_matrix<> x, cpp11::integers ro
   double work = static_cast<double>(n) * (search ? pivots.size() + 8 : k) * p;
   par::parallel_for(n_chunks, work < 1048576.0 ? 1 : threads, [&](size_t c) {
     metric::Data Q;
+    metric::Scratch w;
     long long evals = 0;
     int end = static_cast<int>(std::min<size_t>(n, (c + 1) * chunk));
     for (int i = static_cast<int>(c * chunk); i < end; ++i) {
-      metric::load_row(Q, xv, n_total, p, static_cast<size_t>(rv[i] - 1), code, q, keep);
+      metric::load_row(Q, xv, n_total, p, static_cast<size_t>(rv[i] - 1), code, q, keep, w);
       int best = -1;
       double bd = INF;
       double v4[4];
@@ -1270,7 +1273,7 @@ cpp11::integers nearest_medoid_cpp(cpp11::doubles_matrix<> x, cpp11::integers ro
           int js[4];
           int c = static_cast<int>(std::min<size_t>(4, np - t));
           for (int u = 0; u < 4; ++u) js[u] = pivots[t + std::min(u, c - 1)];
-          metric::between4(Q, 0, M, js, v4);
+          metric::between4(Q, 0, M, js, v4, w);
           for (int u = 0; u < c; ++u) {
             if (g < 0 || v4[u] < dg) {
               dg = v4[u];
@@ -1301,7 +1304,7 @@ cpp11::integers nearest_medoid_cpp(cpp11::doubles_matrix<> x, cpp11::integers ro
           // s(x, j) >= s(g, j) - s(x, g)
           if (Sg[js[0]] - sg > sb) break;
           for (int u = c; u < 4; ++u) js[u] = js[c - 1];
-          metric::between4(Q, 0, M, js, v4);
+          metric::between4(Q, 0, M, js, v4, w);
           evals += c;
           for (int u = 0; u < c; ++u) {
             int j = js[u];
@@ -1322,7 +1325,7 @@ cpp11::integers nearest_medoid_cpp(cpp11::doubles_matrix<> x, cpp11::integers ro
         for (int j0 = 0; j0 < k; j0 += 4) {
           int c = std::min(4, k - j0);
           for (int u = 0; u < 4; ++u) js[u] = j0 + std::min(u, c - 1);
-          metric::between4(Q, 0, M, js, v4);
+          metric::between4(Q, 0, M, js, v4, w);
           for (int u = 0; u < c; ++u) {
             if (v4[u] < bd) {
               bd = v4[u];
