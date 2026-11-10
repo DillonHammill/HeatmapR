@@ -96,6 +96,20 @@ extern "C" SEXP _HeatmapR_kmeans_hw_cpp(SEXP x, SEXP centres, SEXP iter_max, SEX
     return cpp11::as_sexp(kmeans_hw_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(centres), cpp11::as_cpp<cpp11::decay_t<int>>(iter_max), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
+// kmeans.cpp
+cpp11::doubles_matrix<> group_means_cpp(cpp11::doubles_matrix<> x, cpp11::integers groups, int k, int threads);
+extern "C" SEXP _HeatmapR_group_means_cpp(SEXP x, SEXP groups, SEXP k, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(group_means_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(groups), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// kmeans.cpp
+cpp11::logicals distinct_rows_cpp(cpp11::doubles_matrix<> x);
+extern "C" SEXP _HeatmapR_distinct_rows_cpp(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(distinct_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x)));
+  END_CPP11
+}
 // linkage.cpp
 cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members, int threads);
 extern "C" SEXP _HeatmapR_hclust_cpp(SEXP d, SEXP n, SEXP method, SEXP members, SEXP threads) {
@@ -341,8 +355,10 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_cut_tree_cpp",          (DL_FUNC) &_HeatmapR_cut_tree_cpp,          3},
     {"_HeatmapR_dist_cross_cpp",        (DL_FUNC) &_HeatmapR_dist_cross_cpp,        6},
     {"_HeatmapR_dist_rows_cpp",         (DL_FUNC) &_HeatmapR_dist_rows_cpp,         4},
+    {"_HeatmapR_distinct_rows_cpp",     (DL_FUNC) &_HeatmapR_distinct_rows_cpp,     1},
     {"_HeatmapR_finite_range_cpp",      (DL_FUNC) &_HeatmapR_finite_range_cpp,      3},
     {"_HeatmapR_first_pc_cpp",          (DL_FUNC) &_HeatmapR_first_pc_cpp,          2},
+    {"_HeatmapR_group_means_cpp",       (DL_FUNC) &_HeatmapR_group_means_cpp,       4},
     {"_HeatmapR_group_medoids_cpp",     (DL_FUNC) &_HeatmapR_group_medoids_cpp,     5},
     {"_HeatmapR_hardware_threads_cpp",  (DL_FUNC) &_HeatmapR_hardware_threads_cpp,  0},
     {"_HeatmapR_hash_cpp",              (DL_FUNC) &_HeatmapR_hash_cpp,              1},

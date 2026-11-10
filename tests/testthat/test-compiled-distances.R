@@ -14,38 +14,6 @@ messy_rows <- function(n = 50, p = 9, seed = 1) {
   x
 }
 
-# Whether R's own compiled code fuses multiply-adds (as R's compilers do by
-# default on 64-bit ARM): HeatmapR's compiled code then follows the compiler
-# as R's does, but where the compiler chooses to fuse may differ between C,
-# C++ and Fortran, so only equality up to rounding can be expected. The
-# probe: dist() against the same sums of products, each rounded on its own,
-# in R.
-r_fuses <- local({
-  fuses <- NULL
-  function() {
-    if (is.null(fuses)) {
-      # (ONE PAIR OFTEN CAN'T TELL: THE SQUARE ROOT HIDES THE LAST BIT OF THE
-      # SUM FOR MOST PAIRS, SO MANY ARE COMPARED)
-      set.seed(99)
-      x <- matrix(rnorm(40 * 64), 40)
-      d <- as.matrix(dist(x))
-      fuses <<- FALSE
-      for (i in 2:40) {
-        for (j in seq_len(i - 1)) {
-          dev <- x[i, ] - x[j, ]
-          s <- 0
-          for (k in seq_along(dev)) s <- s + dev[k] * dev[k]
-          if (!identical(d[i, j], sqrt(s))) {
-            fuses <<- TRUE
-            return(TRUE)
-          }
-        }
-      }
-    }
-    fuses
-  }
-})
-
 # One minus the correlation as heat_map() defines it (missing correlations
 # count as zero)
 cor_dist <- function(x, method) {
