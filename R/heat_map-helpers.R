@@ -422,31 +422,54 @@ heat_map_layout <- function(layout = NULL){
   }
   
   # MATRIX
-  if(is.matrix(layout)){
-    layout(layout)
-    # VECTOR  
-  }else{
+  if(!is.matrix(layout)){
     # ROW ORDER
     if(length(layout) == 2){
       layout <- c(layout, 1)
     }
-    # ROWS
-    if (layout[3] == 1) {
-      layout(matrix(seq_len(layout[1] * layout[2]), 
-                    nrow = layout[1], 
-                    ncol = layout[2], 
-                    byrow = TRUE))
-      # COLUMNS
-    } else if (layout[3] == 2) {
-      layout(matrix(seq_len(layout[1] * layout[2]), 
-                    nrow = layout[1], 
-                    ncol = layout[2], 
-                    byrow = FALSE))
-    }
+    # ROWS OR COLUMNS FIRST
+    layout <- matrix(seq_len(layout[1] * layout[2]),
+                     nrow = layout[1],
+                     ncol = layout[2],
+                     byrow = layout[3] != 2)
   }
-  
+
+  # THE LAYOUT IS RECORDED WITH THE HEATMAPS DRAWN IN IT (SO THAT THE WHOLE
+  # PAGE IS REDRAWN, E.G. BY R MARKDOWN OR A RESIZED PLOT WINDOW) - SET AGAIN
+  # WHEN THE DEVICE ONLY STARTS RECORDING NOW
+  .record_drawing()
+  layout(layout)
+  if(.record_drawing()) {
+    layout(layout)
+  }
+
   invisible(NULL)
   
+}
+
+#' Keep a display list on the current device
+#'
+#' Turns the display list of the current device on (which clears it) unless
+#' it is already recording drawing, so that heatmaps drawn before in a
+#' layout stay in the recorded plot.
+#'
+#' @return \code{TRUE} when the display list was turned on.
+#'
+#' @importFrom grDevices dev.cur dev.control recordPlot
+#'
+#' @noRd
+.record_drawing <- function() {
+  if(dev.cur() == 1) {
+    return(FALSE)
+  }
+  recording <- tryCatch(
+    length(recordPlot()[[1]]) > 0,
+    error = function(e) FALSE
+  )
+  if(!recording) {
+    dev.control(displaylist = "enable")
+  }
+  !recording
 }
 
 ## HEAT_MAP_RECORD -------------------------------------------------------------

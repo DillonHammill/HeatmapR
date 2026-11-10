@@ -27,6 +27,31 @@ test_that("heat_map_layout fills panels in row or column order", {
   expect_equal(second_panel(matrix(c(2, 1, 4, 3), 2)), c(0, 0.5, 0.5, 1))
 })
 
+test_that("every heatmap of a custom layout stays in the recorded plot", {
+  # (A FILE DEVICE, WHICH KEEPS NO DISPLAY LIST UNTIL ONE IS TURNED ON)
+  file <- tempfile(fileext = ".png")
+  grDevices::png(file)
+  on.exit({
+    grDevices::dev.off()
+    unlink(file)
+    heat_map_reset()
+  })
+  heat_map_custom(popup = FALSE, layout = c(1, 3))
+  for(z in c("First", "Second", "Third")) {
+    heat_map(test_matrix(), title = z, popup = FALSE)
+  }
+  page <- heat_map_record()
+  heat_map_complete()
+  calls <- vapply(page[[1]], function(z) z[[2]][[1]]$name, character(1))
+  # THE THREE HEATMAPS (THE LAYOUT IS KEPT IN THE STATE THE RECORD STARTS
+  # FROM)
+  expect_identical(sum(calls == "C_plot_new"), 3L)
+  # (A HEATMAP ON ITS OWN PAGE STILL STARTS ITS OWN RECORD)
+  hm <- heat_map(test_matrix(), title = "Alone", popup = FALSE)
+  calls <- vapply(hm[[1]], function(z) z[[2]][[1]]$name, character(1))
+  expect_identical(sum(calls == "C_plot_new"), 1L)
+})
+
 test_that("heat_map_reset and heat_map_complete reset the saving state", {
   options("heat_map_save" = TRUE, "heat_map_custom" = TRUE)
   grDevices::pdf(NULL)
