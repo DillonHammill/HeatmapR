@@ -293,7 +293,17 @@ similar columns together. With a dendrogram, its branches are ordered by
 the mean spectral position of their columns. Up to \code{clust_max}
 columns are ordered exactly; more are ordered from a sample of
 \code{clust_max} landmarks, each other column placed beside its nearest
-landmark (200,000 take about 4 seconds).}
+landmark (200,000 take about 4 seconds). \code{"peak"} orders the
+columns by where they are highest along the rows, in the order of the
+rows in the data (ties by where they are lowest), so that features
+peaking early along a trajectory come first and cascades run diagonally
+(see \code{\link{heat_map_smooth}}); it needs no dendrogram either, and
+with one orders its branches by the mean peak position of their columns.
+The rows of a trajectory from \code{heat_map_smooth()} are placed by
+their position along it (e.g. pseudotime), so the peaks of its lineages
+are compared by when they occur; other rows split into groups by a
+factor or character \code{tree_cut_y} (or \code{group_by}) are placed
+by their position within their group.}
 
 \item{tree_support_x}{\code{TRUE} or a number of resamples (at least 10)
 to draw each branch of the x axis dendrogram by its bootstrap support:
@@ -397,12 +407,15 @@ axis dendrogram should be scaled for better visualisation, set to FALSE by
 default.}
 
 \item{tree_order_y}{how the branches of the y axis dendrogram are ordered,
-either \code{"default"}, \code{"olo"}, \code{"mean"} or
-\code{"spectral"}, as for \code{tree_order_x}. A spectral order without
-a dendrogram orders the rows on their own (e.g. cells along a
-differentiation trajectory or samples along a time course); rows
-grouped by \code{tree_cut_y} or \code{tree_kmeans_y} keep it within
-each group.}
+either \code{"default"}, \code{"olo"}, \code{"mean"},
+\code{"spectral"} or \code{"peak"}, as for \code{tree_order_x}. A
+spectral order without a dendrogram orders the rows on their own (e.g.
+cells along a differentiation trajectory or samples along a time
+course); rows grouped by \code{tree_cut_y} or \code{tree_kmeans_y} keep
+it within each group. \code{"peak"} orders the rows by where they are
+highest along the columns (e.g. genes along pseudotime with
+\code{swap_axes = TRUE}), within the groups of a factor or character
+\code{tree_cut_x}.}
 
 \item{tree_support_y}{\code{TRUE} or a number of resamples to draw each
 branch of the y axis dendrogram by its bootstrap support, resampling the

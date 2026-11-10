@@ -609,6 +609,24 @@ as.character.heat_map_description <- function(x,
       }
     )
   }
+  # PEAK ORDER - BY WHERE EACH ROW OR COLUMN IS HIGHEST
+  if(identical(arg(paste0("tree_order_", axis)), "peak")) {
+    other <- if(axis == "y") "column" else "row"
+    out <- c(
+      out,
+      if(!is.null(tree)) {
+        paste0(
+          "Its branches are ordered by where their ", what, "s are highest ",
+          "along the ", other, "s."
+        )
+      } else {
+        paste0(
+          Whats, " are ordered by where they are highest along the ", other,
+          "s, earliest first."
+        )
+      }
+    )
+  }
   # AN AUTOMATIC CUT
   auto <- tree$auto_cut
   if(!is.null(auto) && length(auto$silhouette) > 0) {
