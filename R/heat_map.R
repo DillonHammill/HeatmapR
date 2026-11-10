@@ -21,8 +21,7 @@
 #'   or \code{columns} as indicated by \code{scale}, options include
 #'   \code{"range"}, \code{"mean"}, \code{"zscore"} or \code{"quantile"}
 #'   (0 to 1 between the \code{scale_q} and \code{1 - scale_q} quantiles,
-#'   clipped, as CATALYST scales cytometry data); see
-#'   \code{\link{heat_map_scale}}. Set to \code{"range"} by default.
+#'   with the values beyond them clipped); see \code{\link{heat_map_scale}}. Set to \code{"range"} by default.
 #' @param dist_method indicates the type of distance metric to use when
 #'   constructing dendrograms, set to \code{"euclidean"} distance by default.
 #'   See \code{?dist} for alternatives. Also supports \code{"cosine"} for

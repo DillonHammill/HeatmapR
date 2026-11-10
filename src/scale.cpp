@@ -46,7 +46,7 @@ double quantile7(std::vector<double>& fin, double p) {
 void scale_values(double* v, size_t m, int method, std::vector<double>& fin,
                   double q) {
   fin.clear();
-  // QUANTILE SCALING, AS CATALYST SCALES: (v - lo) / (hi - lo) CLIPPED TO
+  // QUANTILE SCALING: (v - lo) / (hi - lo) CLIPPED TO
   // [0, 1], WITH 0 / 0 AS 0; THE QUANTILES ARE THOSE OF quantile() (INFINITE
   // VALUES INCLUDED) AND MISSING VALUES STAY MISSING
   if (method == 4) {
