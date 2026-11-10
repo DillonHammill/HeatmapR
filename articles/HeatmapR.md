@@ -430,9 +430,9 @@ always clusters exactly, and
 [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
 takes the same limit as `max`. Branch support is only computed for up to
 `clust_max` rows or columns, and optimal leaf ordering
-(`tree_order_y = "olo"`) of more than 2000 rows orders blocks of the
-dendrogram. Distances, linkage and leaf ordering run in compiled C++
-code.
+(`tree_order_y = "olo"`) is exact for up to 4000 rows (0.3 seconds) and
+orders blocks of larger dendrograms. Distances, linkage and leaf
+ordering run in compiled C++ code.
 
 ``` r
 

@@ -78,12 +78,12 @@ heat_map_clust(
   orders branches by their mean values
   ([`heatmap`](https://rdrr.io/r/stats/heatmap.html) orders them by the
   sum of their leaves' means instead, which favours small branches).
-  Optimal leaf ordering is exact for up to 2000 leaves, which takes
-  about a second; its time grows with the cube of the number of leaves,
-  so larger trees are ordered in blocks (of 2000 leaves, down to 100 for
-  the largest trees), each ordered exactly, with the blocks then ordered
-  and turned to meet their neighbours. 200,000 leaves take about 3
-  seconds.
+  Optimal leaf ordering is exact for up to 4000 leaves, which takes well
+  under a second; its time grows with the cube of the number of leaves
+  (and its memory with the square), so larger trees are ordered in
+  blocks (of 4000 leaves, down to 100 for the largest trees), each
+  ordered exactly, with the blocks then ordered and turned to meet their
+  neighbours. 200,000 leaves take about a second.
 
 - max:
 

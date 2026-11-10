@@ -286,8 +286,8 @@ heat_map(
   possible) or `"mean"` (branches ordered by their mean values -
   [`heatmap`](https://rdrr.io/r/stats/heatmap.html) orders them by the
   sum of their columns' means instead, which favours small branches).
-  Optimal leaf ordering is exact for up to 2000 columns, which takes
-  about a second; larger dendrograms are ordered in blocks (see
+  Optimal leaf ordering is exact for up to 4000 columns, which takes
+  well under a second; larger dendrograms are ordered in blocks (see
   [`heat_map_clust`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)).
 
 - tree_support_x:

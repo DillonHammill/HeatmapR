@@ -380,8 +380,30 @@ defaults have changed; they are listed first.
   5,000 rows takes 0.6 seconds instead of 2.0 in HeatmapR 1.1.0, and
   two-stage clustering of 100,000 rows about 2 seconds on two cores
   (HeatmapR 1.1.0 would need the 40 GB distance matrix of every pair of
-  rows). Optimal leaf ordering is exact for up to 2000 leaves and orders
-  larger dendrograms in blocks: 200,000 leaves take about 3 seconds.
+  rows).
+- Optimal leaf ordering computes its min-plus products as BLAS computes
+  matrix products, in panels that stay in the cache with small tiles of
+  costs held in registers (AVX2 when the processor has it, NEON on
+  64-bit ARM such as Apple silicon, otherwise SSE2 or plain C++), and
+  skips the steps that bounds show can’t improve any cost of a tile - an
+  adaptation of the early termination of Bar-Joseph, Gifford and
+  Jaakkola (2001) to chunks of the products, which leaves 2 to 25% of
+  the work. The order is exactly the one the plain recurrences give. On
+  one thread, 2000 leaves take 0.04 to 0.08 seconds and 4000 leaves 0.2
+  to 0.4 seconds, 11 to 28 times faster than the plain loops, so the
+  ordering is now exact for up to 4000 leaves (about 150 MB of memory at
+  that size), with the distances computed in compiled code in the order
+  the ordering reads them. Larger dendrograms are ordered in blocks of
+  up to 4000 leaves (down to 100 for the largest trees): 200,000 leaves
+  take about a second on two threads.
+- Distances between rows are computed four at a time by SIMD kernels
+  (AVX2 when the processor has it, NEON on 64-bit ARM) that keep the
+  four partial sums of the scalar code as their vector lanes, so the
+  distances, and the dendrograms built from them, are exactly those of
+  the scalar code, and in blocks of rows that stay in the cache. Exact
+  clustering of wide data is 2 to 3 times faster: 3000 rows x 1000
+  columns take 0.6 seconds instead of 1.5 and 2000 x 5000 1.8 seconds
+  instead of 5.8 (one thread).
 - Multithreading: the compiled code shares its larger jobs between
   threads - the distances between rows, the linkage’s scans for the
   nearest cluster (from about 1500 rows), the groups and the

@@ -426,8 +426,9 @@ and within each group, and 100,000 rows take about 2 seconds.
 <code><a href="../reference/heat_map_clust.html">heat_map_clust()</a></code> takes the same limit as <code>max</code>.
 Branch support is only computed for up to <code>clust_max</code> rows or
 columns, and optimal leaf ordering (<code>tree_order_y = "olo"</code>)
-of more than 2000 rows orders blocks of the dendrogram. Distances,
-linkage and leaf ordering run in compiled C++ code.</p>
+is exact for up to 4000 rows (0.3 seconds) and orders blocks of larger
+dendrograms. Distances, linkage and leaf ordering run in compiled C++
+code.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span>
