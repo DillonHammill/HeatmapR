@@ -140,6 +140,18 @@ sparse_group_medians_cpp <- function(i, p, x, nrow, ncol, sel, cells_by_column, 
   .Call(`_HeatmapR_sparse_group_medians_cpp`, i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threads)
 }
 
+sparse_group_auc_cpp <- function(i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threads) {
+  .Call(`_HeatmapR_sparse_group_auc_cpp`, i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threads)
+}
+
+dense_group_sums_cpp <- function(x, sel, cells_by_column, group, n_groups, threshold, threads) {
+  .Call(`_HeatmapR_dense_group_sums_cpp`, x, sel, cells_by_column, group, n_groups, threshold, threads)
+}
+
+dense_group_auc_cpp <- function(x, sel, cells_by_column, group, n_groups, threads) {
+  .Call(`_HeatmapR_dense_group_auc_cpp`, x, sel, cells_by_column, group, n_groups, threads)
+}
+
 spectral_rows_cpp <- function(x, metric, q, k, threads) {
   .Call(`_HeatmapR_spectral_rows_cpp`, x, metric, q, k, threads)
 }

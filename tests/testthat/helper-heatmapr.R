@@ -115,3 +115,36 @@ r_fuses <- local({
     fuses
   }
 })
+
+# Sparse-looking dense data with negative, infinite and missing values, and
+# groups of each row (some missing)
+sparse_case <- function(seed,
+                        nrow = 40,
+                        ncol = 25) {
+  set.seed(seed)
+  d <- matrix(0, nrow, ncol)
+  k <- sample(length(d), floor(length(d) * runif(1, 0.05, 0.9)))
+  d[k] <- sample(
+    c(-2, -1, -0.5, 0.25, 0.1, 0.7, 1, 1, 3, Inf, -Inf, NA, NaN, 1e308),
+    length(k),
+    replace = TRUE
+  )
+  dimnames(d) <- list(paste0("cell", seq_len(nrow)), paste0("g", seq_len(ncol)))
+  g <- sample(c("a", "b", "c", "d", NA), nrow, replace = TRUE)
+  g[1] <- "a"
+  list(d = d, g = g)
+}
+
+# The source of cells of a sparse matrix with the cells as its columns
+by_column_source <- function(m) {
+  list(
+    values = .as_dgc(Matrix::t(m)),
+    by_column = TRUE,
+    features = colnames(m),
+    aliases = NULL,
+    meta = NULL,
+    columns = FALSE,
+    n = nrow(m),
+    cells = rownames(m)
+  )
+}

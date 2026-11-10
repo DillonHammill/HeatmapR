@@ -394,10 +394,16 @@ heat_map_downsample <- function(groups,
   )
 }
 
-#' The features of a source of cells: their indices and names
+#' The features of a source of cells: their indices, names and groups
 #'
+#' @param features \code{NULL} for every feature, names, indices or a logical
+#'   vector, a named list of them (groups of features, e.g. the markers of
+#'   each cell type) or the markers returned by \code{heat_map_markers()}.
 #' @param drop features used as metadata (e.g. a column of cluster labels),
 #'   left out when \code{features} is \code{NULL}.
+#'
+#' @return a list with \code{index}, \code{names} and \code{groups} (a factor
+#'   with the group of each feature, or \code{NULL}).
 #'
 #' @noRd
 .cell_features <- function(features,
@@ -409,8 +415,47 @@ heat_map_downsample <- function(groups,
     if(length(index) == 0) {
       stop("'x' has no features to show.", call. = FALSE)
     }
-    return(list(index = index, names = src$features[index]))
+    return(list(index = index, names = src$features[index], groups = NULL))
   }
+  # GROUPS OF FEATURES - THE MARKERS OF EACH GROUP, OR A NAMED LIST
+  if(inherits(features, "heat_map_markers")) {
+    features <- .marker_features(features)
+  }
+  groups <- NULL
+  if(is.list(features)) {
+    if(length(features) == 0 ||
+       !all(vapply(features, is.atomic, logical(1)))) {
+      stop(
+        "A list of 'features' must hold the features of each group.",
+        call. = FALSE
+      )
+    }
+    nms <- names(features)
+    if(is.null(nms)) {
+      nms <- rep("", length(features))
+    }
+    nms[is.na(nms) | !nzchar(nms)] <- as.character(
+      which(is.na(nms) | !nzchar(nms))
+    )
+    groups <- factor(
+      rep(nms, lengths(features)),
+      levels = unique(nms[lengths(features) > 0])
+    )
+    features <- unlist(
+      lapply(features, function(z) if(is.factor(z)) as.character(z) else z),
+      use.names = FALSE
+    )
+  }
+  out <- .cell_feature_index(features, src, nf)
+  out$groups <- groups
+  out
+}
+
+#' The indices and names of features (names, indices or a logical vector)
+#' @noRd
+.cell_feature_index <- function(features,
+                                src,
+                                nf) {
   if(is.factor(features)) {
     features <- as.character(features)
   }
@@ -459,7 +504,7 @@ heat_map_downsample <- function(groups,
       call. = FALSE
     )
   }
-  list(index = index, names = names)
+  list(index = index, names = unname(names))
 }
 
 #' The dimensions of the values of a source of cells
@@ -716,9 +761,11 @@ heat_map_downsample <- function(groups,
   if(!is.null(group_max)) {
     group_max <- .check_cell_count(group_max, "group_max")
   }
-  # THE AXIS THE CELLS ARE ALONG
+  # THE AXES THE CELLS AND FEATURES ARE ALONG
   ax <- if(swap) "x" else "y"
+  fx <- if(swap) "y" else "x"
   name <- function(z) paste0(z, "_", ax)
+  fname <- function(z) paste0(z, "_", fx)
   group_by <- arg("group_by")
   annotation_by <- arg("annotation_by")
   for(z in c("tree_cut", "tree_kmeans")) {
@@ -747,6 +794,17 @@ heat_map_downsample <- function(groups,
     src,
     drop = c(groups$cols, annots$cols)
   )
+  if(!is.null(feat$groups)) {
+    for(z in c("tree_cut", "tree_kmeans")) {
+      if(supplied(fname(z))) {
+        stop(
+          "Supply either groups of 'features' or '", fname(z), "' to group ",
+          "the features.",
+          call. = FALSE
+        )
+      }
+    }
+  }
   keep <- seq_len(n)
   g <- NULL
   if(!is.null(groups)) {
@@ -794,6 +852,12 @@ heat_map_downsample <- function(groups,
     set[[name("tree_cut")]] <- factor(g[keep])
     if(!name("tree_label") %in% names(args)) {
       set[[name("tree_label")]] <- TRUE
+    }
+  }
+  if(!is.null(feat$groups)) {
+    set[[fname("tree_cut")]] <- droplevels(feat$groups)
+    if(!fname("tree_label") %in% names(args)) {
+      set[[fname("tree_label")]] <- TRUE
     }
   }
   if(!is.null(annots)) {
@@ -866,4 +930,136 @@ heat_map_downsample <- function(groups,
       function(nm) !is.null(args[[nm]]) && !isFALSE(args[[nm]]),
       logical(1)
     ))
+}
+
+#' Sums, counts, means and proportions detected of each feature in each group
+#' of cells
+#'
+#' In compiled code, from the non-zero values of sparse data and the values
+#' of dense data, with the sums added in the order of the cells (as
+#' \code{heat_map_summarise()} adds them, so the means and proportions are
+#' the same).
+#'
+#' @param groups the group of each cell (NA for none).
+#' @param dense whether to keep the dense values (for dense data), for
+#'   further work on the same cells.
+#'
+#' @return a list with \code{sum}, \code{n} (values not missing),
+#'   \code{detected_n} (values above \code{threshold}), \code{mean} and
+#'   \code{detected} (proportion detected), each a matrix with one row per
+#'   group and one column per feature, \code{labels} (the groups),
+#'   \code{codes} (the group of each cell as an integer), \code{feat} (the
+#'   features, numeric ones only), and for dense data with \code{dense} the
+#'   dense values (\code{values}: the matrix of the data, or of the cells in
+#'   a group), their features (\code{value_sel}), orientation
+#'   (\code{value_by_column}) and the group of each of their cells
+#'   (\code{value_codes}).
+#'
+#' @noRd
+.cell_summaries <- function(src,
+                            feat,
+                            groups,
+                            threshold = 0,
+                            dense = FALSE) {
+  if(!is.numeric(threshold) || length(threshold) != 1 || is.na(threshold)) {
+    stop("'threshold' must be a single number.", call. = FALSE)
+  }
+  if(!is.null(dim(groups)) || length(groups) != src$n) {
+    stop(
+      "'group_by' must assign each of the ", src$n, " cells of 'x' to a ",
+      "group.",
+      call. = FALSE
+    )
+  }
+  f <- factor(groups)
+  if(nlevels(f) == 0) {
+    stop("No cells have a group in 'group_by'.", call. = FALSE)
+  }
+  codes <- as.integer(f)
+  labels <- levels(f)
+  out <- list(labels = labels, codes = codes)
+  if(inherits(src$values, "dgCMatrix")) {
+    v <- src$values
+    dims <- methods::slot(v, "Dim")
+    r <- sparse_group_sums_cpp(
+      methods::slot(v, "i"),
+      methods::slot(v, "p"),
+      methods::slot(v, "x"),
+      dims[1],
+      dims[2],
+      as.integer(feat$index),
+      src$by_column,
+      codes,
+      length(labels),
+      as.numeric(threshold),
+      .threads()
+    )
+    sums <- list(sum = r$sum, n = r$n, detected_n = r$detected)
+  } else {
+    # A DOUBLE MATRIX AS IT IS, OTHER VALUES AS A DENSE MATRIX OF THE CELLS IN
+    # A GROUP
+    v <- src$values
+    sel <- feat$index
+    by_column <- src$by_column
+    value_codes <- codes
+    if(!(is.matrix(v) && is.double(v) && !is.object(v))) {
+      keep <- which(!is.na(f))
+      v <- .cell_dense(src, sel, if(length(keep) < src$n) keep, feat$names)
+      # NUMERIC FEATURES ONLY
+      if(is.data.frame(v)) {
+        num <- .numeric_cols(v)
+        if(length(num) == 0) {
+          stop("'x' has no numeric features.", call. = FALSE)
+        }
+        if(length(num) < ncol(v)) {
+          message(
+            "Non-numeric features are not summarised: ",
+            paste(names(v)[-num], collapse = ", "),
+            "."
+          )
+          feat <- list(
+            index = feat$index[num],
+            names = feat$names[num],
+            groups = if(!is.null(feat$groups)) feat$groups[num]
+          )
+        }
+        v <- data.matrix(v[num])
+      }
+      if(!is.double(v)) {
+        storage.mode(v) <- "double"
+      }
+      sel <- seq_len(ncol(v))
+      by_column <- FALSE
+      value_codes <- codes[keep]
+    }
+    r <- dense_group_sums_cpp(
+      v,
+      as.integer(sel),
+      by_column,
+      value_codes,
+      length(labels),
+      as.numeric(threshold),
+      .threads()
+    )
+    sums <- list(sum = r$sum, n = r$n, detected_n = r$detected)
+    if(dense) {
+      out$values <- v
+      out$value_sel <- as.integer(sel)
+      out$value_by_column <- by_column
+      out$value_codes <- value_codes
+    }
+  }
+  sums$mean <- sums$sum / sums$n
+  sums$detected <- sums$detected_n / sums$n
+  sums$mean[sums$n == 0] <- NA
+  sums$detected[sums$n == 0] <- NA
+  sums <- lapply(
+    sums,
+    function(z) {
+      z <- unname(z)
+      dimnames(z) <- list(labels, feat$names)
+      z
+    }
+  )
+  c(sums, out, list(feat = feat))
 }

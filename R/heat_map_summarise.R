@@ -141,6 +141,15 @@ heat_map_summarise <- function(x,
         (fun == "median" && is.null(group_x)))) {
       return(.sparse_summarise(src, feat, groups, group_x, fun, threshold))
     }
+    # SUMS AND COUNTS OF DENSE CELLS IN COMPILED CODE
+    if(is.character(fun) && length(fun) == 1 &&
+       fun %in% c("mean", "sum", "n", "detected") &&
+       is.null(group_x) && !is.null(groups)) {
+      s <- .cell_summaries(src, feat, groups, threshold)
+      out <- s[[fun]]
+      out[s$n == 0] <- NA
+      return(out)
+    }
     # THE CELLS IN A GROUP AS A DENSE MATRIX
     keep <- if(!is.null(groups) && anyNA(groups)) which(!is.na(groups))
     x <- .cell_dense(src, feat$index, keep, feat$names)

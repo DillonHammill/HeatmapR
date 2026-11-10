@@ -155,6 +155,7 @@ heat_map(
   legend_col_scale_size = 1,
   legend_col_breaks = NULL,
   legend_col_density = FALSE,
+  legend_size_format = NULL,
   legend_title = NULL,
   legend_title_text_font = 2,
   legend_title_text_size = 1,
@@ -969,6 +970,11 @@ the numeric values (a kernel density) is drawn as a trace over the colour
 legend, so that you can see which colours most cells take and how many
 values sit near the limits of the scale (e.g. with
 \code{cell_col_scale_limits = "robust"}), set to FALSE by default.}
+
+\item{legend_size_format}{the text of the size legend: \code{NULL} (the
+default) for its values, \code{"percent"} for values between 0 and 1 (e.g.
+the proportion of cells detected) shown as percentages, or a function
+taking the values and returning their labels.}
 
 \item{legend_title}{a vector of up to three elements containing text to be
 displayed above the cell colour, size and levels legends respectively.}

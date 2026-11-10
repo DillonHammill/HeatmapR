@@ -19,6 +19,9 @@
 
 #include <cpp11.hpp>
 #include <algorithm>
+#include <functional>
+#include <queue>
+#include <utility>
 #include <cmath>
 #include <vector>
 
@@ -147,34 +150,45 @@ double median_with_zeros(double* v, size_t m, double zeros) {
 }
 
 // Every non-zero value v of the chosen features f in [lo, hi) of a cell in
-// a group g: visit(f, g, v). With cells_by_column, at holds each row's
-// feature (-1 for rows not chosen); otherwise feat holds each feature's
+// a group g: visit(f, g, v), from up to `threads` threads (each feature on
+// one thread, its values in the order of the cells). With cells_by_column
+// the chosen features (rows) must be in increasing order and at holds each
+// row's feature (-1 for rows not chosen), so that each thread reads only the
+// rows of its features in each column; otherwise feat holds each feature's
 // column.
 template <class Visit>
 void scan_groups(const Csc& m, bool cells_by_column, const std::vector<int>& grp,
                  const std::vector<int>& at, const std::vector<int>& feat, size_t lo, size_t hi,
-                 Visit visit) {
+                 int threads, Visit visit) {
+  if (hi <= lo) return;
+  int t = static_cast<double>(m.nnz) >= 1048576.0 ? threads : 1;
   if (cells_by_column) {
-    for (int c = 0; c < m.ncol; ++c) {
-      if (c % 4096 == 0) par::poll();
-      int g = grp[c];
-      if (g < 0) continue;
-      for (int k = m.p[c]; k < m.p[c + 1]; ++k) {
-        int f = at[m.i[k]];
-        if (f >= 0 && static_cast<size_t>(f) >= lo && static_cast<size_t>(f) < hi) {
-          visit(static_cast<size_t>(f), static_cast<size_t>(g), m.x[k]);
+    t = std::max(1, static_cast<int>(std::min<size_t>(t, hi - lo)));
+    par::parallel_for(static_cast<size_t>(t), t, [&](size_t b) {
+      size_t plo = lo + (hi - lo) * b / t, phi = lo + (hi - lo) * (b + 1) / t;
+      if (phi <= plo) return;
+      const int rlo = feat[plo], rhi = feat[phi - 1] + 1;
+      for (int c = 0; c < m.ncol; ++c) {
+        if (c % 4096 == 0) par::poll();
+        int g = grp[c];
+        if (g < 0) continue;
+        const int* first = m.i + m.p[c];
+        const int* last = m.i + m.p[c + 1];
+        for (const int* r = std::lower_bound(first, last, rlo); r < last && *r < rhi; ++r) {
+          int f = at[*r];
+          if (f >= 0) visit(static_cast<size_t>(f), static_cast<size_t>(g), m.x[r - m.i]);
         }
       }
-    }
+    });
   } else {
-    for (size_t f = lo; f < hi; ++f) {
-      par::poll();
+    par::parallel_for(hi - lo, t, [&](size_t ff) {
+      size_t f = lo + ff;
       int c = feat[f];
       for (int k = m.p[c]; k < m.p[c + 1]; ++k) {
         int g = grp[m.i[k]];
         if (g >= 0) visit(f, static_cast<size_t>(g), m.x[k]);
       }
-    }
+    });
   }
 }
 
@@ -328,44 +342,46 @@ cpp11::list sparse_group_sums_cpp(cpp11::integers i, cpp11::integers p, cpp11::d
   return cpp11::writable::list({"sum"_nm = sum, "n"_nm = n, "detected"_nm = det});
 }
 
-// The median of each feature sel (1-based, distinct) of a sparse matrix of
-// cells (see sparse_dense_cpp()) in each group 1..n_groups of the cells
-// (group: one per cell, NA for none), leaving out missing values: an
-// n_groups x length(sel) matrix, NA for groups without values.
-[[cpp11::register]]
-cpp11::doubles_matrix<> sparse_group_medians_cpp(cpp11::integers i, cpp11::integers p,
-                                                 cpp11::doubles x, int nrow, int ncol,
-                                                 cpp11::integers sel, bool cells_by_column,
-                                                 cpp11::integers group, int n_groups,
-                                                 int threads) {
-  Csc m(i, p, x, nrow, ncol);
-  const int nfeat = cells_by_column ? nrow : ncol;
-  const int ncells = cells_by_column ? ncol : nrow;
-  std::vector<int> feat = features(sel, nfeat);
-  std::vector<int> grp = cell_groups(group, ncells, n_groups);
+namespace {
+
+// The non-zero values of each chosen feature in each group of cells, for
+// per-feature work on threads: fn(f, values, offsets, missing, zeros) for
+// every feature f, where values[offsets[g]] .. values[offsets[g + 1] - 1]
+// are the values (not missing) of the cells of group g in the order of the
+// cells, missing[g] their number of missing values and zeros[g] their
+// number of zeros not stored. Values are gathered into one buffer for blocks
+// of features whose values fit in it; fn may reorder a feature's values.
+template <class PerFeature>
+void grouped_values(const Csc& m, bool cells_by_column, const std::vector<int>& grp,
+                    const std::vector<int>& feat, size_t G, int threads, PerFeature fn) {
   const size_t nf = feat.size();
-  const size_t G = static_cast<size_t>(n_groups);
+  const int ncells = cells_by_column ? m.ncol : m.nrow;
   std::vector<double> size(G, 0.0);
   for (int c = 0; c < ncells; ++c) {
     if (grp[c] >= 0) size[grp[c]] += 1;
   }
-  cpp11::writable::doubles_matrix<> out(n_groups, static_cast<int>(nf));
-  double* o = REAL(out.data());
-  std::fill(o, o + G * nf, NA_REAL);
-  // THE NON-ZERO VALUES OF EACH FEATURE IN EACH GROUP, SORTED INTO ONE
-  // BUFFER BY (FEATURE, GROUP), AND THE NUMBER MISSING - FOR BLOCKS OF
-  // FEATURES WHOSE VALUES FIT IN THE BUFFER
+  // (WITH THE CELLS AS COLUMNS, THE FEATURES IN THE ORDER OF THEIR ROWS:
+  // EACH BLOCK READS ONLY ITS OWN ROWS)
+  std::vector<size_t> order(nf);
+  for (size_t f = 0; f < nf; ++f) order[f] = f;
+  if (cells_by_column) {
+    std::sort(order.begin(), order.end(), [&](size_t a, size_t b) { return feat[a] < feat[b]; });
+  }
+  std::vector<int> sorted(nf);
+  for (size_t q = 0; q < nf; ++q) sorted[q] = feat[order[q]];
+  std::vector<int> at(cells_by_column ? m.nrow : 0, -1);
+  if (cells_by_column) {
+    for (size_t q = 0; q < nf; ++q) at[sorted[q]] = static_cast<int>(q);
+  }
+  // THE NUMBER OF VALUES AND MISSING VALUES OF EACH (FEATURE, GROUP), BY
+  // POSITION IN THAT ORDER
   std::vector<size_t> count(G * nf, 0);
   std::vector<double> missing(G * nf, 0.0);
-  std::vector<int> at(cells_by_column ? nrow : 0, -1);
-  for (size_t f = 0; f < nf; ++f) {
-    if (cells_by_column) at[feat[f]] = static_cast<int>(f);
-  }
-  scan_groups(m, cells_by_column, grp, at, feat, 0, nf, [&](size_t f, size_t g, double v) {
+  scan_groups(m, cells_by_column, grp, at, sorted, 0, nf, threads, [&](size_t q, size_t g, double v) {
     if (std::isnan(v)) {
-      missing[g + f * G] += 1;
+      missing[g + q * G] += 1;
     } else {
-      count[g + f * G] += 1;
+      count[g + q * G] += 1;
     }
   });
   const size_t cap = static_cast<size_t>(1) << 24;
@@ -387,20 +403,240 @@ cpp11::doubles_matrix<> sparse_group_medians_cpp(cpp11::integers i, cpp11::integ
     for (size_t a = lo * G; a < hi * G; ++a) start[a + 1] = start[a] + count[a];
     buf.assign(total, 0.0);
     fill.assign(start.begin() + lo * G, start.begin() + hi * G);
-    scan_groups(m, cells_by_column, grp, at, feat, lo, hi, [&](size_t f, size_t g, double v) {
-      if (!std::isnan(v)) buf[fill[g + f * G - lo * G]++] = v;
+    scan_groups(m, cells_by_column, grp, at, sorted, lo, hi, threads, [&](size_t q, size_t g, double v) {
+      if (!std::isnan(v)) buf[fill[g + q * G - lo * G]++] = v;
     });
     // EACH FEATURE OF THE BLOCK ON ITS OWN THREAD
     int t = total >= 262144 ? threads : 1;
-    par::parallel_for(hi - lo, t, [&](size_t ff) {
-      size_t f = lo + ff;
+    par::parallel_for(hi - lo, t, [&](size_t qq) {
+      size_t q = lo + qq;
+      std::vector<double> zeros(G);
       for (size_t g = 0; g < G; ++g) {
-        size_t a = g + f * G;
-        double zeros = size[g] - missing[a] - static_cast<double>(count[a]);
-        o[a] = median_with_zeros(buf.data() + start[a], count[a], zeros);
+        size_t a = g + q * G;
+        zeros[g] = size[g] - missing[a] - static_cast<double>(count[a]);
       }
+      fn(order[q], buf.data(), start.data() + q * G, missing.data() + q * G, zeros.data());
     });
     lo = hi;
   }
+}
+
+// The AUC of a feature in each of G groups of cells against the other
+// cells: the Wilcoxon rank-sum statistic of the group (the sum of its
+// cells' ranks among all the cells, ties given their mean rank, less its
+// smallest possible value) over the product of the numbers of cells in and
+// out of the group - the chance that a cell of the group has the larger
+// value, ties counting half. v[off[g]] .. v[off[g + 1] - 1] are the values of
+// group g (sorted on return) and zeros[g] its zeros not among them; out[g] is
+// NA for a group without cells or with every cell.
+void group_auc(double* v, const size_t* off, const double* zeros, size_t G, double* out) {
+  std::vector<double> rank_sum(G, 0.0), n(G, 0.0), run(G, 0.0);
+  std::vector<size_t> pos(G), touched;
+  touched.reserve(G);
+  double Z = 0.0, N = 0.0;
+  // EACH GROUP'S VALUES IN ORDER, THEN MERGED ONE VALUE (ALL ITS TIES) AT A
+  // TIME - FEW STEPS FOR THE FEW DISTINCT VALUES OF COUNTS
+  typedef std::pair<double, size_t> Head;
+  std::priority_queue<Head, std::vector<Head>, std::greater<Head> > heads;
+  for (size_t g = 0; g < G; ++g) {
+    std::sort(v + off[g], v + off[g + 1]);
+    pos[g] = off[g];
+    n[g] = static_cast<double>(off[g + 1] - off[g]) + zeros[g];
+    Z += zeros[g];
+    N += n[g];
+    if (off[g + 1] > off[g]) heads.push(Head(v[off[g]], g));
+  }
+  double before = 0.0;
+  bool zeros_ranked = Z == 0;
+  auto rank_zeros = [&](double r) {
+    for (size_t g = 0; g < G; ++g) rank_sum[g] += zeros[g] * r;
+  };
+  while (!heads.empty()) {
+    double value = heads.top().first;
+    double ties = 0.0;
+    touched.clear();
+    while (!heads.empty() && heads.top().first == value) {
+      size_t g = heads.top().second;
+      heads.pop();
+      size_t start = pos[g];
+      while (pos[g] < off[g + 1] && v[pos[g]] == value) ++pos[g];
+      run[g] = static_cast<double>(pos[g] - start);
+      ties += run[g];
+      touched.push_back(g);
+      if (pos[g] < off[g + 1]) heads.push(Head(v[pos[g]], g));
+    }
+    // THE ZEROS NOT AMONG THE VALUES - TIED WITH ANY ZEROS THAT ARE
+    if (!zeros_ranked && value >= 0) {
+      zeros_ranked = true;
+      if (value == 0) {
+        ties += Z;
+        double r = before + (ties + 1) / 2;
+        rank_zeros(r);
+        for (size_t g : touched) rank_sum[g] += run[g] * r;
+        before += ties;
+        continue;
+      }
+      rank_zeros(before + (Z + 1) / 2);
+      before += Z;
+    }
+    double r = before + (ties + 1) / 2;
+    for (size_t g : touched) rank_sum[g] += run[g] * r;
+    before += ties;
+  }
+  if (!zeros_ranked) rank_zeros(before + (Z + 1) / 2);
+  for (size_t g = 0; g < G; ++g) {
+    double n1 = n[g], n2 = N - n[g];
+    out[g] = n1 > 0 && n2 > 0 ? (rank_sum[g] - n1 * (n1 + 1) / 2) / (n1 * n2) : NA_REAL;
+  }
+}
+
+}  // namespace
+
+// The median of each feature sel (1-based, distinct) of a sparse matrix of
+// cells (see sparse_dense_cpp()) in each group 1..n_groups of the cells
+// (group: one per cell, NA for none), leaving out missing values: an
+// n_groups x length(sel) matrix, NA for groups without values.
+[[cpp11::register]]
+cpp11::doubles_matrix<> sparse_group_medians_cpp(cpp11::integers i, cpp11::integers p,
+                                                 cpp11::doubles x, int nrow, int ncol,
+                                                 cpp11::integers sel, bool cells_by_column,
+                                                 cpp11::integers group, int n_groups,
+                                                 int threads) {
+  Csc m(i, p, x, nrow, ncol);
+  const int nfeat = cells_by_column ? nrow : ncol;
+  const int ncells = cells_by_column ? ncol : nrow;
+  std::vector<int> feat = features(sel, nfeat);
+  std::vector<int> grp = cell_groups(group, ncells, n_groups);
+  const size_t nf = feat.size();
+  const size_t G = static_cast<size_t>(n_groups);
+  cpp11::writable::doubles_matrix<> out(n_groups, static_cast<int>(nf));
+  double* o = REAL(out.data());
+  grouped_values(m, cells_by_column, grp, feat, G, threads,
+                 [&](size_t f, double* v, const size_t* off, const double*, const double* zeros) {
+                   for (size_t g = 0; g < G; ++g) {
+                     o[g + f * G] = median_with_zeros(v + off[g], off[g + 1] - off[g], zeros[g]);
+                   }
+                 });
+  return out;
+}
+
+// The AUC (see group_auc()) of each feature sel (1-based, distinct) of a
+// sparse matrix of cells (see sparse_dense_cpp()) in each group 1..n_groups
+// of the cells (group: one per cell, NA for none) against the other cells
+// with a group, leaving out missing values: an n_groups x length(sel)
+// matrix.
+[[cpp11::register]]
+cpp11::doubles_matrix<> sparse_group_auc_cpp(cpp11::integers i, cpp11::integers p,
+                                             cpp11::doubles x, int nrow, int ncol,
+                                             cpp11::integers sel, bool cells_by_column,
+                                             cpp11::integers group, int n_groups, int threads) {
+  Csc m(i, p, x, nrow, ncol);
+  const int nfeat = cells_by_column ? nrow : ncol;
+  const int ncells = cells_by_column ? ncol : nrow;
+  std::vector<int> feat = features(sel, nfeat);
+  std::vector<int> grp = cell_groups(group, ncells, n_groups);
+  const size_t nf = feat.size();
+  const size_t G = static_cast<size_t>(n_groups);
+  cpp11::writable::doubles_matrix<> out(n_groups, static_cast<int>(nf));
+  double* o = REAL(out.data());
+  grouped_values(m, cells_by_column, grp, feat, G, threads,
+                 [&](size_t f, double* v, const size_t* off, const double*, const double* zeros) {
+                   group_auc(v, off, zeros, G, o + f * G);
+                 });
+  return out;
+}
+
+// The features sel (1-based, distinct) of a dense matrix of cells: with
+// cells_by_column the features are its rows and the cells its columns,
+// otherwise the cells are its rows. Checked; the value of cell c, feature f
+// (0-based) at at(c, f).
+struct Dense {
+  const double* x;
+  size_t nrow;
+  size_t ncol;
+  bool by_column;
+  size_t ncells;
+  std::vector<int> feat;
+
+  Dense(cpp11::doubles_matrix<> xx, cpp11::integers sel, bool cells_by_column)
+      : x(REAL(xx.data())), nrow(xx.nrow()), ncol(xx.ncol()), by_column(cells_by_column) {
+    ncells = by_column ? ncol : nrow;
+    feat = features(sel, static_cast<int>(by_column ? nrow : ncol));
+  }
+  double at(size_t c, size_t f) const {
+    size_t j = static_cast<size_t>(feat[f]);
+    return by_column ? x[j + c * nrow] : x[c + j * nrow];
+  }
+};
+
+// For the features sel of a dense matrix of cells (see Dense) and the
+// groups 1..n_groups of its cells (group: one per cell, NA for none): "sum"
+// (of the values that aren't missing, added in the order of the cells, as
+// rowsum() adds them), "n" (the values that aren't missing) and "detected"
+// (the values above threshold), each an n_groups x length(sel) matrix.
+[[cpp11::register]]
+cpp11::list dense_group_sums_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel,
+                                 bool cells_by_column, cpp11::integers group, int n_groups,
+                                 double threshold, int threads) {
+  Dense d(x, sel, cells_by_column);
+  std::vector<int> grp = cell_groups(group, static_cast<int>(d.ncells), n_groups);
+  const size_t nf = d.feat.size(), G = static_cast<size_t>(n_groups);
+  cpp11::writable::doubles_matrix<> sum(n_groups, static_cast<int>(nf)),
+      n(n_groups, static_cast<int>(nf)), det(n_groups, static_cast<int>(nf));
+  double* s = REAL(sum.data());
+  double* nn = REAL(n.data());
+  double* dd = REAL(det.data());
+  std::fill(s, s + G * nf, 0.0);
+  std::fill(nn, nn + G * nf, 0.0);
+  std::fill(dd, dd + G * nf, 0.0);
+  double work = static_cast<double>(d.ncells) * nf;
+  par::parallel_for(nf, work >= 262144.0 ? threads : 1, [&](size_t f) {
+    double* sf = s + f * G;
+    double* nf_ = nn + f * G;
+    double* df = dd + f * G;
+    for (size_t c = 0; c < d.ncells; ++c) {
+      int g = grp[c];
+      if (g < 0) continue;
+      double v = d.at(c, f);
+      if (std::isnan(v)) continue;
+      sf[g] += v;
+      nf_[g] += 1;
+      if (v > threshold) df[g] += 1;
+    }
+  });
+  using namespace cpp11::literals;
+  return cpp11::writable::list({"sum"_nm = sum, "n"_nm = n, "detected"_nm = det});
+}
+
+// The AUC (see group_auc()) of each feature sel of a dense matrix of cells
+// (see Dense) in each group 1..n_groups of its cells (group: one per cell, NA
+// for none) against the other cells with a group, leaving out missing
+// values: an n_groups x length(sel) matrix.
+[[cpp11::register]]
+cpp11::doubles_matrix<> dense_group_auc_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel,
+                                            bool cells_by_column, cpp11::integers group,
+                                            int n_groups, int threads) {
+  Dense d(x, sel, cells_by_column);
+  std::vector<int> grp = cell_groups(group, static_cast<int>(d.ncells), n_groups);
+  const size_t nf = d.feat.size(), G = static_cast<size_t>(n_groups);
+  cpp11::writable::doubles_matrix<> out(n_groups, static_cast<int>(nf));
+  double* o = REAL(out.data());
+  std::vector<double> zeros(G, 0.0);
+  double work = static_cast<double>(d.ncells) * nf;
+  par::parallel_for(nf, work >= 262144.0 ? threads : 1, [&](size_t f) {
+    // THE VALUES OF EACH GROUP, IN THE ORDER OF THE CELLS
+    std::vector<size_t> off(G + 1, 0);
+    for (size_t c = 0; c < d.ncells; ++c) {
+      if (grp[c] >= 0 && !std::isnan(d.at(c, f))) ++off[grp[c] + 1];
+    }
+    for (size_t g = 0; g < G; ++g) off[g + 1] += off[g];
+    std::vector<double> v(off[G]);
+    std::vector<size_t> fill(off.begin(), off.end() - 1);
+    for (size_t c = 0; c < d.ncells; ++c) {
+      double value = d.at(c, f);
+      if (grp[c] >= 0 && !std::isnan(value)) v[fill[grp[c]]++] = value;
+    }
+    group_auc(v.data(), off.data(), zeros.data(), G, o + f * G);
+  });
   return out;
 }

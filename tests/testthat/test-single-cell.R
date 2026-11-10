@@ -14,39 +14,6 @@ cell_frame <- function(n = c(200, 30, 5)) {
   )
 }
 
-# Sparse-looking dense data with negative, infinite and missing values, and
-# groups of each row (some missing)
-sparse_case <- function(seed,
-                        nrow = 40,
-                        ncol = 25) {
-  set.seed(seed)
-  d <- matrix(0, nrow, ncol)
-  k <- sample(length(d), floor(length(d) * runif(1, 0.05, 0.9)))
-  d[k] <- sample(
-    c(-2, -1, -0.5, 0.25, 0.1, 0.7, 1, 1, 3, Inf, -Inf, NA, NaN, 1e308),
-    length(k),
-    replace = TRUE
-  )
-  dimnames(d) <- list(paste0("cell", seq_len(nrow)), paste0("g", seq_len(ncol)))
-  g <- sample(c("a", "b", "c", "d", NA), nrow, replace = TRUE)
-  g[1] <- "a"
-  list(d = d, g = g)
-}
-
-# The source of cells of a sparse matrix with the cells as its columns
-by_column_source <- function(m) {
-  list(
-    values = .as_dgc(Matrix::t(m)),
-    by_column = TRUE,
-    features = colnames(m),
-    aliases = NULL,
-    meta = NULL,
-    columns = FALSE,
-    n = nrow(m),
-    cells = rownames(m)
-  )
-}
-
 test_that("heat_map_downsample() keeps at most n cells per group", {
   g <- rep(c("T", "B", "NK"), c(300, 40, 3))
   g[5] <- NA
@@ -479,6 +446,12 @@ test_that("SingleCellExperiment objects are read by assay, features and metadata
     heat_map_summarise(dense, group_y = sce$cluster, fun = "median")
   )
   expect_error(heat_map_summarise(sce, group_by = "cluster", assay = "x"), "\"counts\", \"logcounts\"")
+  # Names of a vector of features (e.g. from unlist()) don't name the columns
+  named <- c(first = "ENSG2", second = "ENSG9")
+  expect_identical(
+    heat_map_summarise(sce, features = named, group_by = "cluster"),
+    heat_map_summarise(dense[, c("ENSG2", "ENSG9")], group_y = sce$cluster)
+  )
   # Dense assays and the "exprs" assay of cytometry experiments
   ex <- SummarizedExperiment::SummarizedExperiment(
     assays = list(exprs = as.matrix(logc)),

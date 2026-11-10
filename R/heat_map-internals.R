@@ -761,6 +761,33 @@
   labels
 }
 
+#' Text of the size legend for its values (see legend_size_format in
+#' heat_map())
+#' @noRd
+.legend_size_text <- function(values,
+                              format = NULL) {
+  if(is.null(format) || length(values) == 0) {
+    return(values)
+  }
+  if(identical(format, "percent")) {
+    return(paste0(signif(100 * values, 3), "%"))
+  }
+  if(!is.function(format)) {
+    stop(
+      "'legend_size_format' must be NULL, \"percent\" or a function.",
+      call. = FALSE
+    )
+  }
+  text <- format(values)
+  if(length(text) != length(values)) {
+    stop(
+      "'legend_size_format' must return one label for each value.",
+      call. = FALSE
+    )
+  }
+  text
+}
+
 #' Size of each cluster between consecutive splits (cell units)
 #' @noRd
 .split_spans <- function(splits) {
