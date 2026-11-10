@@ -527,7 +527,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 5,000 simulated cells by 20 markers drawn as a raster image, with the markers clustered by a dendrogram and the cells cut into three clusters labelled A, B and C: A is high in markers 12 to 20, B in markers 1 to 8 and C in neither."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-raster.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc5b7688dab3f3050b3f157315f49f95/vignettes/HeatmapR/HeatmapR-raster.png')
 ```
 
 Clustering is the slow part of a large heatmap. It needs the distance between every pair of rows, so exact clustering of 10,000 rows takes about 1.2 seconds on two cores and 400 MB of memory, and four times as much for twice the rows. Rows (or columns) beyond `clust_max`, 5000 by default, are clustered in two stages instead. A sample of 5000 rows is clustered exactly and its dendrogram is split into groups of about 200 rows, every row joins the group whose medoid it is closest to, and each group is clustered on its own beneath the sample's dendrogram. The sample is drawn with a fixed seed, so the dendrogram is the same each time. The dendrogram shows the structure of the data down to the groups and within each group, and 100,000 rows take about half a second. `clust_max = Inf` always clusters exactly, and `heat_map_clust()` takes the same limit as `max`. Branch support is only computed for up to `clust_max` rows or columns, and optimal leaf ordering (`tree_order_y = "olo"`) is exact for up to 4000 rows (0.3 seconds) and orders blocks of larger dendrograms. Distances, linkage, cuts, k-means and leaf ordering run in compiled C++ code.
@@ -960,7 +960,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 20 simulated genes across 24 samples on a blue-white-red z-score scale, with the samples split into labelled Control, Drug_A and Drug_B groups, coloured Treatment and Sex annotation tracks above the columns with their own legends, and the genes clustered by a dendrogram."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-annotations.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc5b7688dab3f3050b3f157315f49f95/vignettes/HeatmapR/HeatmapR-annotations.png')
 ```
 
 ### 4.2 Box Plots and Violins
@@ -1606,7 +1606,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 40 simulated genes across 24 samples, with the samples split into labelled Control, Drug_A and Drug_B groups that are each clustered by their own dendrogram under a shared root, and the genes clustered so that those raised in the Drug_A samples sit together at the bottom."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-groups.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc5b7688dab3f3050b3f157315f49f95/vignettes/HeatmapR/HeatmapR-groups.png')
 ```
 
 A dendrogram supplied as an `hclust` or `dist` object is kept only when the clusters are contiguous in its order, and is dropped with a warning otherwise.
