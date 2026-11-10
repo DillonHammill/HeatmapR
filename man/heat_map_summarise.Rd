@@ -12,7 +12,13 @@ heat_map_summarise(
   threshold = 0,
   features = NULL,
   assay = NULL,
-  group_by = NULL
+  group_by = NULL,
+  transform = NULL,
+  cofactor = 5,
+  scale = FALSE,
+  q = 0.01,
+  scale_when = "last",
+  stack_by = NULL
 )
 }
 \arguments{
@@ -59,13 +65,57 @@ default for every feature.}
 \item{group_by}{the group of each cell of single-cell data: the name of a
 column of the cells' metadata, or a vector with the group of each cell
 (as \code{group_y}); see \code{\link{heat_map}}. Each group becomes
-one row of the result.}
+one row of the result. Several column names group the cells by their
+combinations, e.g. \code{c("cluster", "sample")} for the medians of each
+cluster in each sample, in rows named \code{"cluster / sample"} and
+ordered by cluster, then sample.}
+
+\item{transform}{\code{"asinh"} to transform the values of the cells with
+the inverse hyperbolic sine of each value divided by \code{cofactor}
+before summarising them (the usual transform of cytometry intensities),
+or \code{NULL} (default) to summarise the values as they are. The zeros
+of sparse data stay zeros, so they are transformed without a dense copy.}
+
+\item{cofactor}{the cofactor of \code{transform = "asinh"}: one number (5
+by default, as for mass cytometry; about 150 is common for flow
+cytometry) or one per feature, named by feature.}
+
+\item{scale}{the scaling of each feature (column): \code{FALSE} (default)
+for none, or a method of \code{\link{heat_map_scale}}:
+\code{"quantile"} (0 to 1 between the \code{q} and \code{1 - q}
+quantiles, clipped, as CATALYST scales expression), \code{"range"},
+\code{"zscore"} or \code{"mean"}.}
+
+\item{q}{the quantile of \code{scale = "quantile"}, set to 0.01 by
+default.}
+
+\item{scale_when}{\code{"last"} (default) to scale the summaries of the
+groups, or \code{"first"} to scale the cells before summarising them, as
+CATALYST's \code{scale = "last"} and \code{"first"} do. Scaling sparse
+data first reads the chosen features as a dense matrix.}
+
+\item{stack_by}{the part of each cell for stacked bars beside the
+summaries (e.g. its condition or sample): the name of a column of the
+cells' metadata, or a vector with the part of each cell. The number of
+cells of each group in each part is kept in the \code{"stack"} attribute
+of the result, which \code{heat_map(bar_values_y = "n", bar_type_y =
+  "stack")} draws. Needs \code{group_by}.}
 }
 \value{
 a numeric matrix with one column per group of \code{group_x} (or
 the columns of \code{x}) and one row per group of \code{group_y} (or the
-rows of \code{x}), or a matrix of lists for \code{fun = "values"}. Groups are in the order of their factor levels (sorted
-for other vectors). Groups without any values are \code{NA}.
+rows of \code{x}), or a matrix of lists for \code{fun = "values"}.
+Groups are in the order of their factor levels (sorted for other
+vectors). Groups without any values are \code{NA}. Summaries of groups
+from \code{group_by} keep three attributes, which \code{heat_map()}
+reads: \code{"n"}, the number of cells in each group (for
+\code{bar_values_y = "n"}); \code{"stack"} with \code{stack_by}, a
+matrix with the number of cells of each group (row) in each part
+(column); and \code{"groups"}, a data.frame with one row per group
+holding the grouping columns and the other metadata that is the same for
+every cell of the group (e.g. the condition of each sample), which
+\code{heat_map(group_by = , annotation_by = )} can use as the metadata
+of the rows.
 }
 \description{
 \code{heat_map_summarise()} reduces the columns (and/or rows) of a matrix
@@ -107,6 +157,27 @@ cells <- data.frame(
   cluster = rep(c("T cells", "B cells"), c(200, 30))
 )
 heat_map_summarise(cells, group_by = "cluster", fun = "median")
+
+# Cytometry - medians of asinh-transformed intensities, scaled to 0-1
+# between the 1st and 99th percentiles of each marker, with the number of
+# cells of each condition in each cluster as stacked bars
+events <- data.frame(
+  CD3 = rexp(2000, 1 / 300),
+  CD4 = rexp(2000, 1 / 100),
+  CD8 = rexp(2000, 1 / 50),
+  cluster = sample(c("T4", "T8", "B"), 2000, replace = TRUE),
+  condition = sample(c("control", "stimulated"), 2000, replace = TRUE)
+)
+medians <- heat_map_summarise(
+  events,
+  group_by = "cluster",
+  fun = "median",
+  transform = "asinh",
+  cofactor = 5,
+  scale = "quantile",
+  stack_by = "condition"
+)
+heat_map(medians, bar_values_y = "n", bar_type_y = "stack", popup = FALSE)
 
 }
 \seealso{

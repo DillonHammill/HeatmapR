@@ -608,6 +608,42 @@ cpp11::list dense_group_sums_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel,
   return cpp11::writable::list({"sum"_nm = sum, "n"_nm = n, "detected"_nm = det});
 }
 
+// The median of each feature sel of a dense matrix of cells (see Dense) in
+// each group 1..n_groups of its cells (group: one per cell, NA for none),
+// leaving out missing values, as median() finds it: an n_groups x
+// length(sel) matrix, NA for groups without values.
+[[cpp11::register]]
+cpp11::doubles_matrix<> dense_group_medians_cpp(cpp11::doubles_matrix<> x,
+                                                cpp11::integers sel,
+                                                bool cells_by_column,
+                                                cpp11::integers group,
+                                                int n_groups, int threads) {
+  Dense d(x, sel, cells_by_column);
+  std::vector<int> grp = cell_groups(group, static_cast<int>(d.ncells), n_groups);
+  const size_t nf = d.feat.size(), G = static_cast<size_t>(n_groups);
+  cpp11::writable::doubles_matrix<> out(n_groups, static_cast<int>(nf));
+  double* o = REAL(out.data());
+  double work = static_cast<double>(d.ncells) * nf;
+  par::parallel_for(nf, work >= 262144.0 ? threads : 1, [&](size_t f) {
+    // THE VALUES OF EACH GROUP
+    std::vector<size_t> off(G + 1, 0);
+    for (size_t c = 0; c < d.ncells; ++c) {
+      if (grp[c] >= 0 && !std::isnan(d.at(c, f))) ++off[grp[c] + 1];
+    }
+    for (size_t g = 0; g < G; ++g) off[g + 1] += off[g];
+    std::vector<double> v(off[G]);
+    std::vector<size_t> fill(off.begin(), off.end() - 1);
+    for (size_t c = 0; c < d.ncells; ++c) {
+      double value = d.at(c, f);
+      if (grp[c] >= 0 && !std::isnan(value)) v[fill[grp[c]]++] = value;
+    }
+    for (size_t g = 0; g < G; ++g) {
+      o[g + f * G] = median_with_zeros(v.data() + off[g], off[g + 1] - off[g], 0.0);
+    }
+  });
+  return out;
+}
+
 // The AUC (see group_auc()) of each feature sel of a dense matrix of cells
 // (see Dense) in each group 1..n_groups of its cells (group: one per cell, NA
 // for none) against the other cells with a group, leaving out missing

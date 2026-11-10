@@ -124,8 +124,8 @@ parallel_check_cpp <- function(n, threads, fail_at, nested) {
   .Call(`_HeatmapR_parallel_check_cpp`, n, threads, fail_at, nested)
 }
 
-scale_cpp <- function(x, margin, method, threads) {
-  .Call(`_HeatmapR_scale_cpp`, x, margin, method, threads)
+scale_cpp <- function(x, margin, method, q, cofactor, threads) {
+  .Call(`_HeatmapR_scale_cpp`, x, margin, method, q, cofactor, threads)
 }
 
 sparse_dense_cpp <- function(i, p, x, nrow, ncol, sel, cells, cells_by_column, threads) {
@@ -146,6 +146,10 @@ sparse_group_auc_cpp <- function(i, p, x, nrow, ncol, sel, cells_by_column, grou
 
 dense_group_sums_cpp <- function(x, sel, cells_by_column, group, n_groups, threshold, threads) {
   .Call(`_HeatmapR_dense_group_sums_cpp`, x, sel, cells_by_column, group, n_groups, threshold, threads)
+}
+
+dense_group_medians_cpp <- function(x, sel, cells_by_column, group, n_groups, threads) {
+  .Call(`_HeatmapR_dense_group_medians_cpp`, x, sel, cells_by_column, group, n_groups, threads)
 }
 
 dense_group_auc_cpp <- function(x, sel, cells_by_column, group, n_groups, threads) {
