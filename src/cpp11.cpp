@@ -131,6 +131,48 @@ extern "C" SEXP _HeatmapR_parallel_check_cpp(SEXP n, SEXP threads, SEXP fail_at,
     return cpp11::as_sexp(parallel_check_cpp(cpp11::as_cpp<cpp11::decay_t<int>>(n), cpp11::as_cpp<cpp11::decay_t<int>>(threads), cpp11::as_cpp<cpp11::decay_t<int>>(fail_at), cpp11::as_cpp<cpp11::decay_t<bool>>(nested)));
   END_CPP11
 }
+// spectral.cpp
+cpp11::integers spectral_rows_cpp(cpp11::doubles_matrix<> x, int metric, double q, int k, int threads);
+extern "C" SEXP _HeatmapR_spectral_rows_cpp(SEXP x, SEXP metric, SEXP q, SEXP k, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(spectral_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// spectral.cpp
+cpp11::integers refine_rows_cpp(cpp11::doubles_matrix<> x, cpp11::integers order, int metric, double q);
+extern "C" SEXP _HeatmapR_refine_rows_cpp(SEXP x, SEXP order, SEXP metric, SEXP q) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(refine_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(order), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q)));
+  END_CPP11
+}
+// spectral.cpp
+cpp11::integers spectral_dist_cpp(cpp11::doubles d, int n, int k, int threads);
+extern "C" SEXP _HeatmapR_spectral_dist_cpp(SEXP d, SEXP n, SEXP k, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(spectral_dist_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(d), cpp11::as_cpp<cpp11::decay_t<int>>(n), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// spectral.cpp
+cpp11::doubles silhouette_dist_cpp(cpp11::integers merge, cpp11::integers sample, cpp11::doubles d, int K, int threads);
+extern "C" SEXP _HeatmapR_silhouette_dist_cpp(SEXP merge, SEXP sample, SEXP d, SEXP K, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(silhouette_dist_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(merge), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(sample), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(d), cpp11::as_cpp<cpp11::decay_t<int>>(K), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// spectral.cpp
+cpp11::doubles silhouette_rows_cpp(cpp11::integers merge, cpp11::integers sample, cpp11::doubles_matrix<> x, int metric, double q, int K, int threads);
+extern "C" SEXP _HeatmapR_silhouette_rows_cpp(SEXP merge, SEXP sample, SEXP x, SEXP metric, SEXP q, SEXP K, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(silhouette_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(merge), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(sample), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(K), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// spectral.cpp
+cpp11::integers cut_k_cpp(cpp11::integers merge, int k);
+extern "C" SEXP _HeatmapR_cut_k_cpp(SEXP merge, SEXP k) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cut_k_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(merge), cpp11::as_cpp<cpp11::decay_t<int>>(k)));
+  END_CPP11
+}
 // tree.cpp
 cpp11::integers merge_sizes_cpp(cpp11::integers merge);
 extern "C" SEXP _HeatmapR_merge_sizes_cpp(SEXP merge) {
@@ -216,6 +258,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_clade_hash_cpp",        (DL_FUNC) &_HeatmapR_clade_hash_cpp,        2},
     {"_HeatmapR_clade_in_cpp",          (DL_FUNC) &_HeatmapR_clade_in_cpp,          2},
     {"_HeatmapR_cluster_batch_cpp",     (DL_FUNC) &_HeatmapR_cluster_batch_cpp,     6},
+    {"_HeatmapR_cut_k_cpp",             (DL_FUNC) &_HeatmapR_cut_k_cpp,             2},
     {"_HeatmapR_group_medoids_cpp",     (DL_FUNC) &_HeatmapR_group_medoids_cpp,     5},
     {"_HeatmapR_hardware_threads_cpp",  (DL_FUNC) &_HeatmapR_hardware_threads_cpp,  0},
     {"_HeatmapR_hash_cpp",              (DL_FUNC) &_HeatmapR_hash_cpp,              1},
@@ -234,9 +277,14 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_packed_strings_cpp",    (DL_FUNC) &_HeatmapR_packed_strings_cpp,    2},
     {"_HeatmapR_parallel_check_cpp",    (DL_FUNC) &_HeatmapR_parallel_check_cpp,    4},
     {"_HeatmapR_ramp_packed_cpp",       (DL_FUNC) &_HeatmapR_ramp_packed_cpp,       3},
+    {"_HeatmapR_refine_rows_cpp",       (DL_FUNC) &_HeatmapR_refine_rows_cpp,       4},
     {"_HeatmapR_rgb_packed_cpp",        (DL_FUNC) &_HeatmapR_rgb_packed_cpp,        1},
     {"_HeatmapR_row_distances_cpp",     (DL_FUNC) &_HeatmapR_row_distances_cpp,     4},
     {"_HeatmapR_row_ranks_cpp",         (DL_FUNC) &_HeatmapR_row_ranks_cpp,         2},
+    {"_HeatmapR_silhouette_dist_cpp",   (DL_FUNC) &_HeatmapR_silhouette_dist_cpp,   5},
+    {"_HeatmapR_silhouette_rows_cpp",   (DL_FUNC) &_HeatmapR_silhouette_rows_cpp,   7},
+    {"_HeatmapR_spectral_dist_cpp",     (DL_FUNC) &_HeatmapR_spectral_dist_cpp,     4},
+    {"_HeatmapR_spectral_rows_cpp",     (DL_FUNC) &_HeatmapR_spectral_rows_cpp,     5},
     {"_HeatmapR_structural_clades_cpp", (DL_FUNC) &_HeatmapR_structural_clades_cpp, 2},
     {"_HeatmapR_sub_merge_cpp",         (DL_FUNC) &_HeatmapR_sub_merge_cpp,         2},
     {"_HeatmapR_tree_segments_cpp",     (DL_FUNC) &_HeatmapR_tree_segments_cpp,     3},

@@ -80,6 +80,7 @@ Rows gather_rows(const double* x, int n_total, int p, const int* idx, int s) {
 // Distances between rows - row_dist() and the kernels that compute four at
 // once (distance.h)
 using dist::row_dist;
+using dist::row_dists;
 
 // Rows per block of the distance triangles: blocks of about 256 KB, so that
 // the rows of two blocks stay in cache while the distances between them are
@@ -90,16 +91,6 @@ inline size_t dist_block(int p) {
   return b - b % 4;
 }
 
-// Distances from row a to the rows b[0..n), as row_dist() computes them, four
-// at a time with the kernel for the metric (k4; null: one at a time)
-inline void row_dists(const double* a, const double* const* b, size_t n, int p, int metric,
-                      double q, dist::Dist4 k4, double* out) {
-  size_t i = 0;
-  if (k4 != nullptr) {
-    for (; i + 4 <= n; i += 4) k4(a, b + i, p, metric, out + i);
-  }
-  for (; i < n; ++i) out[i] = row_dist(a, b[i], p, metric, q);
-}
 
 // DISTANCE STORAGE ---------------------------------------------------------
 

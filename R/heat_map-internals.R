@@ -1284,12 +1284,37 @@
     prep <- .clust_prep(args$x, args$tree)
     dots <- args[setdiff(names(args), c("x", "tree", "dist", "method", "max"))]
     ordered <- do.call(.clust_order, c(
-      list(raw = raw, prep = prep, order = order, dist = args$dist),
+      list(raw = raw, prep = prep, order = order, dist = args$dist,
+           max = args$max),
       dots
     ))
     .memo_put(memo, key_ord, ordered)
   }
-  .finish_tree(ordered, scale = scale, cut = cut, dist = args$dist)
+  # AN AUTOMATIC CUT - ITS SCORES DON'T DEPEND ON THE LEAF ORDER
+  auto <- NULL
+  if(identical(cut, "auto")) {
+    key_cut <- list(".auto_cut", base)
+    resolved <- .memo_get(memo, key_cut)
+    if(is.null(resolved)) {
+      dots <- args[setdiff(names(args), c("x", "tree", "dist", "method", "max"))]
+      resolved <- .memo_put(memo, key_cut, do.call(.resolve_cut, c(
+        list(cut = cut, raw = raw, prep = .clust_prep(args$x, args$tree),
+             dist = args$dist, max = args$max),
+        dots
+      )))
+    }
+    cut <- resolved$cut
+    auto <- resolved$auto
+  }
+  tree <- .finish_tree(ordered, scale = scale, cut = cut, dist = args$dist)
+  if(!is.null(auto)) {
+    # (NO CLUSTERS FOUND - NOR ANY STORED IN A SUPPLIED TREE)
+    if(auto$k == 1) {
+      tree$cut <- NULL
+    }
+    tree$auto_cut <- auto
+  }
+  tree
 }
 
 #' Inputs of a slow step as a key: long numeric, integer and logical vectors

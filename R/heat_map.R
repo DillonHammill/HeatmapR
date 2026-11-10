@@ -62,16 +62,30 @@
 #' @param tree_order_x how the branches of the x axis dendrogram are ordered,
 #'   either \code{"default"} (the order from \code{hclust}), \code{"olo"}
 #'   (optimal leaf ordering, which flips branches so that neighbouring columns
-#'   are as similar as possible) or \code{"mean"} (branches ordered by their
+#'   are as similar as possible), \code{"mean"} (branches ordered by their
 #'   mean values - \code{\link[stats]{heatmap}} orders them by the sum of
-#'   their columns' means instead, which favours small branches). Optimal leaf ordering
-#'   is exact for up to 4000 columns, which takes well under a second; larger
-#'   dendrograms are ordered in blocks (see \code{\link{heat_map_clust}}).
+#'   their columns' means instead, which favours small branches) or
+#'   \code{"spectral"}. Optimal leaf ordering is exact for up to 4000
+#'   columns, which takes well under a second; larger dendrograms are ordered
+#'   in blocks (see \code{\link{heat_map_clust}}). A spectral order needs no
+#'   dendrogram: the columns are ordered by recursive spectral bisection of
+#'   the graph joining each column to its 6 nearest neighbours (by
+#'   \code{dist_method}), which lays gradients and trajectories out along
+#'   their length, cycles around their loop and clusters one after another,
+#'   and runs of up to 12 columns are then reversed where that brings
+#'   similar columns together. With a dendrogram, its branches are ordered by
+#'   the mean spectral position of their columns. Up to \code{clust_max}
+#'   columns are ordered exactly; more are ordered from a sample of
+#'   \code{clust_max} landmarks, each other column placed beside its nearest
+#'   landmark (200,000 take about 4 seconds).
 #' @param tree_cut_x either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for x axis dendrogram (proportional for non-cosine distances,
-#'   or absolute cosine distance threshold when \code{dist_method = "cosine"})
-#'   or an integer indicating the desired number of clusters to obtain by 
-#'   cutting the x axis dendrogram.
+#'   or absolute cosine distance threshold when \code{dist_method = "cosine"}),
+#'   an integer indicating the desired number of clusters to obtain by
+#'   cutting the x axis dendrogram, or \code{"auto"} to choose the number of
+#'   clusters from the data by their mean silhouette width (from 2 to 20
+#'   clusters, or none when no cut reaches a width of 0.25; see
+#'   \code{\link{heat_map_clust}}).
 #'   Alternatively, clusters can be manually defined by specifying the number of
 #'   columns to include in each cluster in the displayed order (e.g.,
 #'   c(3,4,5)), or a vector of cluster indices can be supplied to assign each
@@ -154,13 +168,18 @@
 #'   least 5 leaves and an eighth of all leaves) are labelled with their
 #'   support as a percentage, set to TRUE by default.
 #' @param tree_order_y how the branches of the y axis dendrogram are ordered,
-#'   either \code{"default"}, \code{"olo"} or \code{"mean"}, as for
-#'   \code{tree_order_x}.
+#'   either \code{"default"}, \code{"olo"}, \code{"mean"} or
+#'   \code{"spectral"}, as for \code{tree_order_x}. A spectral order without
+#'   a dendrogram orders the rows on their own (e.g. cells along a
+#'   differentiation trajectory or samples along a time course); rows
+#'   grouped by \code{tree_cut_y} or \code{tree_kmeans_y} keep it within
+#'   each group.
 #' @param tree_cut_y either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for y axis dendrogram (proportional for non-cosine distances,
-#'   or absolute cosine distance threshold when \code{dist_method = "cosine"})
-#'   or an integer indicating the desired number of clusters to obtain by 
-#'   cutting the y axis dendrogram.
+#'   or absolute cosine distance threshold when \code{dist_method = "cosine"}),
+#'   an integer indicating the desired number of clusters to obtain by
+#'   cutting the y axis dendrogram, or \code{"auto"} to choose the number of
+#'   clusters by mean silhouette width, as for \code{tree_cut_x}.
 #'   Alternatively, clusters can be manually defined by specifying the number of
 #'   rows to include in each cluster in the displayed order, starting from the
 #'   top of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
@@ -754,6 +773,17 @@
 #' # Extract cluster assignments and display order
 #' heat_map_info(hm)$row_clusters
 #'
+#' # Number of row clusters chosen by mean silhouette width, rows in spectral
+#' # order (no dendrogram needed for a spectral order)
+#' heat_map(
+#'   mtcars,
+#'   scale = "column",
+#'   tree_cut_y = "auto",
+#'   tree_order_y = "spectral",
+#'   tree_order_x = "spectral",
+#'   popup = FALSE
+#' )
+#'
 #' @export
 heat_map <- function(x,
                      scale = FALSE,
@@ -1164,6 +1194,12 @@ heat_map <- function(x,
   }
 
   # TREE_CUT - SINGLE VALUE REQUIRES HIERARCHICAL CLUSTERING
+  if(length(tree_cut_x) == 1) {
+    .check_cut(tree_cut_x, "tree_cut_x")
+  }
+  if(length(tree_cut_y) == 1) {
+    .check_cut(tree_cut_y, "tree_cut_y")
+  }
   if(length(tree_cut_x) == 1 && is.null(tree_x)) {
     tree_x <- TRUE
   }
@@ -1233,6 +1269,18 @@ heat_map <- function(x,
       # UPDATE COLUMN INDICES
       col_ind[seq_along(num_cols)] <- num_cols[tree_x$order]
     }
+  }
+
+  # X SPECTRAL ORDER WITHOUT A DENDROGRAM (THE NUMERIC COLUMNS; WITHIN
+  # MANUAL CLUSTERS THE COLUMNS KEEP IT)
+  if(is.null(tree_x) && identical(tree_order_x, "spectral") &&
+     length(num_cols) >= 3) {
+    ord <- .memo_call(memo, ".spectral_order", c(list(
+      x = t(as.matrix(x[, num_cols, drop = FALSE])),
+      dist = dist_method,
+      max = clust_max
+    ), list(...)))
+    col_ind[seq_along(num_cols)] <- num_cols[ord]
   }
 
   # X MANUAL CLUSTERING
@@ -1353,6 +1401,18 @@ heat_map <- function(x,
       # UPDATE ROW INDICES
       row_ind <- row_ind[tree_y$order]
     }
+  }
+
+  # Y SPECTRAL ORDER WITHOUT A DENDROGRAM (WITHIN MANUAL CLUSTERS THE ROWS
+  # KEEP IT)
+  if(is.null(tree_y) && identical(tree_order_y, "spectral") &&
+     nrow(x) >= 3 && length(num_cols) >= 1) {
+    ord <- .memo_call(memo, ".spectral_order", c(list(
+      x = as.matrix(x[row_ind, num_cols, drop = FALSE]),
+      dist = dist_method,
+      max = clust_max
+    ), list(...)))
+    row_ind <- row_ind[ord]
   }
 
   # Y MANUAL CLUSTERING

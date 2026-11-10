@@ -72,6 +72,30 @@ parallel_check_cpp <- function(n, threads, fail_at, nested) {
   .Call(`_HeatmapR_parallel_check_cpp`, n, threads, fail_at, nested)
 }
 
+spectral_rows_cpp <- function(x, metric, q, k, threads) {
+  .Call(`_HeatmapR_spectral_rows_cpp`, x, metric, q, k, threads)
+}
+
+refine_rows_cpp <- function(x, order, metric, q) {
+  .Call(`_HeatmapR_refine_rows_cpp`, x, order, metric, q)
+}
+
+spectral_dist_cpp <- function(d, n, k, threads) {
+  .Call(`_HeatmapR_spectral_dist_cpp`, d, n, k, threads)
+}
+
+silhouette_dist_cpp <- function(merge, sample, d, K, threads) {
+  .Call(`_HeatmapR_silhouette_dist_cpp`, merge, sample, d, K, threads)
+}
+
+silhouette_rows_cpp <- function(merge, sample, x, metric, q, K, threads) {
+  .Call(`_HeatmapR_silhouette_rows_cpp`, merge, sample, x, metric, q, K, threads)
+}
+
+cut_k_cpp <- function(merge, k) {
+  .Call(`_HeatmapR_cut_k_cpp`, merge, k)
+}
+
 merge_sizes_cpp <- function(merge) {
   .Call(`_HeatmapR_merge_sizes_cpp`, merge)
 }

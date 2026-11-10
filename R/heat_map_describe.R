@@ -554,6 +554,53 @@ as.character.heat_map_description <- function(x,
       )
     )
   }
+  # SPECTRAL ORDER - OF THE LEAVES OF A DENDROGRAM, OR OF THE ROWS OR COLUMNS
+  # WITHOUT ONE
+  if(identical(arg(paste0("tree_order_", axis)), "spectral")) {
+    out <- c(
+      out,
+      if(!is.null(tree)) {
+        paste0(
+          "Its branches are turned to follow a spectral ordering of the ",
+          what, "s (recursive bisection of their nearest-neighbour graph)."
+        )
+      } else {
+        paste0(
+          Whats, " are in spectral order: neighbouring ", what, "s are ",
+          "close in the graph joining each ", what, " to its nearest ",
+          "neighbours, which places gradients along their length."
+        )
+      }
+    )
+  }
+  # AN AUTOMATIC CUT
+  auto <- tree$auto_cut
+  if(!is.null(auto) && length(auto$silhouette) > 0) {
+    best <- max(auto$silhouette)
+    out <- c(
+      out,
+      if(auto$k > 1) {
+        paste0(
+          "The dendrogram was cut automatically into ", auto$k,
+          " clusters, the number from 2 to ", length(auto$silhouette) + 1,
+          " with the largest mean silhouette width (", sprintf("%.2f", best),
+          ", ", if(best > 0.7) "strong" else if(best > 0.5) "reasonable" else "weak",
+          " structure on Kaufman and Rousseeuw's scale",
+          if(auto$leaves < length(tree$order)) {
+            paste0(", from ", format(auto$leaves, big.mark = ","),
+                   " sampled ", what, "s")
+          },
+          ")."
+        )
+      } else {
+        paste0(
+          "The dendrogram was not cut: no number of clusters from 2 to ",
+          length(auto$silhouette) + 1, " reached a mean silhouette width ",
+          "of 0.25 (the largest was ", sprintf("%.2f", best), ")."
+        )
+      }
+    )
+  }
   # TOO MANY LEAVES TO CLUSTER EXACTLY (clust_max)
   two_stage <- tree$two_stage
   if(!is.null(two_stage)) {

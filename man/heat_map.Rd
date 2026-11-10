@@ -259,11 +259,22 @@ default.}
 \item{tree_order_x}{how the branches of the x axis dendrogram are ordered,
 either \code{"default"} (the order from \code{hclust}), \code{"olo"}
 (optimal leaf ordering, which flips branches so that neighbouring columns
-are as similar as possible) or \code{"mean"} (branches ordered by their
+are as similar as possible), \code{"mean"} (branches ordered by their
 mean values - \code{\link[stats]{heatmap}} orders them by the sum of
-their columns' means instead, which favours small branches). Optimal leaf ordering
-is exact for up to 4000 columns, which takes well under a second; larger
-dendrograms are ordered in blocks (see \code{\link{heat_map_clust}}).}
+their columns' means instead, which favours small branches) or
+\code{"spectral"}. Optimal leaf ordering is exact for up to 4000
+columns, which takes well under a second; larger dendrograms are ordered
+in blocks (see \code{\link{heat_map_clust}}). A spectral order needs no
+dendrogram: the columns are ordered by recursive spectral bisection of
+the graph joining each column to its 6 nearest neighbours (by
+\code{dist_method}), which lays gradients and trajectories out along
+their length, cycles around their loop and clusters one after another,
+and runs of up to 12 columns are then reversed where that brings
+similar columns together. With a dendrogram, its branches are ordered by
+the mean spectral position of their columns. Up to \code{clust_max}
+columns are ordered exactly; more are ordered from a sample of
+\code{clust_max} landmarks, each other column placed beside its nearest
+landmark (200,000 take about 4 seconds).}
 
 \item{tree_support_x}{\code{TRUE} or a number of resamples (at least 10)
 to draw each branch of the x axis dendrogram by its bootstrap support:
@@ -279,9 +290,12 @@ is drawn. \code{heat_map_info()} returns the support of each branch.}
 
 \item{tree_cut_x}{either a numeric ranging from 0 to 1 indicating the branch
 cut height for x axis dendrogram (proportional for non-cosine distances,
-or absolute cosine distance threshold when \code{dist_method = "cosine"})
-or an integer indicating the desired number of clusters to obtain by
-cutting the x axis dendrogram.
+or absolute cosine distance threshold when \code{dist_method = "cosine"}),
+an integer indicating the desired number of clusters to obtain by
+cutting the x axis dendrogram, or \code{"auto"} to choose the number of
+clusters from the data by their mean silhouette width (from 2 to 20
+clusters, or none when no cut reaches a width of 0.25; see
+\code{\link{heat_map_clust}}).
 Alternatively, clusters can be manually defined by specifying the number of
 columns to include in each cluster in the displayed order (e.g.,
 c(3,4,5)), or a vector of cluster indices can be supplied to assign each
@@ -362,8 +376,12 @@ axis dendrogram should be scaled for better visualisation, set to FALSE by
 default.}
 
 \item{tree_order_y}{how the branches of the y axis dendrogram are ordered,
-either \code{"default"}, \code{"olo"} or \code{"mean"}, as for
-\code{tree_order_x}.}
+either \code{"default"}, \code{"olo"}, \code{"mean"} or
+\code{"spectral"}, as for \code{tree_order_x}. A spectral order without
+a dendrogram orders the rows on their own (e.g. cells along a
+differentiation trajectory or samples along a time course); rows
+grouped by \code{tree_cut_y} or \code{tree_kmeans_y} keep it within
+each group.}
 
 \item{tree_support_y}{\code{TRUE} or a number of resamples to draw each
 branch of the y axis dendrogram by its bootstrap support, resampling the
@@ -375,9 +393,10 @@ support as a percentage, set to TRUE by default.}
 
 \item{tree_cut_y}{either a numeric ranging from 0 to 1 indicating the branch
 cut height for y axis dendrogram (proportional for non-cosine distances,
-or absolute cosine distance threshold when \code{dist_method = "cosine"})
-or an integer indicating the desired number of clusters to obtain by
-cutting the y axis dendrogram.
+or absolute cosine distance threshold when \code{dist_method = "cosine"}),
+an integer indicating the desired number of clusters to obtain by
+cutting the y axis dendrogram, or \code{"auto"} to choose the number of
+clusters by mean silhouette width, as for \code{tree_cut_x}.
 Alternatively, clusters can be manually defined by specifying the number of
 rows to include in each cluster in the displayed order, starting from the
 top of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
@@ -1107,6 +1126,17 @@ hm <- heat_map(
 
 # Extract cluster assignments and display order
 heat_map_info(hm)$row_clusters
+
+# Number of row clusters chosen by mean silhouette width, rows in spectral
+# order (no dendrogram needed for a spectral order)
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_cut_y = "auto",
+  tree_order_y = "spectral",
+  tree_order_x = "spectral",
+  popup = FALSE
+)
 
 }
 \seealso{
