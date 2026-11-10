@@ -446,6 +446,12 @@ test_that("SingleCellExperiment objects are read by assay, features and metadata
     heat_map_summarise(dense, group_y = sce$cluster, fun = "median")
   )
   expect_error(heat_map_summarise(sce, group_by = "cluster", assay = "x"), "\"counts\", \"logcounts\"")
+  # Names of a vector of features (e.g. from unlist()) don't name the columns
+  named <- c(first = "ENSG2", second = "ENSG9")
+  expect_identical(
+    heat_map_summarise(sce, features = named, group_by = "cluster"),
+    heat_map_summarise(dense[, c("ENSG2", "ENSG9")], group_y = sce$cluster)
+  )
   # Dense assays and the "exprs" assay of cytometry experiments
   ex <- SummarizedExperiment::SummarizedExperiment(
     assays = list(exprs = as.matrix(logc)),

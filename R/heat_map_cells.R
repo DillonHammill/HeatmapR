@@ -504,7 +504,7 @@ heat_map_downsample <- function(groups,
       call. = FALSE
     )
   }
-  list(index = index, names = names)
+  list(index = index, names = unname(names))
 }
 
 #' The dimensions of the values of a source of cells
