@@ -1,12 +1,13 @@
 # Scale numeric data prior to constructing heat_map
 
 Apply column-wise or row-wise scaling to numeric columns in a matrix or
-data.frame prior to constructing a `heat_map`.
+data.frame prior to constructing a `heat_map`, or transform them for
+cytometry data.
 
 ## Usage
 
 ``` r
-heat_map_scale(x, scale = "column", method = "range")
+heat_map_scale(x, scale = "column", method = "range", cofactor = 5, q = 0.01)
 ```
 
 ## Arguments
@@ -24,15 +25,31 @@ heat_map_scale(x, scale = "column", method = "range")
 
 - method:
 
-  type of scaling to perform, can be either `"range"`, `"mean"` or
-  `"zscore"` (unique abbreviations such as `"z"` are accepted). Range
-  scaling normalizes the data to have limits between 0 and 1. Mean
-  scaling subtracts the mean (calculated excluding missing values) from
-  each value and divides the result by the range. Z-score scaling
-  subtracts the mean from each value and then divides the result by the
-  standard deviation. Rows or columns with no variation are mapped to
-  0.5 for range scaling and 0 for mean and z-score scaling, rather than
-  `NaN`.
+  type of scaling to perform, one of `"range"`, `"mean"`, `"zscore"`,
+  `"quantile"` or `"asinh"` (unique abbreviations such as `"z"` are
+  accepted). Range scaling normalizes the data to have limits between 0
+  and 1. Mean scaling subtracts the mean (calculated excluding missing
+  values) from each value and divides the result by the range. Z-score
+  scaling subtracts the mean from each value and then divides the result
+  by the standard deviation. Rows or columns with no variation are
+  mapped to 0.5 for range scaling and 0 for mean and z-score scaling,
+  rather than `NaN`. Quantile scaling maps the `q` and `1 - q` quantiles
+  of each column (row) to 0 and 1 and clips the values beyond them, so
+  that a few extreme values don't compress the colours of the rest; when
+  the two quantiles are equal, values above them are 1 and the others 0.
+  The `"asinh"` transform takes the inverse hyperbolic sine of each
+  value divided by `cofactor`, the usual transform of cytometry
+  intensities (it ignores `scale`).
+
+- cofactor:
+
+  the cofactor of the `"asinh"` transform: one number (5 by default, as
+  for mass cytometry; about 150 is common for flow cytometry), or one
+  per numeric column (in order, or named by column).
+
+- q:
+
+  the quantile of quantile scaling, set to 0.01 by default.
 
 ## Value
 
@@ -65,4 +82,13 @@ mtcars_scale_rows <- heat_map_scale(mtcars,
 scale = "row",
 method = "zscore")
 #> Applying zscore scaling to each row...
+
+# Cytometry: asinh transform with cofactor 5, then each marker scaled to
+# 0-1 between its 1st and 99th percentiles
+events <- matrix(rexp(3000, 1 / 200), ncol = 3,
+                 dimnames = list(NULL, c("CD3", "CD4", "CD8")))
+events <- heat_map_scale(events, method = "asinh", cofactor = 5)
+#> Applying the asinh transform (cofactor 5)...
+events <- heat_map_scale(events, method = "quantile", q = 0.01)
+#> Applying quantile scaling to each column...
 ```

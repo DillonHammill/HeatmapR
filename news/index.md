@@ -1,5 +1,150 @@
 # Changelog
 
+## HeatmapR (development version)
+
+### Single-cell data
+
+- [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  and
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  read single-cell data: `SingleCellExperiment` and
+  `SummarizedExperiment` objects, `Seurat` objects, `flowFrame` and
+  `flowSet` objects and sparse matrices (`dgCMatrix` and the other
+  `Matrix` classes), as well as matrices and data.frames. Cells are
+  drawn as rows and features as columns. The packages are only needed to
+  read their own objects (SummarizedExperiment, SeuratObject and Matrix
+  are suggested; flowFrames and flowSets are read without flowCore).
+- New arguments choose what to show: `features` (genes, proteins or
+  markers by name - row names, gene symbols in
+  [`rowData()`](https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html),
+  flow marker or channel names - or index; missing features are an error
+  that names them), `assay` (an assay of a SingleCellExperiment, by
+  default `"logcounts"`, else `"exprs"`; an assay or layer of a Seurat
+  object, by default `"data"`), `group_by` (a metadata column or a
+  vector, grouping the cells as `tree_cut_y` does, labelled by group)
+  and `annotation_by` (metadata columns drawn as annotation tracks).
+  `swap_axes = TRUE` draws features as rows and cells as columns, as
+  Seurat’s `DoHeatmap()` does.
+- `heat_map_downsample(groups, n = 500)` keeps at most `n` cells of each
+  group, drawn with a fixed seed, and `heat_map(..., group_max = n)`
+  uses it so that small clusters stay visible next to large ones.
+  Arguments with one value per cell are kept for the cells shown.
+- Sparse data are read without a dense copy: only the chosen features of
+  the cells shown are made dense (40 genes of 50,000 cells in 0.1
+  seconds), and
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  finds the mean, sum, number, proportion detected and median of each
+  feature in each group from the non-zero values, in compiled code (all
+  20,000 genes of 50,000 cells in 20 groups: 0.2-0.6 seconds for means,
+  0.6-1.7 seconds for medians), giving the same numbers as for the dense
+  data. A message warns when dense values would take more than 1 GB.
+- Redraws with new data (`plot(hm, data = sce2)`) read it with the same
+  single-cell arguments.
+- [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  draws dot plots of groups of cells, one row per group and one column
+  per feature: the colour of each dot is the group’s mean scaled within
+  the feature (`scale = "zscore"`, clipped to
+  `scale_limits = c(-2.5, 2.5)`, as Seurat’s `DotPlot()`; `"range"` for
+  0 to 1, as scanpy’s `standard_scale = "var"`; or `"none"`) and its
+  area the proportion of the group’s cells detected (above `threshold`),
+  with a size legend in percent. `dot_min` leaves out dots below a
+  proportion, `swap_axes = TRUE` draws features as rows, and every
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  option (e.g. `tree_y = TRUE` for a dendrogram of the groups) can be
+  added.
+- [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+  ranks the marker features of each group by their AUC against all other
+  cells (the Wilcoxon rank-sum statistic over the numbers of cells, ties
+  counting half, as presto’s `wilcoxauc()`), keeping features detected
+  in at least `min_detected` (0.1) of the group’s cells with a mean at
+  least `min_logfc` (0.25) above the other cells’. Each feature marks
+  the group where its AUC is highest, and the top `n` (5) of each group
+  are marked in the `top` column. The AUC is computed in compiled code
+  from one ranking of each feature, with the zeros of sparse data
+  sharing a rank, only for features that pass the filters (all 20,000
+  genes of 50,000 cells in 1.4 seconds on two cores; 30 markers of a
+  million cells in 0.6 seconds).
+- `features` takes a named list of features
+  (e.g. `list(T = c("CD3E", "CD3D"), B = "MS4A1")`) or the markers from
+  [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md),
+  grouping the columns of
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  and
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  by group with labels, as scanpy’s `var_group_positions` brackets do.
+- `legend_size_format` labels the size legend: `"percent"` for
+  proportions, or a function.
+- The means, sums, counts and proportions detected of dense single cells
+  (e.g. a `flowFrame`) are found in compiled code, without copying the
+  data (a million cells of 30 markers in 0.4 seconds).
+
+### Cytometry
+
+- The asinh transform: `heat_map_scale(method = "asinh", cofactor = 5)`,
+  `heat_map(transform = "asinh", cofactor = )` and
+  `heat_map_summarise(transform = "asinh", cofactor = )` take the
+  inverse hyperbolic sine of each value divided by the cofactor (5 for
+  mass cytometry, about 150 for flow cytometry; one, or one per marker).
+  Sparse data stay sparse.
+- Quantile scaling: `heat_map_scale(method = "quantile", q = 0.01)`
+  (`heat_map(scale = "quantile", scale_q = )`) maps the `q` and `1 - q`
+  quantiles of each column to 0 and 1 and clips the values beyond them,
+  so that a few bright cells don’t compress the colours of the rest. The
+  quantiles are those of
+  [`quantile()`](https://rdrr.io/r/stats/quantile.html), and missing
+  values stay missing.
+- [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  transforms and scales: `scale` (a scaling method for each feature) is
+  applied to the summaries (`scale_when = "last"`, the default) or to
+  the cells before summarising (`"first"`). `group_by` takes several
+  columns, e.g. `c("cluster", "sample")` for the medians of each cluster
+  in each sample, in rows named `"cluster / sample"`.
+- Summaries of groups from `group_by` keep the number of cells of each
+  group (attribute `"n"`), their numbers in each part of `stack_by`
+  (e.g. the condition; attribute `"stack"`) and the metadata that is the
+  same for every cell of a group (attribute `"groups"`, e.g. the
+  condition of each sample).
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  reads them: `bar_values_y = "n"` draws the number of cells of each
+  group, and
+  `heat_map(s, group_by = "cluster", annotation_by = c("sample", "condition"))`
+  groups and annotates the rows of a summary by its groups.
+- Stacked bars: `bar_type_x`/`bar_type_y = "stack"` draws the parts of
+  each column or row (a matrix with one column or row per part, or `"n"`
+  for the counts of `stack_by`) as a stacked bar, and `"fill"` their
+  proportions, with one colour per part (`bar_fill_*`, named by part)
+  and a legend of the parts.
+- Medians of groups of dense rows are found in compiled code, as
+  [`median()`](https://rdrr.io/r/stats/median.html) finds them: a
+  million cells of 30 markers in 20 clusters in 0.3 seconds (1.1 seconds
+  before), or 1.3 seconds with the asinh transform and quantile scaling.
+
+### Trajectories
+
+- [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
+  smooths features along a trajectory: the cells are binned along
+  `along` (e.g. a pseudotime column; `bins = 100` bins with equal
+  numbers of cells, or of equal width with `binning = "width"`) and each
+  feature’s mean found over the `span` bins around each bin (5 by
+  default), weighted by their cells, in compiled code (2,000 genes of
+  50,000 cells in 0.3 seconds, all 20,000 in 1.1). Branching
+  trajectories are smoothed one lineage at a time, from several `along`
+  columns (one per lineage) or `group_by`. The result has one row per
+  bin and one column per feature, with the cells of each bin (attribute
+  `"n"`) and its lineage and position (attribute `"groups"`) for
+  `heat_map(group_by = "lineage", annotation_by = "pseudotime")`.
+- `tree_order_x`/`tree_order_y = "peak"` (and
+  `heat_map_clust(order = "peak")`) order features by where they are
+  highest (ties by where they are lowest), so that cascades along a
+  trajectory run diagonally. It needs no dendrogram, orders a
+  dendrogram’s branches by the mean peak of their leaves, and keeps
+  within groups of features; the bins of
+  [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
+  are placed by their position along the trajectory, so the peaks of
+  lineages are compared by when they occur. `heat_map_clust(order = )`
+  also takes a numeric vector, ordering branches by the mean value of
+  their leaves.
+
 ## HeatmapR 2.0.0
 
 HeatmapR 2.0.0 is a major release: a new layout that sizes every part of
@@ -707,6 +852,12 @@ defaults have changed; they are listed first.
   - margins set with `margins` that are too small for the axis text and
     label beside them shrink that text (to 40% at most) rather than
     drawing it over itself.
+- Cluster label text is white on dark label strips and black on light
+  ones (`tree_label_text_col_x`/`tree_label_text_col_y = "auto"`, the
+  new default), whichever contrasts more with each strip’s colour. The
+  default dark grey strips had black text, at a contrast of 3.7:1 (below
+  the 4.5:1 that the Web Content Accessibility Guidelines ask of text);
+  white text on them reaches 5.7:1.
 - Circle and diamond cells stay round when the cells aren’t square: they
   are sized by the shorter side of the cells (as in the size legend)
   instead of stretching into ovals and flat diamonds.

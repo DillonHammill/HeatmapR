@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,22 @@
       <ul class="navbar-nav me-auto">
 <li class="active nav-item"><a class="nav-link" href="../articles/HeatmapR.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/ordering.html">Ordering rows and columns</a></li>
+    <li><a class="dropdown-item" href="../articles/large-data.html">Large heatmaps</a></li>
+    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/cells.html">More than colour</a></li>
+    <li><a class="dropdown-item" href="../articles/integration.html">Working with heatmaps</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
+    <li><a class="dropdown-item" href="../articles/benchmarks.html">Speed comparison</a></li>
+  </ul>
+</li>
+<li class="nav-item"><a class="nav-link" href="../articles/benchmarks.html">Speed</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -118,6 +134,16 @@ using <code><a href="../reference/heat_map_save.html">heat_map_save()</a></code>
 <code><a href="../reference/heat_map_reset.html">heat_map_reset()</a></code> resets all <strong>HeatmapR</strong>
 associated settings in case things are not working as they should.</li>
 </ul>
+<p>The <a href="https://dillonhammill.github.io/HeatmapR/">HeatmapR
+website</a> has guides that go further, with every figure drawn as the
+site is built: <a href="https://dillonhammill.github.io/HeatmapR/articles/ordering.html">ordering
+rows and columns</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/large-data.html">large
+heatmaps</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/cells.html">more
+than colour</a> (uncertainty, split cells, distributions and
+annotations), <a href="https://dillonhammill.github.io/HeatmapR/articles/integration.html">working
+with heatmaps</a> (redraws, tidy data, <code>ggplot2</code> and
+alternative text), and a <a href="https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html">speed
+comparison</a> with other heatmap packages.</p>
 </div>
 <div class="section level2">
 <h2 id="construct-a-basic-heatmap">1. Construct a Basic Heatmap<a class="anchor" aria-label="anchor" href="#construct-a-basic-heatmap"></a>
@@ -410,7 +436,7 @@ otherwise hide the cells.</p>
 <span>  axis_text_y <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"5000 cells"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-raster.png" class="r-plt" alt="Heatmap of 5,000 simulated cells by 20 markers drawn as a raster image, with the markers clustered by a dendrogram and the cells cut into three clusters labelled A, B and C: A is high in markers 12 to 20, B in markers 1 to 8 and C in neither." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-raster.png" class="r-plt" alt="Heatmap of 5,000 simulated cells by 20 markers drawn as a raster image, with the markers clustered by a dendrogram and the cells cut into three clusters labelled A, B and C: A is high in markers 12 to 20, B in markers 1 to 8 and C in neither." width="95%" style="display: block; margin: auto;"></p>
 <p>Clustering is the slow part of a large heatmap. It needs the distance
 between every pair of rows, so exact clustering of 10,000 rows takes
 about 1.2 seconds on two cores and 400 MB of memory, and four times as
@@ -711,7 +737,7 @@ to <code>tree_cut_x</code> splits the columns into groups and, when
 <span>  legend_title <span class="op">=</span> <span class="st">"z-score"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Metadata annotations"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-annotations.png" class="r-plt" alt="Heatmap of 20 simulated genes across 24 samples on a blue-white-red z-score scale, with the samples split into labelled Control, Drug_A and Drug_B groups, coloured Treatment and Sex annotation tracks above the columns with their own legends, and the genes clustered by a dendrogram." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-annotations.png" class="r-plt" alt="Heatmap of 20 simulated genes across 24 samples on a blue-white-red z-score scale, with the samples split into labelled Control, Drug_A and Drug_B groups, coloured Treatment and Sex annotation tracks above the columns with their own legends, and the genes clustered by a dendrogram." width="95%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="box-plots-and-violins">4.2 Box Plots and Violins<a class="anchor" aria-label="anchor" href="#box-plots-and-violins"></a>
@@ -1036,7 +1062,7 @@ arguments.</p>
 <span>  <span class="op">)</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Cluster Labels"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13.png" class="r-plt" alt="The column-scaled mtcars heatmap, titled Cluster Labels, split into 4 groups of variables and 5 groups of cars, each group marked by a coloured bar numbered 1 to 4 above the columns or 1 to 5 beside the rows." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-13.png" class="r-plt" alt="The column-scaled mtcars heatmap, titled Cluster Labels, split into 4 groups of variables and 5 groups of cars, each group marked by a coloured bar numbered 1 to 4 above the columns or 1 to 5 beside the rows." width="95%" style="display: block; margin: auto;"></p>
 <div class="section level4">
 <h4 id="choosing-the-number-of-clusters">5.2.1 Choosing the Number of Clusters<a class="anchor" aria-label="anchor" href="#choosing-the-number-of-clusters"></a>
 </h4>
@@ -1129,7 +1155,7 @@ heatmap:</p>
 <span>  tree_label_col_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"blue"</span>, <span class="st">"yellow"</span>, <span class="st">"red"</span><span class="op">)</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Manual Clustering by Index"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13c.png" class="r-plt" alt="The column-scaled mtcars heatmap, titled Manual Clustering by Index, with the variables split into three groups of 4, 3 and 4 columns labelled Low, Medium and High on blue, yellow and red bars." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-13c.png" class="r-plt" alt="The column-scaled mtcars heatmap, titled Manual Clustering by Index, with the variables split into three groups of 4, 3 and 4 columns labelled Low, Medium and High on blue, yellow and red bars." width="95%" style="display: block; margin: auto;"></p>
 <p>Manual clusters can be combined with dendrograms by setting
 <code>tree_x = TRUE</code> or <code>tree_y = TRUE</code>. The rows or
 columns are then clustered within each cluster, and the clusters are
@@ -1157,7 +1183,7 @@ a cell type) gets its own dendrogram:</p>
 <span>  tree_label_x <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Clustering within groups"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-groups.png" class="r-plt" alt="Heatmap of 40 simulated genes across 24 samples, with the samples split into labelled Control, Drug_A and Drug_B groups that are each clustered by their own dendrogram under a shared root, and the genes clustered so that those raised in the Drug_A samples sit together at the bottom." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-groups.png" class="r-plt" alt="Heatmap of 40 simulated genes across 24 samples, with the samples split into labelled Control, Drug_A and Drug_B groups that are each clustered by their own dendrogram under a shared root, and the genes clustered so that those raised in the Drug_A samples sit together at the bottom." width="95%" style="display: block; margin: auto;"></p>
 <p>A dendrogram supplied as an <code>hclust</code> or <code>dist</code>
 object is kept only when the clusters are contiguous in its order, and
 is dropped with a warning otherwise.</p>

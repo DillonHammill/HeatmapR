@@ -6,6 +6,8 @@
   : Create a complex heatmap using base graphics
 - [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md)
   : Correlation heatmaps with ellipses, numbers and dendrograms
+- [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  : Dot plots of the features of groups of cells
 - [`plot(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   [`print(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   : Draw a heat_map object
@@ -40,6 +42,12 @@ Scale, summarise and cluster data before (or while) drawing a heatmap.
   : Scale numeric data prior to constructing heat_map
 - [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
   : Summarise groups of rows or columns for a heatmap
+- [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+  : Find the marker features of groups of cells
+- [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
+  : Smooth features along pseudotime for a heatmap
+- [`heat_map_downsample()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_downsample.md)
+  : Downsample cells within groups
 - [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
   : Perform hierarchical clustering for heatmap
 - [`heat_map_threads()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.md)

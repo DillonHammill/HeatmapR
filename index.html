@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,6 +38,22 @@
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="articles/HeatmapR.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="articles/ordering.html">Ordering rows and columns</a></li>
+    <li><a class="dropdown-item" href="articles/large-data.html">Large heatmaps</a></li>
+    <li><a class="dropdown-item" href="articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="articles/cells.html">More than colour</a></li>
+    <li><a class="dropdown-item" href="articles/integration.html">Working with heatmaps</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
+    <li><a class="dropdown-item" href="articles/benchmarks.html">Speed comparison</a></li>
+  </ul>
+</li>
+<li class="nav-item"><a class="nav-link" href="articles/benchmarks.html">Speed</a></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -82,7 +98,7 @@
 <li>
 <strong>HeatmapR</strong> handles datasets that contain non-numeric or missing data, which means you don’t have to spend ages formatting and pre-processing the data beforehand.</li>
 <li>
-<strong>HeatmapR</strong> clusters large datasets quickly: distances, linkage, cuts, k-means and optimal leaf ordering run in compiled C++ code shared between threads (<code><a href="reference/heat_map_threads.html">heat_map_threads()</a></code>), and rows or columns beyond <code>clust_max</code> are clustered in two stages, so 100,000 rows take about half a second on two cores.</li>
+<strong>HeatmapR</strong> clusters large datasets quickly: distances, linkage, cuts, k-means and optimal leaf ordering run in compiled C++ code shared between threads (<code><a href="reference/heat_map_threads.html">heat_map_threads()</a></code>), and rows or columns beyond <code>clust_max</code> are clustered in two stages, so 100,000 rows are clustered in under a second on two cores. A clustered heatmap of 20,000 rows takes under a second (7 seconds clustered exactly), against half a minute to two minutes and several times the memory with pheatmap, <code>heatmap.2()</code> or ComplexHeatmap: see the <a href="https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html">speed comparison</a>.</li>
 <li>
 <strong>HeatmapR</strong> shows sample or feature metadata as annotation tracks (<code>annotation_x</code>, <code>annotation_y</code>), alongside dendrograms, cluster labels and bar plots, and adapts the layout so that labels and legends don’t overlap. Dendrograms, bar plots, legends and margins are sized in inches from their contents, so they look the same whatever the shape of the data.</li>
 <li>
@@ -131,7 +147,7 @@
 </td>
 </tr>
 </table>
-<p>See the <a href="https://dillonhammill.github.io/HeatmapR/news/index.html">changelog</a> for everything new in <strong>HeatmapR</strong> 2.0.0.</p>
+<p>The <a href="https://dillonhammill.github.io/HeatmapR/articles/index.html">guides</a> on the website cover ordering, large heatmaps, cells, and working with other packages, and the <a href="https://dillonhammill.github.io/HeatmapR/news/index.html">changelog</a> lists everything new in <strong>HeatmapR</strong> 2.0.0.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>

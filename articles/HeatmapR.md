@@ -55,6 +55,20 @@ functions in `HeatmapR` as summarised below:
   resets all **HeatmapR** associated settings in case things are not
   working as they should.
 
+The [HeatmapR website](https://dillonhammill.github.io/HeatmapR/) has
+guides that go further, with every figure drawn as the site is built:
+[ordering rows and
+columns](https://dillonhammill.github.io/HeatmapR/articles/ordering.html),
+[large
+heatmaps](https://dillonhammill.github.io/HeatmapR/articles/large-data.html),
+[more than
+colour](https://dillonhammill.github.io/HeatmapR/articles/cells.html)
+(uncertainty, split cells, distributions and annotations), [working with
+heatmaps](https://dillonhammill.github.io/HeatmapR/articles/integration.html)
+(redraws, tidy data, `ggplot2` and alternative text), and a [speed
+comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html)
+with other heatmap packages.
+
 ## 1. Construct a Basic Heatmap
 
 Constructing a heatmap is as simple loading the **HeatmapR** package and
@@ -413,7 +427,7 @@ heat_map(
 image, with the markers clustered by a dendrogram and the cells cut into
 three clusters labelled A, B and C: A is high in markers 12 to 20, B in
 markers 1 to 8 and C in
-neither.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-raster.png)
+neither.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-raster.png)
 
 Clustering is the slow part of a large heatmap. It needs the distance
 between every pair of rows, so exact clustering of 10,000 rows takes
@@ -776,7 +790,7 @@ heat_map(
 z-score scale, with the samples split into labelled Control, Drug_A and
 Drug_B groups, coloured Treatment and Sex annotation tracks above the
 columns with their own legends, and the genes clustered by a
-dendrogram.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-annotations.png)
+dendrogram.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-annotations.png)
 
 ### 4.2 Box Plots and Violins
 
@@ -1156,7 +1170,7 @@ heat_map(
 ![The column-scaled mtcars heatmap, titled Cluster Labels, split into 4
 groups of variables and 5 groups of cars, each group marked by a
 coloured bar numbered 1 to 4 above the columns or 1 to 5 beside the
-rows.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13.png)
+rows.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-13.png)
 
 #### 5.2.1 Choosing the Number of Clusters
 
@@ -1267,7 +1281,7 @@ heat_map(
 ![The column-scaled mtcars heatmap, titled Manual Clustering by Index,
 with the variables split into three groups of 4, 3 and 4 columns
 labelled Low, Medium and High on blue, yellow and red
-bars.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13c.png)
+bars.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-13c.png)
 
 Manual clusters can be combined with dendrograms by setting
 `tree_x = TRUE` or `tree_y = TRUE`. The rows or columns are then
@@ -1304,7 +1318,7 @@ heat_map(
 split into labelled Control, Drug_A and Drug_B groups that are each
 clustered by their own dendrogram under a shared root, and the genes
 clustered so that those raised in the Drug_A samples sit together at the
-bottom.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-groups.png)
+bottom.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-groups.png)
 
 A dendrogram supplied as an `hclust` or `dist` object is kept only when
 the clusters are contiguous in its order, and is dropped with a warning

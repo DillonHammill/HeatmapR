@@ -29,7 +29,7 @@ heat_map(
   tree_label_text_x = NA,
   tree_label_text_font_x = 1,
   tree_label_text_size_x = 1,
-  tree_label_text_col_x = "black",
+  tree_label_text_col_x = "auto",
   tree_label_text_col_alpha_x = 1,
   tree_y = NULL,
   tree_size_y = 1,
@@ -47,7 +47,7 @@ heat_map(
   tree_label_text_y = NA,
   tree_label_text_font_y = 1,
   tree_label_text_size_y = 1,
-  tree_label_text_col_y = "black",
+  tree_label_text_col_y = "auto",
   tree_label_text_col_alpha_y = 1,
   cell_shape = "rect",
   cell_size = FALSE,
@@ -156,6 +156,7 @@ heat_map(
   legend_col_scale_size = 1,
   legend_col_breaks = NULL,
   legend_col_density = FALSE,
+  legend_size_format = NULL,
   legend_title = NULL,
   legend_title_text_font = 2,
   legend_title_text_size = 1,
@@ -185,6 +186,15 @@ heat_map(
   fit_text = TRUE,
   popup = TRUE,
   popup_size = c(7, 7),
+  features = NULL,
+  assay = NULL,
+  group_by = NULL,
+  group_max = NULL,
+  annotation_by = NULL,
+  swap_axes = FALSE,
+  transform = NULL,
+  cofactor = 5,
+  scale_q = 0.01,
   ...
 )
 ```
@@ -193,7 +203,12 @@ heat_map(
 
 - x:
 
-  matrix or data.frame containing the data to display in the heatmap.
+  matrix or data.frame containing the data to display in the heatmap, or
+  single-cell data: a `SingleCellExperiment` or `SummarizedExperiment`,
+  a `Seurat` object, a `flowFrame` or `flowSet`, or a sparse matrix
+  (e.g. a `dgCMatrix`, one cell per row). Single-cell data are drawn
+  with one row per cell and one column per feature (see `features`,
+  `assay`, `group_by`, `group_max`, `annotation_by` and `swap_axes`).
 
 - scale:
 
@@ -201,14 +216,18 @@ heat_map(
   constructing the heatmap (`TRUE` scales each column). Additional
   options include `"column"` or `"row"` to indicate whether scaling
   should be performed within each column or each row. For convenience,
-  the name of a scaling method (`"range"`, `"mean"` or `"zscore"`) can
-  also be supplied to apply that method to each column.
+  the name of a scaling method (`"range"`, `"mean"`, `"zscore"` or
+  `"quantile"`) can also be supplied to apply that method to each
+  column.
 
 - scale_method:
 
   indicates the type of scaling to perform on `rows` or `columns` as
-  indicated by `scale`, options include `"range"`, `"mean"` or
-  `"zscore"`. Set to `"range"` by default.
+  indicated by `scale`, options include `"range"`, `"mean"`, `"zscore"`
+  or `"quantile"` (0 to 1 between the `scale_q` and `1 - scale_q`
+  quantiles, with the values beyond them clipped); see
+  [`heat_map_scale`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md).
+  Set to `"range"` by default.
 
 - dist_method:
 
@@ -300,6 +319,18 @@ heat_map(
   their columns. Up to `clust_max` columns are ordered exactly; more are
   ordered from a sample of `clust_max` landmarks, each other column
   placed beside its nearest landmark (200,000 take about 4 seconds).
+  `"peak"` orders the columns by where they are highest along the rows,
+  in the order of the rows in the data (ties by where they are lowest),
+  so that features peaking early along a trajectory come first and
+  cascades run diagonally (see
+  [`heat_map_smooth`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md));
+  it needs no dendrogram either, and with one orders its branches by the
+  mean peak position of their columns. The rows of a trajectory from
+  [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
+  are placed by their position along it (e.g. pseudotime), so the peaks
+  of its lineages are compared by when they occur; other rows split into
+  groups by a factor or character `tree_cut_y` (or `group_by`) are
+  placed by their position within their group.
 
 - tree_support_x:
 
@@ -403,7 +434,9 @@ heat_map(
 - tree_label_text_col_x:
 
   a vector of colours to control the colour of text in x axis cluster
-  labels, set to `"black"` by default.
+  labels, set to `"auto"` by default to use white text on dark labels
+  and black text on light ones, whichever contrasts more with the colour
+  of each label.
 
 - tree_label_text_col_alpha_x:
 
@@ -433,11 +466,14 @@ heat_map(
 - tree_order_y:
 
   how the branches of the y axis dendrogram are ordered, either
-  `"default"`, `"olo"`, `"mean"` or `"spectral"`, as for `tree_order_x`.
-  A spectral order without a dendrogram orders the rows on their own
-  (e.g. cells along a differentiation trajectory or samples along a time
-  course); rows grouped by `tree_cut_y` or `tree_kmeans_y` keep it
-  within each group.
+  `"default"`, `"olo"`, `"mean"`, `"spectral"` or `"peak"`, as for
+  `tree_order_x`. A spectral order without a dendrogram orders the rows
+  on their own (e.g. cells along a differentiation trajectory or samples
+  along a time course); rows grouped by `tree_cut_y` or `tree_kmeans_y`
+  keep it within each group. `"peak"` orders the rows by where they are
+  highest along the columns (e.g. genes along pseudotime with
+  `swap_axes = TRUE`), within the groups of a factor or character
+  `tree_cut_x`.
 
 - tree_support_y:
 
@@ -548,7 +584,9 @@ heat_map(
 - tree_label_text_col_y:
 
   a vector of colours to control the colour of text in y axis cluster
-  labels, set to `"black"` by default.
+  labels, set to `"auto"` by default to use white text on dark labels
+  and black text on light ones, whichever contrasts more with the colour
+  of each label.
 
 - tree_label_text_col_alpha_y:
 
@@ -784,7 +822,12 @@ heat_map(
   as a box plot or violin (`bar_type_x`), supply a list with a numeric
   vector for each column (named or in the original order), a matrix or
   data.frame with one column for each column of `x`, or `TRUE` for the
-  values of each column of the heatmap (after scaling).
+  values of each column of the heatmap (after scaling). For stacked bars
+  (`bar_type_x = "stack"` or `"fill"`), supply a matrix with one column
+  per column of `x` and one row per part (e.g. counts per condition).
+  `"n"` shows the number of cells in each group of a summary from
+  [`heat_map_summarise`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)`(group_by = ...)`,
+  or with stacked bars their numbers in each part of `stack_by`.
 
 - bar_type_x:
 
@@ -792,10 +835,14 @@ heat_map(
   column), `"box"` (box plots of the values of each column, with the
   median, quartiles, whiskers to the most extreme values within 1.5
   times the interquartile range and points beyond them) or `"violin"`
-  (densities of the values of each column, with a line at the median).
-  Set to `NULL` by default to draw bars for a vector and box plots for
-  distributions. `bar_fill_x` and the `bar_line_*_x` arguments style the
-  boxes and violins.
+  (densities of the values of each column, with a line at the median),
+  `"stack"` (stacked bars of the parts of each column, e.g. the number
+  of cells of each condition in each cluster) or `"fill"` (stacked bars
+  of the proportions of the parts). Set to `NULL` by default to draw
+  bars for a vector and box plots for distributions. `bar_fill_x` and
+  the `bar_line_*_x` arguments style the boxes and violins; for stacked
+  bars `bar_fill_x` gives one colour per part (named by part or in
+  order), and the parts get a legend.
 
 - bar_axis_label_x:
 
@@ -872,10 +919,16 @@ heat_map(
   clustering. As for `bar_values_x`, a list (one numeric vector per
   row), a matrix or data.frame with one row per row of `x`, or `TRUE`
   (the values of each row of the heatmap) shows the distribution of each
-  row as a box plot or violin. The axis of the row bar graph is drawn on
-  the x axis side with the x axis text font, size, colour, adjustment
-  and tick length (and that of the column bar graph on the y axis side
-  with the y axis settings); its numbers are always horizontal.
+  row as a box plot or violin, and a matrix with one row per row of `x`
+  and one column per part gives stacked bars (`bar_type_y = "stack"` or
+  `"fill"`). `"n"` shows the number of cells in each group of a summary
+  from
+  [`heat_map_summarise`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)`(group_by = ...)`,
+  or with stacked bars their numbers in each part of `stack_by`. The
+  axis of the row bar graph is drawn on the x axis side with the x axis
+  text font, size, colour, adjustment and tick length (and that of the
+  column bar graph on the y axis side with the y axis settings); its
+  numbers are always horizontal.
 
 - bar_type_y:
 
@@ -1216,6 +1269,13 @@ heat_map(
   the limits of the scale (e.g. with
   `cell_col_scale_limits = "robust"`), set to FALSE by default.
 
+- legend_size_format:
+
+  the text of the size legend: `NULL` (the default) for its values,
+  `"percent"` for values between 0 and 1 (e.g. the proportion of cells
+  detected) shown as percentages, or a function taking the values and
+  returning their labels.
+
 - legend_title:
 
   a vector of up to three elements containing text to be displayed above
@@ -1388,6 +1448,83 @@ heat_map(
   vector to control the height and width of the popup window in inches,
   set to `c(7,7)`.
 
+- features:
+
+  the features (genes, proteins or markers) of single-cell data to show,
+  as names (or indices), in the order to show them. Only these features
+  are read from sparse data, so a few markers of a large dataset need
+  little memory. Features are matched to the row names of
+  `SingleCellExperiment` and `Seurat` objects (or to gene symbols in the
+  `rowData()` column `Symbol`, `gene_name` or similar), to the marker
+  names (`desc`) or channel names of a `flowFrame` or `flowSet` and to
+  the column names of matrices and data.frames. Missing features are an
+  error that names them. Set to `NULL` by default to show every feature;
+  a message is shown when the dense values would take more than 1 GB.
+
+- assay:
+
+  the values of single-cell data to show: an assay of a
+  `SingleCellExperiment` or `SummarizedExperiment` (by name or number;
+  by default `"logcounts"`, else `"exprs"`, else the first), or for a
+  `Seurat` object an assay (its `"data"` layer), a layer of the default
+  assay (e.g. `"counts"` or `"scale.data"`) or both as
+  `c(assay, layer)`.
+
+- group_by:
+
+  the group of each cell (e.g. its cluster or cell type): the name of a
+  column of the cells' metadata (`colData()` of a
+  `SingleCellExperiment`, `meta.data` of a `Seurat` object, `"sample"`
+  or a `pData()` column of a `flowSet`), of a column of a matrix,
+  data.frame or `flowFrame` (left out of the features), or a vector with
+  the group of each cell. The cells are grouped as by `tree_cut_y`, in
+  the order of the groups' factor levels (sorted for other vectors), and
+  the groups are labelled (`tree_label_y`). Cells without a group (`NA`)
+  are left out with a message.
+
+- group_max:
+
+  the largest number of cells to show from each group of `group_by` (or
+  in all when there are no groups), drawn with a fixed seed by
+  [`heat_map_downsample`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_downsample.md),
+  so that small groups stay visible next to large ones. Arguments with
+  one value per cell (`bar_values_y`, a logical `mark_y`, and matrices
+  given to `cell_size`, `cell_text`, `cell_split`, `cell_uncertainty`,
+  `cell_values` and `cell_border_mask`) are kept for the cells shown.
+  Set to `NULL` by default to show every cell.
+
+- annotation_by:
+
+  annotations of the cells drawn as tracks beside the heatmap (as
+  `annotation_y`): names of columns of the cells' metadata (see
+  `group_by`), or a data.frame with one row per cell.
+
+- swap_axes:
+
+  logical indicating whether single-cell data should be drawn with one
+  row per feature and one column per cell (as Seurat's `DoHeatmap()`
+  draws them) instead of one row per cell, set to `FALSE` by default.
+  The groups and annotations of the cells are then drawn along the x
+  axis (`tree_cut_x`, `annotation_x`); other arguments refer to the
+  heatmap as drawn.
+
+- transform:
+
+  `"asinh"` to transform the values with the inverse hyperbolic sine of
+  each value divided by `cofactor` before any scaling (the usual
+  transform of cytometry intensities), or `NULL` (default) to draw the
+  values as they are.
+
+- cofactor:
+
+  the cofactor of `transform = "asinh"`: one number (5 by default, as
+  for mass cytometry; about 150 is common for flow cytometry) or one per
+  column, named by column.
+
+- scale_q:
+
+  the quantile of `scale_method = "quantile"`, set to 0.01 by default.
+
 - ...:
 
   additional arguments passed to
@@ -1473,6 +1610,27 @@ heat_map_info(hm)$row_clusters
 #>                   3                   2                   2                   2 
 #>      Ford Pantera L        Ferrari Dino       Maserati Bora          Volvo 142E 
 #>                   4                   4                   4                   2 
+
+# Single cells grouped by cluster, at most 20 cells of each, with their
+# sample as an annotation (a data.frame here; a SingleCellExperiment, Seurat
+# object or flowSet is read in the same way)
+set.seed(1)
+cells <- data.frame(
+  CD3 = c(rnorm(200, 4), rnorm(30, 1)),
+  CD19 = c(rnorm(200, 1), rnorm(30, 4)),
+  CD56 = rnorm(230, 2),
+  cluster = rep(c("T cells", "B cells"), c(200, 30)),
+  sample = sample(c("A", "B"), 230, replace = TRUE)
+)
+heat_map(
+  cells,
+  features = c("CD3", "CD19", "CD56"),
+  group_by = "cluster",
+  group_max = 20,
+  annotation_by = "sample",
+  popup = FALSE
+)
+
 
 # Number of row clusters chosen by mean silhouette width, rows in spectral
 # order (no dendrogram needed for a spectral order)

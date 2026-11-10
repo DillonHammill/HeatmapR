@@ -21,7 +21,7 @@ cell size of a dot plot."><meta property="og:image" content="https://dillonhammi
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,20 @@ cell size of a dot plot."><meta property="og:image" content="https://dillonhammi
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/HeatmapR.html">Get started</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/ordering.html">Ordering rows and columns</a></li>
+    <li><a class="dropdown-item" href="../articles/large-data.html">Large heatmaps</a></li>
+    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/cells.html">More than colour</a></li>
+    <li><a class="dropdown-item" href="../articles/integration.html">Working with heatmaps</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
+    <li><a class="dropdown-item" href="../articles/benchmarks.html">Speed comparison</a></li>
+  </ul></li>
+<li class="nav-item"><a class="nav-link" href="../articles/benchmarks.html">Speed</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -65,7 +79,16 @@ cell size of a dot plot.</p>
 <span>  group_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  group_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  fun <span class="op">=</span> <span class="st">"mean"</span>,</span>
-<span>  threshold <span class="op">=</span> <span class="fl">0</span></span>
+<span>  threshold <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  features <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  assay <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  transform <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cofactor <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  scale <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  q <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  scale_when <span class="op">=</span> <span class="st">"last"</span>,</span>
+<span>  stack_by <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -74,8 +97,15 @@ cell size of a dot plot.</p>
 
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>a matrix or data.frame. Only numeric columns are summarised;
-other columns are dropped with a message.</p></dd>
+<dd><p>a matrix or data.frame, or single-cell data (a
+<code>SingleCellExperiment</code> or <code>SummarizedExperiment</code>, a
+<code>Seurat</code> object, a <code>flowFrame</code> or <code>flowSet</code>, or a sparse
+matrix with one cell per row; see <code><a href="heat_map.html">heat_map</a></code>). Only numeric
+columns are summarised; other columns are dropped with a message.
+Single-cell data are summarised with one row per group of cells and one
+column per feature. The mean, sum, number, proportion detected and
+median of sparse data are found from the non-zero values, without a
+dense copy, and equal those of the dense data.</p></dd>
 
 
 <dt id="arg-group-x">group_x<a class="anchor" aria-label="anchor" href="#arg-group-x"></a></dt>
@@ -108,13 +138,86 @@ inside the cells.</p></dd>
 <dd><p>values above <code>threshold</code> are counted by
 <code>fun = "detected"</code>, set to 0 by default.</p></dd>
 
+
+<dt id="arg-features">features<a class="anchor" aria-label="anchor" href="#arg-features"></a></dt>
+<dd><p>the features of single-cell data to summarise, as names
+(or indices); see <code><a href="heat_map.html">heat_map</a></code>. Set to <code>NULL</code> by
+default for every feature.</p></dd>
+
+
+<dt id="arg-assay">assay<a class="anchor" aria-label="anchor" href="#arg-assay"></a></dt>
+<dd><p>the values of single-cell data to summarise; see
+<code><a href="heat_map.html">heat_map</a></code>.</p></dd>
+
+
+<dt id="arg-group-by">group_by<a class="anchor" aria-label="anchor" href="#arg-group-by"></a></dt>
+<dd><p>the group of each cell of single-cell data: the name of a
+column of the cells' metadata, or a vector with the group of each cell
+(as <code>group_y</code>); see <code><a href="heat_map.html">heat_map</a></code>. Each group becomes
+one row of the result. Several column names group the cells by their
+combinations, e.g. <code>c("cluster", "sample")</code> for the medians of each
+cluster in each sample, in rows named <code>"cluster / sample"</code> and
+ordered by cluster, then sample.</p></dd>
+
+
+<dt id="arg-transform">transform<a class="anchor" aria-label="anchor" href="#arg-transform"></a></dt>
+<dd><p><code>"asinh"</code> to transform the values of the cells with
+the inverse hyperbolic sine of each value divided by <code>cofactor</code>
+before summarising them (the usual transform of cytometry intensities),
+or <code>NULL</code> (default) to summarise the values as they are. The zeros
+of sparse data stay zeros, so they are transformed without a dense copy.</p></dd>
+
+
+<dt id="arg-cofactor">cofactor<a class="anchor" aria-label="anchor" href="#arg-cofactor"></a></dt>
+<dd><p>the cofactor of <code>transform = "asinh"</code>: one number (5
+by default, as for mass cytometry; about 150 is common for flow
+cytometry) or one per feature, named by feature.</p></dd>
+
+
+<dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
+<dd><p>the scaling of each feature (column): <code>FALSE</code> (default)
+for none, or a method of <code><a href="heat_map_scale.html">heat_map_scale</a></code>:
+<code>"quantile"</code> (0 to 1 between the <code>q</code> and <code>1 - q</code>
+quantiles, with the values beyond them clipped), <code>"range"</code>,
+<code>"zscore"</code> or <code>"mean"</code>.</p></dd>
+
+
+<dt id="arg-q">q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
+<dd><p>the quantile of <code>scale = "quantile"</code>, set to 0.01 by
+default.</p></dd>
+
+
+<dt id="arg-scale-when">scale_when<a class="anchor" aria-label="anchor" href="#arg-scale-when"></a></dt>
+<dd><p><code>"last"</code> (default) to scale the summaries of the
+groups, or <code>"first"</code> to scale the cells before summarising them.
+Scaling sparse data first reads the chosen features as a dense matrix.</p></dd>
+
+
+<dt id="arg-stack-by">stack_by<a class="anchor" aria-label="anchor" href="#arg-stack-by"></a></dt>
+<dd><p>the part of each cell for stacked bars beside the
+summaries (e.g. its condition or sample): the name of a column of the
+cells' metadata, or a vector with the part of each cell. The number of
+cells of each group in each part is kept in the <code>"stack"</code> attribute
+of the result, which <code>heat_map(bar_values_y = "n", bar_type_y =
+  "stack")</code> draws. Needs <code>group_by</code>.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>a numeric matrix with one column per group of <code>group_x</code> (or
 the columns of <code>x</code>) and one row per group of <code>group_y</code> (or the
-rows of <code>x</code>), or a matrix of lists for <code>fun = "values"</code>. Groups are in the order of their factor levels (sorted
-for other vectors). Groups without any values are <code>NA</code>.</p>
+rows of <code>x</code>), or a matrix of lists for <code>fun = "values"</code>.
+Groups are in the order of their factor levels (sorted for other
+vectors). Groups without any values are <code>NA</code>. Summaries of groups
+from <code>group_by</code> keep three attributes, which <code><a href="heat_map.html">heat_map()</a></code>
+reads: <code>"n"</code>, the number of cells in each group (for
+<code>bar_values_y = "n"</code>); <code>"stack"</code> with <code>stack_by</code>, a
+matrix with the number of cells of each group (row) in each part
+(column); and <code>"groups"</code>, a data.frame with one row per group
+holding the grouping columns and the other metadata that is the same for
+every cell of the group (e.g. the condition of each sample), which
+<code>heat_map(group_by = , annotation_by = )</code> can use as the metadata
+of the rows.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -153,6 +256,48 @@ for other vectors). Groups without any values are <code>NA</code>.</p>
 <span class="r-in"><span>  popup <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="heat_map_summarise-3.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Single cells - the median of each marker in each cluster</span></span></span>
+<span class="r-in"><span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  CD3 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">4</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  CD19 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  cluster <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T cells"</span>, <span class="st">"B cells"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">heat_map_summarise</span><span class="op">(</span><span class="va">cells</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>, fun <span class="op">=</span> <span class="st">"median"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>              CD3      CD19</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> B cells 1.129893 3.9460525</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> T cells 4.083076 0.9576054</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"n")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> B cells T cells </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      30     200 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> attr(,"groups")</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         cluster</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> B cells B cells</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> T cells T cells</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Cytometry - medians of asinh-transformed intensities, scaled to 0-1</span></span></span>
+<span class="r-in"><span><span class="co"># between the 1st and 99th percentiles of each marker, with the number of</span></span></span>
+<span class="r-in"><span><span class="co"># cells of each condition in each cluster as stacked bars</span></span></span>
+<span class="r-in"><span><span class="va">events</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  CD3 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fl">1</span> <span class="op">/</span> <span class="fl">300</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  CD4 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fl">1</span> <span class="op">/</span> <span class="fl">100</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  CD8 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fl">1</span> <span class="op">/</span> <span class="fl">50</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  cluster <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T4"</span>, <span class="st">"T8"</span>, <span class="st">"B"</span><span class="op">)</span>, <span class="fl">2000</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"stimulated"</span><span class="op">)</span>, <span class="fl">2000</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">medians</span> <span class="op">&lt;-</span> <span class="fu">heat_map_summarise</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">events</span>,</span></span>
+<span class="r-in"><span>  group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span></span>
+<span class="r-in"><span>  fun <span class="op">=</span> <span class="st">"median"</span>,</span></span>
+<span class="r-in"><span>  transform <span class="op">=</span> <span class="st">"asinh"</span>,</span></span>
+<span class="r-in"><span>  cofactor <span class="op">=</span> <span class="fl">5</span>,</span></span>
+<span class="r-in"><span>  scale <span class="op">=</span> <span class="st">"quantile"</span>,</span></span>
+<span class="r-in"><span>  stack_by <span class="op">=</span> <span class="st">"condition"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Applying the asinh transform (cofactor 5)...</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Applying quantile scaling to each column...</span>
+<span class="r-in"><span><span class="fu"><a href="heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">medians</span>, bar_values_y <span class="op">=</span> <span class="st">"n"</span>, bar_type_y <span class="op">=</span> <span class="st">"stack"</span>, popup <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="heat_map_summarise-4.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

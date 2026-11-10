@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,20 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/HeatmapR.html">Get started</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/ordering.html">Ordering rows and columns</a></li>
+    <li><a class="dropdown-item" href="../articles/large-data.html">Large heatmaps</a></li>
+    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/cells.html">More than colour</a></li>
+    <li><a class="dropdown-item" href="../articles/integration.html">Working with heatmaps</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
+    <li><a class="dropdown-item" href="../articles/benchmarks.html">Speed comparison</a></li>
+  </ul></li>
+<li class="nav-item"><a class="nav-link" href="../articles/benchmarks.html">Speed</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -63,7 +77,7 @@
 <span>  tree_label_text_x <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  tree_label_text_font_x <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_label_text_size_x <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  tree_label_text_col_x <span class="op">=</span> <span class="st">"black"</span>,</span>
+<span>  tree_label_text_col_x <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  tree_label_text_col_alpha_x <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_size_y <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -81,7 +95,7 @@
 <span>  tree_label_text_y <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  tree_label_text_font_y <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_label_text_size_y <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  tree_label_text_col_y <span class="op">=</span> <span class="st">"black"</span>,</span>
+<span>  tree_label_text_col_y <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  tree_label_text_col_alpha_y <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  cell_shape <span class="op">=</span> <span class="st">"rect"</span>,</span>
 <span>  cell_size <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -190,6 +204,7 @@
 <span>  legend_col_scale_size <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  legend_col_breaks <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_col_density <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  legend_size_format <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  legend_title_text_font <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  legend_title_text_size <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -219,6 +234,15 @@
 <span>  fit_text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  popup <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  popup_size <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">7</span>, <span class="fl">7</span><span class="op">)</span>,</span>
+<span>  features <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  assay <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  group_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  group_max <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  annotation_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  swap_axes <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  transform <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cofactor <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  scale_q <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -228,7 +252,14 @@
 
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
-<dd><p>matrix or data.frame containing the data to display in the heatmap.</p></dd>
+<dd><p>matrix or data.frame containing the data to display in the heatmap,
+or single-cell data: a <code>SingleCellExperiment</code> or
+<code>SummarizedExperiment</code>, a <code>Seurat</code> object, a <code>flowFrame</code>
+or <code>flowSet</code>, or a sparse matrix (e.g. a <code>dgCMatrix</code>, one cell
+per row). Single-cell data are drawn with one row per cell and one
+column per feature (see <code>features</code>, <code>assay</code>,
+<code>group_by</code>, <code>group_max</code>, <code>annotation_by</code> and
+<code>swap_axes</code>).</p></dd>
 
 
 <dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
@@ -236,16 +267,17 @@
 constructing the heatmap (<code>TRUE</code> scales each column). Additional
 options include <code>"column"</code> or <code>"row"</code> to indicate whether
 scaling should be performed within each column or each row. For
-convenience, the name of a scaling method (<code>"range"</code>, <code>"mean"</code>
-or <code>"zscore"</code>) can also be supplied to apply that method to each
-column.</p></dd>
+convenience, the name of a scaling method (<code>"range"</code>, <code>"mean"</code>,
+<code>"zscore"</code> or <code>"quantile"</code>) can also be supplied to apply that
+method to each column.</p></dd>
 
 
 <dt id="arg-scale-method">scale_method<a class="anchor" aria-label="anchor" href="#arg-scale-method"></a></dt>
 <dd><p>indicates the type of scaling to perform on <code>rows</code>
 or <code>columns</code> as indicated by <code>scale</code>, options include
-<code>"range"</code>, <code>"mean"</code> or <code>"zscore"</code>. Set to <code>"range"</code> by
-default.</p></dd>
+<code>"range"</code>, <code>"mean"</code>, <code>"zscore"</code> or <code>"quantile"</code>
+(0 to 1 between the <code>scale_q</code> and <code>1 - scale_q</code> quantiles,
+with the values beyond them clipped); see <code><a href="heat_map_scale.html">heat_map_scale</a></code>. Set to <code>"range"</code> by default.</p></dd>
 
 
 <dt id="arg-dist-method">dist_method<a class="anchor" aria-label="anchor" href="#arg-dist-method"></a></dt>
@@ -337,7 +369,17 @@ similar columns together. With a dendrogram, its branches are ordered by
 the mean spectral position of their columns. Up to <code>clust_max</code>
 columns are ordered exactly; more are ordered from a sample of
 <code>clust_max</code> landmarks, each other column placed beside its nearest
-landmark (200,000 take about 4 seconds).</p></dd>
+landmark (200,000 take about 4 seconds). <code>"peak"</code> orders the
+columns by where they are highest along the rows, in the order of the
+rows in the data (ties by where they are lowest), so that features
+peaking early along a trajectory come first and cascades run diagonally
+(see <code><a href="heat_map_smooth.html">heat_map_smooth</a></code>); it needs no dendrogram either, and
+with one orders its branches by the mean peak position of their columns.
+The rows of a trajectory from <code><a href="heat_map_smooth.html">heat_map_smooth()</a></code> are placed by
+their position along it (e.g. pseudotime), so the peaks of its lineages
+are compared by when they occur; other rows split into groups by a
+factor or character <code>tree_cut_y</code> (or <code>group_by</code>) are placed
+by their position within their group.</p></dd>
 
 
 <dt id="arg-tree-support-x">tree_support_x<a class="anchor" aria-label="anchor" href="#arg-tree-support-x"></a></dt>
@@ -440,7 +482,9 @@ text in the x axis cluster labels, set to 1 by default.</p></dd>
 
 <dt id="arg-tree-label-text-col-x">tree_label_text_col_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-col-x"></a></dt>
 <dd><p>a vector of colours to control the colour of
-text in x axis cluster labels, set to <code>"black"</code> by default.</p></dd>
+text in x axis cluster labels, set to <code>"auto"</code> by default to
+use white text on dark labels and black text on light ones, whichever
+contrasts more with the colour of each label.</p></dd>
 
 
 <dt id="arg-tree-label-text-col-alpha-x">tree_label_text_col_alpha_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-col-alpha-x"></a></dt>
@@ -473,12 +517,15 @@ default.</p></dd>
 
 <dt id="arg-tree-order-y">tree_order_y<a class="anchor" aria-label="anchor" href="#arg-tree-order-y"></a></dt>
 <dd><p>how the branches of the y axis dendrogram are ordered,
-either <code>"default"</code>, <code>"olo"</code>, <code>"mean"</code> or
-<code>"spectral"</code>, as for <code>tree_order_x</code>. A spectral order without
-a dendrogram orders the rows on their own (e.g. cells along a
-differentiation trajectory or samples along a time course); rows
-grouped by <code>tree_cut_y</code> or <code>tree_kmeans_y</code> keep it within
-each group.</p></dd>
+either <code>"default"</code>, <code>"olo"</code>, <code>"mean"</code>,
+<code>"spectral"</code> or <code>"peak"</code>, as for <code>tree_order_x</code>. A
+spectral order without a dendrogram orders the rows on their own (e.g.
+cells along a differentiation trajectory or samples along a time
+course); rows grouped by <code>tree_cut_y</code> or <code>tree_kmeans_y</code> keep
+it within each group. <code>"peak"</code> orders the rows by where they are
+highest along the columns (e.g. genes along pseudotime with
+<code>swap_axes = TRUE</code>), within the groups of a factor or character
+<code>tree_cut_x</code>.</p></dd>
 
 
 <dt id="arg-tree-support-y">tree_support_y<a class="anchor" aria-label="anchor" href="#arg-tree-support-y"></a></dt>
@@ -590,7 +637,9 @@ text in the y axis cluster labels, set to 1 by default.</p></dd>
 
 <dt id="arg-tree-label-text-col-y">tree_label_text_col_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-col-y"></a></dt>
 <dd><p>a vector of colours to control the colour of
-text in y axis cluster labels, set to <code>"black"</code> by default.</p></dd>
+text in y axis cluster labels, set to <code>"auto"</code> by default to
+use white text on dark labels and black text on light ones, whichever
+contrasts more with the colour of each label.</p></dd>
 
 
 <dt id="arg-tree-label-text-col-alpha-y">tree_label_text_col_alpha_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-col-alpha-y"></a></dt>
@@ -836,7 +885,12 @@ To show the distribution of several values for each column as a box
 plot or violin (<code>bar_type_x</code>), supply a list with a numeric vector
 for each column (named or in the original order), a matrix or data.frame
 with one column for each column of <code>x</code>, or <code>TRUE</code> for the
-values of each column of the heatmap (after scaling).</p></dd>
+values of each column of the heatmap (after scaling). For stacked bars
+(<code>bar_type_x = "stack"</code> or <code>"fill"</code>), supply a matrix with one
+column per column of <code>x</code> and one row per part (e.g. counts per
+condition). <code>"n"</code> shows the number of cells in each group of a
+summary from <code><a href="heat_map_summarise.html">heat_map_summarise</a>(group_by = ...)</code>, or with
+stacked bars their numbers in each part of <code>stack_by</code>.</p></dd>
 
 
 <dt id="arg-bar-type-x">bar_type_x<a class="anchor" aria-label="anchor" href="#arg-bar-type-x"></a></dt>
@@ -845,9 +899,14 @@ values of each column of the heatmap (after scaling).</p></dd>
 values of each column, with the median, quartiles, whiskers to the most
 extreme values within 1.5 times the interquartile range and points beyond
 them) or <code>"violin"</code> (densities of the values of each column, with a
-line at the median). Set to <code>NULL</code> by default to draw bars for a
-vector and box plots for distributions. <code>bar_fill_x</code> and the
-<code>bar_line_*_x</code> arguments style the boxes and violins.</p></dd>
+line at the median), <code>"stack"</code> (stacked bars of the parts of each
+column, e.g. the number of cells of each condition in each cluster) or
+<code>"fill"</code> (stacked bars of the proportions of the parts). Set to
+<code>NULL</code> by default to draw bars for a vector and box plots for
+distributions. <code>bar_fill_x</code> and the <code>bar_line_*_x</code> arguments
+style the boxes and violins; for stacked bars <code>bar_fill_x</code> gives
+one colour per part (named by part or in order), and the parts get a
+legend.</p></dd>
 
 
 <dt id="arg-bar-axis-label-x">bar_axis_label_x<a class="anchor" aria-label="anchor" href="#arg-bar-axis-label-x"></a></dt>
@@ -925,7 +984,12 @@ will be internally reordered to match the order of rows as determined by
 hierarchical clustering. As for <code>bar_values_x</code>, a list (one numeric
 vector per row), a matrix or data.frame with one row per row of
 <code>x</code>, or <code>TRUE</code> (the values of each row of the heatmap) shows
-the distribution of each row as a box plot or violin. The axis of the
+the distribution of each row as a box plot or violin, and a matrix with
+one row per row of <code>x</code> and one column per part gives stacked bars
+(<code>bar_type_y = "stack"</code> or <code>"fill"</code>). <code>"n"</code> shows the
+number of cells in each group of a summary from
+<code><a href="heat_map_summarise.html">heat_map_summarise</a>(group_by = ...)</code>, or with stacked bars
+their numbers in each part of <code>stack_by</code>. The axis of the
 row bar graph is drawn on the x axis side with the x axis text font,
 size, colour, adjustment and tick length (and that of the column bar
 graph on the y axis side with the y axis settings); its numbers are
@@ -1286,6 +1350,13 @@ values sit near the limits of the scale (e.g. with
 <code>cell_col_scale_limits = "robust"</code>), set to FALSE by default.</p></dd>
 
 
+<dt id="arg-legend-size-format">legend_size_format<a class="anchor" aria-label="anchor" href="#arg-legend-size-format"></a></dt>
+<dd><p>the text of the size legend: <code>NULL</code> (the
+default) for its values, <code>"percent"</code> for values between 0 and 1 (e.g.
+the proportion of cells detected) shown as percentages, or a function
+taking the values and returning their labels.</p></dd>
+
+
 <dt id="arg-legend-title">legend_title<a class="anchor" aria-label="anchor" href="#arg-legend-title"></a></dt>
 <dd><p>a vector of up to three elements containing text to be
 displayed above the cell colour, size and levels legends respectively.</p></dd>
@@ -1461,6 +1532,87 @@ sessions the heatmap is drawn on the current device.</p></dd>
 in inches, set to <code>c(7,7)</code>.</p></dd>
 
 
+<dt id="arg-features">features<a class="anchor" aria-label="anchor" href="#arg-features"></a></dt>
+<dd><p>the features (genes, proteins or markers) of single-cell
+data to show, as names (or indices), in the order to show them. Only
+these features are read from sparse data, so a few markers of a large
+dataset need little memory. Features are matched to the row names of
+<code>SingleCellExperiment</code> and <code>Seurat</code> objects (or to gene
+symbols in the <code>rowData()</code> column <code>Symbol</code>,
+<code>gene_name</code> or similar), to the marker names (<code>desc</code>) or
+channel names of a <code>flowFrame</code> or <code>flowSet</code> and to the
+column names of matrices and data.frames. Missing features are an error
+that names them. Set to <code>NULL</code> by default to show every feature;
+a message is shown when the dense values would take more than 1 GB.</p></dd>
+
+
+<dt id="arg-assay">assay<a class="anchor" aria-label="anchor" href="#arg-assay"></a></dt>
+<dd><p>the values of single-cell data to show: an assay of a
+<code>SingleCellExperiment</code> or <code>SummarizedExperiment</code> (by name or
+number; by default <code>"logcounts"</code>, else <code>"exprs"</code>, else the
+first), or for a <code>Seurat</code> object an assay (its <code>"data"</code>
+layer), a layer of the default assay (e.g. <code>"counts"</code> or
+<code>"scale.data"</code>) or both as <code>c(assay, layer)</code>.</p></dd>
+
+
+<dt id="arg-group-by">group_by<a class="anchor" aria-label="anchor" href="#arg-group-by"></a></dt>
+<dd><p>the group of each cell (e.g. its cluster or cell type): the
+name of a column of the cells' metadata (<code>colData()</code> of a
+<code>SingleCellExperiment</code>, <code>meta.data</code> of a <code>Seurat</code>
+object, <code>"sample"</code> or a <code>pData()</code> column of a
+<code>flowSet</code>), of a column of a matrix, data.frame or
+<code>flowFrame</code> (left out of the features), or a vector with the group
+of each cell. The cells are grouped as by <code>tree_cut_y</code>, in the order
+of the groups' factor levels (sorted for other vectors), and the groups
+are labelled (<code>tree_label_y</code>). Cells without a group (<code>NA</code>)
+are left out with a message.</p></dd>
+
+
+<dt id="arg-group-max">group_max<a class="anchor" aria-label="anchor" href="#arg-group-max"></a></dt>
+<dd><p>the largest number of cells to show from each group of
+<code>group_by</code> (or in all when there are no groups), drawn with a fixed
+seed by <code><a href="heat_map_downsample.html">heat_map_downsample</a></code>, so that small groups stay
+visible next to large ones. Arguments with one value per cell
+(<code>bar_values_y</code>, a logical <code>mark_y</code>, and matrices given to
+<code>cell_size</code>, <code>cell_text</code>, <code>cell_split</code>,
+<code>cell_uncertainty</code>, <code>cell_values</code> and
+<code>cell_border_mask</code>) are kept for the cells shown. Set to
+<code>NULL</code> by default to show every cell.</p></dd>
+
+
+<dt id="arg-annotation-by">annotation_by<a class="anchor" aria-label="anchor" href="#arg-annotation-by"></a></dt>
+<dd><p>annotations of the cells drawn as tracks beside the
+heatmap (as <code>annotation_y</code>): names of columns of the cells'
+metadata (see <code>group_by</code>), or a data.frame with one row per cell.</p></dd>
+
+
+<dt id="arg-swap-axes">swap_axes<a class="anchor" aria-label="anchor" href="#arg-swap-axes"></a></dt>
+<dd><p>logical indicating whether single-cell data should be
+drawn with one row per feature and one column per cell (as Seurat's
+<code>DoHeatmap()</code> draws them) instead of one row per cell, set to
+<code>FALSE</code> by default. The groups and annotations of the cells are
+then drawn along the x axis (<code>tree_cut_x</code>, <code>annotation_x</code>);
+other arguments refer to the heatmap as drawn.</p></dd>
+
+
+<dt id="arg-transform">transform<a class="anchor" aria-label="anchor" href="#arg-transform"></a></dt>
+<dd><p><code>"asinh"</code> to transform the values with the inverse
+hyperbolic sine of each value divided by <code>cofactor</code> before any
+scaling (the usual transform of cytometry intensities), or <code>NULL</code>
+(default) to draw the values as they are.</p></dd>
+
+
+<dt id="arg-cofactor">cofactor<a class="anchor" aria-label="anchor" href="#arg-cofactor"></a></dt>
+<dd><p>the cofactor of <code>transform = "asinh"</code>: one number (5
+by default, as for mass cytometry; about 150 is common for flow
+cytometry) or one per column, named by column.</p></dd>
+
+
+<dt id="arg-scale-q">scale_q<a class="anchor" aria-label="anchor" href="#arg-scale-q"></a></dt>
+<dd><p>the quantile of <code>scale_method = "quantile"</code>, set to
+0.01 by default.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>additional arguments passed to <code><a href="heat_map_clust.html">heat_map_clust</a></code> (and
 on to <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist</a></code> or <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code>). Any other
@@ -1541,6 +1693,27 @@ cell colours, can be extracted with <code><a href="heat_map_info.html">heat_map_
 <span class="r-out co"><span class="r-pr">#&gt;</span>      Ford Pantera L        Ferrari Dino       Maserati Bora          Volvo 142E </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   4                   4                   4                   2 </span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Single cells grouped by cluster, at most 20 cells of each, with their</span></span></span>
+<span class="r-in"><span><span class="co"># sample as an annotation (a data.frame here; a SingleCellExperiment, Seurat</span></span></span>
+<span class="r-in"><span><span class="co"># object or flowSet is read in the same way)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  CD3 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">4</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  CD19 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  CD56 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">230</span>, <span class="fl">2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  cluster <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"T cells"</span>, <span class="st">"B cells"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">30</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  sample <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, <span class="fl">230</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">heat_map</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">cells</span>,</span></span>
+<span class="r-in"><span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3"</span>, <span class="st">"CD19"</span>, <span class="st">"CD56"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span></span>
+<span class="r-in"><span>  group_max <span class="op">=</span> <span class="fl">20</span>,</span></span>
+<span class="r-in"><span>  annotation_by <span class="op">=</span> <span class="st">"sample"</span>,</span></span>
+<span class="r-in"><span>  popup <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="heat_map-3.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Number of row clusters chosen by mean silhouette width, rows in spectral</span></span></span>
 <span class="r-in"><span><span class="co"># order (no dendrogram needed for a spectral order)</span></span></span>
 <span class="r-in"><span><span class="fu">heat_map</span><span class="op">(</span></span></span>
@@ -1552,7 +1725,7 @@ cell colours, can be extracted with <code><a href="heat_map_info.html">heat_map_
 <span class="r-in"><span>  popup <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Applying range scaling to each column...</span>
-<span class="r-plt img"><img src="heat_map-3.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="heat_map-4.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

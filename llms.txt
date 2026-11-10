@@ -51,7 +51,11 @@ these layout issues using solely a base graphics approach.
   shared between threads
   ([`heat_map_threads()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.md)),
   and rows or columns beyond `clust_max` are clustered in two stages, so
-  100,000 rows take about half a second on two cores.
+  100,000 rows are clustered in under a second on two cores. A clustered
+  heatmap of 20,000 rows takes under a second (7 seconds clustered
+  exactly), against half a minute to two minutes and several times the
+  memory with pheatmap, `heatmap.2()` or ComplexHeatmap: see the [speed
+  comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html).
 - **HeatmapR** shows sample or feature metadata as annotation tracks
   (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
   labels and bar plots, and adapts the layout so that labels and legends
@@ -100,9 +104,12 @@ text, legends and layouts, **HeatmapR** can:
 
 [TABLE]
 
-See the
+The
+[guides](https://dillonhammill.github.io/HeatmapR/articles/index.html)
+on the website cover ordering, large heatmaps, cells, and working with
+other packages, and the
 [changelog](https://dillonhammill.github.io/HeatmapR/news/index.html)
-for everything new in **HeatmapR** 2.0.0.
+lists everything new in **HeatmapR** 2.0.0.
 
 ## Installation
 
@@ -205,6 +212,8 @@ citation("HeatmapR")
   : Create a complex heatmap using base graphics
 - [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md)
   : Correlation heatmaps with ellipses, numbers and dendrograms
+- [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  : Dot plots of the features of groups of cells
 - [`plot(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   [`print(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   : Draw a heat_map object
@@ -239,6 +248,12 @@ Scale, summarise and cluster data before (or while) drawing a heatmap.
   : Scale numeric data prior to constructing heat_map
 - [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
   : Summarise groups of rows or columns for a heatmap
+- [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+  : Find the marker features of groups of cells
+- [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
+  : Smooth features along pseudotime for a heatmap
+- [`heat_map_downsample()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_downsample.md)
+  : Downsample cells within groups
 - [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
   : Perform hierarchical clustering for heatmap
 - [`heat_map_threads()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.md)
@@ -266,6 +281,55 @@ resolution images.
 
 # Articles
 
-### All vignettes
+### Get started
 
 - [HeatmapR](https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.md):
+
+### Guides
+
+Deeper looks at what HeatmapR can do, with every figure drawn as the
+site is built.
+
+- [Ordering rows and
+  columns](https://dillonhammill.github.io/HeatmapR/articles/ordering.md):
+
+  Dendrogram, optimal leaf and spectral orders, how they work and when
+  to use each, measured on clusters, a trajectory and a cycle.
+
+- [Large
+  heatmaps](https://dillonhammill.github.io/HeatmapR/articles/large-data.md):
+
+  Hundreds of thousands of rows: raster drawing, two-stage clustering,
+  k-means splits, automatic cuts, labels and zoom panels, threads and
+  memory.
+
+- [Single-cell
+  data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.md):
+
+  Heatmaps, dot plots and markers straight from SingleCellExperiment,
+  Seurat, flowFrame and sparse matrices: features by name, groups and
+  annotations from metadata, downsampling, sparse summaries, marker
+  ranking, cytometry and trajectories.
+
+- [More than
+  colour](https://dillonhammill.github.io/HeatmapR/articles/cells.md):
+
+  Uncertainty, two values in a cell, distributions inside cells and
+  beside the heatmap, metadata annotations, honest colour scales and
+  correlations.
+
+- [Working with
+  heatmaps](https://dillonhammill.github.io/HeatmapR/articles/integration.md):
+
+  Redrawing and saving heatmaps, extracting their orders and clusters,
+  tidy data for ggplot2, heatmaps beside ggplot2 plots and alternative
+  text for screen readers.
+
+### Performance
+
+- [Speed
+  comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.md):
+
+  The time and memory HeatmapR, ComplexHeatmap, pheatmap, gplots, stats
+  and ggplot2 need to draw and cluster heatmaps from 10,000 to 9 million
+  cells, and of clustering and leaf ordering on their own.
