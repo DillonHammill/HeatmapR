@@ -151,12 +151,20 @@ heat_map_downsample <- function(groups,
     stop("'x' must be a matrix or data.frame.", call. = FALSE)
   }
   dn <- if(sparse) methods::slot(x, "Dimnames") else dimnames(x)
+  # A SUMMARY FROM heat_map_summarise(group_by = ...) - ITS GROUPS AS THE
+  # METADATA OF ITS ROWS
+  meta <- attr(x, "groups")
+  if(!is.matrix(x) || !is.data.frame(meta) || nrow(meta) != dims[1]) {
+    meta <- NULL
+  } else {
+    rownames(meta) <- NULL
+  }
   list(
     values = x,
     by_column = FALSE,
     features = dn[[2]],
     aliases = NULL,
-    meta = NULL,
+    meta = meta,
     columns = TRUE,
     n = dims[1],
     cells = if(is.data.frame(x)) NULL else dn[[1]]

@@ -191,6 +191,9 @@ heat_map(
   group_max = NULL,
   annotation_by = NULL,
   swap_axes = FALSE,
+  transform = NULL,
+  cofactor = 5,
+  scale_q = 0.01,
   ...
 )
 }
@@ -208,14 +211,15 @@ column per feature (see \code{features}, \code{assay},
 constructing the heatmap (\code{TRUE} scales each column). Additional
 options include \code{"column"} or \code{"row"} to indicate whether
 scaling should be performed within each column or each row. For
-convenience, the name of a scaling method (\code{"range"}, \code{"mean"}
-or \code{"zscore"}) can also be supplied to apply that method to each
-column.}
+convenience, the name of a scaling method (\code{"range"}, \code{"mean"},
+\code{"zscore"} or \code{"quantile"}) can also be supplied to apply that
+method to each column.}
 
 \item{scale_method}{indicates the type of scaling to perform on \code{rows}
 or \code{columns} as indicated by \code{scale}, options include
-\code{"range"}, \code{"mean"} or \code{"zscore"}. Set to \code{"range"} by
-default.}
+\code{"range"}, \code{"mean"}, \code{"zscore"} or \code{"quantile"}
+(0 to 1 between the \code{scale_q} and \code{1 - scale_q} quantiles,
+with the values beyond them clipped); see \code{\link{heat_map_scale}}. Set to \code{"range"} by default.}
 
 \item{dist_method}{indicates the type of distance metric to use when
 constructing dendrograms, set to \code{"euclidean"} distance by default.
@@ -670,16 +674,26 @@ To show the distribution of several values for each column as a box
 plot or violin (\code{bar_type_x}), supply a list with a numeric vector
 for each column (named or in the original order), a matrix or data.frame
 with one column for each column of \code{x}, or \code{TRUE} for the
-values of each column of the heatmap (after scaling).}
+values of each column of the heatmap (after scaling). For stacked bars
+(\code{bar_type_x = "stack"} or \code{"fill"}), supply a matrix with one
+column per column of \code{x} and one row per part (e.g. counts per
+condition). \code{"n"} shows the number of cells in each group of a
+summary from \code{\link{heat_map_summarise}(group_by = ...)}, or with
+stacked bars their numbers in each part of \code{stack_by}.}
 
 \item{bar_type_x}{the type of plot drawn for \code{bar_values_x}:
 \code{"bar"} (one value per column), \code{"box"} (box plots of the
 values of each column, with the median, quartiles, whiskers to the most
 extreme values within 1.5 times the interquartile range and points beyond
 them) or \code{"violin"} (densities of the values of each column, with a
-line at the median). Set to \code{NULL} by default to draw bars for a
-vector and box plots for distributions. \code{bar_fill_x} and the
-\code{bar_line_*_x} arguments style the boxes and violins.}
+line at the median), \code{"stack"} (stacked bars of the parts of each
+column, e.g. the number of cells of each condition in each cluster) or
+\code{"fill"} (stacked bars of the proportions of the parts). Set to
+\code{NULL} by default to draw bars for a vector and box plots for
+distributions. \code{bar_fill_x} and the \code{bar_line_*_x} arguments
+style the boxes and violins; for stacked bars \code{bar_fill_x} gives
+one colour per part (named by part or in order), and the parts get a
+legend.}
 
 \item{bar_axis_label_x}{axis label to use for the x axis bar plot.}
 
@@ -729,7 +743,12 @@ will be internally reordered to match the order of rows as determined by
 hierarchical clustering. As for \code{bar_values_x}, a list (one numeric
 vector per row), a matrix or data.frame with one row per row of
 \code{x}, or \code{TRUE} (the values of each row of the heatmap) shows
-the distribution of each row as a box plot or violin. The axis of the
+the distribution of each row as a box plot or violin, and a matrix with
+one row per row of \code{x} and one column per part gives stacked bars
+(\code{bar_type_y = "stack"} or \code{"fill"}). \code{"n"} shows the
+number of cells in each group of a summary from
+\code{\link{heat_map_summarise}(group_by = ...)}, or with stacked bars
+their numbers in each part of \code{stack_by}. The axis of the
 row bar graph is drawn on the x axis side with the x axis text font,
 size, colour, adjustment and tick length (and that of the column bar
 graph on the y axis side with the y axis settings); its numbers are
@@ -1153,6 +1172,18 @@ drawn with one row per feature and one column per cell (as Seurat's
 \code{FALSE} by default. The groups and annotations of the cells are
 then drawn along the x axis (\code{tree_cut_x}, \code{annotation_x});
 other arguments refer to the heatmap as drawn.}
+
+\item{transform}{\code{"asinh"} to transform the values with the inverse
+hyperbolic sine of each value divided by \code{cofactor} before any
+scaling (the usual transform of cytometry intensities), or \code{NULL}
+(default) to draw the values as they are.}
+
+\item{cofactor}{the cofactor of \code{transform = "asinh"}: one number (5
+by default, as for mass cytometry; about 150 is common for flow
+cytometry) or one per column, named by column.}
+
+\item{scale_q}{the quantile of \code{scale_method = "quantile"}, set to
+0.01 by default.}
 
 \item{...}{additional arguments passed to \code{\link{heat_map_clust}} (and
 on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other

@@ -13,6 +13,15 @@
 * `legend_size_format` labels the size legend: `"percent"` for proportions, or a function.
 * The means, sums, counts and proportions detected of dense single cells (e.g. a `flowFrame`) are found in compiled code, without copying the data (a million cells of 30 markers in 0.4 seconds).
 
+## Cytometry
+
+* The asinh transform: `heat_map_scale(method = "asinh", cofactor = 5)`, `heat_map(transform = "asinh", cofactor = )` and `heat_map_summarise(transform = "asinh", cofactor = )` take the inverse hyperbolic sine of each value divided by the cofactor (5 for mass cytometry, about 150 for flow cytometry; one, or one per marker). Sparse data stay sparse.
+* Quantile scaling: `heat_map_scale(method = "quantile", q = 0.01)` (`heat_map(scale = "quantile", scale_q = )`) maps the `q` and `1 - q` quantiles of each column to 0 and 1 and clips the values beyond them, so that a few bright cells don't compress the colours of the rest. The quantiles are those of `quantile()`, and missing values stay missing.
+* `heat_map_summarise()` transforms and scales: `scale` (a scaling method for each feature) is applied to the summaries (`scale_when = "last"`, the default) or to the cells before summarising (`"first"`). `group_by` takes several columns, e.g. `c("cluster", "sample")` for the medians of each cluster in each sample, in rows named `"cluster / sample"`.
+* Summaries of groups from `group_by` keep the number of cells of each group (attribute `"n"`), their numbers in each part of `stack_by` (e.g. the condition; attribute `"stack"`) and the metadata that is the same for every cell of a group (attribute `"groups"`, e.g. the condition of each sample). `heat_map()` reads them: `bar_values_y = "n"` draws the number of cells of each group, and `heat_map(s, group_by = "cluster", annotation_by = c("sample", "condition"))` groups and annotates the rows of a summary by its groups.
+* Stacked bars: `bar_type_x`/`bar_type_y = "stack"` draws the parts of each column or row (a matrix with one column or row per part, or `"n"` for the counts of `stack_by`) as a stacked bar, and `"fill"` their proportions, with one colour per part (`bar_fill_*`, named by part) and a legend of the parts.
+* Medians of groups of dense rows are found in compiled code, as `median()` finds them: a million cells of 30 markers in 20 clusters in 0.3 seconds (1.1 seconds before), or 1.3 seconds with the asinh transform and quantile scaling.
+
 # HeatmapR 2.0.0
 
 HeatmapR 2.0.0 is a major release: a new layout that sizes every part of a heatmap from its contents, clustering in compiled code that scales to hundreds of thousands of rows, and many new kinds of heatmap (annotations, split cells, distributions inside cells, zoom panels, correlation heatmaps, branch support and more). Some conventions and defaults have changed; they are listed first.

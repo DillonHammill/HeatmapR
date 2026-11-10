@@ -141,6 +141,23 @@ heat_map_bar <- function(x,
         line_col = line_col,
         line_col_alpha = line_col_alpha
       )
+    # STACKED BARS OF THE PARTS OF EACH COLUMN
+    } else if(type %in% c("stack", "fill")) {
+      .draw_stacks(
+        values = values,
+        centers = centers_x,
+        map = function(v) {
+          bar_scale[1] + (v - rng[1]) / diff(rng) * diff(bar_scale)
+        },
+        vertical = TRUE,
+        proportions = type == "fill",
+        fill = fill,
+        fill_alpha = fill_alpha,
+        line_type = line_type,
+        line_width = line_width,
+        line_col = line_col,
+        line_col_alpha = line_col_alpha
+      )
     # BOX PLOTS OR VIOLINS OF THE VALUES OF EACH COLUMN
     } else {
       .draw_distributions(
@@ -283,6 +300,23 @@ heat_map_bar <- function(x,
         line_col = line_col,
         line_col_alpha = line_col_alpha
       )
+    # STACKED BARS OF THE PARTS OF EACH ROW
+    } else if(type %in% c("stack", "fill")) {
+      .draw_stacks(
+        values = values,
+        centers = centers_y,
+        map = function(v) {
+          bar_scale[1] + (v - rng[1]) / diff(rng) * diff(bar_scale)
+        },
+        vertical = FALSE,
+        proportions = type == "fill",
+        fill = fill,
+        fill_alpha = fill_alpha,
+        line_type = line_type,
+        line_width = line_width,
+        line_col = line_col,
+        line_col_alpha = line_col_alpha
+      )
     # BOX PLOTS OR VIOLINS OF THE VALUES OF EACH ROW
     } else {
       .draw_distributions(
@@ -347,11 +381,20 @@ heat_map_bar <- function(x,
 
 #' Range of bar values - always includes zero and ignores missing values
 #'
-#' Box plots and violins (\code{type}) span the range of their finite values.
+#' Box plots and violins (\code{type}) span the range of their finite values,
+#' stacked bars from zero to the largest total (proportions from 0 to 1).
 #'
 #' @noRd
 .bar_range <- function(x,
                        type = "bar") {
+  if(type == "fill") {
+    return(c(0, 1))
+  }
+  if(type == "stack") {
+    totals <- vapply(x, function(v) sum(v, na.rm = TRUE), numeric(1))
+    top <- max(c(0, totals[is.finite(totals)]))
+    return(c(0, if(top > 0) top else 1))
+  }
   if(is.list(x)) {
     x <- unlist(x, use.names = FALSE)
   }
@@ -539,6 +582,177 @@ heat_map_bar <- function(x,
   values
 }
 
+#' The group sizes of a summary as bar values
+#'
+#' \code{"n"} is replaced by the number of cells in each group of a summary
+#' from \code{heat_map_summarise(group_by = ...)} (its \code{"n"}
+#' attribute), or for stacked bars by their counts in each part (its
+#' \code{"stack"} attribute, from \code{stack_by}).
+#'
+#' @param values the bar values supplied to \code{heat_map()}.
+#' @param x the data of the heatmap.
+#' @param type the bar type supplied to \code{heat_map()}.
+#' @param axis \code{"x"} or \code{"y"}.
+#'
+#' @return the values, with the attribute \code{"title"} (the name of the
+#'   parts) for counts by part.
+#'
+#' @noRd
+.bar_counts <- function(values,
+                        x,
+                        type,
+                        axis) {
+  if(!identical(values, "n")) {
+    return(values)
+  }
+  arg <- paste0("bar_values_", axis)
+  stacked <- is.character(type) && length(type) == 1 &&
+    type %in% c("stack", "fill")
+  if(stacked) {
+    counts <- attr(x, "stack")
+    if(is.null(counts)) {
+      stop(
+        "Stacked bars of '", arg, "' = \"n\" need a summary from ",
+        "heat_map_summarise() with 'group_by' and 'stack_by'.",
+        call. = FALSE
+      )
+    }
+    title <- attr(counts, "title")
+    if(axis == "x") {
+      counts <- t(counts)
+    }
+    attr(counts, "title") <- title
+    return(counts)
+  }
+  n <- attr(x, "n")
+  if(is.null(n)) {
+    stop(
+      "'", arg, "' = \"n\" needs a summary of groups of cells from ",
+      "heat_map_summarise() with 'group_by'.",
+      call. = FALSE
+    )
+  }
+  n
+}
+
+#' Draw stacked bars - each bar's parts from zero, in the order of the parts
+#'
+#' @param values a list with the values of the parts of each bar.
+#' @param map maps values to the co-ordinates of the bars.
+#' @param proportions whether each bar is scaled to a total of 1.
+#' @param fill one colour per part.
+#'
+#' @importFrom graphics rect
+#'
+#' @noRd
+.draw_stacks <- function(values,
+                         centers,
+                         map,
+                         vertical = TRUE,
+                         proportions = FALSE,
+                         fill = "grey40",
+                         fill_alpha = 1,
+                         line_type = 1,
+                         line_width = 1,
+                         line_col = "black",
+                         line_col_alpha = 1) {
+  n <- length(values)
+  if(n == 0) {
+    return(invisible(NULL))
+  }
+  k <- max(lengths(values))
+  fill <- rep_len(.alpha_col(fill, fill_alpha), k)
+  border <- .alpha_col(line_col, line_col_alpha)[1]
+  centers <- rep_len(centers, n)
+  lo <- hi <- at <- numeric(0)
+  col <- character(0)
+  for(b in seq_len(n)) {
+    v <- values[[b]]
+    v[is.na(v)] <- 0
+    total <- sum(v)
+    if(total <= 0) {
+      next
+    }
+    if(proportions) {
+      v <- v / total
+    }
+    ends <- cumsum(v)
+    starts <- ends - v
+    keep <- v > 0
+    lo <- c(lo, map(starts[keep]))
+    hi <- c(hi, map(ends[keep]))
+    at <- c(at, rep(centers[b], sum(keep)))
+    col <- c(col, fill[which(keep)])
+  }
+  if(length(at) == 0) {
+    return(invisible(NULL))
+  }
+  if(vertical) {
+    rect(
+      xleft = at - 0.35,
+      ybottom = lo,
+      xright = at + 0.35,
+      ytop = hi,
+      col = col,
+      border = border,
+      lty = line_type[1],
+      lwd = line_width[1]
+    )
+  } else {
+    rect(
+      xleft = lo,
+      ybottom = at - 0.35,
+      xright = hi,
+      ytop = at + 0.35,
+      col = col,
+      border = border,
+      lty = line_type[1],
+      lwd = line_width[1]
+    )
+  }
+  invisible(NULL)
+}
+
+#' The colours and legend of stacked bars
+#'
+#' @param values the list of the parts of each bar.
+#' @param fill the colours supplied (one per part, named by part or in
+#'   order), or the default.
+#' @param supplied whether \code{fill} was supplied.
+#' @param title the name of the parts, or \code{NULL}.
+#'
+#' @return a list with \code{fill} (one colour per part, in order) and
+#'   \code{legend} (a legend of the parts).
+#'
+#' @importFrom grDevices hcl.colors
+#'
+#' @noRd
+.bar_stack <- function(values,
+                       fill,
+                       supplied,
+                       title = NULL) {
+  k <- max(lengths(values))
+  parts <- names(values[[which.max(lengths(values))]])
+  if(is.null(parts)) {
+    parts <- paste("Part", seq_len(k))
+  }
+  if(!supplied) {
+    fill <- hcl.colors(max(k, 2), "Dark 3")[seq_len(k)]
+  } else if(!is.null(names(fill)) && all(parts %in% names(fill))) {
+    fill <- unname(fill[parts])
+  } else {
+    fill <- rep_len(unname(fill), k)
+  }
+  list(
+    fill = fill,
+    legend = list(
+      title = if(is.null(title)) "" else title,
+      labels = parts,
+      colours = fill
+    )
+  )
+}
+
 #' Type of a bar graph track - bars for single values, box plots for
 #' distributions unless violins are requested
 #' @noRd
@@ -550,11 +764,28 @@ heat_map_bar <- function(x,
     return(if(dist) "box" else "bar")
   }
   if(!is.character(type) || length(type) != 1 ||
-     !type %in% c("bar", "box", "violin")) {
+     !type %in% c("bar", "box", "violin", "stack", "fill")) {
     stop(
-      "'", arg, "' must be \"bar\", \"box\" or \"violin\".",
+      "'", arg, "' must be \"bar\", \"box\", \"violin\", \"stack\" or ",
+      "\"fill\".",
       call. = FALSE
     )
+  }
+  if(type %in% c("stack", "fill") && dist) {
+    parts <- lengths(values)
+    ok <- vapply(
+      values,
+      function(v) all(is.na(v) | (is.finite(v) & v >= 0)),
+      logical(1)
+    )
+    if(length(unique(parts)) > 1 || !all(ok)) {
+      stop(
+        "Stacked bars ('", arg, "' = \"", type, "\") need the same number ",
+        "of parts for each bar, none of them negative - e.g. a matrix of ",
+        "counts with one column per part.",
+        call. = FALSE
+      )
+    }
   }
   if(type == "bar" && dist) {
     stop(
