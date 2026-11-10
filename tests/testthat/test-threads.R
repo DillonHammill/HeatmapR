@@ -211,14 +211,14 @@ test_that("optimal leaf ordering gives the same order on one or two threads", {
   x <- matrix(rnorm(1600 * 5), 1600) + rep(sample(0:5 * 3, 1600, TRUE), 5)
   d <- dist(x)
   m <- hclust(d, "average")$merge
-  on.exit(olo_settings_cpp("auto", TRUE), add = TRUE)
+  on.exit(kernel_settings_cpp("auto", TRUE, "auto"), add = TRUE)
   for (bounds in c(TRUE, FALSE)) {
-    olo_settings_cpp("auto", bounds)
+    kernel_settings_cpp("auto", bounds, "auto")
     one <- with_threads(1, .olo_order(m, d))
     expect_identical(with_threads(2, .olo_order(m, d)), one)
     expect_identical(with_threads(2, .olo_order(m, as.matrix(d))), one)
   }
-  olo_settings_cpp("generic", TRUE)
+  kernel_settings_cpp("generic", TRUE, "scalar")
   expect_identical(with_threads(2, .olo_order(m, d)), one)
   # BLOCKS OF ROWS
   leaves <- list(1:1500, 1501:1600)

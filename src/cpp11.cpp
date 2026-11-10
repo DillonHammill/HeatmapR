@@ -62,6 +62,13 @@ extern "C" SEXP _HeatmapR_hclust_rows_cpp(SEXP x, SEXP metric, SEXP q, SEXP meth
   END_CPP11
 }
 // linkage.cpp
+cpp11::doubles row_distances_cpp(cpp11::doubles_matrix<> x, int metric, double q, int threads);
+extern "C" SEXP _HeatmapR_row_distances_cpp(SEXP x, SEXP metric, SEXP q, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(row_distances_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(metric), cpp11::as_cpp<cpp11::decay_t<double>>(q), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// linkage.cpp
 cpp11::list cluster_batch_cpp(cpp11::list xs, SEXP groups, int metric, double q, int method, int threads);
 extern "C" SEXP _HeatmapR_cluster_batch_cpp(SEXP xs, SEXP groups, SEXP metric, SEXP q, SEXP method, SEXP threads) {
   BEGIN_CPP11
@@ -97,10 +104,10 @@ extern "C" SEXP _HeatmapR_olo_order_cpp(SEXP merge, SEXP d, SEXP full, SEXP thre
   END_CPP11
 }
 // olo.cpp
-cpp11::list olo_settings_cpp(std::string kernel, bool bounds);
-extern "C" SEXP _HeatmapR_olo_settings_cpp(SEXP kernel, SEXP bounds) {
+cpp11::list kernel_settings_cpp(std::string olo, bool bounds, std::string distance);
+extern "C" SEXP _HeatmapR_kernel_settings_cpp(SEXP olo, SEXP bounds, SEXP distance) {
   BEGIN_CPP11
-    return cpp11::as_sexp(olo_settings_cpp(cpp11::as_cpp<cpp11::decay_t<std::string>>(kernel), cpp11::as_cpp<cpp11::decay_t<bool>>(bounds)));
+    return cpp11::as_sexp(kernel_settings_cpp(cpp11::as_cpp<cpp11::decay_t<std::string>>(olo), cpp11::as_cpp<cpp11::decay_t<bool>>(bounds), cpp11::as_cpp<cpp11::decay_t<std::string>>(distance)));
   END_CPP11
 }
 // olo.cpp
@@ -214,6 +221,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_hash_cpp",              (DL_FUNC) &_HeatmapR_hash_cpp,              1},
     {"_HeatmapR_hclust_cpp",            (DL_FUNC) &_HeatmapR_hclust_cpp,            5},
     {"_HeatmapR_hclust_rows_cpp",       (DL_FUNC) &_HeatmapR_hclust_rows_cpp,       5},
+    {"_HeatmapR_kernel_settings_cpp",   (DL_FUNC) &_HeatmapR_kernel_settings_cpp,   3},
     {"_HeatmapR_mean_order_cpp",        (DL_FUNC) &_HeatmapR_mean_order_cpp,        2},
     {"_HeatmapR_merge_order_cpp",       (DL_FUNC) &_HeatmapR_merge_order_cpp,       3},
     {"_HeatmapR_merge_sizes_cpp",       (DL_FUNC) &_HeatmapR_merge_sizes_cpp,       1},
@@ -222,12 +230,12 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_olo_blocks_cpp",        (DL_FUNC) &_HeatmapR_olo_blocks_cpp,        2},
     {"_HeatmapR_olo_order_cpp",         (DL_FUNC) &_HeatmapR_olo_order_cpp,         4},
     {"_HeatmapR_olo_rows_batch_cpp",    (DL_FUNC) &_HeatmapR_olo_rows_batch_cpp,    6},
-    {"_HeatmapR_olo_settings_cpp",      (DL_FUNC) &_HeatmapR_olo_settings_cpp,      2},
     {"_HeatmapR_pack_channels_cpp",     (DL_FUNC) &_HeatmapR_pack_channels_cpp,     1},
     {"_HeatmapR_packed_strings_cpp",    (DL_FUNC) &_HeatmapR_packed_strings_cpp,    2},
     {"_HeatmapR_parallel_check_cpp",    (DL_FUNC) &_HeatmapR_parallel_check_cpp,    4},
     {"_HeatmapR_ramp_packed_cpp",       (DL_FUNC) &_HeatmapR_ramp_packed_cpp,       3},
     {"_HeatmapR_rgb_packed_cpp",        (DL_FUNC) &_HeatmapR_rgb_packed_cpp,        1},
+    {"_HeatmapR_row_distances_cpp",     (DL_FUNC) &_HeatmapR_row_distances_cpp,     4},
     {"_HeatmapR_row_ranks_cpp",         (DL_FUNC) &_HeatmapR_row_ranks_cpp,         2},
     {"_HeatmapR_structural_clades_cpp", (DL_FUNC) &_HeatmapR_structural_clades_cpp, 2},
     {"_HeatmapR_sub_merge_cpp",         (DL_FUNC) &_HeatmapR_sub_merge_cpp,         2},
