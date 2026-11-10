@@ -306,6 +306,27 @@ extern "C" SEXP _HeatmapR_join_groups_cpp(SEXP members, SEXP merges, SEXP height
     return cpp11::as_sexp(join_groups_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(members), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(merges), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(heights), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(orders), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(top), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(top_height), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(parent_height), cpp11::as_cpp<cpp11::decay_t<int>>(n)));
   END_CPP11
 }
+// tree.cpp
+int merge_check_cpp(cpp11::doubles m, int k, int n);
+extern "C" SEXP _HeatmapR_merge_check_cpp(SEXP m, SEXP k, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(merge_check_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(m), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<int>>(n)));
+  END_CPP11
+}
+// tree.cpp
+bool order_check_cpp(cpp11::doubles order, int n);
+extern "C" SEXP _HeatmapR_order_check_cpp(SEXP order, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(order_check_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(order), cpp11::as_cpp<cpp11::decay_t<int>>(n)));
+  END_CPP11
+}
+// tree.cpp
+SEXP map_centers_cpp(cpp11::doubles pos, cpp11::doubles centers);
+extern "C" SEXP _HeatmapR_map_centers_cpp(SEXP pos, SEXP centers) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(map_centers_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(pos), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(centers)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
@@ -330,7 +351,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_join_groups_cpp",       (DL_FUNC) &_HeatmapR_join_groups_cpp,       8},
     {"_HeatmapR_kernel_settings_cpp",   (DL_FUNC) &_HeatmapR_kernel_settings_cpp,   3},
     {"_HeatmapR_kmeans_hw_cpp",         (DL_FUNC) &_HeatmapR_kmeans_hw_cpp,         4},
+    {"_HeatmapR_map_centers_cpp",       (DL_FUNC) &_HeatmapR_map_centers_cpp,       2},
     {"_HeatmapR_mean_order_cpp",        (DL_FUNC) &_HeatmapR_mean_order_cpp,        2},
+    {"_HeatmapR_merge_check_cpp",       (DL_FUNC) &_HeatmapR_merge_check_cpp,       3},
     {"_HeatmapR_merge_order_cpp",       (DL_FUNC) &_HeatmapR_merge_order_cpp,       3},
     {"_HeatmapR_merge_sizes_cpp",       (DL_FUNC) &_HeatmapR_merge_sizes_cpp,       1},
     {"_HeatmapR_native_colours_cpp",    (DL_FUNC) &_HeatmapR_native_colours_cpp,    1},
@@ -338,6 +361,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_olo_blocks_cpp",        (DL_FUNC) &_HeatmapR_olo_blocks_cpp,        2},
     {"_HeatmapR_olo_order_cpp",         (DL_FUNC) &_HeatmapR_olo_order_cpp,         4},
     {"_HeatmapR_olo_rows_batch_cpp",    (DL_FUNC) &_HeatmapR_olo_rows_batch_cpp,    6},
+    {"_HeatmapR_order_check_cpp",       (DL_FUNC) &_HeatmapR_order_check_cpp,       2},
     {"_HeatmapR_pack_channels_cpp",     (DL_FUNC) &_HeatmapR_pack_channels_cpp,     1},
     {"_HeatmapR_packed_strings_cpp",    (DL_FUNC) &_HeatmapR_packed_strings_cpp,    2},
     {"_HeatmapR_parallel_check_cpp",    (DL_FUNC) &_HeatmapR_parallel_check_cpp,    4},

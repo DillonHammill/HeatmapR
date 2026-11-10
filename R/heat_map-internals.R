@@ -232,20 +232,25 @@
   if(anyNA(m) || any(m != round(m))) {
     bad("'merge' must hold whole numbers")
   }
-  leaves <- -m[m < 0]
-  if(length(leaves) != n || any(leaves > n) || anyDuplicated(leaves)) {
+  # (IN COMPILED CODE: EACH LEAF ONCE, THEN EACH MERGE ONCE AND AFTER WHAT IT
+  # JOINS)
+  why <- merge_check_cpp(as.double(m), as.integer(k), as.integer(n))
+  if(why == 1) {
     bad("each leaf must be joined once in 'merge'")
   }
-  nodes <- m[m > 0]
-  if(length(nodes) != max(0, k - 1) || anyDuplicated(nodes) ||
-     any(nodes >= rep(seq_len(k), 2)[m > 0])) {
+  if(why == 2) {
     bad("each merge must join leaves or earlier merges, each once")
   }
   if(length(tree$height) != k || anyNA(tree$height)) {
     bad("'height' must hold one value for each merge")
   }
-  if(anyNA(tree$order) || !setequal(tree$order, seq_len(n)) ||
-     anyDuplicated(tree$order)) {
+  ok <- if(is.numeric(tree$order)) {
+    order_check_cpp(as.double(tree$order), as.integer(n))
+  } else {
+    !anyNA(tree$order) && setequal(tree$order, seq_len(n)) &&
+      !anyDuplicated(tree$order)
+  }
+  if(!ok) {
     bad("'order' must hold each leaf once")
   }
   invisible(TRUE)

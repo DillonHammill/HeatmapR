@@ -209,3 +209,57 @@ test_that("large heatmaps colour and draw their cells as before", {
     top <- top + heights[i]
   }
 })
+
+test_that(".map_centers() interpolates between centres as before", {
+  ref <- function(pos, centers) {
+    ind <- floor(pos)
+    dec <- pos - ind
+    out <- centers[ind]
+    frac <- dec != 0
+    out[frac] <- centers[ind[frac]] +
+      dec[frac] * (centers[ind[frac] + 1] - centers[ind[frac]])
+    out
+  }
+  set.seed(37)
+  centers <- cumsum(runif(50, 0.5, 1.5)) / 3
+  pos <- c(1, 50, runif(500, 1, 50), 2.5, 49.75)
+  expect_identical(.map_centers(pos, centers), ref(pos, centers))
+  # NAMED CENTRES AND POSITIONS OFF THE LEAVES ARE MAPPED IN R
+  named <- stats::setNames(centers, paste0("c", 1:50))
+  expect_identical(.map_centers(pos, named), ref(pos, named))
+  expect_null(map_centers_cpp(c(1, 50.5), centers))
+  expect_identical(.map_centers(c(2, 50.5), centers), ref(c(2, 50.5), centers))
+})
+
+test_that("tree checks reject what the R checks rejected", {
+  set.seed(38)
+  h <- stats::hclust(stats::dist(matrix(rnorm(40), 20)))
+  check <- function(tree) {
+    tryCatch({
+      .check_tree(tree, 20, "t", "rows")
+      "ok"
+    }, error = function(e) sub(".* - ", "", conditionMessage(e)))
+  }
+  expect_identical(check(h), "ok")
+  t <- h
+  t$merge[1, 1] <- -21
+  expect_identical(check(t), "each leaf must be joined once in 'merge'.")
+  t <- h
+  t$merge[which(h$merge < 0)[2]] <- h$merge[which(h$merge < 0)[1]]
+  expect_identical(check(t), "each leaf must be joined once in 'merge'.")
+  t <- h
+  t$merge[5, ] <- t$merge[6, ]
+  expect_match(check(t), "each (leaf|merge)")
+  t <- h
+  row <- which(h$merge[, 2] > 0)[1]
+  t$merge[row, 2] <- row
+  expect_identical(check(t), "each merge must join leaves or earlier merges, each once.")
+  for(bad in list(c(1:19, 19), c(0, 2:20), c(NA, 2:20), c(1.5, 2:20), c(1:19, 21))) {
+    t <- h
+    t$order <- bad
+    expect_identical(check(t), "'order' must hold each leaf once.")
+  }
+  t <- h
+  t$order <- as.character(h$order)
+  expect_identical(check(t), "ok")
+})

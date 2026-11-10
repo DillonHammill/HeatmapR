@@ -171,3 +171,15 @@ cut_tree_cpp <- function(merge, k, order) {
 join_groups_cpp <- function(members, merges, heights, orders, top, top_height, parent_height, n) {
   .Call(`_HeatmapR_join_groups_cpp`, members, merges, heights, orders, top, top_height, parent_height, n)
 }
+
+merge_check_cpp <- function(m, k, n) {
+  .Call(`_HeatmapR_merge_check_cpp`, m, k, n)
+}
+
+order_check_cpp <- function(order, n) {
+  .Call(`_HeatmapR_order_check_cpp`, order, n)
+}
+
+map_centers_cpp <- function(pos, centers) {
+  .Call(`_HeatmapR_map_centers_cpp`, pos, centers)
+}
