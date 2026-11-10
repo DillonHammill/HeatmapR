@@ -11,6 +11,13 @@ functions in `HeatmapR` as summarised below:
 - [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   convenient wrapper around all `HeatmapR` functions providing an
   intuitive way to create complex heatmaps using base graphics.
+- [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md)
+  draws correlation matrices, with one order for the rows and columns
+  and different shapes in each triangle.
+- [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  draws dot plots of groups of cells: the colour of each dot shows a
+  group’s mean and its size the proportion of cells in which the feature
+  is detected.
 - [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
   is used inside
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
@@ -20,12 +27,27 @@ functions in `HeatmapR` as summarised below:
 - [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)
   is used inside
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-  to apply column- or row-wise mean, z-score or range scaling to the
-  dataset prior to constructing the heatmap.
+  to apply column- or row-wise mean, z-score, range or quantile scaling,
+  or the asinh transform of cytometry data, to the dataset prior to
+  constructing the heatmap.
 - [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
   reduces groups of rows or columns to one summary each (e.g. the mean
-  expression of each cell type), or keeps the values of each group for
-  distributions inside the cells.
+  expression of each cell type, or the median of each marker in each
+  cluster), or keeps the values of each group for distributions inside
+  the cells.
+- [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+  ranks the marker features of groups of cells by their AUC, with
+  Wilcoxon p-values, and
+  [`heat_map_downsample()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_downsample.md)
+  keeps at most a number of cells of each group.
+- [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
+  smooths features along a trajectory (e.g. pseudotime) for heatmaps of
+  genes ordered by when they peak.
+- [`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md)
+  simulates the single-cell RNA, cytometry and trajectory data used in
+  the examples and guides.
+- [`heat_map_threads()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.md)
+  sets the number of threads shared by the compiled code.
 - [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
   returns the data, row and column order, clusters, colours and layout
   of a heatmap for downstream analyses.
@@ -61,7 +83,10 @@ guides that go further, with every figure drawn as the site is built:
 columns](https://dillonhammill.github.io/HeatmapR/articles/ordering.html),
 [large
 heatmaps](https://dillonhammill.github.io/HeatmapR/articles/large-data.html),
-[more than
+[single-cell
+data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html)
+(SingleCellExperiment, Seurat and cytometry data, markers, dot plots and
+trajectories), [more than
 colour](https://dillonhammill.github.io/HeatmapR/articles/cells.html)
 (uncertainty, split cells, distributions and annotations), [working with
 heatmaps](https://dillonhammill.github.io/HeatmapR/articles/integration.html)
@@ -427,7 +452,7 @@ heat_map(
 image, with the markers clustered by a dendrogram and the cells cut into
 three clusters labelled A, B and C: A is high in markers 12 to 20, B in
 markers 1 to 8 and C in
-neither.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-raster.png)
+neither.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc5b7688dab3f3050b3f157315f49f95/vignettes/HeatmapR/HeatmapR-raster.png)
 
 Clustering is the slow part of a large heatmap. It needs the distance
 between every pair of rows, so exact clustering of 10,000 rows takes
@@ -790,7 +815,7 @@ heat_map(
 z-score scale, with the samples split into labelled Control, Drug_A and
 Drug_B groups, coloured Treatment and Sex annotation tracks above the
 columns with their own legends, and the genes clustered by a
-dendrogram.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-annotations.png)
+dendrogram.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc5b7688dab3f3050b3f157315f49f95/vignettes/HeatmapR/HeatmapR-annotations.png)
 
 ### 4.2 Box Plots and Violins
 
@@ -1318,7 +1343,7 @@ heat_map(
 split into labelled Control, Drug_A and Drug_B groups that are each
 clustered by their own dendrogram under a shared root, and the genes
 clustered so that those raised in the Drug_A samples sit together at the
-bottom.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-groups.png)
+bottom.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc5b7688dab3f3050b3f157315f49f95/vignettes/HeatmapR/HeatmapR-groups.png)
 
 A dendrogram supplied as an `hclust` or `dist` object is kept only when
 the clusters are contiguous in its order, and is dropped with a warning

@@ -21,7 +21,7 @@ chance and 1 a perfect marker."><meta property="og:image" content="https://dillo
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -138,7 +138,9 @@ to 0 by default.</p></dd>
 feature kept for a group, in the order of the groups and, within each
 group, from the highest AUC: <code>group</code> (a factor), <code>feature</code>,
 <code>auc</code>, <code>logfc</code> (the difference between the means in and out of
-the group), <code>mean_in</code>, <code>mean_out</code>, <code>detected_in</code> and
+the group), <code>p_value</code> and <code>p_adj</code> (the p-value of the
+rank-sum test and its adjusted value), <code>mean_in</code>, <code>mean_out</code>,
+<code>detected_in</code> and
 <code>detected_out</code> (the proportions of cells detected in and out of the
 group) and <code>top</code> (<code>TRUE</code> for the top markers of each group). Its
 <code>"features"</code> attribute lists the top markers of each group. Given to
@@ -154,6 +156,14 @@ mean in the group exceeds their mean in the other cells by at least
 <code>min_logfc</code>. Each feature marks the group where its AUC is highest,
 and the <code>n</code> features with the highest AUC in each group are its top
 markers.</p>
+<p>Each AUC has the p-value of the Wilcoxon rank-sum test of the group
+against the other cells (two-sided, from the normal approximation with
+corrections for ties and continuity, as <code>wilcox.test(exact = FALSE)</code>
+finds it), and the p-values of each group are adjusted for the false
+discovery rate by Benjamini and Hochberg's method over every feature
+scored, not only those kept. With thousands of cells nearly every marker
+has a tiny p-value, so the AUC and the difference of the means are the
+better guides to how well a feature marks a group.</p>
 <p>The AUC is found from one ranking of each feature's values. The zeros of
 sparse data share one rank, so only the non-zero values are sorted; the
 features are shared between threads (see <code><a href="heat_map_threads.html">heat_map_threads</a></code>),
@@ -179,12 +189,12 @@ and only features that pass the filters in some group are ranked.</p>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu">heat_map_markers</span><span class="op">(</span><span class="va">cells</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>, n <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">markers</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     group feature       auc    logfc  mean_in  mean_out detected_in</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 B cells    CD19 0.7119167 1.347321 1.522791 0.1754692   0.7333333</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 T cells     CD3 0.6985000 1.198595 1.351030 0.1524351   0.6900000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   detected_out  top</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1         0.69 TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2         0.70 TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     group feature       auc    logfc      p_value        p_adj  mean_in</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 B cells    CD19 0.7119167 1.347321 4.529096e-07 1.358729e-06 1.522791</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 T cells     CD3 0.6985000 1.198595 2.234637e-06 6.703912e-06 1.351030</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    mean_out detected_in detected_out  top</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.1754692   0.7333333         0.69 TRUE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.1524351   0.6900000         0.70 TRUE</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># The top markers of each cluster, grouped</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">cells</span>, features <span class="op">=</span> <span class="va">markers</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>, popup <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>

@@ -53,6 +53,14 @@ Scale, summarise and cluster data before (or while) drawing a heatmap.
 - [`heat_map_threads()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.md)
   : Number of threads used by HeatmapR
 
+## Example data
+
+Simulated single-cell RNA, cytometry and trajectory data for trying the
+functions.
+
+- [`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md)
+  : Simulated single-cell data for examples
+
 ## Arrange and save heatmaps
 
 Arrange heatmaps with other plots in custom layouts and save high

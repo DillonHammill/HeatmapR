@@ -104,10 +104,53 @@ text, legends and layouts, **HeatmapR** can:
 
 [TABLE]
 
+## Single-cell data
+
+**HeatmapR** reads single-cell data where it lives -
+`SingleCellExperiment` and `Seurat` objects, `flowFrame` and `flowSet`
+objects and sparse matrices - choosing features by name and grouping and
+annotating cells from their metadata. Only the chosen features of the
+cells shown are made dense, so a few markers of a million cells need
+little memory.
+
+- **Dot plots and markers** -
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  draws the mean of each group as colour and the proportion of its cells
+  detected as size, and
+  [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+  ranks the markers of each group by their AUC, with Wilcoxon p-values,
+  ready to pass to `features`.
+- **Summaries of groups** -
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  finds the mean, median, sum or proportion detected of each feature in
+  each group of cells from sparse data in compiled code, and `group_max`
+  keeps small groups visible next to large ones.
+- **Cytometry** - the asinh transform and quantile scaling of markers,
+  the medians of clusters in each sample, and stacked bars of the events
+  of each condition in each cluster.
+- **Trajectories** -
+  [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
+  smooths genes along pseudotime, one lineage at a time, and
+  `tree_order_y = "peak"` orders them by when they peak.
+
+[`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md)
+simulates blood cells, cytometry events and a branching trajectory to
+try them on:
+
+``` r
+
+cells <- heat_map_example("rna")
+markers <- heat_map_markers(cells, group_by = "cell_type", n = 3)
+heat_map_dot(cells, features = markers, group_by = "cell_type")
+```
+
+[TABLE]
+
 The
 [guides](https://dillonhammill.github.io/HeatmapR/articles/index.html)
-on the website cover ordering, large heatmaps, cells, and working with
-other packages, and the
+on the website cover ordering, large heatmaps, [single-cell
+data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html),
+cells, and working with other packages, and the
 [changelog](https://dillonhammill.github.io/HeatmapR/news/index.html)
 lists everything new in **HeatmapR** 2.0.0.
 

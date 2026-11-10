@@ -74,11 +74,12 @@ heat_map_markers(
 a data.frame of class `heat_map_markers` with one row per feature kept
 for a group, in the order of the groups and, within each group, from the
 highest AUC: `group` (a factor), `feature`, `auc`, `logfc` (the
-difference between the means in and out of the group), `mean_in`,
-`mean_out`, `detected_in` and `detected_out` (the proportions of cells
-detected in and out of the group) and `top` (`TRUE` for the top markers
-of each group). Its `"features"` attribute lists the top markers of each
-group. Given to `features` in
+difference between the means in and out of the group), `p_value` and
+`p_adj` (the p-value of the rank-sum test and its adjusted value),
+`mean_in`, `mean_out`, `detected_in` and `detected_out` (the proportions
+of cells detected in and out of the group) and `top` (`TRUE` for the top
+markers of each group). Its `"features"` attribute lists the top markers
+of each group. Given to `features` in
 [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 or
 [`heat_map_dot`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md),
@@ -92,6 +93,15 @@ in at least `min_detected` of its cells and their mean in the group
 exceeds their mean in the other cells by at least `min_logfc`. Each
 feature marks the group where its AUC is highest, and the `n` features
 with the highest AUC in each group are its top markers.
+
+Each AUC has the p-value of the Wilcoxon rank-sum test of the group
+against the other cells (two-sided, from the normal approximation with
+corrections for ties and continuity, as `wilcox.test(exact = FALSE)`
+finds it), and the p-values of each group are adjusted for the false
+discovery rate by Benjamini and Hochberg's method over every feature
+scored, not only those kept. With thousands of cells nearly every marker
+has a tiny p-value, so the AUC and the difference of the means are the
+better guides to how well a feature marks a group.
 
 The AUC is found from one ranking of each feature's values. The zeros of
 sparse data share one rank, so only the non-zero values are sorted; the
@@ -120,12 +130,12 @@ cells <- data.frame(
 )
 markers <- heat_map_markers(cells, group_by = "cluster", n = 1)
 markers
-#>     group feature       auc    logfc  mean_in  mean_out detected_in
-#> 1 B cells    CD19 0.7119167 1.347321 1.522791 0.1754692   0.7333333
-#> 2 T cells     CD3 0.6985000 1.198595 1.351030 0.1524351   0.6900000
-#>   detected_out  top
-#> 1         0.69 TRUE
-#> 2         0.70 TRUE
+#>     group feature       auc    logfc      p_value        p_adj  mean_in
+#> 1 B cells    CD19 0.7119167 1.347321 4.529096e-07 1.358729e-06 1.522791
+#> 2 T cells     CD3 0.6985000 1.198595 2.234637e-06 6.703912e-06 1.351030
+#>    mean_out detected_in detected_out  top
+#> 1 0.1754692   0.7333333         0.69 TRUE
+#> 2 0.1524351   0.6900000         0.70 TRUE
 
 # The top markers of each cluster, grouped
 heat_map(cells, features = markers, group_by = "cluster", popup = FALSE)

@@ -30,51 +30,27 @@ library(HeatmapR)
 
 ## Example data
 
-A simulated experiment: 3,000 peripheral blood cells of six types from
-four samples in two conditions, with 2,000 genes, four of them markers
-of each cell type. The counts are a sparse matrix (genes as rows, cells
-as columns) in a `SingleCellExperiment`, with log-normalised counts as
-`logcounts`.
+A simulated experiment from
+[`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md):
+3,000 peripheral blood cells of six types from four donors in two
+conditions, with 2,000 genes, four of them markers of each cell type. As
+a `SingleCellExperiment`, the counts and log-normalised counts
+(`logcounts`) are sparse matrices with genes as rows and cells as
+columns, the cells’ metadata is in
+[`colData()`](https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html)
+and the markers of each type are in `metadata()`.
+[`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md)
+without `class` gives the same cells as a data frame, one row per cell,
+which every function here reads too.
 
 ``` r
 
 library(SingleCellExperiment)
-set.seed(1)
-types <- c("CD4 T", "CD8 T", "B", "NK", "CD14 Mono", "DC")
-markers <- list(
-  "CD4 T" = c("CD3E", "IL7R", "CCR7", "LDHB"),
-  "CD8 T" = c("CD8A", "CD8B", "GZMK", "CCL5"),
-  "B" = c("MS4A1", "CD79A", "CD79B", "BANK1"),
-  "NK" = c("GNLY", "NKG7", "PRF1", "GZMB"),
-  "CD14 Mono" = c("CD14", "LYZ", "S100A8", "S100A9"),
-  "DC" = c("FCER1A", "CST3", "CLEC10A", "CD1C")
-)
-n <- 3000
-cell_type <- factor(sample(types, n, replace = TRUE,
-                           prob = c(30, 20, 15, 10, 20, 5)), levels = types)
-genes <- c(unlist(markers, use.names = FALSE), paste0("Gene", 25:2000))
-rate <- matrix(rgamma(2000, 0.3, 1), 2000, n)
-for(k in types) {
-  rate[match(markers[[k]], genes), cell_type == k] <- rgamma(4, 4, 1)
-}
-counts <- matrix(rpois(2000 * n, rate * rexp(n, 1)), 2000,
-                 dimnames = list(genes, paste0("cell", 1:n)))
-counts <- Matrix::Matrix(counts, sparse = TRUE)
-size <- Matrix::colSums(counts)
-logcounts <- log1p(Matrix::t(Matrix::t(counts) / size) * 1e4)
-sample_id <- sample(paste0("donor", 1:4), n, replace = TRUE)
-sce <- SingleCellExperiment(
-  assays = list(counts = counts, logcounts = logcounts),
-  colData = data.frame(
-    cell_type = cell_type,
-    sample = sample_id,
-    condition = ifelse(sample_id %in% c("donor1", "donor2"), "control", "treated")
-  )
-)
+sce <- heat_map_example("rna", class = "SingleCellExperiment")
 sce
 #> class: SingleCellExperiment 
 #> dim: 2000 3000 
-#> metadata(0):
+#> metadata(1): markers
 #> assays(2): counts logcounts
 #> rownames(2000): CD3E IL7R ... Gene1999 Gene2000
 #> rowData names(0):
@@ -83,6 +59,35 @@ sce
 #> reducedDimNames(0):
 #> mainExpName: NULL
 #> altExpNames(0):
+markers <- metadata(sce)$markers
+markers
+#> $`CD4 T`
+#> [1] "CD3E" "IL7R" "CCR7" "LDHB"
+#> 
+#> $`CD8 T`
+#> [1] "CD8A" "CD8B" "GZMK" "CCL5"
+#> 
+#> $B
+#> [1] "MS4A1" "CD79A" "CD79B" "BANK1"
+#> 
+#> $NK
+#> [1] "GNLY" "NKG7" "PRF1" "GZMB"
+#> 
+#> $`CD14 Mono`
+#> [1] "CD14"   "LYZ"    "S100A8" "S100A9"
+#> 
+#> $DC
+#> [1] "FCER1A"  "CST3"    "CLEC10A" "CD1C"
+head(colData(sce))
+#> DataFrame with 6 rows and 3 columns
+#>       cell_type      sample   condition
+#>        <factor> <character> <character>
+#> cell1 CD4 T          donor3     treated
+#> cell2 CD14 Mono      donor2     control
+#> cell3 CD8 T          donor4     treated
+#> cell4 NK             donor4     treated
+#> cell5 CD4 T          donor3     treated
+#> cell6 NK             donor2     control
 ```
 
 ## A heatmap of cells
@@ -185,10 +190,10 @@ A `Seurat` object is read the same way, from its default assay’s
 
 library(SeuratObject)
 seu <- suppressWarnings(CreateSeuratObject(
-  counts = counts,
+  counts = counts(sce),
   meta.data = as.data.frame(colData(sce))
 ))
-seu <- SetAssayData(seu, layer = "data", new.data = logcounts)
+seu <- SetAssayData(seu, layer = "data", new.data = logcounts(sce))
 heat_map(
   seu,
   features = markers,
@@ -217,11 +222,13 @@ the data, and equal those of the dense data exactly.
 
 means <- heat_map_summarise(sce, features = unlist(markers), group_by = "cell_type")
 dense <- heat_map_summarise(
-  as.matrix(Matrix::t(logcounts[unlist(markers), ])),
+  as.matrix(Matrix::t(logcounts(sce)[unlist(markers), ])),
   group_y = sce$cell_type
 )
-identical(means, dense)
-#> [1] FALSE
+# THE SAME NUMBERS ([, ] DROPS THE NUMBER OF CELLS IN EACH GROUP, WHICH THE
+# SUMMARY OF group_by ALSO KEEPS)
+identical(means[, ], dense)
+#> [1] TRUE
 heat_map(means, scale = "column", tree = "both",
          title = "Mean expression of each cell type")
 ```
@@ -243,48 +250,54 @@ are kept for a group when they are detected in at least `min_detected`
 the other cells’; each feature marks the group where its AUC is highest,
 and the top `n` of each group are flagged in the `top` column. Only
 features that pass the filters are ranked, and the zeros of sparse data
-share one rank, so only the non-zero values are sorted.
+share one rank, so only the non-zero values are sorted. Each AUC comes
+with the p-value of the Wilcoxon rank-sum test (`p_value`, as
+`wilcox.test(exact = FALSE)` finds it) and its false discovery rate
+within the group (`p_adj`, adjusted over every gene scored). With
+thousands of cells nearly every marker has a tiny p-value, so the AUC
+and the difference of the means say more about how well a gene marks a
+group.
 
 ``` r
 
 m <- heat_map_markers(sce, group_by = "cell_type", n = 3)
 head(m[m$top, ], 8)
-#>    group feature       auc    logfc  mean_in    mean_out detected_in
-#> 1  CD4 T    LDHB 0.9999969 4.958029 5.340449 0.382419942   1.0000000
-#> 2  CD4 T    CCR7 0.8540198 2.354410 2.442129 0.087718982   0.7258065
-#> 3  CD4 T    IL7R 0.6255654 1.028549 3.036483 2.007934292   0.6827957
-#> 5  CD8 T    CCL5 0.9983708 4.753279 5.029171 0.275891766   0.9981718
-#> 6  CD8 T    CD8A 0.9926583 4.319246 4.320462 0.001216367   0.9853748
-#> 7  CD8 T    GZMK 0.8591990 2.375695 2.644265 0.268569579   0.7769653
-#> 9      B   BANK1 0.9540238 3.226604 4.461567 1.234962310   0.9817352
-#> 10     B   CD79B 0.8710046 2.669652 2.669652 0.000000000   0.7420091
-#>    detected_out  top
-#> 1  0.1299516908 TRUE
-#> 2  0.0304347826 TRUE
-#> 3  0.4826086957 TRUE
-#> 5  0.0933550754 TRUE
-#> 6  0.0004076641 TRUE
-#> 7  0.0917244191 TRUE
-#> 9  0.3989071038 TRUE
-#> 10 0.0000000000 TRUE
+#>    group feature       auc    logfc       p_value         p_adj  mean_in
+#> 1  CD4 T    CCR7 0.9362311 3.171797  0.000000e+00  0.000000e+00 3.429567
+#> 2  CD4 T    IL7R 0.9280266 3.124902  0.000000e+00  0.000000e+00 3.296346
+#> 3  CD4 T    LDHB 0.9143694 2.901918  0.000000e+00  0.000000e+00 3.190240
+#> 5  CD8 T    CD8A 0.9669296 3.376582  0.000000e+00  0.000000e+00 4.031178
+#> 6  CD8 T    CD8B 0.8962607 2.703851  0.000000e+00  0.000000e+00 2.952239
+#> 7  CD8 T    GZMK 0.8665903 2.498931  0.000000e+00  0.000000e+00 2.509124
+#> 9      B   CD79B 0.9856562 3.566536 1.563884e-293 1.042589e-290 4.458818
+#> 10     B   MS4A1 0.9726375 3.710441  0.000000e+00  0.000000e+00 3.999230
+#>      mean_out detected_in detected_out  top
+#> 1  0.25777017   0.8924731  0.094685990 TRUE
+#> 2  0.17144413   0.8720430  0.061835749 TRUE
+#> 3  0.28832155   0.8612903  0.102415459 TRUE
+#> 5  0.65459584   0.9579525  0.229922544 TRUE
+#> 6  0.24838792   0.8244973  0.090909091 TRUE
+#> 7  0.01019257   0.7349177  0.003668977 TRUE
+#> 9  0.89228187   0.9863014  0.305620609 TRUE
+#> 10 0.28878882   0.9543379  0.105776737 TRUE
 attr(m, "features")
 #> $`CD4 T`
-#> [1] "LDHB" "CCR7" "IL7R"
+#> [1] "CCR7" "IL7R" "LDHB"
 #> 
 #> $`CD8 T`
-#> [1] "CCL5" "CD8A" "GZMK"
+#> [1] "CD8A" "CD8B" "GZMK"
 #> 
 #> $B
-#> [1] "BANK1" "CD79B" "MS4A1"
+#> [1] "CD79B" "MS4A1" "CD79A"
 #> 
 #> $NK
-#> [1] "NKG7" "PRF1" "GZMB"
+#> [1] "PRF1" "GZMB" "GNLY"
 #> 
 #> $`CD14 Mono`
-#> [1] "S100A9" "S100A8" "CD14"  
+#> [1] "S100A8" "LYZ"    "S100A9"
 #> 
 #> $DC
-#> [1] "CLEC10A" "CD1C"    "FCER1A"
+#> [1] "CST3"   "FCER1A" "CD1C"
 ```
 
 The markers can be given to `features`: the rows with `top = TRUE` are
@@ -373,39 +386,27 @@ does both: `transform = "asinh"` with `cofactor`, and
 (`scale_when = "last"`, the default) or to the events before summarising
 them (`"first"`).
 
-Below, 200,000 simulated events with 12 markers in eight clusters, from
-eight samples in two conditions. Cluster C3 is twice as common in the
-stimulated samples, and HLA-DR rises in clusters C5 and C6 under
-stimulation.
+Below, `heat_map_example("cytometry")`: 200,000 simulated events with 12
+markers in eight clusters, from eight samples in two conditions, as raw
+intensities. Cluster C3 is twice as common in the stimulated samples,
+and HLA-DR rises in clusters C5 and C6 under stimulation.
 
 ``` r
 
-set.seed(2)
-n <- 2e5
-markers <- c("CD3", "CD4", "CD8", "CD19", "CD20", "CD56", "CD16", "CD14",
-             "CD11c", "HLA-DR", "CD45RA", "CCR7")
-samples <- data.frame(
-  sample = paste0("S", 1:8),
-  condition = rep(c("control", "stimulated"), each = 4)
-)
-sample <- sample(samples$sample, n, replace = TRUE)
-condition <- samples$condition[match(sample, samples$sample)]
-# C3 TWICE AS COMMON IN STIMULATED SAMPLES
-p <- c(2, 2, 1, 2, 2, 2, 2, 2)
-cluster <- ifelse(
-  condition == "control",
-  sample(paste0("C", 1:8), n, replace = TRUE, prob = p),
-  sample(paste0("C", 1:8), n, replace = TRUE, prob = replace(p, 3, 2))
-)
-# INTENSITIES ON THE ASINH SCALE, THEN BACK TO RAW INTENSITIES
-centres <- matrix(rexp(8 * 12, 0.5), 8, dimnames = list(paste0("C", 1:8), markers))
-level <- centres[cluster, ] + matrix(rnorm(n * 12, sd = 0.6), n)
-stim <- condition == "stimulated" & cluster %in% c("C5", "C6")
-level[stim, "HLA-DR"] <- level[stim, "HLA-DR"] + 1.5
-events <- as.data.frame(5 * sinh(pmax(level, 0)))
-events$cluster <- cluster
-events$sample <- sample
-events$condition <- condition
+events <- heat_map_example("cytometry")
+markers <- names(events)[1:12]
+markers
+#>  [1] "CD3"    "CD4"    "CD8"    "CD19"   "CD20"   "CD56"   "CD16"   "CD14"  
+#>  [9] "CD11c"  "HLA-DR" "CD45RA" "CCR7"
+head(events, 3)
+#>        CD3       CD4       CD8       CD19      CD20     CD56     CD16
+#> 1 65.84633 15.045075    0.0000 1697.35557  5.337933 2.091297 2.605279
+#> 2 73.17048  4.164727 5341.6891   31.48333 10.311145 9.672986 6.615528
+#> 3 26.56714 23.425620  153.8425    2.63540  7.046278 3.984819 9.395612
+#>           CD14    CD11c    HLA-DR    CD45RA      CCR7 cluster sample  condition
+#> 1     11.41652 6.415408  5.551045  8.483152  2.123304      C3     S5 stimulated
+#> 2 342075.87342 3.008363 53.019700 22.408138  7.718382      C1     S7 stimulated
+#> 3     13.19786 2.474503 15.259158  2.179273 36.431362      C5     S6 stimulated
 ```
 
 The medians of each cluster, with `stack_by` counting the events of each
@@ -537,40 +538,38 @@ bin. The result has one row per bin and keeps the position of each bin,
 which `annotation_by` draws as a track; `tree_order_y = "peak"` (with
 the genes as rows) orders the genes by where they are highest.
 
-Below, 4,000 simulated cells of a branching trajectory, with a
-pseudotime for each of two lineages as slingshot gives them (missing for
-cells outside the lineage): both lineages share their start and branch
-at a pseudotime of 0.4, and 30 genes each peak at their own point, some
-in one lineage only.
+Below, `heat_map_example("trajectory")`: 4,000 simulated cells of a
+branching trajectory, with a pseudotime for each of two lineages as
+slingshot gives them (missing for cells outside the lineage). Both
+lineages share their start and branch at a pseudotime of 0.4, and 30
+genes, in a random order, each peak at their own point, some in one
+lineage only.
 
 ``` r
 
-set.seed(4)
-n <- 4000
-pseudotime <- runif(n)
-branch <- ifelse(pseudotime < 0.4, "shared", sample(c("A", "B"), n, replace = TRUE))
-peak <- sort(runif(30))
-# GENES PEAKING AFTER THE BRANCH ARE EXPRESSED IN ONE LINEAGE (OR BOTH)
-only <- ifelse(peak < 0.4, "both", sample(c("A", "B", "both"), 30, replace = TRUE))
-rate <- sapply(seq_along(peak), function(g) {
-  r <- 6 * exp(-((pseudotime - peak[g]) / 0.1)^2)
-  if(only[g] != "both") {
-    r[branch != "shared" & branch != only[g]] <- 0
-  }
-  r
-})
-counts <- matrix(rpois(length(rate), rate), n)
-dimnames(counts) <- list(paste0("cell", 1:n), paste0("gene", 1:30))
-# THE GENES IN A RANDOM ORDER
-counts <- counts[, sample(30)]
-traj <- SingleCellExperiment(
-  assays = list(logcounts = Matrix::Matrix(t(log1p(counts)), sparse = TRUE)),
-  colData = data.frame(
-    pseudotime = pseudotime,
-    lineage1 = ifelse(branch %in% c("shared", "A"), pseudotime, NA),
-    lineage2 = ifelse(branch %in% c("shared", "B"), pseudotime, NA)
-  )
-)
+traj <- heat_map_example("trajectory", class = "SingleCellExperiment")
+traj
+#> class: SingleCellExperiment 
+#> dim: 30 4000 
+#> metadata(0):
+#> assays(2): counts logcounts
+#> rownames(30): gene1 gene2 ... gene29 gene30
+#> rowData names(0):
+#> colnames(4000): cell1 cell2 ... cell3999 cell4000
+#> colData names(3): pseudotime lineage1 lineage2
+#> reducedDimNames(0):
+#> mainExpName: NULL
+#> altExpNames(0):
+head(colData(traj))
+#> DataFrame with 6 rows and 3 columns
+#>       pseudotime  lineage1  lineage2
+#>        <numeric> <numeric> <numeric>
+#> cell1  0.5858003 0.5858003        NA
+#> cell2  0.0089458 0.0089458 0.0089458
+#> cell3  0.2937396 0.2937396 0.2937396
+#> cell4  0.2773750 0.2773750 0.2773750
+#> cell5  0.8135742 0.8135742        NA
+#> cell6  0.2604278 0.2604278 0.2604278
 ```
 
 The genes along the pseudotime of all the cells, ordered by when they

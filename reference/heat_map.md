@@ -24,7 +24,7 @@ heat_map(
   tree_split_x = 1,
   tree_label_x = FALSE,
   tree_label_size_x = 0.1,
-  tree_label_col_x = "grey40",
+  tree_label_col_x = "grey85",
   tree_label_col_alpha_x = 1,
   tree_label_text_x = NA,
   tree_label_text_font_x = 1,
@@ -42,7 +42,7 @@ heat_map(
   tree_split_y = 1,
   tree_label_y = FALSE,
   tree_label_size_y = 0.1,
-  tree_label_col_y = "grey40",
+  tree_label_col_y = "grey85",
   tree_label_col_alpha_y = 1,
   tree_label_text_y = NA,
   tree_label_text_font_y = 1,
@@ -408,7 +408,7 @@ heat_map(
 - tree_label_col_x:
 
   vector of colours to use for x axis tree cluster labels, set to
-  "grey40" by default.
+  "grey85" (light grey) by default.
 
 - tree_label_col_alpha_x:
 
@@ -556,7 +556,7 @@ heat_map(
 - tree_label_col_y:
 
   vector of colours to use for y axis tree cluster labels, set to
-  "grey40" by default.
+  "grey85" (light grey) by default.
 
 - tree_label_col_alpha_y:
 

@@ -27,7 +27,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">HeatmapR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -135,49 +135,23 @@ visible</td>
 <div class="section level2">
 <h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a>
 </h2>
-<p>A simulated experiment: 3,000 peripheral blood cells of six types
-from four samples in two conditions, with 2,000 genes, four of them
-markers of each cell type. The counts are a sparse matrix (genes as
-rows, cells as columns) in a <code>SingleCellExperiment</code>, with
-log-normalised counts as <code>logcounts</code>.</p>
+<p>A simulated experiment from <code><a href="../reference/heat_map_example.html">heat_map_example()</a></code>: 3,000
+peripheral blood cells of six types from four donors in two conditions,
+with 2,000 genes, four of them markers of each cell type. As a
+<code>SingleCellExperiment</code>, the counts and log-normalised counts
+(<code>logcounts</code>) are sparse matrices with genes as rows and
+cells as columns, the cells’ metadata is in <code><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData()</a></code> and
+the markers of each type are in <code>metadata()</code>.
+<code><a href="../reference/heat_map_example.html">heat_map_example()</a></code> without <code>class</code> gives the
+same cells as a data frame, one row per cell, which every function here
+reads too.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">SingleCellExperiment</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">types</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD4 T"</span>, <span class="st">"CD8 T"</span>, <span class="st">"B"</span>, <span class="st">"NK"</span>, <span class="st">"CD14 Mono"</span>, <span class="st">"DC"</span><span class="op">)</span></span>
-<span><span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  <span class="st">"CD4 T"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3E"</span>, <span class="st">"IL7R"</span>, <span class="st">"CCR7"</span>, <span class="st">"LDHB"</span><span class="op">)</span>,</span>
-<span>  <span class="st">"CD8 T"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD8A"</span>, <span class="st">"CD8B"</span>, <span class="st">"GZMK"</span>, <span class="st">"CCL5"</span><span class="op">)</span>,</span>
-<span>  <span class="st">"B"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"CD79B"</span>, <span class="st">"BANK1"</span><span class="op">)</span>,</span>
-<span>  <span class="st">"NK"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"GNLY"</span>, <span class="st">"NKG7"</span>, <span class="st">"PRF1"</span>, <span class="st">"GZMB"</span><span class="op">)</span>,</span>
-<span>  <span class="st">"CD14 Mono"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD14"</span>, <span class="st">"LYZ"</span>, <span class="st">"S100A8"</span>, <span class="st">"S100A9"</span><span class="op">)</span>,</span>
-<span>  <span class="st">"DC"</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"FCER1A"</span>, <span class="st">"CST3"</span>, <span class="st">"CLEC10A"</span>, <span class="st">"CD1C"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">3000</span></span>
-<span><span class="va">cell_type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">types</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>                           prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">20</span>, <span class="fl">15</span>, <span class="fl">10</span>, <span class="fl">20</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span>, levels <span class="op">=</span> <span class="va">types</span><span class="op">)</span></span>
-<span><span class="va">genes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">markers</span>, use.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Gene"</span>, <span class="fl">25</span><span class="op">:</span><span class="fl">2000</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/GammaDist.html" class="external-link">rgamma</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fl">0.3</span>, <span class="fl">1</span><span class="op">)</span>, <span class="fl">2000</span>, <span class="va">n</span><span class="op">)</span></span>
-<span><span class="kw">for</span><span class="op">(</span><span class="va">k</span> <span class="kw">in</span> <span class="va">types</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">rate</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">markers</span><span class="op">[[</span><span class="va">k</span><span class="op">]</span><span class="op">]</span>, <span class="va">genes</span><span class="op">)</span>, <span class="va">cell_type</span> <span class="op">==</span> <span class="va">k</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/GammaDist.html" class="external-link">rgamma</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">2000</span> <span class="op">*</span> <span class="va">n</span>, <span class="va">rate</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="fl">2000</span>,</span>
-<span>                 dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">genes</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cell"</span>, <span class="fl">1</span><span class="op">:</span><span class="va">n</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu">Matrix</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/Matrix.html" class="external-link">Matrix</a></span><span class="op">(</span><span class="va">counts</span>, sparse <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">size</span> <span class="op">&lt;-</span> <span class="fu">Matrix</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/colSums-methods.html" class="external-link">colSums</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span></span>
-<span><span class="va">logcounts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="fu">Matrix</span><span class="fu">::</span><span class="fu">t</span><span class="op">(</span><span class="fu">Matrix</span><span class="fu">::</span><span class="fu">t</span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">/</span> <span class="va">size</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1e4</span><span class="op">)</span></span>
-<span><span class="va">sample_id</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"donor"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/SingleCellExperiment.html" class="external-link">SingleCellExperiment</a></span><span class="op">(</span></span>
-<span>  assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="va">counts</span>, logcounts <span class="op">=</span> <span class="va">logcounts</span><span class="op">)</span>,</span>
-<span>  colData <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>    cell_type <span class="op">=</span> <span class="va">cell_type</span>,</span>
-<span>    sample <span class="op">=</span> <span class="va">sample_id</span>,</span>
-<span>    condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">sample_id</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"donor1"</span>, <span class="st">"donor2"</span><span class="op">)</span>, <span class="st">"control"</span>, <span class="st">"treated"</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span>
+<span><span class="va">sce</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_example.html">heat_map_example</a></span><span class="op">(</span><span class="st">"rna"</span>, class <span class="op">=</span> <span class="st">"SingleCellExperiment"</span><span class="op">)</span></span>
 <span><span class="va">sce</span></span>
 <span><span class="co">#&gt; class: SingleCellExperiment </span></span>
 <span><span class="co">#&gt; dim: 2000 3000 </span></span>
-<span><span class="co">#&gt; metadata(0):</span></span>
+<span><span class="co">#&gt; metadata(1): markers</span></span>
 <span><span class="co">#&gt; assays(2): counts logcounts</span></span>
 <span><span class="co">#&gt; rownames(2000): CD3E IL7R ... Gene1999 Gene2000</span></span>
 <span><span class="co">#&gt; rowData names(0):</span></span>
@@ -185,7 +159,36 @@ log-normalised counts as <code>logcounts</code>.</p>
 <span><span class="co">#&gt; colData names(3): cell_type sample condition</span></span>
 <span><span class="co">#&gt; reducedDimNames(0):</span></span>
 <span><span class="co">#&gt; mainExpName: NULL</span></span>
-<span><span class="co">#&gt; altExpNames(0):</span></span></code></pre></div>
+<span><span class="co">#&gt; altExpNames(0):</span></span>
+<span><span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu">metadata</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">$</span><span class="va">markers</span></span>
+<span><span class="va">markers</span></span>
+<span><span class="co">#&gt; $`CD4 T`</span></span>
+<span><span class="co">#&gt; [1] "CD3E" "IL7R" "CCR7" "LDHB"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $`CD8 T`</span></span>
+<span><span class="co">#&gt; [1] "CD8A" "CD8B" "GZMK" "CCL5"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $B</span></span>
+<span><span class="co">#&gt; [1] "MS4A1" "CD79A" "CD79B" "BANK1"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $NK</span></span>
+<span><span class="co">#&gt; [1] "GNLY" "NKG7" "PRF1" "GZMB"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $`CD14 Mono`</span></span>
+<span><span class="co">#&gt; [1] "CD14"   "LYZ"    "S100A8" "S100A9"</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $DC</span></span>
+<span><span class="co">#&gt; [1] "FCER1A"  "CST3"    "CLEC10A" "CD1C"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; DataFrame with 6 rows and 3 columns</span></span>
+<span><span class="co">#&gt;       cell_type      sample   condition</span></span>
+<span><span class="co">#&gt;        &lt;factor&gt; &lt;character&gt; &lt;character&gt;</span></span>
+<span><span class="co">#&gt; cell1 CD4 T          donor3     treated</span></span>
+<span><span class="co">#&gt; cell2 CD14 Mono      donor2     control</span></span>
+<span><span class="co">#&gt; cell3 CD8 T          donor4     treated</span></span>
+<span><span class="co">#&gt; cell4 NK             donor4     treated</span></span>
+<span><span class="co">#&gt; cell5 CD4 T          donor3     treated</span></span>
+<span><span class="co">#&gt; cell6 NK             donor2     control</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="a-heatmap-of-cells">A heatmap of cells<a class="anchor" aria-label="anchor" href="#a-heatmap-of-cells"></a>
@@ -265,10 +268,10 @@ and annotations from <code>meta.data</code>.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.github.io/seurat-object/" class="external-link">SeuratObject</a></span><span class="op">)</span></span>
 <span><span class="va">seu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span></span>
-<span>  counts <span class="op">=</span> <span class="va">counts</span>,</span>
+<span>  counts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/dge.html" class="external-link">counts</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span>,</span>
 <span>  meta.data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">seu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">SetAssayData</a></span><span class="op">(</span><span class="va">seu</span>, layer <span class="op">=</span> <span class="st">"data"</span>, new.data <span class="op">=</span> <span class="va">logcounts</span><span class="op">)</span></span>
+<span><span class="va">seu</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">SetAssayData</a></span><span class="op">(</span><span class="va">seu</span>, layer <span class="op">=</span> <span class="st">"data"</span>, new.data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/assays.html" class="external-link">logcounts</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">seu</span>,</span>
 <span>  features <span class="op">=</span> <span class="va">markers</span>,</span>
@@ -293,11 +296,13 @@ dense data exactly.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">means</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span><span class="va">sce</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">markers</span><span class="op">)</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span><span class="op">)</span></span>
 <span><span class="va">dense</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu">Matrix</span><span class="fu">::</span><span class="fu">t</span><span class="op">(</span><span class="va">logcounts</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">markers</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu">Matrix</span><span class="fu">::</span><span class="fu">t</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/assays.html" class="external-link">logcounts</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">markers</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  group_y <span class="op">=</span> <span class="va">sce</span><span class="op">$</span><span class="va">cell_type</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">means</span>, <span class="va">dense</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] FALSE</span></span>
+<span><span class="co"># THE SAME NUMBERS ([, ] DROPS THE NUMBER OF CELLS IN EACH GROUP, WHICH THE</span></span>
+<span><span class="co"># SUMMARY OF group_by ALSO KEEPS)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">means</span><span class="op">[</span>, <span class="op">]</span>, <span class="va">dense</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">means</span>, scale <span class="op">=</span> <span class="st">"column"</span>, tree <span class="op">=</span> <span class="st">"both"</span>,</span>
 <span>         title <span class="op">=</span> <span class="st">"Mean expression of each cell type"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="single-cell_files/figure-html/summarise-1.png" class="r-plt" alt="Heatmap of the mean log-normalised expression of 24 marker genes in each of the six cell types, scaled within each gene, with the cell types and genes clustered by dendrograms." width="100%" style="display: block; margin: auto;"></p>
@@ -316,46 +321,52 @@ the other cells’; each feature marks the group where its AUC is highest,
 and the top <code>n</code> of each group are flagged in the
 <code>top</code> column. Only features that pass the filters are ranked,
 and the zeros of sparse data share one rank, so only the non-zero values
-are sorted.</p>
+are sorted. Each AUC comes with the p-value of the Wilcoxon rank-sum
+test (<code>p_value</code>, as <code>wilcox.test(exact = FALSE)</code>
+finds it) and its false discovery rate within the group
+(<code>p_adj</code>, adjusted over every gene scored). With thousands of
+cells nearly every marker has a tiny p-value, so the AUC and the
+difference of the means say more about how well a gene marks a
+group.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_markers.html">heat_map_markers</a></span><span class="op">(</span><span class="va">sce</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>, n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">m</span><span class="op">[</span><span class="va">m</span><span class="op">$</span><span class="va">top</span>, <span class="op">]</span>, <span class="fl">8</span><span class="op">)</span></span>
-<span><span class="co">#&gt;    group feature       auc    logfc  mean_in    mean_out detected_in</span></span>
-<span><span class="co">#&gt; 1  CD4 T    LDHB 0.9999969 4.958029 5.340449 0.382419942   1.0000000</span></span>
-<span><span class="co">#&gt; 2  CD4 T    CCR7 0.8540198 2.354410 2.442129 0.087718982   0.7258065</span></span>
-<span><span class="co">#&gt; 3  CD4 T    IL7R 0.6255654 1.028549 3.036483 2.007934292   0.6827957</span></span>
-<span><span class="co">#&gt; 5  CD8 T    CCL5 0.9983708 4.753279 5.029171 0.275891766   0.9981718</span></span>
-<span><span class="co">#&gt; 6  CD8 T    CD8A 0.9926583 4.319246 4.320462 0.001216367   0.9853748</span></span>
-<span><span class="co">#&gt; 7  CD8 T    GZMK 0.8591990 2.375695 2.644265 0.268569579   0.7769653</span></span>
-<span><span class="co">#&gt; 9      B   BANK1 0.9540238 3.226604 4.461567 1.234962310   0.9817352</span></span>
-<span><span class="co">#&gt; 10     B   CD79B 0.8710046 2.669652 2.669652 0.000000000   0.7420091</span></span>
-<span><span class="co">#&gt;    detected_out  top</span></span>
-<span><span class="co">#&gt; 1  0.1299516908 TRUE</span></span>
-<span><span class="co">#&gt; 2  0.0304347826 TRUE</span></span>
-<span><span class="co">#&gt; 3  0.4826086957 TRUE</span></span>
-<span><span class="co">#&gt; 5  0.0933550754 TRUE</span></span>
-<span><span class="co">#&gt; 6  0.0004076641 TRUE</span></span>
-<span><span class="co">#&gt; 7  0.0917244191 TRUE</span></span>
-<span><span class="co">#&gt; 9  0.3989071038 TRUE</span></span>
-<span><span class="co">#&gt; 10 0.0000000000 TRUE</span></span>
+<span><span class="co">#&gt;    group feature       auc    logfc       p_value         p_adj  mean_in</span></span>
+<span><span class="co">#&gt; 1  CD4 T    CCR7 0.9362311 3.171797  0.000000e+00  0.000000e+00 3.429567</span></span>
+<span><span class="co">#&gt; 2  CD4 T    IL7R 0.9280266 3.124902  0.000000e+00  0.000000e+00 3.296346</span></span>
+<span><span class="co">#&gt; 3  CD4 T    LDHB 0.9143694 2.901918  0.000000e+00  0.000000e+00 3.190240</span></span>
+<span><span class="co">#&gt; 5  CD8 T    CD8A 0.9669296 3.376582  0.000000e+00  0.000000e+00 4.031178</span></span>
+<span><span class="co">#&gt; 6  CD8 T    CD8B 0.8962607 2.703851  0.000000e+00  0.000000e+00 2.952239</span></span>
+<span><span class="co">#&gt; 7  CD8 T    GZMK 0.8665903 2.498931  0.000000e+00  0.000000e+00 2.509124</span></span>
+<span><span class="co">#&gt; 9      B   CD79B 0.9856562 3.566536 1.563884e-293 1.042589e-290 4.458818</span></span>
+<span><span class="co">#&gt; 10     B   MS4A1 0.9726375 3.710441  0.000000e+00  0.000000e+00 3.999230</span></span>
+<span><span class="co">#&gt;      mean_out detected_in detected_out  top</span></span>
+<span><span class="co">#&gt; 1  0.25777017   0.8924731  0.094685990 TRUE</span></span>
+<span><span class="co">#&gt; 2  0.17144413   0.8720430  0.061835749 TRUE</span></span>
+<span><span class="co">#&gt; 3  0.28832155   0.8612903  0.102415459 TRUE</span></span>
+<span><span class="co">#&gt; 5  0.65459584   0.9579525  0.229922544 TRUE</span></span>
+<span><span class="co">#&gt; 6  0.24838792   0.8244973  0.090909091 TRUE</span></span>
+<span><span class="co">#&gt; 7  0.01019257   0.7349177  0.003668977 TRUE</span></span>
+<span><span class="co">#&gt; 9  0.89228187   0.9863014  0.305620609 TRUE</span></span>
+<span><span class="co">#&gt; 10 0.28878882   0.9543379  0.105776737 TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">m</span>, <span class="st">"features"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; $`CD4 T`</span></span>
-<span><span class="co">#&gt; [1] "LDHB" "CCR7" "IL7R"</span></span>
+<span><span class="co">#&gt; [1] "CCR7" "IL7R" "LDHB"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`CD8 T`</span></span>
-<span><span class="co">#&gt; [1] "CCL5" "CD8A" "GZMK"</span></span>
+<span><span class="co">#&gt; [1] "CD8A" "CD8B" "GZMK"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $B</span></span>
-<span><span class="co">#&gt; [1] "BANK1" "CD79B" "MS4A1"</span></span>
+<span><span class="co">#&gt; [1] "CD79B" "MS4A1" "CD79A"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $NK</span></span>
-<span><span class="co">#&gt; [1] "NKG7" "PRF1" "GZMB"</span></span>
+<span><span class="co">#&gt; [1] "PRF1" "GZMB" "GNLY"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $`CD14 Mono`</span></span>
-<span><span class="co">#&gt; [1] "S100A9" "S100A8" "CD14"  </span></span>
+<span><span class="co">#&gt; [1] "S100A8" "LYZ"    "S100A9"</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; $DC</span></span>
-<span><span class="co">#&gt; [1] "CLEC10A" "CD1C"    "FCER1A"</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] "CST3"   "FCER1A" "CD1C"</span></span></code></pre></div>
 <p>The markers can be given to <code>features</code>: the rows with
 <code>top = TRUE</code> are shown, the columns grouped and labelled by
 the group they mark (as scanpy’s <code>var_group_positions</code>
@@ -414,37 +425,26 @@ events don’t compress the colours of all the others.
 <code>scale = "quantile"</code> with <code>q</code>, applied to the
 medians of the clusters (<code>scale_when = "last"</code>, the default)
 or to the events before summarising them (<code>"first"</code>).</p>
-<p>Below, 200,000 simulated events with 12 markers in eight clusters,
-from eight samples in two conditions. Cluster C3 is twice as common in
-the stimulated samples, and HLA-DR rises in clusters C5 and C6 under
+<p>Below, <code>heat_map_example("cytometry")</code>: 200,000 simulated
+events with 12 markers in eight clusters, from eight samples in two
+conditions, as raw intensities. Cluster C3 is twice as common in the
+stimulated samples, and HLA-DR rises in clusters C5 and C6 under
 stimulation.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">2e5</span></span>
-<span><span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3"</span>, <span class="st">"CD4"</span>, <span class="st">"CD8"</span>, <span class="st">"CD19"</span>, <span class="st">"CD20"</span>, <span class="st">"CD56"</span>, <span class="st">"CD16"</span>, <span class="st">"CD14"</span>,</span>
-<span>             <span class="st">"CD11c"</span>, <span class="st">"HLA-DR"</span>, <span class="st">"CD45RA"</span>, <span class="st">"CCR7"</span><span class="op">)</span></span>
-<span><span class="va">samples</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  sample <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"S"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span>,</span>
-<span>  condition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"stimulated"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">samples</span><span class="op">$</span><span class="va">sample</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="va">samples</span><span class="op">$</span><span class="va">condition</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/match.html" class="external-link">match</a></span><span class="op">(</span><span class="va">sample</span>, <span class="va">samples</span><span class="op">$</span><span class="va">sample</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="co"># C3 TWICE AS COMMON IN STIMULATED SAMPLES</span></span>
-<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="va">cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span></span>
-<span>  <span class="va">condition</span> <span class="op">==</span> <span class="st">"control"</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"C"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="va">p</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"C"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span>, prob <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/replace.html" class="external-link">replace</a></span><span class="op">(</span><span class="va">p</span>, <span class="fl">3</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="co"># INTENSITIES ON THE ASINH SCALE, THEN BACK TO RAW INTENSITIES</span></span>
-<span><span class="va">centres</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="fl">8</span> <span class="op">*</span> <span class="fl">12</span>, <span class="fl">0.5</span><span class="op">)</span>, <span class="fl">8</span>, dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"C"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span>, <span class="va">markers</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">level</span> <span class="op">&lt;-</span> <span class="va">centres</span><span class="op">[</span><span class="va">cluster</span>, <span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="fl">12</span>, sd <span class="op">=</span> <span class="fl">0.6</span><span class="op">)</span>, <span class="va">n</span><span class="op">)</span></span>
-<span><span class="va">stim</span> <span class="op">&lt;-</span> <span class="va">condition</span> <span class="op">==</span> <span class="st">"stimulated"</span> <span class="op">&amp;</span> <span class="va">cluster</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"C5"</span>, <span class="st">"C6"</span><span class="op">)</span></span>
-<span><span class="va">level</span><span class="op">[</span><span class="va">stim</span>, <span class="st">"HLA-DR"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">level</span><span class="op">[</span><span class="va">stim</span>, <span class="st">"HLA-DR"</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1.5</span></span>
-<span><span class="va">events</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fl">5</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Hyperbolic.html" class="external-link">sinh</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">pmax</a></span><span class="op">(</span><span class="va">level</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">events</span><span class="op">$</span><span class="va">cluster</span> <span class="op">&lt;-</span> <span class="va">cluster</span></span>
-<span><span class="va">events</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="va">sample</span></span>
-<span><span class="va">events</span><span class="op">$</span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="va">condition</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">events</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_example.html">heat_map_example</a></span><span class="op">(</span><span class="st">"cytometry"</span><span class="op">)</span></span>
+<span><span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">events</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">]</span></span>
+<span><span class="va">markers</span></span>
+<span><span class="co">#&gt;  [1] "CD3"    "CD4"    "CD8"    "CD19"   "CD20"   "CD56"   "CD16"   "CD14"  </span></span>
+<span><span class="co">#&gt;  [9] "CD11c"  "HLA-DR" "CD45RA" "CCR7"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">events</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;        CD3       CD4       CD8       CD19      CD20     CD56     CD16</span></span>
+<span><span class="co">#&gt; 1 65.84633 15.045075    0.0000 1697.35557  5.337933 2.091297 2.605279</span></span>
+<span><span class="co">#&gt; 2 73.17048  4.164727 5341.6891   31.48333 10.311145 9.672986 6.615528</span></span>
+<span><span class="co">#&gt; 3 26.56714 23.425620  153.8425    2.63540  7.046278 3.984819 9.395612</span></span>
+<span><span class="co">#&gt;           CD14    CD11c    HLA-DR    CD45RA      CCR7 cluster sample  condition</span></span>
+<span><span class="co">#&gt; 1     11.41652 6.415408  5.551045  8.483152  2.123304      C3     S5 stimulated</span></span>
+<span><span class="co">#&gt; 2 342075.87342 3.008363 53.019700 22.408138  7.718382      C1     S7 stimulated</span></span>
+<span><span class="co">#&gt; 3     13.19786 2.474503 15.259158  2.179273 36.431362      C5     S6 stimulated</span></span></code></pre></div>
 <p>The medians of each cluster, with <code>stack_by</code> counting the
 events of each condition in each cluster. The summary keeps the number
 of events in each cluster and in each part of it (its <code>"n"</code>
@@ -550,38 +550,36 @@ row per bin and keeps the position of each bin, which
 <code>annotation_by</code> draws as a track;
 <code>tree_order_y = "peak"</code> (with the genes as rows) orders the
 genes by where they are highest.</p>
-<p>Below, 4,000 simulated cells of a branching trajectory, with a
-pseudotime for each of two lineages as slingshot gives them (missing for
-cells outside the lineage): both lineages share their start and branch
-at a pseudotime of 0.4, and 30 genes each peak at their own point, some
+<p>Below, <code>heat_map_example("trajectory")</code>: 4,000 simulated
+cells of a branching trajectory, with a pseudotime for each of two
+lineages as slingshot gives them (missing for cells outside the
+lineage). Both lineages share their start and branch at a pseudotime of
+0.4, and 30 genes, in a random order, each peak at their own point, some
 in one lineage only.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
-<span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">4000</span></span>
-<span><span class="va">pseudotime</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span><span class="va">branch</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">pseudotime</span> <span class="op">&lt;</span> <span class="fl">0.4</span>, <span class="st">"shared"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">peak</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co"># GENES PEAKING AFTER THE BRANCH ARE EXPRESSED IN ONE LINEAGE (OR BOTH)</span></span>
-<span><span class="va">only</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">peak</span> <span class="op">&lt;</span> <span class="fl">0.4</span>, <span class="st">"both"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span>, <span class="st">"both"</span><span class="op">)</span>, <span class="fl">30</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">rate</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">peak</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">g</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">r</span> <span class="op">&lt;-</span> <span class="fl">6</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="op">(</span><span class="op">(</span><span class="va">pseudotime</span> <span class="op">-</span> <span class="va">peak</span><span class="op">[</span><span class="va">g</span><span class="op">]</span><span class="op">)</span> <span class="op">/</span> <span class="fl">0.1</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span></span>
-<span>  <span class="kw">if</span><span class="op">(</span><span class="va">only</span><span class="op">[</span><span class="va">g</span><span class="op">]</span> <span class="op">!=</span> <span class="st">"both"</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">r</span><span class="op">[</span><span class="va">branch</span> <span class="op">!=</span> <span class="st">"shared"</span> <span class="op">&amp;</span> <span class="va">branch</span> <span class="op">!=</span> <span class="va">only</span><span class="op">[</span><span class="va">g</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0</span></span>
-<span>  <span class="op">}</span></span>
-<span>  <span class="va">r</span></span>
-<span><span class="op">}</span><span class="op">)</span></span>
-<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">rate</span><span class="op">)</span>, <span class="va">rate</span><span class="op">)</span>, <span class="va">n</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/dimnames.html" class="external-link">dimnames</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cell"</span>, <span class="fl">1</span><span class="op">:</span><span class="va">n</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"gene"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">30</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co"># THE GENES IN A RANDOM ORDER</span></span>
-<span><span class="va">counts</span> <span class="op">&lt;-</span> <span class="va">counts</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">30</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">traj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/SingleCellExperiment.html" class="external-link">SingleCellExperiment</a></span><span class="op">(</span></span>
-<span>  assays <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>logcounts <span class="op">=</span> <span class="fu">Matrix</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/Matrix.html" class="external-link">Matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="va">counts</span><span class="op">)</span><span class="op">)</span>, sparse <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  colData <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>    pseudotime <span class="op">=</span> <span class="va">pseudotime</span>,</span>
-<span>    lineage1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">branch</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"shared"</span>, <span class="st">"A"</span><span class="op">)</span>, <span class="va">pseudotime</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>    lineage2 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">branch</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"shared"</span>, <span class="st">"B"</span><span class="op">)</span>, <span class="va">pseudotime</span>, <span class="cn">NA</span><span class="op">)</span></span>
-<span>  <span class="op">)</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">traj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_example.html">heat_map_example</a></span><span class="op">(</span><span class="st">"trajectory"</span>, class <span class="op">=</span> <span class="st">"SingleCellExperiment"</span><span class="op">)</span></span>
+<span><span class="va">traj</span></span>
+<span><span class="co">#&gt; class: SingleCellExperiment </span></span>
+<span><span class="co">#&gt; dim: 30 4000 </span></span>
+<span><span class="co">#&gt; metadata(0):</span></span>
+<span><span class="co">#&gt; assays(2): counts logcounts</span></span>
+<span><span class="co">#&gt; rownames(30): gene1 gene2 ... gene29 gene30</span></span>
+<span><span class="co">#&gt; rowData names(0):</span></span>
+<span><span class="co">#&gt; colnames(4000): cell1 cell2 ... cell3999 cell4000</span></span>
+<span><span class="co">#&gt; colData names(3): pseudotime lineage1 lineage2</span></span>
+<span><span class="co">#&gt; reducedDimNames(0):</span></span>
+<span><span class="co">#&gt; mainExpName: NULL</span></span>
+<span><span class="co">#&gt; altExpNames(0):</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">traj</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; DataFrame with 6 rows and 3 columns</span></span>
+<span><span class="co">#&gt;       pseudotime  lineage1  lineage2</span></span>
+<span><span class="co">#&gt;        &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;</span></span>
+<span><span class="co">#&gt; cell1  0.5858003 0.5858003        NA</span></span>
+<span><span class="co">#&gt; cell2  0.0089458 0.0089458 0.0089458</span></span>
+<span><span class="co">#&gt; cell3  0.2937396 0.2937396 0.2937396</span></span>
+<span><span class="co">#&gt; cell4  0.2773750 0.2773750 0.2773750</span></span>
+<span><span class="co">#&gt; cell5  0.8135742 0.8135742        NA</span></span>
+<span><span class="co">#&gt; cell6  0.2604278 0.2604278 0.2604278</span></span></code></pre></div>
 <p>The genes along the pseudotime of all the cells, ordered by when they
 peak:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
