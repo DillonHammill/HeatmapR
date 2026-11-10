@@ -8,7 +8,7 @@
 #' @noRd
 heat_map_label <- function(x_splits,
                            y_splits,
-                           label_col = "grey40",
+                           label_col = "grey85",
                            label_col_alpha = 1,
                            label_text = NA,
                            label_text_font = 1,

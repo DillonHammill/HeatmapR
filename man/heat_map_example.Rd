@@ -48,9 +48,10 @@ random numbers of the session.
 CD8 T, B, NK, CD14 Mono and DC) from four donors in two conditions
 (donors 1 and 2 \code{"control"}, 3 and 4 \code{"treated"}), with 2,000
 genes. Four genes mark each cell type (e.g. CD3E, IL7R, CCR7 and LDHB
-the CD4 T cells; the list is in the \code{"markers"} attribute), and the
-others are background. Counts are Poisson, with a size factor for each
-cell, and log-normalised to 10,000 counts per cell
+the CD4 T cells; the list is in the \code{"markers"} attribute), with
+little expression in the other cells, and the others are background.
+Counts are Poisson, with a size factor for each cell, and
+log-normalised to 10,000 counts per cell
 (\code{log1p(counts / total * 10000)}).}
 \item{\code{"cytometry"}}{200,000 events of 12 markers (CD3, CD4, CD8,
 CD19, CD20, CD56, CD16, CD14, CD11c, HLA-DR, CD45RA and CCR7) in eight

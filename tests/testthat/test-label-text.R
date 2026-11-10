@@ -14,9 +14,9 @@ recorded_text <- function(p) {
 
 test_that("black or white text is chosen by contrast with the fill", {
   expect_equal(
-    .contrast_text_col(c("grey40", "grey90", "white", "black", "navy",
-                         "#FFD700")),
-    c("white", "black", "black", "white", "white", "black")
+    .contrast_text_col(c("grey40", "grey85", "grey90", "white", "black",
+                         "navy", "#FFD700")),
+    c("white", "black", "black", "black", "white", "white", "black")
   )
   # TRANSPARENT FILLS ARE BLENDED WITH THE BACKGROUND
   expect_equal(.contrast_text_col("grey40", alpha = 0.3), "black")
@@ -47,8 +47,8 @@ test_that("cluster labels get readable text unless a colour is given", {
     stats::setNames(txt$col[txt$label %in% c("A", "B")],
                     txt$label[txt$label %in% c("A", "B")])[c("A", "B")]
   }
-  # WHITE ON THE DEFAULT DARK GREY
-  expect_equal(unname(draw()), c("#FFFFFFFF", "#FFFFFFFF"))
+  # BLACK ON THE DEFAULT LIGHT GREY
+  expect_equal(unname(draw()), c("#000000FF", "#000000FF"))
   # EACH LABEL BY ITS OWN FILL
   expect_equal(unname(draw(tree_label_col_y = c("grey40", "grey90"))),
                c("#FFFFFFFF", "#000000FF"))

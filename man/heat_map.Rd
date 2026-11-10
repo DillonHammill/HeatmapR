@@ -23,7 +23,7 @@ heat_map(
   tree_split_x = 1,
   tree_label_x = FALSE,
   tree_label_size_x = 0.1,
-  tree_label_col_x = "grey40",
+  tree_label_col_x = "grey85",
   tree_label_col_alpha_x = 1,
   tree_label_text_x = NA,
   tree_label_text_font_x = 1,
@@ -41,7 +41,7 @@ heat_map(
   tree_split_y = 1,
   tree_label_y = FALSE,
   tree_label_size_y = 0.1,
-  tree_label_col_y = "grey40",
+  tree_label_col_y = "grey85",
   tree_label_col_alpha_y = 1,
   tree_label_text_y = NA,
   tree_label_text_font_y = 1,
@@ -366,7 +366,7 @@ text are made tall enough for the text; the strip is at least 0.8 inches
 x \code{tree_label_size_x} tall.}
 
 \item{tree_label_col_x}{vector of colours to use for x axis tree cluster
-labels, set to "grey40" by default.}
+labels, set to "grey85" (light grey) by default.}
 
 \item{tree_label_col_alpha_x}{numeric to control the transparency of the x
 axis tree cluster labels, set to 1 by default to use solid colours.}
@@ -483,7 +483,7 @@ text are made wide enough for the text; the strip is at least 0.8 inches
 x \code{tree_label_size_y} wide.}
 
 \item{tree_label_col_y}{vector of colours to use for y axis tree cluster
-labels, set to "grey40" by default.}
+labels, set to "grey85" (light grey) by default.}
 
 \item{tree_label_col_alpha_y}{numeric to control the transparency of the y
 axis tree cluster labels, set to 1 by default to use solid colours.}
