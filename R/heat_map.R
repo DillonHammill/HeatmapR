@@ -134,7 +134,9 @@
 #' @param tree_label_text_size_x a vector of numerics to control the size of the
 #'   text in the x axis cluster labels, set to 1 by default.
 #' @param tree_label_text_col_x a vector of colours to control the colour of
-#'   text in x axis cluster labels, set to \code{"black"} by default.
+#'   text in x axis cluster labels, set to \code{"auto"} by default to
+#'   use white text on dark labels and black text on light ones, whichever
+#'   contrasts more with the colour of each label.
 #' @param tree_label_text_col_alpha_x a vector of numerics to control the
 #'   transparency of text in x axis cluster labels, set to 1 by default to use
 #'   solid colours.
@@ -241,7 +243,9 @@
 #' @param tree_label_text_size_y a vector of numerics to control the size of the
 #'   text in the y axis cluster labels, set to 1 by default.
 #' @param tree_label_text_col_y a vector of colours to control the colour of
-#'   text in y axis cluster labels, set to \code{"black"} by default.
+#'   text in y axis cluster labels, set to \code{"auto"} by default to
+#'   use white text on dark labels and black text on light ones, whichever
+#'   contrasts more with the colour of each label.
 #' @param tree_label_text_col_alpha_y a vector of numerics to control the
 #'   transparency of text in y axis cluster labels, set to 1 by default to use
 #'   solid colours.
@@ -811,7 +815,7 @@ heat_map <- function(x,
                      tree_label_text_x = NA,
                      tree_label_text_font_x = 1,
                      tree_label_text_size_x = 1,
-                     tree_label_text_col_x = "black",
+                     tree_label_text_col_x = "auto",
                      tree_label_text_col_alpha_x = 1,
                      tree_y = NULL,
                      tree_size_y = 1,
@@ -829,7 +833,7 @@ heat_map <- function(x,
                      tree_label_text_y = NA,
                      tree_label_text_font_y = 1,
                      tree_label_text_size_y = 1,
-                     tree_label_text_col_y = "black",
+                     tree_label_text_col_y = "auto",
                      tree_label_text_col_alpha_y = 1,
                      cell_shape = "rect",
                      cell_size = FALSE,
