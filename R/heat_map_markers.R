@@ -214,8 +214,9 @@ heat_map_markers <- function(x,
 #' Two-sided p-values of rank-sum statistics u (of groups of n1 cells against
 #' n2 others, with ties the sum of t^3 - t over the values tied t times among
 #' all the cells), from the normal approximation with corrections for ties
-#' and continuity, as wilcox.test(exact = FALSE) finds them; NA without
-#' variation
+#' and continuity, as wilcox.test(exact = FALSE) finds them. When every
+#' value is tied there is no evidence either way and the p-value is 1 (as
+#' R-devel's wilcox.test() gives it; earlier versions give NaN)
 #' @noRd
 .marker_p <- function(u,
                       n1,
@@ -226,7 +227,7 @@ heat_map_markers <- function(x,
   sigma <- sqrt((n1 * n2 / 12) * ((N + 1) - ties / (N * (N - 1))))
   z <- (z - sign(z) * 0.5) / sigma
   p <- 2 * stats::pnorm(-abs(z))
-  p[is.na(sigma) | !(sigma > 0)] <- NA_real_
+  p[!is.na(u) & !is.na(sigma) & sigma == 0] <- 1
   p
 }
 

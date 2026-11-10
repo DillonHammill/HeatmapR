@@ -82,9 +82,15 @@ test_that("the AUC is the Wilcoxon statistic over the numbers of cells", {
     for(r in res) {
       expect_identical(r$auc, ref)
       expect_identical(r$u, w$u)
-      # THE P-VALUES OF wilcox.test(exact = FALSE), TIES AND ALL
+      # THE P-VALUES OF wilcox.test(exact = FALSE), TIES AND ALL - 1 WHEN
+      # EVERY VALUE IS TIED (NaN FROM wilcox.test() BEFORE R-devel)
       ties <- matrix(r$ties, 3, nc, byrow = TRUE)
-      expect_equal(.marker_p(r$u, w$n1, w$n2, ties), w$p, tolerance = 1e-12)
+      pv <- .marker_p(r$u, w$n1, w$n2, ties)
+      tested <- !is.na(w$u)
+      expect_identical(is.na(pv), !tested)
+      ok <- tested & !is.nan(w$p)
+      expect_equal(pv[ok], w$p[ok], tolerance = 1e-12)
+      expect_true(all(pv[tested & is.nan(w$p)] == 1))
       expect_identical(r, res[[1]])
     }
   }
