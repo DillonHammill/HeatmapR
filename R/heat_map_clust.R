@@ -50,7 +50,12 @@
 #'   branches by the mean position of their leaves in a spectral order
 #'   (recursive spectral bisection of the graph joining each leaf to its 6
 #'   nearest neighbours), so that gradients and trajectories run in one
-#'   direction across the dendrogram. Optimal leaf ordering is exact for up to
+#'   direction across the dendrogram. \code{"peak"} orders branches by the
+#'   mean position of their leaves' maxima along the columns (ties by the
+#'   position of their minima), so that features peaking early come first,
+#'   e.g. along pseudotime (see \code{\link{heat_map_smooth}}). A numeric
+#'   vector with one value per row orders branches by the mean value of their
+#'   leaves. Optimal leaf ordering is exact for up to
 #'   4000 leaves, which takes well under a second; its time grows with the cube of
 #'   the number of leaves (and its memory with the square), so larger trees are
 #'   ordered in blocks (of 4000 leaves, down to 100 for the largest trees), each
@@ -255,6 +260,10 @@ heat_map_clust <- function(x,
                          ...) {
   if(identical(order, "default")) {
     return(raw)
+  }
+  # A VALUE FOR EACH LEAF
+  if(is.numeric(order)) {
+    return(.tree_order(raw, NULL, order = order))
   }
   # CLUSTERED DATA - ITS ROWS ARE THE LEAVES
   if(!is.null(prep$rows)) {
@@ -604,7 +613,7 @@ heat_map_clust <- function(x,
       x[idx, , drop = FALSE],
       dist = dist,
       method = method,
-      order = order,
+      order = if(is.numeric(order)) order[idx] else order,
       max = if(is.finite(max)) max(50, floor(max * length(idx) / n)) else max,
       block = block,
       ...
@@ -822,6 +831,17 @@ heat_map_clust <- function(x,
   if(identical(order, "default") || nrow(tree$merge) < 2) {
     return(tree)
   }
+  # A VALUE FOR EACH LEAF - BRANCHES ORDERED BY THE MEAN VALUE OF THEIR LEAVES
+  if(is.numeric(order)) {
+    return(.mean_order(tree, .leaf_values(order, nrow(tree$merge) + 1)))
+  }
+  # BRANCHES ORDERED BY THE POSITION OF THEIR LEAVES' PEAKS
+  if(order == "peak") {
+    if(is.null(x)) {
+      stop("order = \"peak\" needs the data, not distances.", call. = FALSE)
+    }
+    return(.mean_order(tree, .peak_key(as.matrix(x))))
+  }
   if(order == "mean") {
     return(.mean_order(tree, rowMeans(as.matrix(x), na.rm = TRUE)))
   }
@@ -902,18 +922,124 @@ heat_map_clust <- function(x,
   methods[ind]
 }
 
-#' Check a leaf ordering method
+#' Check a leaf ordering method - a name, or a value for each leaf
 #' @noRd
 .check_order <- function(order,
                          arg = "order") {
+  if(is.numeric(order) && length(order) > 0) {
+    return(invisible(TRUE))
+  }
   if(!is.character(order) || length(order) != 1 ||
-     !order %in% c("default", "olo", "mean", "spectral")) {
+     !order %in% c("default", "olo", "mean", "spectral", "peak")) {
     stop(
-      "'", arg, "' must be \"default\", \"olo\", \"mean\" or \"spectral\".",
+      "'", arg, "' must be \"default\", \"olo\", \"mean\", \"spectral\" or ",
+      "\"peak\".",
       call. = FALSE
     )
   }
   invisible(TRUE)
+}
+
+#' The values that order the leaves of a tree - one per leaf, missing values
+#' last
+#' @noRd
+.leaf_values <- function(order,
+                         n) {
+  if(length(order) != n) {
+    stop(
+      "A numeric 'order' must have one value for each of the ", n, " leaves.",
+      call. = FALSE
+    )
+  }
+  w <- as.double(order)
+  w[is.na(w)] <- max(c(w[!is.na(w)], 0)) + 1
+  w
+}
+
+#' The positions of the rows of a trajectory from heat_map_smooth() - the
+#' column of its "groups" named by its "along" attribute, named by row
+#' @noRd
+.peak_positions <- function(x) {
+  g <- attr(x, "groups")
+  a <- attr(x, "along")
+  if(!is.matrix(x) || !is.data.frame(g) || nrow(g) != nrow(x) ||
+     !is.character(a) || length(a) != 1 || !a %in% names(g) ||
+     !is.numeric(g[[a]]) || any(!is.finite(g[[a]])) || is.null(rownames(x))) {
+    return(NULL)
+  }
+  stats::setNames(g[[a]], rownames(x))
+}
+
+#' The positions of the rows (columns) of a heatmap from those of a
+#' trajectory, when they all have one
+#' @noRd
+.peak_at <- function(at,
+                     labels) {
+  if(is.null(at) || is.null(labels) || !all(labels %in% names(at))) {
+    return(NULL)
+  }
+  unname(at[labels])
+}
+
+#' The groups of the other axis for peak positions - a factor or character
+#' vector with one label per row (column), matched by name when named
+#' @noRd
+.peak_groups <- function(cut,
+                         n,
+                         labels) {
+  if(is.null(cut) || length(cut) != n || n < 2 ||
+     !(is.factor(cut) || is.character(cut))) {
+    return(NULL)
+  }
+  if(!is.null(names(cut)) && !is.null(labels) &&
+     setequal(names(cut), labels) && !anyDuplicated(labels)) {
+    cut <- cut[labels]
+  }
+  as.character(cut)
+}
+
+#' Peak positions - where each row of a matrix is highest
+#'
+#' The position of each row's maximum along the columns, from 0 (the first
+#' column) to 1 (the last), with ties of the maxima broken by the position of
+#' the minimum. Within groups of columns (e.g. the bins of the lineages of a
+#' trajectory) a position is that within the column's group, so that the
+#' peaks of different groups are compared by when they occur.
+#'
+#' @param m numeric matrix - one row per row (leaf) to order.
+#' @param groups the group of each column, or \code{NULL}.
+#' @param positions the position of each column (e.g. its pseudotime), or
+#'   \code{NULL} for positions in the order of the columns.
+#'
+#' @return a value for each row: smaller for earlier peaks, \code{NA} for
+#'   rows without values.
+#'
+#' @noRd
+.peak_key <- function(m,
+                      groups = NULL,
+                      positions = NULL) {
+  p <- ncol(m)
+  if(!is.null(positions)) {
+    r <- range(positions)
+    pos <- if(r[2] > r[1]) (positions - r[1]) / (r[2] - r[1]) else positions * 0
+  } else if(is.null(groups)) {
+    pos <- (seq_len(p) - 1) / max(p - 1, 1)
+  } else {
+    g <- as.integer(factor(groups, exclude = NULL))
+    within <- stats::ave(seq_len(p), g, FUN = seq_along)
+    size <- tabulate(g)[g]
+    pos <- (within - 1) / pmax(size - 1, 1)
+  }
+  ok <- !is.na(m)
+  hi <- m
+  hi[!ok] <- -Inf
+  lo <- -m
+  lo[!ok] <- -Inf
+  at_max <- max.col(hi, ties.method = "first")
+  at_min <- max.col(lo, ties.method = "first")
+  key <- pos[at_max] + 1e-6 * pos[at_min]
+  key[rowSums(ok) == 0] <- NA
+  key
 }
 
 ## K-MEANS ---------------------------------------------------------------------

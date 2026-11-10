@@ -71,7 +71,12 @@ means instead, which favours small branches). \code{"spectral"} orders
 branches by the mean position of their leaves in a spectral order
 (recursive spectral bisection of the graph joining each leaf to its 6
 nearest neighbours), so that gradients and trajectories run in one
-direction across the dendrogram. Optimal leaf ordering is exact for up to
+direction across the dendrogram. \code{"peak"} orders branches by the
+mean position of their leaves' maxima along the columns (ties by the
+position of their minima), so that features peaking early come first,
+e.g. along pseudotime (see \code{\link{heat_map_smooth}}). A numeric
+vector with one value per row orders branches by the mean value of their
+leaves. Optimal leaf ordering is exact for up to
 4000 leaves, which takes well under a second; its time grows with the cube of
 the number of leaves (and its memory with the square), so larger trees are
 ordered in blocks (of 4000 leaves, down to 100 for the largest trees), each

@@ -86,7 +86,17 @@
 #'   the mean spectral position of their columns. Up to \code{clust_max}
 #'   columns are ordered exactly; more are ordered from a sample of
 #'   \code{clust_max} landmarks, each other column placed beside its nearest
-#'   landmark (200,000 take about 4 seconds).
+#'   landmark (200,000 take about 4 seconds). \code{"peak"} orders the
+#'   columns by where they are highest along the rows, in the order of the
+#'   rows in the data (ties by where they are lowest), so that features
+#'   peaking early along a trajectory come first and cascades run diagonally
+#'   (see \code{\link{heat_map_smooth}}); it needs no dendrogram either, and
+#'   with one orders its branches by the mean peak position of their columns.
+#'   The rows of a trajectory from \code{heat_map_smooth()} are placed by
+#'   their position along it (e.g. pseudotime), so the peaks of its lineages
+#'   are compared by when they occur; other rows split into groups by a
+#'   factor or character \code{tree_cut_y} (or \code{group_by}) are placed
+#'   by their position within their group.
 #' @param tree_cut_x either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for x axis dendrogram (proportional for non-cosine distances,
 #'   or absolute cosine distance threshold when \code{dist_method = "cosine"}),
@@ -179,12 +189,15 @@
 #'   least 5 leaves and an eighth of all leaves) are labelled with their
 #'   support as a percentage, set to TRUE by default.
 #' @param tree_order_y how the branches of the y axis dendrogram are ordered,
-#'   either \code{"default"}, \code{"olo"}, \code{"mean"} or
-#'   \code{"spectral"}, as for \code{tree_order_x}. A spectral order without
-#'   a dendrogram orders the rows on their own (e.g. cells along a
-#'   differentiation trajectory or samples along a time course); rows
-#'   grouped by \code{tree_cut_y} or \code{tree_kmeans_y} keep it within
-#'   each group.
+#'   either \code{"default"}, \code{"olo"}, \code{"mean"},
+#'   \code{"spectral"} or \code{"peak"}, as for \code{tree_order_x}. A
+#'   spectral order without a dendrogram orders the rows on their own (e.g.
+#'   cells along a differentiation trajectory or samples along a time
+#'   course); rows grouped by \code{tree_cut_y} or \code{tree_kmeans_y} keep
+#'   it within each group. \code{"peak"} orders the rows by where they are
+#'   highest along the columns (e.g. genes along pseudotime with
+#'   \code{swap_axes = TRUE}), within the groups of a factor or character
+#'   \code{tree_cut_x}.
 #' @param tree_cut_y either a numeric ranging from 0 to 1 indicating the branch
 #'   cut height for y axis dendrogram (proportional for non-cosine distances,
 #'   or absolute cosine distance threshold when \code{dist_method = "cosine"}),
@@ -1131,6 +1144,9 @@ heat_map <- function(x,
   bar_title_x <- attr(bar_values_x, "title")
   bar_title_y <- attr(bar_values_y, "title")
 
+  # POSITIONS OF THE BINS OF A TRAJECTORY (heat_map_smooth()) FOR PEAK ORDERS
+  peak_positions <- .peak_positions(x)
+
   # SINGLE-CELL DATA - THE CHOSEN CELLS AND FEATURES, GROUPS AS CLUSTERS AND
   # ANNOTATIONS AS TRACKS (THE REDRAW DRAWS THEM AS GIVEN)
   if(.cells_wanted(hm_args)) {
@@ -1369,6 +1385,31 @@ heat_map <- function(x,
   .check_clust_max(clust_max)
   .check_order(tree_order_x, "tree_order_x")
   .check_order(tree_order_y, "tree_order_y")
+  if(is.numeric(tree_order_x) || is.numeric(tree_order_y)) {
+    stop("'tree_order_x' and 'tree_order_y' must be names of orders.",
+         call. = FALSE)
+  }
+
+  # PEAK ORDERS - WHERE EACH COLUMN IS HIGHEST ALONG THE ROWS (EACH ROW ALONG
+  # THE COLUMNS), IN THE ORDER OF THE DATA AND WITHIN THE GROUPS OF THE OTHER
+  # AXIS (E.G. THE LINEAGES OF A TRAJECTORY)
+  order_x <- tree_order_x
+  if(identical(tree_order_x, "peak") && length(num_cols) > 0) {
+    order_x <- .peak_key(
+      t(as.matrix(x[, num_cols, drop = FALSE])),
+      .peak_groups(tree_cut_y, nrow(x), rownames(x)),
+      .peak_at(peak_positions, rownames(x))
+    )
+  }
+  order_y <- tree_order_y
+  if(identical(tree_order_y, "peak") && length(num_cols) > 0) {
+    groups_x <- .peak_groups(tree_cut_x, ncol(x), colnames(x))
+    order_y <- .peak_key(
+      as.matrix(x[, num_cols, drop = FALSE]),
+      if(!is.null(groups_x)) groups_x[num_cols],
+      .peak_at(peak_positions, colnames(x)[num_cols])
+    )
+  }
 
   # GROUPS SUPPLIED TO tree_cut_* (ONE PER ROW OR COLUMN) WITH A DENDROGRAM -
   # CLUSTER WITHIN EACH GROUP RATHER THAN ACROSS ALL ROWS OR COLUMNS
@@ -1405,7 +1446,7 @@ heat_map <- function(x,
         method = clust_method,
         max = clust_max
       ), list(...)),
-      order = tree_order_x,
+      order = order_x,
       scale = tree_scale_x,
       cut = if(length(tree_cut_x) == 1) tree_cut_x else NULL)
       .check_tree(tree_x, length(num_cols), "tree_x", "numeric columns")
@@ -1439,6 +1480,13 @@ heat_map <- function(x,
     col_ind[seq_along(num_cols)] <- num_cols[ord]
   }
 
+  # X PEAK ORDER WITHOUT A DENDROGRAM (WITHIN MANUAL CLUSTERS THE COLUMNS
+  # KEEP IT)
+  if(is.null(tree_x) && identical(tree_order_x, "peak") &&
+     length(num_cols) >= 2) {
+    col_ind[seq_along(num_cols)] <- num_cols[order(order_x)]
+  }
+
   # X MANUAL CLUSTERING
   if(length(tree_cut_x) > 1) {
     # CLUSTER INDICES ARE GIVEN COLUMN BY COLUMN FROM THE LEFT OF THE HEATMAP
@@ -1453,7 +1501,7 @@ heat_map <- function(x,
           dist = dist_method,
           method = clust_method,
           max = clust_max
-        ), list(...)), order = tree_order_x)$order], char_cols)
+        ), list(...)), order = order_x)$order], char_cols)
       } else {
         col_ind
       }
@@ -1488,7 +1536,7 @@ heat_map <- function(x,
         dist = dist_method,
         method = clust_method,
         max = clust_max,
-        order = tree_order_x,
+        order = order_x,
         raw = TRUE
       ), list(...)))
       tree_x$height <- .tree_heights(tree_x$height, scale = tree_scale_x)
@@ -1550,7 +1598,7 @@ heat_map <- function(x,
         method = clust_method,
         max = clust_max
       ), list(...)),
-      order = tree_order_y,
+      order = order_y,
       scale = tree_scale_y,
       cut = if(length(tree_cut_y) == 1) tree_cut_y else NULL)
       .check_tree(tree_y, nrow(x), "tree_y", "rows")
@@ -1571,6 +1619,13 @@ heat_map <- function(x,
     row_ind <- row_ind[ord]
   }
 
+  # Y PEAK ORDER WITHOUT A DENDROGRAM (WITHIN MANUAL CLUSTERS THE ROWS KEEP
+  # IT)
+  if(is.null(tree_y) && identical(tree_order_y, "peak") && nrow(x) >= 2 &&
+     length(num_cols) >= 1) {
+    row_ind <- row_ind[order(order_y[row_ind])]
+  }
+
   # Y MANUAL CLUSTERING
   if(length(tree_cut_y) > 1) {
     # CLUSTER INDICES ARE GIVEN ROW BY ROW FROM THE TOP OF THE HEATMAP AS IT
@@ -1584,7 +1639,7 @@ heat_map <- function(x,
           dist = dist_method,
           method = clust_method,
           max = clust_max
-        ), list(...)), order = tree_order_y)$order
+        ), list(...)), order = order_y)$order
       } else {
         row_ind
       }
@@ -1615,7 +1670,7 @@ heat_map <- function(x,
         dist = dist_method,
         method = clust_method,
         max = clust_max,
-        order = tree_order_y,
+        order = order_y,
         raw = TRUE
       ), list(...)))
       tree_y$height <- .tree_heights(tree_y$height, scale = tree_scale_y)

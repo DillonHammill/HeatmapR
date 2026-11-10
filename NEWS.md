@@ -22,6 +22,11 @@
 * Stacked bars: `bar_type_x`/`bar_type_y = "stack"` draws the parts of each column or row (a matrix with one column or row per part, or `"n"` for the counts of `stack_by`) as a stacked bar, and `"fill"` their proportions, with one colour per part (`bar_fill_*`, named by part) and a legend of the parts.
 * Medians of groups of dense rows are found in compiled code, as `median()` finds them: a million cells of 30 markers in 20 clusters in 0.3 seconds (1.1 seconds before), or 1.3 seconds with the asinh transform and quantile scaling.
 
+## Trajectories
+
+* `heat_map_smooth()` smooths features along a trajectory: the cells are binned along `along` (e.g. a pseudotime column; `bins = 100` bins with equal numbers of cells, or of equal width with `binning = "width"`) and each feature's mean found over the `span` bins around each bin (5 by default), weighted by their cells, in compiled code (2,000 genes of 50,000 cells in 0.3 seconds, all 20,000 in 1.1). Branching trajectories are smoothed one lineage at a time, from several `along` columns (one per lineage) or `group_by`. The result has one row per bin and one column per feature, with the cells of each bin (attribute `"n"`) and its lineage and position (attribute `"groups"`) for `heat_map(group_by = "lineage", annotation_by = "pseudotime")`.
+* `tree_order_x`/`tree_order_y = "peak"` (and `heat_map_clust(order = "peak")`) order features by where they are highest (ties by where they are lowest), so that cascades along a trajectory run diagonally. It needs no dendrogram, orders a dendrogram's branches by the mean peak of their leaves, and keeps within groups of features; the bins of `heat_map_smooth()` are placed by their position along the trajectory, so the peaks of lineages are compared by when they occur. `heat_map_clust(order = )` also takes a numeric vector, ordering branches by the mean value of their leaves.
+
 # HeatmapR 2.0.0
 
 HeatmapR 2.0.0 is a major release: a new layout that sizes every part of a heatmap from its contents, clustering in compiled code that scales to hundreds of thousands of rows, and many new kinds of heatmap (annotations, split cells, distributions inside cells, zoom panels, correlation heatmaps, branch support and more). Some conventions and defaults have changed; they are listed first.
