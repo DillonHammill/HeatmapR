@@ -123,7 +123,6 @@ hm <- heat_map(
   tree_kmeans_y = 5,
   tree_label_y = TRUE,
   tree_label_text_y = paste0("K", 1:5),
-  tree_label_text_col_y = "white",
   axis_text_y = NA,
   title = "Five k-means clusters"
 )

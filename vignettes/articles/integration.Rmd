@@ -28,7 +28,6 @@ hm <- heat_map(
   tree_cut_y = 3,
   tree_label_y = TRUE,
   tree_label_text_y = c("A", "B", "C"),
-  tree_label_text_col_y = "white",
   legend_title = "z-score",
   title = "mtcars"
 )
