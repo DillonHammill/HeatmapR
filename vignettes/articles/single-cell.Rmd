@@ -3,7 +3,8 @@ title: "Single-cell data"
 description: >
   Heatmaps, dot plots and markers straight from SingleCellExperiment, Seurat,
   flowFrame and sparse matrices: features by name, groups and annotations from
-  metadata, downsampling, sparse summaries and marker ranking.
+  metadata, downsampling, sparse summaries, marker ranking, cytometry and
+  trajectories.
 ---
 
 ```{r, include = FALSE}
@@ -312,6 +313,75 @@ heat_map(
   title = "Median of each cluster in each sample"
 )
 ```
+
+## Trajectories
+
+Along a trajectory, genes are smoothed along pseudotime and ordered by when they peak. `heat_map_smooth()` bins the cells along `along` (a pseudotime column, or a vector), with `bins` bins of equal numbers of cells (`binning = "width"` for equal widths), and finds each gene's mean over the `span` bins around each bin. The result has one row per bin and keeps the position of each bin, which `annotation_by` draws as a track; `tree_order_y = "peak"` (with the genes as rows) orders the genes by where they are highest.
+
+Below, 4,000 simulated cells of a branching trajectory, with a pseudotime for each of two lineages as slingshot gives them (missing for cells outside the lineage): both lineages share their start and branch at a pseudotime of 0.4, and 30 genes each peak at their own point, some in one lineage only.
+
+```{r trajectory-data}
+set.seed(4)
+n <- 4000
+pseudotime <- runif(n)
+branch <- ifelse(pseudotime < 0.4, "shared", sample(c("A", "B"), n, replace = TRUE))
+peak <- sort(runif(30))
+# GENES PEAKING AFTER THE BRANCH ARE EXPRESSED IN ONE LINEAGE (OR BOTH)
+only <- ifelse(peak < 0.4, "both", sample(c("A", "B", "both"), 30, replace = TRUE))
+rate <- sapply(seq_along(peak), function(g) {
+  r <- 6 * exp(-((pseudotime - peak[g]) / 0.1)^2)
+  if(only[g] != "both") {
+    r[branch != "shared" & branch != only[g]] <- 0
+  }
+  r
+})
+counts <- matrix(rpois(length(rate), rate), n)
+dimnames(counts) <- list(paste0("cell", 1:n), paste0("gene", 1:30))
+# THE GENES IN A RANDOM ORDER
+counts <- counts[, sample(30)]
+traj <- SingleCellExperiment(
+  assays = list(logcounts = Matrix::Matrix(t(log1p(counts)), sparse = TRUE)),
+  colData = data.frame(
+    pseudotime = pseudotime,
+    lineage1 = ifelse(branch %in% c("shared", "A"), pseudotime, NA),
+    lineage2 = ifelse(branch %in% c("shared", "B"), pseudotime, NA)
+  )
+)
+```
+
+The genes along the pseudotime of all the cells, ordered by when they peak:
+
+```{r trajectory, fig.width = 8, fig.height = 6, fig.alt = "Heatmap of 30 genes, one per row, smoothed along pseudotime in 60 bins, one per column, each gene scaled from 0 to 1, with a pseudotime track above. The genes are ordered by when they peak, so their highest values run diagonally from the top left to the bottom right."}
+smooth <- heat_map_smooth(traj, along = "pseudotime", bins = 60)
+heat_map(
+  smooth,
+  swap_axes = TRUE,
+  scale = "row",
+  tree_order_y = "peak",
+  annotation_by = "pseudotime",
+  axis_text_x = NA,
+  title = "Genes along pseudotime"
+)
+```
+
+Several `along` columns smooth each lineage on its own (`group_by` does the same for one pseudotime and a lineage column), and `group_by = "lineage"` draws the lineages side by side. The peak order reads the position of each bin along the trajectory, so the genes of both lineages are ordered by when they peak:
+
+```{r trajectory-lineages, fig.width = 9, fig.height = 6, fig.alt = "Heatmap of 30 genes smoothed along the pseudotime of two lineages, drawn side by side with labelled strips and a pseudotime track. The genes are ordered by when they peak: genes peaking early are high in both lineages, later genes in lineage 1, lineage 2 or both."}
+lineages <- heat_map_smooth(traj, along = c("lineage1", "lineage2"), bins = 40)
+head(attr(lineages, "groups"))
+heat_map(
+  lineages,
+  swap_axes = TRUE,
+  group_by = "lineage",
+  scale = "row",
+  tree_order_y = "peak",
+  annotation_by = "along",
+  axis_text_x = NA,
+  title = "Two lineages"
+)
+```
+
+Without a pseudotime, `tree_order_y = "spectral"` orders the cells themselves along a trajectory; see the [ordering guide](ordering.html).
 
 ## Speed
 
