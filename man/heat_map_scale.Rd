@@ -24,9 +24,8 @@ from each value and then divides the result by the standard deviation.
 Rows or columns with no variation are mapped to 0.5 for range scaling
 and 0 for mean and z-score scaling, rather than \code{NaN}. Quantile
 scaling maps the \code{q} and \code{1 - q} quantiles of each column
-(row) to 0 and 1 and clips the values beyond them, as CATALYST scales
-mass cytometry data, so that a few extreme cells don't compress the
-colours of the rest; when the two quantiles are equal, values above them
+(row) to 0 and 1 and clips the values beyond them, so that a few extreme
+values don't compress the colours of the rest; when the two quantiles are equal, values above them
 are 1 and the others 0. The \code{"asinh"} transform takes the inverse
 hyperbolic sine of each value divided by \code{cofactor}, the usual
 transform of cytometry intensities (it ignores \code{scale}).}

@@ -62,14 +62,13 @@
 #' @param scale the scaling of each feature (column): \code{FALSE} (default)
 #'   for none, or a method of \code{\link{heat_map_scale}}:
 #'   \code{"quantile"} (0 to 1 between the \code{q} and \code{1 - q}
-#'   quantiles, clipped, as CATALYST scales expression), \code{"range"},
+#'   quantiles, with the values beyond them clipped), \code{"range"},
 #'   \code{"zscore"} or \code{"mean"}.
 #' @param q the quantile of \code{scale = "quantile"}, set to 0.01 by
 #'   default.
 #' @param scale_when \code{"last"} (default) to scale the summaries of the
-#'   groups, or \code{"first"} to scale the cells before summarising them, as
-#'   CATALYST's \code{scale = "last"} and \code{"first"} do. Scaling sparse
-#'   data first reads the chosen features as a dense matrix.
+#'   groups, or \code{"first"} to scale the cells before summarising them.
+#'   Scaling sparse data first reads the chosen features as a dense matrix.
 #' @param stack_by the part of each cell for stacked bars beside the
 #'   summaries (e.g. its condition or sample): the name of a column of the
 #'   cells' metadata, or a vector with the part of each cell. The number of

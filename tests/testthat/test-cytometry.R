@@ -1,7 +1,7 @@
 ## CYTOMETRY: TRANSFORMS, QUANTILE SCALING, SUMMARIES AND STACKED BARS -------
 
-# CATALYST's scaling (CATALYST:::.scale_exprs) with stats::quantile()
-catalyst_scale <- function(x, margin = 2, q = 0.01) {
+# Quantile scaling in R, from stats::quantile()
+quantile_scale <- function(x, margin = 2, q = 0.01) {
   qs <- apply(x, margin, quantile, probs = c(q, 1 - q), names = FALSE,
               na.rm = TRUE)
   x <- if(margin == 1) {
@@ -46,7 +46,7 @@ r_medians <- function(x, g) {
   out
 }
 
-test_that("quantile scaling is CATALYST's and the asinh transform R's", {
+test_that("quantile scaling and the asinh transform are those of R", {
   set.seed(1)
   x <- matrix(rexp(20000, 0.01), 2000)
   x[, 3] <- 0
@@ -56,26 +56,26 @@ test_that("quantile scaling is CATALYST's and the asinh transform R's", {
   for(q in c(0.01, 0, 0.05, 0.25, 0.49)) {
     expect_identical(
       suppressMessages(heat_map_scale(x, method = "quantile", q = q)),
-      catalyst_scale(x, q = q)
+      quantile_scale(x, q = q)
     )
   }
   expect_identical(
     suppressMessages(heat_map_scale(x, "row", method = "quantile")),
-    catalyst_scale(x, 1)
+    quantile_scale(x, 1)
   )
   # Few values, and missing values left out of the quantiles (and kept)
   for(n in c(1, 2, 3, 7, 101)) {
     v <- matrix(rnorm(n * 3), n)
     expect_identical(
       suppressMessages(heat_map_scale(v, method = "quantile", q = 0.1)),
-      catalyst_scale(v, q = 0.1)
+      quantile_scale(v, q = 0.1)
     )
   }
   y <- x
   y[2, 1] <- NA
   z <- suppressMessages(heat_map_scale(y, method = "quantile"))
   expect_true(is.na(z[2, 1]))
-  expect_identical(z[-2, 1], catalyst_scale(y[-2, ])[, 1])
+  expect_identical(z[-2, 1], quantile_scale(y[-2, ])[, 1])
   # asinh, with one cofactor or one per column (in order or by name)
   expect_identical(
     suppressMessages(heat_map_scale(x, method = "asinh", cofactor = 5)),
@@ -109,7 +109,7 @@ test_that("heat_map() transforms and quantile-scales before drawing", {
              scale_q = 0.05, axis_text_y = NA)
   expect_equal(
     unname(as.matrix(heat_map_info(hm)$data)),
-    unname(catalyst_scale(asinh(x / 5), q = 0.05))
+    unname(quantile_scale(asinh(x / 5), q = 0.05))
   )
   expect_match(
     heat_map_describe(hm),
@@ -125,14 +125,14 @@ test_that("heat_map() transforms and quantile-scales before drawing", {
 test_that("summaries of transformed and scaled cells are those of R", {
   cells <- cyto_cells()
   x <- as.matrix(cells[, 1:4])
-  # Transformed, then scaled after summarising (CATALYST's scale = "last")
+  # Transformed, then scaled after summarising (scale_when = "last")
   s <- suppressMessages(heat_map_summarise(
     cells, group_by = "cluster", fun = "median", transform = "asinh",
     scale = "quantile"
   ))
   expect_identical(
     plain(s),
-    catalyst_scale(r_medians(asinh(x / 5), cells$cluster))
+    quantile_scale(r_medians(asinh(x / 5), cells$cluster))
   )
   # Scaled before summarising (scale = "first")
   s <- suppressMessages(heat_map_summarise(
@@ -141,7 +141,7 @@ test_that("summaries of transformed and scaled cells are those of R", {
   ))
   expect_identical(
     plain(s),
-    r_medians(catalyst_scale(asinh(x / 5), q = 0.05), cells$cluster)
+    r_medians(quantile_scale(asinh(x / 5), q = 0.05), cells$cluster)
   )
   # Means, other scalings, and plain matrices with groups for each row
   s <- suppressMessages(heat_map_summarise(x, group_by = cells$cluster,
