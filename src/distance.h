@@ -42,12 +42,26 @@ namespace dist {
 
 const double D_INF = std::numeric_limits<double>::infinity();
 
+// A product kept apart from the sum it goes into. When the compiler may use
+// fused multiply-adds (e.g. -march=x86-64-v3, as some Linux distributions
+// build R), GCC fuses a product with a sum by default - in the scalar code
+// and the kernels alike, but not always in the same places. The empty asm
+// keeps every product rounded on its own on x86, so the scalar code and the
+// AVX2 kernel agree whatever the flags. (64-bit ARM fuses explicitly.)
+#ifdef HEATMAPR_DIST_X86
+#define DIST_ROUNDED(v) __asm__("" : "+x"(v))
+#else
+#define DIST_ROUNDED(v) ((void)0)
+#endif
+
 // s + x * y as the kernels compute it
 inline double mul_add(double x, double y, double s) {
 #ifdef HEATMAPR_DIST_NEON
   return std::fma(x, y, s);
 #else
-  return s + x * y;
+  double t = x * y;
+  DIST_ROUNDED(t);
+  return s + t;
 #endif
 }
 
@@ -141,19 +155,26 @@ inline void dist4_scalar(const double* a, const double* const* b, int p, int met
 
 #ifdef HEATMAPR_DIST_X86
 
-// AVX2: ONE VECTOR (THE FOUR PARTS) PER PAIR, NO FUSED MULTIPLY-ADD
+// AVX2: ONE VECTOR (THE FOUR PARTS) PER PAIR, PRODUCTS ROUNDED ON THEIR OWN
 #define DIST_AVX_PAIRS(OP) OP(0) OP(1) OP(2) OP(3)
 #define DIST_AVX_EUCLID(R)                                         \
   {                                                                \
     __m256d d = _mm256_sub_pd(x, _mm256_loadu_pd(b##R + k));       \
-    s##R = _mm256_add_pd(s##R, _mm256_mul_pd(d, d));               \
+    __m256d t = _mm256_mul_pd(d, d);                               \
+    DIST_ROUNDED(t);                                               \
+    s##R = _mm256_add_pd(s##R, t);                                 \
   }
 #define DIST_AVX_MANHATTAN(R)                                                      \
   s##R = _mm256_add_pd(s##R, _mm256_andnot_pd(sign, _mm256_sub_pd(x, _mm256_loadu_pd(b##R + k))));
 // (max(dev, v) is dev > v ? dev : v, as row_dist() compares them)
 #define DIST_AVX_MAXIMUM(R)                                                        \
   s##R = _mm256_max_pd(_mm256_andnot_pd(sign, _mm256_sub_pd(x, _mm256_loadu_pd(b##R + k))), s##R);
-#define DIST_AVX_DOT(R) s##R = _mm256_add_pd(s##R, _mm256_mul_pd(x, _mm256_loadu_pd(b##R + k)));
+#define DIST_AVX_DOT(R)                                            \
+  {                                                                \
+    __m256d t = _mm256_mul_pd(x, _mm256_loadu_pd(b##R + k));       \
+    DIST_ROUNDED(t);                                               \
+    s##R = _mm256_add_pd(s##R, t);                                 \
+  }
 
 __attribute__((target("avx2"))) inline void dist4_avx2(const double* a,
                                                        const double* const* b, int p,
