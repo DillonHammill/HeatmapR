@@ -18,7 +18,6 @@ namespace metric {
 
 namespace {
 
-const double INF = std::numeric_limits<double>::infinity();
 
 inline double clip2(double v) { return v < 0 ? 0 : (v > 2 ? 2 : v); }
 inline double clamp1(double v) { return v >= 1. ? 1. : (v <= -1. ? -1. : v); }
@@ -226,7 +225,7 @@ double euclidean_na(const double* a, const double* b, int p) {
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
       double dev = a[k] - b[k];
-      dist += prod(dev, dev);
+      dist += HEATMAPR_PROD(dev, dev);
       count++;
     }
   }
@@ -361,13 +360,13 @@ double cosine_na(const double* a, const double* b, int p) {
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
       n++;
-      sab += prod(a[k], b[k]);
-      saa += prod(a[k], a[k]);
-      sbb += prod(b[k], b[k]);
+      sab += HEATMAPR_PROD(a[k], b[k]);
+      saa += HEATMAPR_PROD(a[k], a[k]);
+      sbb += HEATMAPR_PROD(b[k], b[k]);
     }
   }
   if (n == 0) return NA;
-  double den = std::sqrt(prod(saa, sbb));
+  double den = std::sqrt(HEATMAPR_PROD(saa, sbb));
   double r = den > 0 ? sab / den : 0;
   return clip2(1 - r);
 }

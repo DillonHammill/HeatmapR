@@ -30,15 +30,31 @@
 
 namespace metric {
 
-// a * b rounded on its own: never fused with the sum or difference it goes
-// into, whatever the compiler flags (GCC fuses by default when the target has
-// fused multiply-adds, e.g. -march=x86-64-v3), so that the arithmetic stays
-// that of R's own (unfused) code - stats::dist(), hclust() and kmeans()
+// a * b rounded on its own, never fused with the sum or difference it goes
+// into
 inline double prod(double a, double b) {
   double t = a * b;
   DIST_ROUNDED(t);
   return t;
 }
+
+} // namespace metric
+
+// A product in arithmetic that must be that of R's own compiled code
+// (stats::dist(), hclust() and kmeans()). R for x86-64 is built for the
+// baseline target, without fused multiply-adds, but the package may be
+// compiled for a target with them (e.g. by a toolchain that defaults to
+// -march=x86-64-v3), and GCC then fuses by default: on x86 the product is
+// kept apart. On 64-bit ARM fused multiply-adds are part of the baseline and
+// R's compilers fuse by default, so the product is left in the expression for
+// the compiler to treat as it treats R's.
+#ifdef HEATMAPR_DIST_X86
+#define HEATMAPR_PROD(a, b) ::metric::prod((a), (b))
+#else
+#define HEATMAPR_PROD(a, b) ((a) * (b))
+#endif
+
+namespace metric {
 
 enum Code {
   EUCLIDEAN = 1,

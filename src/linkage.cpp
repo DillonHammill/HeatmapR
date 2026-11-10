@@ -245,24 +245,23 @@ const int COMPACT_MIN = 256;
 inline double lance_williams(int method, double dik, double djk, double d12,
                              double mi, double mj, double mk) {
   switch (method) {
-    // (PRODUCTS ROUNDED ON THEIR OWN, AS IN hclust.f COMPILED WITHOUT FUSED
-    // MULTIPLY-ADDS)
+    // (THE PRODUCTS AS R'S OWN hclust.f HAS THEM: SEE HEATMAPR_PROD)
     case 1:
     case 8:
-      return (metric::prod(mi + mk, dik) + metric::prod(mj + mk, djk) - metric::prod(mk, d12)) /
+      return (HEATMAPR_PROD(mi + mk, dik) + HEATMAPR_PROD(mj + mk, djk) - HEATMAPR_PROD(mk, d12)) /
              (mi + mj + mk);
     case 2:
       return std::min(dik, djk);
     case 3:
       return std::max(dik, djk);
     case 4:
-      return (metric::prod(mi, dik) + metric::prod(mj, djk)) / (mi + mj);
+      return (HEATMAPR_PROD(mi, dik) + HEATMAPR_PROD(mj, djk)) / (mi + mj);
     case 5:
       return (dik + djk) / 2;
     case 6:
       return ((dik + djk) - d12 / 2) / 2;
     default:
-      return (metric::prod(mi, dik) + metric::prod(mj, djk) - metric::prod(mi, mj) * d12 / (mi + mj)) /
+      return (HEATMAPR_PROD(mi, dik) + HEATMAPR_PROD(mj, djk) - HEATMAPR_PROD(mi, mj) * d12 / (mi + mj)) /
              (mi + mj);
   }
 }
