@@ -103,6 +103,13 @@ heat_map_tree <- function(x,
 #' @noRd
 .map_centers <- function(pos,
                          centers) {
+  # (IN COMPILED CODE UNLESS THE CENTRES HAVE NAMES TO KEEP)
+  if(is.null(names(centers))) {
+    out <- map_centers_cpp(as.double(pos), as.double(centers))
+    if(!is.null(out)) {
+      return(out)
+    }
+  }
   ind <- floor(pos)
   dec <- pos - ind
   out <- centers[ind]

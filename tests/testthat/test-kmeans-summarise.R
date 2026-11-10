@@ -196,3 +196,66 @@ test_that("k-means and group summary snapshot", {
     ))
   )
 })
+
+# COMPILED HARTIGAN-WONG ---------------------------------------------------------
+
+# k-means problems of every shape: clustered, tied (small integers) and widely
+# spread values, few and many columns and centres
+kmeans_cases <- function(trials = 60) {
+  set.seed(41)
+  out <- list()
+  for(trial in seq_len(trials)) {
+    n <- sample(c(20, 60, 300, 2000), 1)
+    p <- sample(c(1:6, 10, 17, 30), 1)
+    k <- sample(2:min(40, n - 1), 1)
+    x <- switch(trial %% 4 + 1,
+      matrix(rnorm(n * p), n) + rep(rnorm(n %/% 5 + 1, sd = 3), each = 5)[1:n],
+      matrix(sample(0:3, n * p, TRUE), n) * 1.0,
+      matrix(rnorm(n * p, sd = 1e3), n),
+      matrix(rnorm(k * p, sd = 4), k)[sample(k, n, TRUE), , drop = FALSE] + matrix(rnorm(n * p), n))
+    cen <- x[sample(n, k), , drop = FALSE]
+    if(!anyDuplicated(cen)) {
+      out[[length(out) + 1]] <- list(x = x, centres = cen)
+    }
+  }
+  out
+}
+
+test_that("compiled k-means gives stats::kmeans()'s clusters exactly", {
+  skip_if(r_fuses(), "R's compiled code fuses multiply-adds, so kmeans() rounds differently")
+  for(cs in kmeans_cases()) {
+    got <- kmeans_hw_cpp(cs$x, cs$centres, 100L, 2L)
+    ref <- tryCatch(suppressWarnings(stats::kmeans(cs$x, cs$centres, iter.max = 100)),
+                    error = function(e) NULL)
+    if(is.null(ref)) {
+      expect_true(got$ifault %in% c(1L, 3L, 4L))
+    } else {
+      expect_identical(got$cluster, ref$cluster)
+      expect_identical(unname(got$centers), unname(ref$centers))
+      expect_identical(got$iter, ref$iter)
+    }
+  }
+})
+
+test_that("the SIMD distances of compiled k-means are those of its scalar code", {
+  on.exit(kernel_settings_cpp("auto", TRUE, "auto"), add = TRUE)
+  cases <- kmeans_cases(40)
+  fits <- function() {
+    lapply(cases, function(cs) kmeans_hw_cpp(cs$x, cs$centres, 100L, 2L))
+  }
+  simd <- fits()
+  kernel_settings_cpp("auto", TRUE, "scalar")
+  expect_identical(fits(), simd)
+})
+
+test_that("k-means helpers match the R they replace", {
+  set.seed(42)
+  x <- matrix(rnorm(3000), 300)
+  g <- sample(rep(1:7, length.out = 300))
+  expect_identical(group_means_cpp(x, g, 7L, 2L), unname(rowsum(x, g) / tabulate(g, 7)))
+  expect_error(group_means_cpp(x, rep(1L, 300), 2L, 1L), "every group")
+  for(m in list(x, matrix(as.double(sample(0:2, 600, TRUE)), 200), x[c(1:50, 1:50, 7), ],
+                matrix(c(0, -0, 1, 1), 2))) {
+    expect_identical(distinct_rows_cpp(m), as.vector(!duplicated(m)))
+  }
+})

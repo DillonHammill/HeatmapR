@@ -7,6 +7,7 @@
 
 #include <cpp11.hpp>
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <functional>
@@ -570,4 +571,105 @@ cpp11::list join_groups_cpp(cpp11::list members, cpp11::list merges,
   using namespace cpp11::literals;
   return cpp11::writable::list({"merge"_nm = merge, "height"_nm = height,
                                 "order"_nm = order});
+}
+
+// The checks of .check_tree() on the merge matrix (as a vector m, column by
+// column, k rows) of a tree with n leaves, in its order: 1 if the leaves
+// aren't each joined once (-m[m < 0] must be n distinct leaves up to n), 2 if
+// the merges aren't (m[m > 0] must be k - 1 distinct earlier merges), 0 if
+// both hold. m holds whole numbers.
+[[cpp11::register]]
+int merge_check_cpp(cpp11::doubles m, int k, int n) {
+  R_xlen_t len = m.size();
+  std::vector<unsigned char> seen_leaf(static_cast<size_t>(n) + 1, 0);
+  R_xlen_t leaves = 0;
+  bool leaf_ok = true;
+  for (R_xlen_t e = 0; e < len; ++e) {
+    double v = m[e];
+    if (v < 0) {
+      ++leaves;
+      double l = -v;
+      if (l > n) {
+        leaf_ok = false;
+        break;
+      }
+      size_t i = static_cast<size_t>(l);
+      if (seen_leaf[i]) {
+        leaf_ok = false;
+        break;
+      }
+      seen_leaf[i] = 1;
+    }
+  }
+  if (!leaf_ok || leaves != n) return 1;
+  std::vector<unsigned char> seen_node(static_cast<size_t>(k) + 1, 0);
+  R_xlen_t nodes = 0;
+  for (R_xlen_t e = 0; e < len; ++e) {
+    double v = m[e];
+    if (v > 0) {
+      ++nodes;
+      // (A MERGE JOINS EARLIER MERGES ONLY: ITS ROW IS e % k + 1)
+      if (v >= static_cast<double>(e % k + 1)) return 2;
+      size_t i = static_cast<size_t>(v);
+      if (seen_node[i]) return 2;
+      seen_node[i] = 1;
+    }
+  }
+  if (nodes != std::max(0, k - 1)) return 2;
+  return 0;
+}
+
+// Whether order (numeric, length n) holds each of 1, ..., n once
+[[cpp11::register]]
+bool order_check_cpp(cpp11::doubles order, int n) {
+  if (order.size() != n) return false;
+  std::vector<unsigned char> seen(static_cast<size_t>(n) + 1, 0);
+  for (R_xlen_t i = 0; i < n; ++i) {
+    double v = order[i];
+    if (ISNAN(v) || v < 1 || v > n || v != static_cast<double>(static_cast<R_xlen_t>(v))) {
+      return false;
+    }
+    size_t j = static_cast<size_t>(v);
+    if (seen[j]) return false;
+    seen[j] = 1;
+  }
+  return true;
+}
+
+// .map_centers(): positions along a dendrogram's leaves (1, 2, ..., n) as
+// cell centres, a fractional position between the centres of the leaves on
+// either side - centers[i] + f * (centers[i + 1] - centers[i]) with i and f
+// the whole and fractional parts, the product rounded on its own as R rounds
+// it. NULL if a position is off the leaves, which R handles.
+[[cpp11::register]]
+SEXP map_centers_cpp(cpp11::doubles pos, cpp11::doubles centers) {
+  R_xlen_t n = pos.size(), nc = centers.size();
+  const double* p = REAL(pos);
+  const double* c = REAL(centers);
+  cpp11::writable::doubles out(n);
+  double* o = REAL(out);
+  for (R_xlen_t i = 0; i < n; ++i) {
+    double v = p[i];
+    if (ISNAN(v)) return R_NilValue;
+    double whole = std::floor(v);
+    double frac = v - whole;
+    if (whole < 1 || whole > nc || (frac != 0 && whole + 1 > nc)) return R_NilValue;
+    R_xlen_t j = static_cast<R_xlen_t>(whole) - 1;
+    if (frac == 0) {
+      o[i] = c[j];
+    } else {
+      double step = frac * (c[j + 1] - c[j]);
+      // (NOT FUSED WITH THE SUM)
+#if defined(__GNUC__) && defined(__x86_64__)
+      __asm__("" : "+x"(step));
+#elif defined(__GNUC__) && defined(__aarch64__)
+      __asm__("" : "+w"(step));
+#else
+      volatile double q = step;
+      step = q;
+#endif
+      o[i] = c[j] + step;
+    }
+  }
+  return out;
 }

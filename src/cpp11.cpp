@@ -5,11 +5,46 @@
 #include "cpp11/declarations.hpp"
 #include <R_ext/Visibility.h>
 
+// cells.cpp
+SEXP cells_gather_cpp(SEXP m, cpp11::integers rows, cpp11::integers cols, int threads);
+extern "C" SEXP _HeatmapR_cells_gather_cpp(SEXP m, SEXP rows, SEXP cols, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cells_gather_cpp(cpp11::as_cpp<cpp11::decay_t<SEXP>>(m), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(rows), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(cols), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// cells.cpp
+cpp11::doubles finite_range_cpp(cpp11::doubles_matrix<> m, cpp11::integers cols, SEXP m2);
+extern "C" SEXP _HeatmapR_finite_range_cpp(SEXP m, SEXP cols, SEXP m2) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(finite_range_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(m), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(cols), cpp11::as_cpp<cpp11::decay_t<SEXP>>(m2)));
+  END_CPP11
+}
+// cells.cpp
+cpp11::integers cells_scatter_cpp(cpp11::integers values, cpp11::integers rows, cpp11::integers cols);
+extern "C" SEXP _HeatmapR_cells_scatter_cpp(SEXP values, SEXP rows, SEXP cols) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(cells_scatter_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(values), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(rows), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(cols)));
+  END_CPP11
+}
+// cells.cpp
+cpp11::integers raster_block_cpp(cpp11::integers packed, int nrow, int r0, int r1, int c0, int c1, int ky, int kx);
+extern "C" SEXP _HeatmapR_raster_block_cpp(SEXP packed, SEXP nrow, SEXP r0, SEXP r1, SEXP c0, SEXP c1, SEXP ky, SEXP kx) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(raster_block_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(packed), cpp11::as_cpp<cpp11::decay_t<int>>(nrow), cpp11::as_cpp<cpp11::decay_t<int>>(r0), cpp11::as_cpp<cpp11::decay_t<int>>(r1), cpp11::as_cpp<cpp11::decay_t<int>>(c0), cpp11::as_cpp<cpp11::decay_t<int>>(c1), cpp11::as_cpp<cpp11::decay_t<int>>(ky), cpp11::as_cpp<cpp11::decay_t<int>>(kx)));
+  END_CPP11
+}
 // colour.cpp
 SEXP ramp_packed_cpp(cpp11::doubles k, cpp11::doubles knots, cpp11::doubles_matrix<> rgb);
 extern "C" SEXP _HeatmapR_ramp_packed_cpp(SEXP k, SEXP knots, SEXP rgb) {
   BEGIN_CPP11
     return cpp11::as_sexp(ramp_packed_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(k), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(knots), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb)));
+  END_CPP11
+}
+// colour.cpp
+SEXP ramp_cells_cpp(cpp11::doubles v, double lo, double hi, cpp11::doubles knots, cpp11::doubles_matrix<> rgb, int empty, int threads);
+extern "C" SEXP _HeatmapR_ramp_cells_cpp(SEXP v, SEXP lo, SEXP hi, SEXP knots, SEXP rgb, SEXP empty, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(ramp_cells_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(v), cpp11::as_cpp<cpp11::decay_t<double>>(lo), cpp11::as_cpp<cpp11::decay_t<double>>(hi), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(knots), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(rgb), cpp11::as_cpp<cpp11::decay_t<int>>(empty), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // colour.cpp
@@ -59,6 +94,20 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
 extern "C" SEXP _HeatmapR_kmeans_hw_cpp(SEXP x, SEXP centres, SEXP iter_max, SEXP threads) {
   BEGIN_CPP11
     return cpp11::as_sexp(kmeans_hw_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(centres), cpp11::as_cpp<cpp11::decay_t<int>>(iter_max), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// kmeans.cpp
+cpp11::doubles_matrix<> group_means_cpp(cpp11::doubles_matrix<> x, cpp11::integers groups, int k, int threads);
+extern "C" SEXP _HeatmapR_group_means_cpp(SEXP x, SEXP groups, SEXP k, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(group_means_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(groups), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// kmeans.cpp
+cpp11::logicals distinct_rows_cpp(cpp11::doubles_matrix<> x);
+extern "C" SEXP _HeatmapR_distinct_rows_cpp(SEXP x) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(distinct_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x)));
   END_CPP11
 }
 // linkage.cpp
@@ -271,19 +320,45 @@ extern "C" SEXP _HeatmapR_join_groups_cpp(SEXP members, SEXP merges, SEXP height
     return cpp11::as_sexp(join_groups_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(members), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(merges), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(heights), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(orders), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(top), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(top_height), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(parent_height), cpp11::as_cpp<cpp11::decay_t<int>>(n)));
   END_CPP11
 }
+// tree.cpp
+int merge_check_cpp(cpp11::doubles m, int k, int n);
+extern "C" SEXP _HeatmapR_merge_check_cpp(SEXP m, SEXP k, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(merge_check_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(m), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<int>>(n)));
+  END_CPP11
+}
+// tree.cpp
+bool order_check_cpp(cpp11::doubles order, int n);
+extern "C" SEXP _HeatmapR_order_check_cpp(SEXP order, SEXP n) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(order_check_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(order), cpp11::as_cpp<cpp11::decay_t<int>>(n)));
+  END_CPP11
+}
+// tree.cpp
+SEXP map_centers_cpp(cpp11::doubles pos, cpp11::doubles centers);
+extern "C" SEXP _HeatmapR_map_centers_cpp(SEXP pos, SEXP centers) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(map_centers_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(pos), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(centers)));
+  END_CPP11
+}
 
 extern "C" {
 static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_adjust_alpha_cpp",      (DL_FUNC) &_HeatmapR_adjust_alpha_cpp,      2},
     {"_HeatmapR_all_finite_cpp",        (DL_FUNC) &_HeatmapR_all_finite_cpp,        2},
     {"_HeatmapR_apply_order_cpp",       (DL_FUNC) &_HeatmapR_apply_order_cpp,       2},
+    {"_HeatmapR_cells_gather_cpp",      (DL_FUNC) &_HeatmapR_cells_gather_cpp,      4},
+    {"_HeatmapR_cells_scatter_cpp",     (DL_FUNC) &_HeatmapR_cells_scatter_cpp,     3},
     {"_HeatmapR_clade_hash_cpp",        (DL_FUNC) &_HeatmapR_clade_hash_cpp,        2},
     {"_HeatmapR_clade_in_cpp",          (DL_FUNC) &_HeatmapR_clade_in_cpp,          2},
     {"_HeatmapR_cluster_batch_cpp",     (DL_FUNC) &_HeatmapR_cluster_batch_cpp,     7},
     {"_HeatmapR_cut_tree_cpp",          (DL_FUNC) &_HeatmapR_cut_tree_cpp,          3},
     {"_HeatmapR_dist_cross_cpp",        (DL_FUNC) &_HeatmapR_dist_cross_cpp,        6},
     {"_HeatmapR_dist_rows_cpp",         (DL_FUNC) &_HeatmapR_dist_rows_cpp,         4},
+    {"_HeatmapR_distinct_rows_cpp",     (DL_FUNC) &_HeatmapR_distinct_rows_cpp,     1},
+    {"_HeatmapR_finite_range_cpp",      (DL_FUNC) &_HeatmapR_finite_range_cpp,      3},
     {"_HeatmapR_first_pc_cpp",          (DL_FUNC) &_HeatmapR_first_pc_cpp,          2},
+    {"_HeatmapR_group_means_cpp",       (DL_FUNC) &_HeatmapR_group_means_cpp,       4},
     {"_HeatmapR_group_medoids_cpp",     (DL_FUNC) &_HeatmapR_group_medoids_cpp,     5},
     {"_HeatmapR_hardware_threads_cpp",  (DL_FUNC) &_HeatmapR_hardware_threads_cpp,  0},
     {"_HeatmapR_hash_cpp",              (DL_FUNC) &_HeatmapR_hash_cpp,              1},
@@ -292,7 +367,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_join_groups_cpp",       (DL_FUNC) &_HeatmapR_join_groups_cpp,       8},
     {"_HeatmapR_kernel_settings_cpp",   (DL_FUNC) &_HeatmapR_kernel_settings_cpp,   3},
     {"_HeatmapR_kmeans_hw_cpp",         (DL_FUNC) &_HeatmapR_kmeans_hw_cpp,         4},
+    {"_HeatmapR_map_centers_cpp",       (DL_FUNC) &_HeatmapR_map_centers_cpp,       2},
     {"_HeatmapR_mean_order_cpp",        (DL_FUNC) &_HeatmapR_mean_order_cpp,        2},
+    {"_HeatmapR_merge_check_cpp",       (DL_FUNC) &_HeatmapR_merge_check_cpp,       3},
     {"_HeatmapR_merge_order_cpp",       (DL_FUNC) &_HeatmapR_merge_order_cpp,       3},
     {"_HeatmapR_merge_sizes_cpp",       (DL_FUNC) &_HeatmapR_merge_sizes_cpp,       1},
     {"_HeatmapR_native_colours_cpp",    (DL_FUNC) &_HeatmapR_native_colours_cpp,    1},
@@ -300,10 +377,13 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_olo_blocks_cpp",        (DL_FUNC) &_HeatmapR_olo_blocks_cpp,        2},
     {"_HeatmapR_olo_order_cpp",         (DL_FUNC) &_HeatmapR_olo_order_cpp,         4},
     {"_HeatmapR_olo_rows_batch_cpp",    (DL_FUNC) &_HeatmapR_olo_rows_batch_cpp,    6},
+    {"_HeatmapR_order_check_cpp",       (DL_FUNC) &_HeatmapR_order_check_cpp,       2},
     {"_HeatmapR_pack_channels_cpp",     (DL_FUNC) &_HeatmapR_pack_channels_cpp,     1},
     {"_HeatmapR_packed_strings_cpp",    (DL_FUNC) &_HeatmapR_packed_strings_cpp,    2},
     {"_HeatmapR_parallel_check_cpp",    (DL_FUNC) &_HeatmapR_parallel_check_cpp,    4},
+    {"_HeatmapR_ramp_cells_cpp",        (DL_FUNC) &_HeatmapR_ramp_cells_cpp,        7},
     {"_HeatmapR_ramp_packed_cpp",       (DL_FUNC) &_HeatmapR_ramp_packed_cpp,       3},
+    {"_HeatmapR_raster_block_cpp",      (DL_FUNC) &_HeatmapR_raster_block_cpp,      8},
     {"_HeatmapR_rgb_packed_cpp",        (DL_FUNC) &_HeatmapR_rgb_packed_cpp,        1},
     {"_HeatmapR_row_distances_cpp",     (DL_FUNC) &_HeatmapR_row_distances_cpp,     4},
     {"_HeatmapR_row_ranks_cpp",         (DL_FUNC) &_HeatmapR_row_ranks_cpp,         2},

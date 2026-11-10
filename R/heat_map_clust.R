@@ -970,7 +970,10 @@ heat_map_clust <- function(x,
     )
   }
   m <- as.matrix(m)
-  storage.mode(m) <- "double"
+  # (A DOUBLE MATRIX ISN'T COPIED)
+  if(!is.double(m)) {
+    storage.mode(m) <- "double"
+  }
   if(ncol(m) == 0) {
     stop("'", arg, "' requires numeric data to cluster.", call. = FALSE)
   }
@@ -987,7 +990,12 @@ heat_map_clust <- function(x,
   pc <- .first_pc(m)
   start <- integer(n)
   start[order(pc)] <- ceiling(seq_len(n) * k / n)
-  centres <- rowsum(m, start) / tabulate(start, k)
+  centres <- if(all(tabulate(start, k) > 0)) {
+    # rowsum(m, start) / tabulate(start, k), IN COMPILED CODE
+    group_means_cpp(m, as.integer(start), as.integer(k), .threads())
+  } else {
+    rowsum(m, start) / tabulate(start, k)
+  }
   # k DISTINCT ROWS SPREAD ALONG THE FIRST PRINCIPAL COMPONENT
   spread <- function() {
     u <- which(distinct)
@@ -1002,7 +1010,9 @@ heat_map_clust <- function(x,
   # A CLUSTER - SO THE DISTINCT ROWS, SLOW TO FIND FOR LARGE DATA, ARE ONLY
   # NEEDED WHEN THAT FAILS)
   if(is.null(fit)) {
-    distinct <- !duplicated(m)
+    # (ROWS WITH THE SAME NUMBERS - NOT duplicated(), WHICH COMPARES THEIR
+    # 15-DIGIT STRINGS AND IS SLOW FOR LARGE DATA)
+    distinct <- distinct_rows_cpp(m)
     if(k > sum(distinct)) {
       stop(
         "'", arg, "' asks for ", k, " clusters but there are only ",

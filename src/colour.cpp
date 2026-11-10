@@ -31,6 +31,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "parallel.h"
+
 namespace {
 
 const char* HEX = "0123456789ABCDEF";
@@ -55,23 +57,20 @@ inline uint32_t unpack(int x) {
   return v;
 }
 
-// a * b, rounded before it is used (never fused with a later addition)
+// a * b, rounded before it is used (never fused with a later addition): an
+// empty asm that takes the product from a register, which the compiler can't
+// see through (cheaper than a volatile, which goes through memory)
 inline double product(double a, double b) {
-  volatile double p = a * b;
+  double p = a * b;
+#if defined(__GNUC__) && defined(__x86_64__)
+  __asm__("" : "+x"(p));
+#elif defined(__GNUC__) && defined(__aarch64__)
+  __asm__("" : "+w"(p));
+#else
+  volatile double q = p;
+  p = q;
+#endif
   return p;
-}
-
-// One channel of colorRamp(): approx1() of stats (linear interpolation), for
-// x[0] <= v <= x[n - 1]
-inline double approx_channel(double v, const double* x, const double* y, int n) {
-  int i = 0, j = n - 1;
-  while (i < j - 1) {
-    int ij = (i + j) / 2;
-    if (v < x[ij]) j = ij; else i = ij;
-  }
-  if (v == x[j]) return y[j];
-  if (v == x[i]) return y[i];
-  return y[i] + product(y[j] - y[i], (v - x[i]) / (x[j] - x[i]));
 }
 
 // roundcolor() of colorRamp() times 255, truncated as rgb(maxColorValue =
@@ -81,6 +80,75 @@ inline uint32_t ramp_byte(double a) {
   if (a < 0) a = 0;
   return static_cast<uint32_t>(product(a, 255));
 }
+
+// A ramp through n colours at positions x (increasing), with channels ch (n
+// values each, in [0, 1]). colour(v), for x[0] <= v <= x[n - 1], is the
+// opaque colour of approx1() of stats (linear interpolation) of each
+// channel: the interval approx1()'s binary search finds (the last i <= n - 2
+// with x[i] <= v), found once for the three channels, and the differences
+// across each interval worked out once (the same subtractions).
+class Ramp {
+ public:
+  Ramp(const double* x, const double* ch, int n)
+      : x_(x), n_(n), dx_(n - 1), y_(ch, ch + 3 * static_cast<size_t>(n)),
+        dy_(3 * static_cast<size_t>(n - 1)) {
+    even_ = true;
+    for (int i = 0; i + 1 < n; ++i) {
+      dx_[i] = x[i + 1] - x[i];
+      if (!(x[i] < x[i + 1])) even_ = false;
+      for (int h = 0; h < 3; ++h) {
+        const double* y = ch + static_cast<size_t>(h) * n;
+        dy_[static_cast<size_t>(h) * (n - 1) + i] = y[i + 1] - y[i];
+      }
+    }
+    // STRICTLY INCREASING POSITIONS - A FIRST GUESS FROM EVENLY SPACED ONES,
+    // CORRECTED TO THE INTERVAL OF THE BINARY SEARCH
+    scale_ = even_ ? (n - 1) / (x[n - 1] - x[0]) : 0;
+    even_ = even_ && std::isfinite(scale_);
+  }
+
+  int interval(double v) const {
+    if (even_) {
+      double g = (v - x_[0]) * scale_;
+      int i = g <= 0 ? 0 : (g >= n_ - 2 ? n_ - 2 : static_cast<int>(g));
+      while (i > 0 && v < x_[i]) --i;
+      while (i < n_ - 2 && !(v < x_[i + 1])) ++i;
+      return i;
+    }
+    int i = 0, j = n_ - 1;
+    while (i < j - 1) {
+      int ij = (i + j) / 2;
+      if (v < x_[ij]) j = ij; else i = ij;
+    }
+    return i;
+  }
+
+  int colour(double v) const {
+    int i = interval(v), j = i + 1;
+    double t = (v - x_[i]) / dx_[i];
+    uint32_t c[3];
+    for (int h = 0; h < 3; ++h) {
+      const double* y = y_.data() + static_cast<size_t>(h) * n_;
+      double a;
+      if (v == x_[j]) {
+        a = y[j];
+      } else if (v == x_[i]) {
+        a = y[i];
+      } else {
+        a = y[i] + product(dy_[static_cast<size_t>(h) * (n_ - 1) + i], t);
+      }
+      c[h] = ramp_byte(a);
+    }
+    return pack(c[0], c[1], c[2], 255);
+  }
+
+ private:
+  const double* x_;
+  int n_;
+  std::vector<double> dx_, y_, dy_;
+  bool even_;
+  double scale_;
+};
 
 // ScaleAlpha() of rgb(): (unsigned int)(255 * x + 0.5)
 inline uint32_t alpha_byte(double x) {
@@ -110,13 +178,47 @@ SEXP ramp_packed_cpp(cpp11::doubles k, cpp11::doubles knots,
   }
   cpp11::writable::integers out(n);
   int* o = INTEGER(out);
+  Ramp ramp(x, ch, nc);
   for (R_xlen_t i = 0; i < n; ++i) {
-    uint32_t c[3];
-    for (int j = 0; j < 3; ++j) {
-      c[j] = ramp_byte(approx_channel(kv[i], x, ch + static_cast<size_t>(j) * nc, nc));
-    }
-    o[i] = pack(c[0], c[1], c[2], 255);
+    o[i] = ramp.colour(kv[i]);
   }
+  return out;
+}
+
+// The colours of a heatmap's cells: each value v at its position along the
+// colour scale from lo to hi, as heat_map() puts it - (v - lo) / (hi - lo),
+// clamped to [0, 1], or the middle when lo == hi - coloured as
+// ramp_packed_cpp() colours it, and missing values (NA, NaN) the colour empty.
+// NULL if a position can be off the ramp, which R handles.
+[[cpp11::register]]
+SEXP ramp_cells_cpp(cpp11::doubles v, double lo, double hi, cpp11::doubles knots,
+                    cpp11::doubles_matrix<> rgb, int empty, int threads) {
+  R_xlen_t n = v.size();
+  int nc = knots.size();
+  if (nc < 2 || rgb.nrow() != nc || rgb.ncol() < 3) {
+    cpp11::stop("a ramp needs at least two colours");
+  }
+  const double* x = REAL(knots);
+  if (!(x[0] <= 0 && x[nc - 1] >= 1) || ISNAN(lo) || ISNAN(hi)) return R_NilValue;
+  const double* ch = REAL(rgb.data());
+  const double* vv = REAL(v);
+  cpp11::writable::integers out(n);
+  int* o = INTEGER(out);
+  const bool same = hi == lo;
+  const double width = hi - lo;
+  Ramp ramp(x, ch, nc);
+  const size_t grain = 1 << 15;
+  par::parallel_for(static_cast<size_t>(n), n >= (1 << 17) ? threads : 1, [&](size_t i) {
+    double a = vv[i];
+    if (ISNAN(a)) {
+      o[i] = empty;
+      return;
+    }
+    double k = same ? 0.5 : (a - lo) / width;
+    if (k < 0) k = 0;
+    if (k > 1) k = 1;
+    o[i] = ramp.colour(k);
+  }, grain);
   return out;
 }
 
@@ -168,32 +270,68 @@ cpp11::integers adjust_alpha_cpp(cpp11::integers col, cpp11::doubles alpha) {
 
 // "#RRGGBBAA" for packed colours as rgb() writes colours with an alpha
 // channel, or "#RRGGBB" without it (alpha = false), each distinct colour's
-// string made once
+// string made once (found again in an open addressing table of the colours
+// made so far, kept at most half full)
 [[cpp11::register]]
 cpp11::strings packed_strings_cpp(cpp11::integers col, bool alpha) {
   R_xlen_t n = col.size();
   const int* c = INTEGER(col);
   cpp11::writable::strings out(n);
   SEXP s = out;
-  std::unordered_map<int, SEXP> made;
+  size_t cap = 256, made = 0;
+  std::vector<int> keys(cap);
+  std::vector<SEXP> strs(cap, nullptr);
+  auto slot = [](int key, size_t mask) {
+    uint64_t h = static_cast<uint64_t>(static_cast<uint32_t>(key)) * 0x9E3779B97F4A7C15ull;
+    return static_cast<size_t>(h >> 32) & mask;
+  };
   const int len = alpha ? 9 : 7;
   char buf[9];
   buf[0] = '#';
+  int last_key = 0;
+  SEXP last = nullptr;
   for (R_xlen_t i = 0; i < n; ++i) {
-    auto it = made.find(c[i]);
-    if (it != made.end()) {
-      SET_STRING_ELT(s, i, it->second);
+    // (NEIGHBOURING CELLS OFTEN SHARE A COLOUR)
+    if (last != nullptr && c[i] == last_key) {
+      SET_STRING_ELT(s, i, last);
       continue;
     }
-    uint32_t v = unpack(c[i]);
-    for (int j = 0; j < (len - 1) / 2; ++j) {
-      uint32_t b = (v >> (8 * j)) & 255;
-      buf[1 + 2 * j] = HEX[b >> 4];
-      buf[2 + 2 * j] = HEX[b & 15];
+    size_t mask = cap - 1, t = slot(c[i], mask);
+    while (strs[t] != nullptr && keys[t] != c[i]) t = (t + 1) & mask;
+    if (strs[t] == nullptr) {
+      uint32_t v = unpack(c[i]);
+      for (int j = 0; j < (len - 1) / 2; ++j) {
+        uint32_t b = (v >> (8 * j)) & 255;
+        buf[1 + 2 * j] = HEX[b >> 4];
+        buf[2 + 2 * j] = HEX[b & 15];
+      }
+      // (THE STRING IS PROTECTED BY out FROM HERE)
+      SEXP str = Rf_mkCharLenCE(buf, len, CE_UTF8);
+      SET_STRING_ELT(s, i, str);
+      keys[t] = c[i];
+      strs[t] = str;
+      if (++made * 2 > cap) {
+        std::vector<int> old_keys(std::move(keys));
+        std::vector<SEXP> old_strs(std::move(strs));
+        cap *= 2;
+        mask = cap - 1;
+        keys.assign(cap, 0);
+        strs.assign(cap, nullptr);
+        for (size_t k = 0; k < old_strs.size(); ++k) {
+          if (old_strs[k] == nullptr) continue;
+          size_t u = slot(old_keys[k], mask);
+          while (strs[u] != nullptr) u = (u + 1) & mask;
+          keys[u] = old_keys[k];
+          strs[u] = old_strs[k];
+        }
+      }
+      last_key = c[i];
+      last = str;
+      continue;
     }
-    SEXP str = Rf_mkCharLenCE(buf, len, CE_UTF8);
-    SET_STRING_ELT(s, i, str);
-    made.emplace(c[i], str);
+    SET_STRING_ELT(s, i, strs[t]);
+    last_key = c[i];
+    last = strs[t];
   }
   return out;
 }
