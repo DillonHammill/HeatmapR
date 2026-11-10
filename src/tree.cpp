@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
+#include <numeric>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -384,4 +385,189 @@ cpp11::logicals clade_in_cpp(cpp11::doubles_matrix<> keys,
     out[i] = found.count(std::make_pair(k[i], k[i + nk])) ? TRUE : FALSE;
   }
   return out;
+}
+
+// CUTTING A TREE ------------------------------------------------------------
+
+// The cluster of each leaf when a tree is cut into k clusters, as
+// stats::cutree(tree, k = k) numbers them (by their first leaf, in data
+// order) - from the first n - k merges, joined by union-find, rather than
+// cutree()'s scan of every leaf after each merge (time growing with the
+// square of the number of leaves). With `order` (the tree's leaf order), the
+// clusters are returned in that order, numbered along it: each cluster's
+// leaves in a run, the runs as long as the clusters, in the order the
+// clusters first appear (as heat_map_clust() numbers them).
+[[cpp11::register]]
+cpp11::integers cut_tree_cpp(cpp11::integers merge, int k, SEXP order) {
+  int m = Rf_nrows(merge);
+  int n = m + 1;
+  if (k < 1 || k > n) cpp11::stop("k must be between 1 and the number of leaves");
+  const int* mg = INTEGER(merge);
+  std::vector<int> parent(n);
+  for (int i = 0; i < n; ++i) parent[i] = i;
+  std::vector<int> rep(m, -1);  // a leaf of each merge
+  auto find = [&](int x) {
+    while (parent[x] != x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  };
+  auto leaf_of = [&](int c) {
+    if (c < 0) return -c - 1;
+    if (c > m || rep[c - 1] < 0) cpp11::stop("merges must refer to earlier merges");
+    return rep[c - 1];
+  };
+  for (int z = 0; z < n - k; ++z) {
+    int a = mg[z], b = mg[z + m];
+    if (a == 0 || b == 0 || a < -n || b < -n) cpp11::stop("invalid merge matrix");
+    int ra = find(leaf_of(a)), rb = find(leaf_of(b));
+    if (ra != rb) parent[ra] = rb;
+    rep[z] = rb;
+  }
+  // (MERGES AFTER THE CUT NEED THEIR REPRESENTATIVES ONLY FOR VALIDATION)
+  std::vector<int> label(n, 0);
+  cpp11::writable::integers out(n);
+  int* ov = INTEGER(out);
+  if (Rf_isNull(order)) {
+    int next = 0;
+    for (int i = 0; i < n; ++i) {
+      int r = find(i);
+      if (label[r] == 0) label[r] = ++next;
+      ov[i] = label[r];
+    }
+    return out;
+  }
+  if (TYPEOF(order) != INTSXP || Rf_xlength(order) != n) {
+    cpp11::stop("order must hold every leaf once");
+  }
+  const int* o = INTEGER(order);
+  std::vector<int> cl(n), count;
+  std::vector<int> first;
+  int next = 0;
+  for (int t = 0; t < n; ++t) {
+    int leaf = o[t];
+    if (leaf == NA_INTEGER || leaf < 1 || leaf > n) cpp11::stop("order must hold every leaf once");
+    int r = find(leaf - 1);
+    if (label[r] == 0) {
+      label[r] = ++next;
+      count.push_back(0);
+    }
+    count[label[r] - 1]++;
+  }
+  // RUNS OF EACH CLUSTER'S SIZE, IN ORDER OF FIRST APPEARANCE
+  int t = 0;
+  for (int c = 0; c < next; ++c) {
+    for (int s = 0; s < count[c]; ++s) ov[t++] = c + 1;
+  }
+  return out;
+}
+
+// JOINING TREES OF GROUPS ---------------------------------------------------
+
+// The tree of two-stage clustering: each group's tree (merges, heights and
+// leaf order over the group's rows, NULL for groups of one row) below the
+// merges `top` above the groups (children -g for group g, i for the i-th of
+// these merges, at heights top_height). A group's heights are scaled down
+// when they reach above the merge above it (parent_height). The merges are
+// then sorted by height (as hclust sorts them) when every merge still comes
+// after its children. Returns merge, height and order.
+[[cpp11::register]]
+cpp11::list join_groups_cpp(cpp11::list members, cpp11::list merges,
+                            cpp11::list heights, cpp11::list orders,
+                            cpp11::integers top, cpp11::doubles top_height,
+                            cpp11::doubles parent_height, int n) {
+  R_xlen_t k = members.size();
+  if (merges.size() != k || heights.size() != k || orders.size() != k ||
+      parent_height.size() != k || Rf_nrows(top) != k - 1 ||
+      top_height.size() != k - 1) {
+    cpp11::stop("one tree and parent height per group, and k - 1 merges above them");
+  }
+  std::vector<int> ma, mb, ord;
+  std::vector<double> h;
+  ma.reserve(n - 1);
+  mb.reserve(n - 1);
+  h.reserve(n - 1);
+  ord.reserve(n);
+  std::vector<int> root(k);
+  int offset = 0;
+  for (R_xlen_t g = 0; g < k; ++g) {
+    SEXP idx_s = members[g];
+    if (TYPEOF(idx_s) != INTSXP) cpp11::stop("members must hold integer vectors");
+    const int* idx = INTEGER(idx_s);
+    int s = static_cast<int>(Rf_xlength(idx_s));
+    if (s == 1) {
+      root[g] = -idx[0];
+      ord.push_back(idx[0]);
+      continue;
+    }
+    SEXP mz_s = merges[g], hz_s = heights[g], oz_s = orders[g];
+    if (TYPEOF(mz_s) != INTSXP || Rf_nrows(mz_s) != s - 1 || TYPEOF(hz_s) != REALSXP ||
+        Rf_xlength(hz_s) != s - 1 || TYPEOF(oz_s) != INTSXP || Rf_xlength(oz_s) != s) {
+      cpp11::stop("each group of two or more rows needs its tree");
+    }
+    const int* mz = INTEGER(mz_s);
+    const double* hz = REAL(hz_s);
+    const int* oz = INTEGER(oz_s);
+    double top_g = *std::max_element(hz, hz + (s - 1));
+    double ph = parent_height[g];
+    bool scale = top_g > ph && top_g > 0;
+    for (int r = 0; r < s - 1; ++r) {
+      int a = mz[r], b = mz[r + s - 1];
+      ma.push_back(a < 0 ? -idx[-a - 1] : a + offset);
+      mb.push_back(b < 0 ? -idx[-b - 1] : b + offset);
+      // (THE MINIMUM - ROUNDING MUST NOT LIFT THE TOP ABOVE THE PARENT)
+      h.push_back(scale ? std::min(hz[r] * ph / top_g, ph) : hz[r]);
+    }
+    for (int t = 0; t < s; ++t) ord.push_back(idx[oz[t] - 1]);
+    offset += s - 1;
+    root[g] = offset;
+  }
+  const int* tp = INTEGER(top);
+  int kt = static_cast<int>(k - 1);
+  for (int r = 0; r < kt; ++r) {
+    int a = tp[r], b = tp[r + kt];
+    ma.push_back(a < 0 ? root[-a - 1] : offset + a);
+    mb.push_back(b < 0 ? root[-b - 1] : offset + b);
+    h.push_back(top_height[r]);
+  }
+  int K = static_cast<int>(h.size());
+  if (K != n - 1 || static_cast<int>(ord.size()) != n) {
+    cpp11::stop("the groups must hold every row once");
+  }
+  // MERGES IN ORDER OF HEIGHT, WHEN EVERY CHILD STAYS BEFORE ITS PARENT
+  std::vector<int> o(K);
+  std::iota(o.begin(), o.end(), 0);
+  std::stable_sort(o.begin(), o.end(), [&](int p, int q) { return h[p] < h[q]; });
+  std::vector<int> rank(K);
+  for (int r = 0; r < K; ++r) rank[o[r]] = r + 1;
+  bool ok = true;
+  std::vector<int> sa(K), sb(K);
+  std::vector<double> sh(K);
+  for (int r = 0; r < K && ok; ++r) {
+    int t = o[r];
+    int a = ma[t], b = mb[t];
+    if (a > 0) a = rank[a - 1];
+    if (b > 0) b = rank[b - 1];
+    if (a > r || b > r) ok = false;
+    sa[r] = a;
+    sb[r] = b;
+    sh[r] = h[t];
+  }
+  if (ok) {
+    ma.swap(sa);
+    mb.swap(sb);
+    h.swap(sh);
+  }
+  cpp11::writable::integers merge(static_cast<R_xlen_t>(2) * K);
+  std::copy(ma.begin(), ma.end(), INTEGER(merge));
+  std::copy(mb.begin(), mb.end(), INTEGER(merge) + K);
+  merge.attr("dim") = cpp11::writable::integers({K, 2});
+  cpp11::writable::doubles height(K);
+  std::copy(h.begin(), h.end(), REAL(height));
+  cpp11::writable::integers order(n);
+  std::copy(ord.begin(), ord.end(), INTEGER(order));
+  using namespace cpp11::literals;
+  return cpp11::writable::list({"merge"_nm = merge, "height"_nm = height,
+                                "order"_nm = order});
 }

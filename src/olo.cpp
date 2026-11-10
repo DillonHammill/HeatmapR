@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "linkage.h"
+#include "metric.h"
 #include "olo.h"
 #include "parallel.h"
 #include "tree.h"
@@ -55,13 +56,14 @@ cpp11::list kernel_settings_cpp(std::string olo, bool bounds, std::string distan
 // Blocks of the rows of x ordered optimally, several at once: block b holds
 // the (1-based) rows leaves[[b]], clustered as merges[[b]] (leaves numbered
 // in the order of leaves[[b]]; NULL for blocks of fewer than three rows, kept
-// as they are), with distances computed from the rows (see row_dist()). The
+// as they are), with distances computed from the rows (metric.h). The
 // blocks are shared between threads, largest first. Returns the rows of each
 // block in their order.
 [[cpp11::register]]
 cpp11::list olo_rows_batch_cpp(cpp11::doubles_matrix<> x, cpp11::list leaves,
-                               cpp11::list merges, int metric, double q,
+                               cpp11::list merges, int code, double q,
                                int threads) {
+  if (!metric::valid_code(code)) cpp11::stop("unknown distance code %d", code);
   const double* xv = REAL(x.data());
   int n_total = x.nrow(), p = x.ncol();
   R_xlen_t nb = leaves.size();
@@ -106,7 +108,7 @@ cpp11::list olo_rows_batch_cpp(cpp11::doubles_matrix<> x, cpp11::list leaves,
     for (int i = 0; i < s; ++i) rows[i] = leaf[b][ord[i] - 1];
     Tri P;
     P.n = s;
-    P.v = upper_distances(xv, n_total, p, rows.data(), s, metric, q, inner);
+    P.v = upper_distances(xv, n_total, p, rows.data(), s, code, q, inner);
     for (size_t t = 0; t < static_cast<size_t>(s) * (s - 1) / 2; ++t) {
       if (std::isnan(P.v[t])) P.v[t] = INF;
     }

@@ -24,32 +24,56 @@ native_colours_cpp <- function(col) {
   .Call(`_HeatmapR_native_colours_cpp`, col)
 }
 
-hclust_cpp <- function(d, n, method, members, threads) {
-  .Call(`_HeatmapR_hclust_cpp`, d, n, method, members, threads)
+first_pc_cpp <- function(x, threads) {
+  .Call(`_HeatmapR_first_pc_cpp`, x, threads)
 }
 
-hclust_rows_cpp <- function(x, metric, q, method, threads) {
-  .Call(`_HeatmapR_hclust_rows_cpp`, x, metric, q, method, threads)
+kmeans_hw_cpp <- function(x, centres, iter_max, threads) {
+  .Call(`_HeatmapR_kmeans_hw_cpp`, x, centres, iter_max, threads)
+}
+
+hclust_cpp <- function(d, n, method, members, threads) {
+  .Call(`_HeatmapR_hclust_cpp`, d, n, method, members, threads)
 }
 
 row_distances_cpp <- function(x, metric, q, threads) {
   .Call(`_HeatmapR_row_distances_cpp`, x, metric, q, threads)
 }
 
-cluster_batch_cpp <- function(xs, groups, metric, q, method, threads) {
-  .Call(`_HeatmapR_cluster_batch_cpp`, xs, groups, metric, q, method, threads)
+hclust_rows_cpp <- function(x, code, q, method, threads) {
+  .Call(`_HeatmapR_hclust_rows_cpp`, x, code, q, method, threads)
+}
+
+cluster_batch_cpp <- function(x, groups, samples, code, q, method, threads) {
+  .Call(`_HeatmapR_cluster_batch_cpp`, x, groups, samples, code, q, method, threads)
 }
 
 row_ranks_cpp <- function(x, threads) {
   .Call(`_HeatmapR_row_ranks_cpp`, x, threads)
 }
 
-nearest_medoid_cpp <- function(x, medoids, metric, q, threads) {
-  .Call(`_HeatmapR_nearest_medoid_cpp`, x, medoids, metric, q, threads)
+nearest_medoid_cpp <- function(x, rows, med, code, q, threads) {
+  .Call(`_HeatmapR_nearest_medoid_cpp`, x, rows, med, code, q, threads)
 }
 
-group_medoids_cpp <- function(x, groups, metric, q, threads) {
-  .Call(`_HeatmapR_group_medoids_cpp`, x, groups, metric, q, threads)
+group_medoids_cpp <- function(x, groups, code, q, threads) {
+  .Call(`_HeatmapR_group_medoids_cpp`, x, groups, code, q, threads)
+}
+
+all_finite_cpp <- function(x, threads) {
+  .Call(`_HeatmapR_all_finite_cpp`, x, threads)
+}
+
+dist_rows_cpp <- function(x, code, q, threads) {
+  .Call(`_HeatmapR_dist_rows_cpp`, x, code, q, threads)
+}
+
+dist_cross_cpp <- function(x, a, b, code, q, threads) {
+  .Call(`_HeatmapR_dist_cross_cpp`, x, a, b, code, q, threads)
+}
+
+unit_rows_cpp <- function(x, code, threads) {
+  .Call(`_HeatmapR_unit_rows_cpp`, x, code, threads)
 }
 
 olo_order_cpp <- function(merge, d, full, threads) {
@@ -60,8 +84,8 @@ kernel_settings_cpp <- function(olo, bounds, distance) {
   .Call(`_HeatmapR_kernel_settings_cpp`, olo, bounds, distance)
 }
 
-olo_rows_batch_cpp <- function(x, leaves, merges, metric, q, threads) {
-  .Call(`_HeatmapR_olo_rows_batch_cpp`, x, leaves, merges, metric, q, threads)
+olo_rows_batch_cpp <- function(x, leaves, merges, code, q, threads) {
+  .Call(`_HeatmapR_olo_rows_batch_cpp`, x, leaves, merges, code, q, threads)
 }
 
 hardware_threads_cpp <- function() {
@@ -70,6 +94,10 @@ hardware_threads_cpp <- function() {
 
 parallel_check_cpp <- function(n, threads, fail_at, nested) {
   .Call(`_HeatmapR_parallel_check_cpp`, n, threads, fail_at, nested)
+}
+
+scale_cpp <- function(x, margin, method, threads) {
+  .Call(`_HeatmapR_scale_cpp`, x, margin, method, threads)
 }
 
 merge_sizes_cpp <- function(merge) {
@@ -114,4 +142,12 @@ hash_cpp <- function(x) {
 
 clade_in_cpp <- function(keys, other) {
   .Call(`_HeatmapR_clade_in_cpp`, keys, other)
+}
+
+cut_tree_cpp <- function(merge, k, order) {
+  .Call(`_HeatmapR_cut_tree_cpp`, merge, k, order)
+}
+
+join_groups_cpp <- function(members, merges, heights, orders, top, top_height, parent_height, n) {
+  .Call(`_HeatmapR_join_groups_cpp`, members, merges, heights, orders, top, top_height, parent_height, n)
 }
