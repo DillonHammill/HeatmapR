@@ -1007,9 +1007,6 @@ heat_map <- function(x,
   # ARGUMENTS PASSED THROUGH ... ARE ONLY USED BY dist() AND hclust()
   .check_dots(list(...))
 
-  # ROW CLUSTER LABELS SUPPLIED BY THE USER (READ FROM THE TOP)
-  label_text_user_y <- !.all_na(tree_label_text_y)
-
   # RASTER CELLS
   if(!(isTRUE(cell_raster) || isFALSE(cell_raster) ||
        identical(cell_raster, "auto"))) {
@@ -1585,14 +1582,13 @@ heat_map <- function(x,
   }
 
   # SETTINGS FOR EACH ROW CLUSTER ARE GIVEN FROM THE TOP - DRAWN FROM THE
-  # BOTTOM (DEFAULT LABELS FROM tree_cut_y ARE ALREADY IN DRAWING ORDER)
+  # BOTTOM (AS ARE THE DEFAULT LABELS, THE LEVELS OF tree_cut_y IN THE ORDER
+  # OF THE CLUSTERS FROM THE TOP)
   if(!is.null(cut_y)) {
     flip_y <- function(v) {
       if(length(v) == max(cut_y) && length(v) > 1) rev(v) else v
     }
-    if(label_text_user_y) {
-      tree_label_text_y <- flip_y(tree_label_text_y)
-    }
+    tree_label_text_y <- flip_y(tree_label_text_y)
     tree_label_col_y <- flip_y(tree_label_col_y)
     tree_label_col_alpha_y <- flip_y(tree_label_col_alpha_y)
     tree_label_text_font_y <- flip_y(tree_label_text_font_y)
