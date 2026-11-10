@@ -702,12 +702,12 @@
 <text x='53.72' y='43.66' text-anchor='end' style='font-size: 10.80px; font-family: sans;' textLength='18.62px' lengthAdjust='spacingAndGlyphs'>Sex</text>
 </g>
 <g clip-path='url(#cpNjAuOTJ8NzEyLjgwfDcuMjB8NTMyLjMy)'>
-<rect x='60.92' y='7.20' width='176.61' height='12.39' style='stroke-width: 1.50; stroke: none; fill: #666666;' />
-<text x='149.23' y='17.68' text-anchor='middle' style='font-size: 12.00px; fill: #FFFFFF; font-family: sans;' textLength='38.69px' lengthAdjust='spacingAndGlyphs'>Control</text>
-<rect x='243.29' y='7.20' width='176.61' height='12.39' style='stroke-width: 1.50; stroke: none; fill: #666666;' />
-<text x='331.59' y='16.28' text-anchor='middle' style='font-size: 12.00px; fill: #FFFFFF; font-family: sans;' textLength='40.69px' lengthAdjust='spacingAndGlyphs'>Drug_A</text>
-<rect x='425.66' y='7.20' width='176.61' height='12.39' style='stroke-width: 1.50; stroke: none; fill: #666666;' />
-<text x='513.96' y='16.28' text-anchor='middle' style='font-size: 12.00px; fill: #FFFFFF; font-family: sans;' textLength='40.69px' lengthAdjust='spacingAndGlyphs'>Drug_B</text>
+<rect x='60.92' y='7.20' width='176.61' height='12.39' style='stroke-width: 1.50; stroke: none; fill: #D9D9D9;' />
+<text x='149.23' y='17.68' text-anchor='middle' style='font-size: 12.00px; font-family: sans;' textLength='38.69px' lengthAdjust='spacingAndGlyphs'>Control</text>
+<rect x='243.29' y='7.20' width='176.61' height='12.39' style='stroke-width: 1.50; stroke: none; fill: #D9D9D9;' />
+<text x='331.59' y='16.28' text-anchor='middle' style='font-size: 12.00px; font-family: sans;' textLength='40.69px' lengthAdjust='spacingAndGlyphs'>Drug_A</text>
+<rect x='425.66' y='7.20' width='176.61' height='12.39' style='stroke-width: 1.50; stroke: none; fill: #D9D9D9;' />
+<text x='513.96' y='16.28' text-anchor='middle' style='font-size: 12.00px; font-family: sans;' textLength='40.69px' lengthAdjust='spacingAndGlyphs'>Drug_B</text>
 <line x1='602.27' y1='352.20' x2='602.27' y2='364.21' style='stroke-width: 0.75;' />
 <line x1='602.47' y1='184.08' x2='602.47' y2='196.09' style='stroke-width: 0.75;' />
 <line x1='602.63' y1='424.25' x2='602.63' y2='436.26' style='stroke-width: 0.75;' />

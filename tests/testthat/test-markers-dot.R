@@ -22,24 +22,32 @@ marker_cells <- function(n = c(150, 60, 30)) {
   )
 }
 
-# The AUC of each column of d in each group against the other cells, from
-# wilcox.test()
-reference_auc <- function(d,
-                          g) {
+# The AUC, rank-sum statistic and p-value of each column of d in each group
+# against the other cells, from wilcox.test()
+reference_wilcox <- function(d,
+                             g) {
   lv <- levels(factor(g))
-  out <- matrix(NA_real_, length(lv), ncol(d))
+  auc <- u <- p <- n1 <- n2 <- matrix(NA_real_, length(lv), ncol(d))
   for(j in seq_len(ncol(d))) {
     for(k in seq_along(lv)) {
       ok <- !is.na(g) & !is.na(d[, j])
       x <- d[ok & g == lv[k], j]
       y <- d[ok & g != lv[k], j]
+      n1[k, j] <- length(x)
+      n2[k, j] <- length(y)
       if(length(x) > 0 && length(y) > 0) {
         w <- suppressWarnings(stats::wilcox.test(x, y, exact = FALSE))
-        out[k, j] <- unname(w$statistic) / (length(x) * length(y))
+        u[k, j] <- unname(w$statistic)
+        auc[k, j] <- u[k, j] / (length(x) * length(y))
+        p[k, j] <- w$p.value
       }
     }
   }
-  out
+  list(auc = auc, u = u, p = p, n1 = n1, n2 = n2)
+}
+reference_auc <- function(d,
+                          g) {
+  reference_wilcox(d, g)$auc
 }
 
 test_that("the AUC is the Wilcoxon statistic over the numbers of cells", {
@@ -54,30 +62,41 @@ test_that("the AUC is the Wilcoxon statistic over the numbers of cells", {
     g <- sample(c("a", "b", "c", NA), nr, replace = TRUE)
     g[1:3] <- c("a", "b", "c")
     codes <- as.integer(factor(g))
-    ref <- reference_auc(d, g)
+    w <- reference_wilcox(d, g)
+    ref <- w$auc
     s <- .as_dgc(Matrix::Matrix(d, sparse = TRUE))
     ts <- .as_dgc(Matrix::t(s))
     i <- methods::slot(s, "i")
     p <- methods::slot(s, "p")
     x <- methods::slot(s, "x")
     # CELLS AS ROWS AND AS COLUMNS, SPARSE AND DENSE
-    expect_identical(
+    res <- list(
       sparse_group_auc_cpp(i, p, x, nr, nc, seq_len(nc), FALSE, codes, 3L, 1L),
-      ref
-    )
-    expect_identical(
       sparse_group_auc_cpp(
         methods::slot(ts, "i"), methods::slot(ts, "p"), methods::slot(ts, "x"),
         nc, nr, seq_len(nc), TRUE, codes, 3L, 1L
       ),
-      ref
+      dense_group_auc_cpp(d, seq_len(nc), FALSE, codes, 3L, 1L),
+      dense_group_auc_cpp(t(d), seq_len(nc), TRUE, codes, 3L, 1L)
     )
-    expect_identical(dense_group_auc_cpp(d, seq_len(nc), FALSE, codes, 3L, 1L), ref)
-    expect_identical(dense_group_auc_cpp(t(d), seq_len(nc), TRUE, codes, 3L, 1L), ref)
+    for(r in res) {
+      expect_identical(r$auc, ref)
+      expect_identical(r$u, w$u)
+      # THE P-VALUES OF wilcox.test(exact = FALSE), TIES AND ALL - 1 WHEN
+      # EVERY VALUE IS TIED (NaN FROM wilcox.test() BEFORE R-devel)
+      ties <- matrix(r$ties, 3, nc, byrow = TRUE)
+      pv <- .marker_p(r$u, w$n1, w$n2, ties)
+      tested <- !is.na(w$u)
+      expect_identical(is.na(pv), !tested)
+      ok <- tested & !is.nan(w$p)
+      expect_equal(pv[ok], w$p[ok], tolerance = 1e-12)
+      expect_true(all(pv[tested & is.nan(w$p)] == 1))
+      expect_identical(r, res[[1]])
+    }
   }
   # A group with every cell, and the checks of the compiled code
   d <- matrix(c(1, 2, 3, 0), 4)
-  expect_identical(dense_group_auc_cpp(d, 1L, FALSE, rep(1L, 4), 1L, 1L), matrix(NA_real_))
+  expect_identical(dense_group_auc_cpp(d, 1L, FALSE, rep(1L, 4), 1L, 1L)$auc, matrix(NA_real_))
   expect_error(dense_group_auc_cpp(d, 2L, FALSE, rep(1L, 4), 1L, 1L), "feature out of range")
   expect_error(dense_group_auc_cpp(d, 1L, FALSE, rep(2L, 4), 1L, 1L), "group out of range")
   expect_error(dense_group_sums_cpp(d, 1L, FALSE, 1:3, 3L, 0, 1L), "one group per cell")
@@ -104,10 +123,10 @@ test_that("compiled AUC, sums and medians are the same on any number of threads"
   on.exit(heat_map_threads(old))
   expect_identical(run(1L), run(4L))
   # (ROWS CHOSEN OUT OF ORDER WITH THE CELLS AS COLUMNS)
-  expect_identical(
-    sparse_group_auc_cpp(tm@i, tm@p, tm@x, 800L, 3000L, c(9L, 2L, 500L), TRUE, g, 6L, 4L),
-    run(1L)[[1]][, 800 - c(9, 2, 500) + 1]
-  )
+  pick <- sparse_group_auc_cpp(tm@i, tm@p, tm@x, 800L, 3000L, c(9L, 2L, 500L), TRUE, g, 6L, 4L)
+  all <- run(1L)[[1]]
+  expect_identical(pick$auc, all$auc[, 800 - c(9, 2, 500) + 1])
+  expect_identical(pick$ties, all$ties[800 - c(9, 2, 500) + 1])
 })
 
 test_that("dense cell summaries equal heat_map_summarise() of the dense data", {
@@ -132,8 +151,8 @@ test_that("heat_map_markers() ranks the markers of each group", {
   expect_s3_class(m, c("heat_map_markers", "data.frame"))
   expect_named(
     m,
-    c("group", "feature", "auc", "logfc", "mean_in", "mean_out",
-      "detected_in", "detected_out", "top")
+    c("group", "feature", "auc", "logfc", "p_value", "p_adj", "mean_in",
+      "mean_out", "detected_in", "detected_out", "top")
   )
   expect_identical(levels(m$group), c("B", "NK", "T"))
   # By group, from the highest AUC
@@ -158,6 +177,20 @@ test_that("heat_map_markers() ranks the markers of each group", {
   expect_equal(row$logfc, mean(cells$MS4A1[b]) - mean(cells$MS4A1[!b]))
   expect_equal(row$detected_in, mean(cells$MS4A1[b] > 0))
   expect_equal(row$detected_out, mean(cells$MS4A1[!b] > 0))
+  # P-values of the rank-sum test, adjusted within each group for every
+  # feature scored
+  w <- reference_wilcox(d, cells$cluster)
+  for(k in seq_len(nrow(m))) {
+    gk <- as.integer(m$group[k])
+    jk <- match(m$feature[k], colnames(d))
+    expect_equal(m$p_value[k], w$p[gk, jk], tolerance = 1e-12)
+  }
+  for(g in levels(m$group)) {
+    in_g <- m$group == g
+    expect_equal(m$p_adj[in_g],
+                 stats::p.adjust(m$p_value[in_g], "BH", n = ncol(d)))
+  }
+  expect_true(all(m$p_adj >= m$p_value))
   # Filters - each row detected in its group and higher than elsewhere
   expect_true(all(m$detected_in >= 0.1 & m$logfc >= 0.25))
   expect_false("ACTB" %in% m$feature[m$top])

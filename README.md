@@ -62,13 +62,13 @@ graphics approach.
   data, which means you don’t have to spend ages formatting and
   pre-processing the data beforehand.
 - **HeatmapR** clusters large datasets quickly: distances, linkage,
-  cuts, k-means and optimal leaf ordering run in compiled C++ code shared
-  between threads (`heat_map_threads()`), and rows or columns beyond
-  `clust_max` are clustered in two stages, so 100,000 rows are clustered
-  in under a second on two cores. A clustered heatmap of 20,000 rows takes under a
-  second (7 seconds clustered exactly), against half a minute to two
-  minutes and several times the memory with pheatmap, `heatmap.2()` or
-  ComplexHeatmap: see the [speed
+  cuts, k-means and optimal leaf ordering run in compiled C++ code
+  shared between threads (`heat_map_threads()`), and rows or columns
+  beyond `clust_max` are clustered in two stages, so 100,000 rows are
+  clustered in under a second on two cores. A clustered heatmap of
+  20,000 rows takes under a second (7 seconds clustered exactly),
+  against half a minute to two minutes and several times the memory with
+  pheatmap, `heatmap.2()` or ComplexHeatmap: see the [speed
   comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html).
 - **HeatmapR** shows sample or feature metadata as annotation tracks
   (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
@@ -134,15 +134,72 @@ inside cells</a>
 support</a>
 </td>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#metadata-annotations"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-annotations.png" height="220" alt="Metadata annotations"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#metadata-annotations">Metadata
+<a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#metadata-annotations"><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc5b7688dab3f3050b3f157315f49f95/vignettes/HeatmapR/HeatmapR-annotations.png" height="220" alt="Metadata annotations"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/HeatmapR.html#metadata-annotations">Metadata
 annotations</a>
 </td>
 </tr>
 </table>
 
-The [guides](https://dillonhammill.github.io/HeatmapR/articles/index.html)
-on the website cover ordering, large heatmaps, cells, and working with
-other packages, and the
+## Single-cell data
+
+**HeatmapR** reads single-cell data where it lives -
+`SingleCellExperiment` and `Seurat` objects, `flowFrame` and `flowSet`
+objects and sparse matrices - choosing features by name and grouping and
+annotating cells from their metadata. Only the chosen features of the
+cells shown are made dense, so a few markers of a million cells need
+little memory.
+
+- **Dot plots and markers** - `heat_map_dot()` draws the mean of each
+  group as colour and the proportion of its cells detected as size, and
+  `heat_map_markers()` ranks the markers of each group by their AUC,
+  with Wilcoxon p-values, ready to pass to `features`.
+- **Summaries of groups** - `heat_map_summarise()` finds the mean,
+  median, sum or proportion detected of each feature in each group of
+  cells from sparse data in compiled code, and `group_max` keeps small
+  groups visible next to large ones.
+- **Cytometry** - the asinh transform and quantile scaling of markers,
+  the medians of clusters in each sample, and stacked bars of the events
+  of each condition in each cluster.
+- **Trajectories** - `heat_map_smooth()` smooths genes along pseudotime,
+  one lineage at a time, and `tree_order_y = "peak"` orders them by when
+  they peak.
+
+`heat_map_example()` simulates blood cells, cytometry events and a
+branching trajectory to try them on:
+
+``` r
+cells <- heat_map_example("rna")
+markers <- heat_map_markers(cells, group_by = "cell_type", n = 3)
+heat_map_dot(cells, features = markers, group_by = "cell_type")
+```
+
+<table>
+<tr>
+<td align="center">
+<a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#dot-plots"><img src="man/figures/README-single-cell-dot.png" height="220" alt="Dot plot of the top three markers of six cell types"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#dot-plots">Dot
+plots</a>
+</td>
+<td align="center">
+<a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#markers"><img src="man/figures/README-single-cell-cells.png" height="220" alt="Heatmap of cells grouped by cell type and their top markers grouped by the type they mark"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#markers">Markers
+of each group</a>
+</td>
+</tr>
+<tr>
+<td align="center">
+<a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#cytometry"><img src="man/figures/README-single-cell-cytometry.png" height="220" alt="Heatmap of the scaled median of 12 markers in eight cytometry clusters with stacked bars of the events of each condition"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#cytometry">Cytometry
+clusters</a>
+</td>
+<td align="center">
+<a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#trajectories"><img src="man/figures/README-single-cell-trajectory.png" height="220" alt="Heatmap of 30 genes smoothed along the pseudotime of two lineages, ordered by when they peak"/></a><br/><a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#trajectories">Trajectories</a>
+</td>
+</tr>
+</table>
+
+The
+[guides](https://dillonhammill.github.io/HeatmapR/articles/index.html)
+on the website cover ordering, large heatmaps, [single-cell
+data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html),
+cells, and working with other packages, and the
 [changelog](https://dillonhammill.github.io/HeatmapR/news/index.html)
 lists everything new in **HeatmapR** 2.0.0.
 

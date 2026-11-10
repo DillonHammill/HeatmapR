@@ -519,12 +519,12 @@
 <rect x='567.82' y='480.55' width='43.19' height='15.93' style='stroke-width: 0.75; fill: #440154;' />
 <rect x='567.82' y='496.47' width='43.19' height='15.93' style='stroke-width: 0.75; fill: #440154;' />
 <rect x='567.82' y='512.40' width='43.19' height='15.93' style='stroke-width: 0.75; fill: #440154;' />
-<rect x='611.01' y='337.22' width='12.39' height='191.10' style='stroke-width: 0.75; stroke: none; fill: #666666;' />
-<text transform='translate(613.07,432.77) rotate(90)' text-anchor='middle' style='font-size: 12.00px; fill: #FFFFFF; font-family: sans;' textLength='14.68px' lengthAdjust='spacingAndGlyphs'>V8</text>
-<rect x='611.01' y='235.91' width='12.39' height='95.55' style='stroke-width: 0.75; stroke: none; fill: #666666;' />
-<text transform='translate(614.26,283.69) rotate(90)' text-anchor='middle' style='font-size: 12.00px; fill: #FFFFFF; font-family: sans;' textLength='34.69px' lengthAdjust='spacingAndGlyphs'>Sports</text>
-<rect x='611.01' y='7.20' width='12.39' height='222.95' style='stroke-width: 0.75; stroke: none; fill: #666666;' />
-<text transform='translate(614.32,118.68) rotate(90)' text-anchor='middle' style='font-size: 12.00px; fill: #FFFFFF; font-family: sans;' textLength='50.04px' lengthAdjust='spacingAndGlyphs'>Economy</text>
+<rect x='611.01' y='337.22' width='12.39' height='191.10' style='stroke-width: 0.75; stroke: none; fill: #D9D9D9;' />
+<text transform='translate(613.07,432.77) rotate(90)' text-anchor='middle' style='font-size: 12.00px; font-family: sans;' textLength='14.68px' lengthAdjust='spacingAndGlyphs'>V8</text>
+<rect x='611.01' y='235.91' width='12.39' height='95.55' style='stroke-width: 0.75; stroke: none; fill: #D9D9D9;' />
+<text transform='translate(614.26,283.69) rotate(90)' text-anchor='middle' style='font-size: 12.00px; font-family: sans;' textLength='34.69px' lengthAdjust='spacingAndGlyphs'>Sports</text>
+<rect x='611.01' y='7.20' width='12.39' height='222.95' style='stroke-width: 0.75; stroke: none; fill: #D9D9D9;' />
+<text transform='translate(614.32,118.68) rotate(90)' text-anchor='middle' style='font-size: 12.00px; font-family: sans;' textLength='50.04px' lengthAdjust='spacingAndGlyphs'>Economy</text>
 <line x1='623.40' y1='361.11' x2='623.40' y2='369.07' style='stroke-width: 0.75;' />
 <line x1='623.82' y1='174.41' x2='623.82' y2='182.38' style='stroke-width: 0.75;' />
 <line x1='623.82' y1='307.57' x2='623.82' y2='315.54' style='stroke-width: 0.75;' />

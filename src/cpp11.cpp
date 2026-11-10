@@ -251,7 +251,7 @@ extern "C" SEXP _HeatmapR_sparse_group_medians_cpp(SEXP i, SEXP p, SEXP x, SEXP 
   END_CPP11
 }
 // sparse.cpp
-cpp11::doubles_matrix<> sparse_group_auc_cpp(cpp11::integers i, cpp11::integers p, cpp11::doubles x, int nrow, int ncol, cpp11::integers sel, bool cells_by_column, cpp11::integers group, int n_groups, int threads);
+cpp11::list sparse_group_auc_cpp(cpp11::integers i, cpp11::integers p, cpp11::doubles x, int nrow, int ncol, cpp11::integers sel, bool cells_by_column, cpp11::integers group, int n_groups, int threads);
 extern "C" SEXP _HeatmapR_sparse_group_auc_cpp(SEXP i, SEXP p, SEXP x, SEXP nrow, SEXP ncol, SEXP sel, SEXP cells_by_column, SEXP group, SEXP n_groups, SEXP threads) {
   BEGIN_CPP11
     return cpp11::as_sexp(sparse_group_auc_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(i), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(p), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(nrow), cpp11::as_cpp<cpp11::decay_t<int>>(ncol), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(sel), cpp11::as_cpp<cpp11::decay_t<bool>>(cells_by_column), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(group), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
@@ -272,7 +272,7 @@ extern "C" SEXP _HeatmapR_dense_group_medians_cpp(SEXP x, SEXP sel, SEXP cells_b
   END_CPP11
 }
 // sparse.cpp
-cpp11::doubles_matrix<> dense_group_auc_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel, bool cells_by_column, cpp11::integers group, int n_groups, int threads);
+cpp11::list dense_group_auc_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel, bool cells_by_column, cpp11::integers group, int n_groups, int threads);
 extern "C" SEXP _HeatmapR_dense_group_auc_cpp(SEXP x, SEXP sel, SEXP cells_by_column, SEXP group, SEXP n_groups, SEXP threads) {
   BEGIN_CPP11
     return cpp11::as_sexp(dense_group_auc_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(sel), cpp11::as_cpp<cpp11::decay_t<bool>>(cells_by_column), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(group), cpp11::as_cpp<cpp11::decay_t<int>>(n_groups), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));

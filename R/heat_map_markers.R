@@ -18,6 +18,15 @@
 #' and the \code{n} features with the highest AUC in each group are its top
 #' markers.
 #'
+#' Each AUC has the p-value of the Wilcoxon rank-sum test of the group
+#' against the other cells (two-sided, from the normal approximation with
+#' corrections for ties and continuity, as \code{wilcox.test(exact = FALSE)}
+#' finds it), and the p-values of each group are adjusted for the false
+#' discovery rate by Benjamini and Hochberg's method over every feature
+#' scored, not only those kept. With thousands of cells nearly every marker
+#' has a tiny p-value, so the AUC and the difference of the means are the
+#' better guides to how well a feature marks a group.
+#'
 #' The AUC is found from one ranking of each feature's values. The zeros of
 #' sparse data share one rank, so only the non-zero values are sorted; the
 #' features are shared between threads (see \code{\link{heat_map_threads}}),
@@ -46,7 +55,9 @@
 #'   feature kept for a group, in the order of the groups and, within each
 #'   group, from the highest AUC: \code{group} (a factor), \code{feature},
 #'   \code{auc}, \code{logfc} (the difference between the means in and out of
-#'   the group), \code{mean_in}, \code{mean_out}, \code{detected_in} and
+#'   the group), \code{p_value} and \code{p_adj} (the p-value of the
+#'   rank-sum test and its adjusted value), \code{mean_in}, \code{mean_out},
+#'   \code{detected_in} and
 #'   \code{detected_out} (the proportions of cells detected in and out of the
 #'   group) and \code{top} (\code{TRUE} for the top markers of each group). Its
 #'   \code{"features"} attribute lists the top markers of each group. Given to
@@ -116,11 +127,13 @@ heat_map_markers <- function(x,
   keep <- !is.na(logfc) & !is.na(s$detected) &
     s$detected >= min_detected & logfc >= min_logfc
 
-  # AUC OF THE FEATURES KEPT IN SOME GROUP
+  # AUC OF THE FEATURES KEPT IN SOME GROUP, WITH THE RANK-SUM STATISTIC AND
+  # TIES FOR ITS P-VALUE
   cand <- which(colSums(keep) > 0)
-  auc <- matrix(NA_real_, G, ncol(keep))
+  auc <- u <- matrix(NA_real_, G, ncol(keep))
+  ties <- rep(NA_real_, ncol(keep))
   if(length(cand) > 0) {
-    auc[, cand] <- if(inherits(src$values, "dgCMatrix")) {
+    a <- if(inherits(src$values, "dgCMatrix")) {
       v <- src$values
       dims <- methods::slot(v, "Dim")
       sparse_group_auc_cpp(
@@ -145,6 +158,9 @@ heat_map_markers <- function(x,
         .threads()
       )
     }
+    auc[, cand] <- a$auc
+    u[, cand] <- a$u
+    ties[cand] <- a$ties
   }
 
   # ONE ROW PER FEATURE KEPT FOR A GROUP - BY GROUP, FROM THE HIGHEST AUC
@@ -152,11 +168,20 @@ heat_map_markers <- function(x,
   g <- ind[, 1]
   j <- ind[, 2]
   fnames <- if(is.null(feat$names)) as.character(feat$index) else feat$names
+  p_value <- .marker_p(u[ind], s$n[ind], n_out[ind], ties[j])
+  # (ADJUSTED WITHIN EACH GROUP FOR EVERY FEATURE SCORED, NOT ONLY THOSE KEPT)
+  p_adj <- p_value
+  for(k in unique(g)) {
+    p_adj[g == k] <- stats::p.adjust(p_value[g == k], method = "BH",
+                                     n = ncol(keep))
+  }
   res <- data.frame(
     group = factor(s$labels[g], levels = s$labels),
     feature = fnames[j],
     auc = auc[ind],
     logfc = logfc[ind],
+    p_value = p_value,
+    p_adj = p_adj,
     mean_in = s$mean[ind],
     mean_out = mean_out[ind],
     detected_in = s$detected[ind],
@@ -184,6 +209,26 @@ heat_map_markers <- function(x,
     features = if(any(res$top)) .marker_features(res) else list(),
     class = c("heat_map_markers", "data.frame")
   )
+}
+
+#' Two-sided p-values of rank-sum statistics u (of groups of n1 cells against
+#' n2 others, with ties the sum of t^3 - t over the values tied t times among
+#' all the cells), from the normal approximation with corrections for ties
+#' and continuity, as wilcox.test(exact = FALSE) finds them. When every
+#' value is tied there is no evidence either way and the p-value is 1 (as
+#' R-devel's wilcox.test() gives it; earlier versions give NaN)
+#' @noRd
+.marker_p <- function(u,
+                      n1,
+                      n2,
+                      ties) {
+  N <- n1 + n2
+  z <- u - n1 * n2 / 2
+  sigma <- sqrt((n1 * n2 / 12) * ((N + 1) - ties / (N * (N - 1))))
+  z <- (z - sign(z) * 0.5) / sigma
+  p <- 2 * stats::pnorm(-abs(z))
+  p[!is.na(u) & !is.na(sigma) & sigma == 0] <- 1
+  p
 }
 
 #' The top markers of each group, from the markers returned by
