@@ -117,4 +117,26 @@ test_that("factor cluster indices label the clusters with their levels", {
   # Supplied label text wins
   hm <- draw(d$m, tree_cut_x = d$meta$Treatment, tree_label_x = TRUE, tree_label_text_x = c("A", "B", "C"))
   expect_false("Control" %in% drawn_text(hm))
+  # Row clusters are labelled from the top, the first level at the top
+  g <- factor(rep(c("b", "a", "c"), c(3, 5, 4)), levels = c("c", "a", "b"))
+  m <- test_matrix(12, 4)
+  label_y <- function(hm) {
+    y <- numeric(0)
+    for(z in drawn(hm, "C_text")) {
+      lab <- as.character(z[[2]])
+      y[lab[lab %in% c("a", "b", "c", "A", "B", "C")]] <- z[[1]]$y[lab %in% c("a", "b", "c", "A", "B", "C")]
+    }
+    y
+  }
+  hm <- draw(m, tree_cut_y = g, tree_label_y = TRUE)
+  expect_identical(as.character(g[heat_map_info(hm)$row_order[1]]), "c")
+  y <- label_y(hm)
+  expect_true(y[["c"]] > y[["a"]] && y[["a"]] > y[["b"]])
+  hm <- draw(m, tree_cut_y = as.character(g), tree_label_y = TRUE)
+  y <- label_y(hm)
+  expect_true(y[["a"]] > y[["b"]] && y[["b"]] > y[["c"]])
+  # (AS LABELS SUPPLIED FROM THE TOP ARE)
+  hm <- draw(m, tree_cut_y = g, tree_label_y = TRUE, tree_label_text_y = c("C", "A", "B"))
+  y <- label_y(hm)
+  expect_true(y[["C"]] > y[["A"]] && y[["A"]] > y[["B"]])
 })
