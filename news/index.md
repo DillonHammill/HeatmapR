@@ -174,6 +174,42 @@ defaults have changed; they are listed first.
   ordered by their means;
   [`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) orders them
   by the sum of their leaves’ means). Both also apply within groups.
+- Spectral ordering: `tree_order_x`/`tree_order_y = "spectral"` (and
+  `heat_map_clust(order = "spectral")`) order rows or columns by
+  recursive spectral bisection of the graph joining each to its 6
+  nearest neighbours (weighted from the nearest one, as in UMAP, so that
+  the distance every pair of rows shares in many dimensions doesn’t
+  flatten the weights): every part is sorted by its Fiedler vector,
+  split where the graph is thinnest and the halves turned to meet where
+  they are closest, and runs of up to 12 rows are then reversed where
+  that shortens the path through them (windowed 2-opt). Gradients,
+  trajectories and time courses are laid out along their length, cycles
+  around their loop and clusters one after another, which a dendrogram
+  can only approximate (its orders flip whole branches). A spectral
+  order needs no dendrogram - rows can be ordered on their own, within
+  groups or k-means clusters - and with one the branches are ordered by
+  the mean spectral position of their leaves. On test data (a
+  trajectory, clusters, a cycle, and two clusters joined by a bridge)
+  the path through the rows is within 1% of the one optimal leaf
+  ordering finds with a dendrogram (and shorter on two of them), against
+  6-9% longer for the dendrogram’s own order and 18-25% (177% on the
+  cycle) for a plain Fiedler vector. Up to `clust_max` rows are ordered
+  exactly (5000 rows of 20 columns in about 0.4 seconds); larger data
+  from `clust_max` landmarks with every other row placed beside its
+  nearest one (200,000 rows in about 4 seconds).
+- Automatic cuts: `tree_cut_x`/`tree_cut_y = "auto"` (and
+  `heat_map_clust(cut = "auto")`) choose the number of clusters from the
+  data. The dendrogram is cut into 2 to 20 clusters and the cut with the
+  largest mean silhouette width kept, unless none reaches 0.25 (Kaufman
+  and Rousseeuw’s threshold for “no substantial structure”), when the
+  dendrogram isn’t cut. The silhouettes of all the cuts are computed
+  together in compiled code, updating each cluster’s distance sums from
+  the smaller half of every split, so trying 19 cuts takes little longer
+  than one; trees with more than `clust_max` leaves are scored on a
+  sample of `clust_max` leaves (fixed seed; 0.3 seconds for 200,000
+  rows). The scores are returned in the tree’s `auto_cut` element and
+  [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+  reports the choice.
 - Large matrices: rows or columns beyond `clust_max` (new in
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
   5000 by default; `max` in

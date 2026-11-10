@@ -283,12 +283,23 @@ heat_map(
   how the branches of the x axis dendrogram are ordered, either
   `"default"` (the order from `hclust`), `"olo"` (optimal leaf ordering,
   which flips branches so that neighbouring columns are as similar as
-  possible) or `"mean"` (branches ordered by their mean values -
+  possible), `"mean"` (branches ordered by their mean values -
   [`heatmap`](https://rdrr.io/r/stats/heatmap.html) orders them by the
-  sum of their columns' means instead, which favours small branches).
-  Optimal leaf ordering is exact for up to 4000 columns, which takes
-  well under a second; larger dendrograms are ordered in blocks (see
+  sum of their columns' means instead, which favours small branches) or
+  `"spectral"`. Optimal leaf ordering is exact for up to 4000 columns,
+  which takes well under a second; larger dendrograms are ordered in
+  blocks (see
   [`heat_map_clust`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)).
+  A spectral order needs no dendrogram: the columns are ordered by
+  recursive spectral bisection of the graph joining each column to its 6
+  nearest neighbours (by `dist_method`), which lays gradients and
+  trajectories out along their length, cycles around their loop and
+  clusters one after another, and runs of up to 12 columns are then
+  reversed where that brings similar columns together. With a
+  dendrogram, its branches are ordered by the mean spectral position of
+  their columns. Up to `clust_max` columns are ordered exactly; more are
+  ordered from a sample of `clust_max` landmarks, each other column
+  placed beside its nearest landmark (200,000 take about 4 seconds).
 
 - tree_support_x:
 
@@ -309,30 +320,34 @@ heat_map(
 
   either a numeric ranging from 0 to 1 indicating the branch cut height
   for x axis dendrogram (proportional for non-cosine distances, or
-  absolute cosine distance threshold when `dist_method = "cosine"`) or
-  an integer indicating the desired number of clusters to obtain by
-  cutting the x axis dendrogram. Alternatively, clusters can be manually
-  defined by specifying the number of columns to include in each cluster
-  in the displayed order (e.g., c(3,4,5)), or a vector of cluster
-  indices can be supplied to assign each column to a specific cluster
-  (e.g., c(1,1,1,2,2,2,2,3,3,3) for 10 columns in 3 clusters). Numeric
-  cluster indices are given column by column from the left of the
-  heatmap as it is displayed without them (in the dendrogram order when
-  `tree_x` is requested), so clusters can be assigned by reading a
-  heatmap. Named indices are matched to the column names of `x`, and
-  labels (character or factor, e.g. treatments from metadata) are given
-  in the original column order of `x`. Columns are regrouped so that
-  each cluster is contiguous, ordered from left to right. When a vector
-  of indices is supplied, its length must equal the number of columns in
-  `x`; if its length also matches a valid set of cluster sizes, it is
-  treated as cluster indices. If a dendrogram is requested
-  (`tree_x = TRUE`), the columns are clustered within each cluster and
-  the clusters are joined at the top of the dendrogram, so the clusters
-  act as groups (e.g. treatments) with a dendrogram inside each one. A
-  dendrogram supplied as an `hclust` or `dist` object (or a heatmap with
-  non-numeric columns) is kept only when the clusters are contiguous in
-  its order. Clusters are always numbered, and labelled by
-  `tree_label_text_x`, in the displayed order from left to right.
+  absolute cosine distance threshold when `dist_method = "cosine"`), an
+  integer indicating the desired number of clusters to obtain by cutting
+  the x axis dendrogram, or `"auto"` to choose the number of clusters
+  from the data by their mean silhouette width (from 2 to 20 clusters,
+  or none when no cut reaches a width of 0.25; see
+  [`heat_map_clust`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)).
+  Alternatively, clusters can be manually defined by specifying the
+  number of columns to include in each cluster in the displayed order
+  (e.g., c(3,4,5)), or a vector of cluster indices can be supplied to
+  assign each column to a specific cluster (e.g., c(1,1,1,2,2,2,2,3,3,3)
+  for 10 columns in 3 clusters). Numeric cluster indices are given
+  column by column from the left of the heatmap as it is displayed
+  without them (in the dendrogram order when `tree_x` is requested), so
+  clusters can be assigned by reading a heatmap. Named indices are
+  matched to the column names of `x`, and labels (character or factor,
+  e.g. treatments from metadata) are given in the original column order
+  of `x`. Columns are regrouped so that each cluster is contiguous,
+  ordered from left to right. When a vector of indices is supplied, its
+  length must equal the number of columns in `x`; if its length also
+  matches a valid set of cluster sizes, it is treated as cluster
+  indices. If a dendrogram is requested (`tree_x = TRUE`), the columns
+  are clustered within each cluster and the clusters are joined at the
+  top of the dendrogram, so the clusters act as groups (e.g. treatments)
+  with a dendrogram inside each one. A dendrogram supplied as an
+  `hclust` or `dist` object (or a heatmap with non-numeric columns) is
+  kept only when the clusters are contiguous in its order. Clusters are
+  always numbered, and labelled by `tree_label_text_x`, in the displayed
+  order from left to right.
 
 - tree_kmeans_x:
 
@@ -418,7 +433,11 @@ heat_map(
 - tree_order_y:
 
   how the branches of the y axis dendrogram are ordered, either
-  `"default"`, `"olo"` or `"mean"`, as for `tree_order_x`.
+  `"default"`, `"olo"`, `"mean"` or `"spectral"`, as for `tree_order_x`.
+  A spectral order without a dendrogram orders the rows on their own
+  (e.g. cells along a differentiation trajectory or samples along a time
+  course); rows grouped by `tree_cut_y` or `tree_kmeans_y` keep it
+  within each group.
 
 - tree_support_y:
 
@@ -436,29 +455,31 @@ heat_map(
 
   either a numeric ranging from 0 to 1 indicating the branch cut height
   for y axis dendrogram (proportional for non-cosine distances, or
-  absolute cosine distance threshold when `dist_method = "cosine"`) or
-  an integer indicating the desired number of clusters to obtain by
-  cutting the y axis dendrogram. Alternatively, clusters can be manually
-  defined by specifying the number of rows to include in each cluster in
-  the displayed order, starting from the top of the heatmap (e.g.,
-  c(3,4,5)), or a vector of cluster indices can be supplied to assign
-  each row to a specific cluster (e.g., c(1,1,1,2,2,2) for 6 rows in 2
-  clusters). Numeric cluster indices are given row by row from the top
-  of the heatmap as it is displayed without them (in the dendrogram
-  order when `tree_y` is requested; without a dendrogram in the order of
-  `x`). Named indices are matched to the row names of `x`, and labels
-  (character or factor, e.g. cell types from metadata) are given in the
-  original row order of `x`. Rows are regrouped so that each cluster is
-  contiguous, the first cluster at the top. When a vector of indices is
-  supplied, its length must equal the number of rows in `x`. If a
-  dendrogram is requested (`tree_y = TRUE`), the rows are clustered
-  within each cluster and the clusters are joined at the top of the
-  dendrogram (e.g. cells grouped by cell type, each with its own
-  dendrogram); a supplied `hclust` or `dist` object is kept only when
-  the clusters are contiguous in its order. Clusters are always
-  numbered, and labelled by `tree_label_text_y`, in the displayed order
-  from the top of the heatmap to the bottom, which may differ from the
-  supplied indices when the dendrogram order is kept.
+  absolute cosine distance threshold when `dist_method = "cosine"`), an
+  integer indicating the desired number of clusters to obtain by cutting
+  the y axis dendrogram, or `"auto"` to choose the number of clusters by
+  mean silhouette width, as for `tree_cut_x`. Alternatively, clusters
+  can be manually defined by specifying the number of rows to include in
+  each cluster in the displayed order, starting from the top of the
+  heatmap (e.g., c(3,4,5)), or a vector of cluster indices can be
+  supplied to assign each row to a specific cluster (e.g.,
+  c(1,1,1,2,2,2) for 6 rows in 2 clusters). Numeric cluster indices are
+  given row by row from the top of the heatmap as it is displayed
+  without them (in the dendrogram order when `tree_y` is requested;
+  without a dendrogram in the order of `x`). Named indices are matched
+  to the row names of `x`, and labels (character or factor, e.g. cell
+  types from metadata) are given in the original row order of `x`. Rows
+  are regrouped so that each cluster is contiguous, the first cluster at
+  the top. When a vector of indices is supplied, its length must equal
+  the number of rows in `x`. If a dendrogram is requested
+  (`tree_y = TRUE`), the rows are clustered within each cluster and the
+  clusters are joined at the top of the dendrogram (e.g. cells grouped
+  by cell type, each with its own dendrogram); a supplied `hclust` or
+  `dist` object is kept only when the clusters are contiguous in its
+  order. Clusters are always numbered, and labelled by
+  `tree_label_text_y`, in the displayed order from the top of the
+  heatmap to the bottom, which may differ from the supplied indices when
+  the dendrogram order is kept.
 
 - tree_kmeans_y:
 
@@ -1452,4 +1473,17 @@ heat_map_info(hm)$row_clusters
 #>                   3                   2                   2                   2 
 #>      Ford Pantera L        Ferrari Dino       Maserati Bora          Volvo 142E 
 #>                   4                   4                   4                   2 
+
+# Number of row clusters chosen by mean silhouette width, rows in spectral
+# order (no dendrogram needed for a spectral order)
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_cut_y = "auto",
+  tree_order_y = "spectral",
+  tree_order_x = "spectral",
+  popup = FALSE
+)
+#> Applying range scaling to each column...
+
 ```

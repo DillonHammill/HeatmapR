@@ -992,7 +992,63 @@ form a block at the bottom whose values increase smoothly from left to
 right across the reordered
 samples.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-dist-order.png)
 
-#### 5.1.2 Branch Support
+#### 5.1.2 Spectral Ordering
+
+A dendrogram orders rows by flipping whole branches, so data that change
+gradually rather than fall into groups, such as cells along a
+differentiation trajectory or samples along a time course, come out in
+pieces. `tree_order_y = "spectral"` (and `tree_order_x`) orders the rows
+along the main path through the data instead, and needs no dendrogram.
+Each row is joined to its 6 nearest neighbours (by `dist_method`) in a
+graph, the graph is split recursively where it is thinnest, each part is
+sorted by its Fiedler vector (the second eigenvector of the graph) with
+the halves turned to meet where they are closest, and runs of up to 12
+rows are then reversed wherever that brings similar rows together.
+Gradients and trajectories are laid out along their length, cycles
+around their loop and clusters one after another. In the example below,
+400 cells are sampled at random times along a trajectory in which 12
+genes peak in turn, and the cells and genes are shuffled: the spectral
+order recovers the times of the cells (a rank correlation of 0.998 with
+their order) and the order of the genes, and the cascade of peaks runs
+down the diagonal.
+
+``` r
+
+set.seed(3)
+# 400 cells at random times along a trajectory, 12 genes peaking in turn
+time <- runif(400)
+peak <- seq(0, 1, length.out = 12)
+cells <- outer(time, peak, function(t, p) 4 * exp(-(t - p)^2 / 0.02)) +
+  matrix(rnorm(400 * 12, sd = 0.4), 400)
+dimnames(cells) <- list(paste0("Cell_", 1:400), paste0("Gene_", 1:12))
+# shuffle the genes (the cells are already in random order)
+cells <- cells[, sample(12)]
+heat_map(
+  cells,
+  tree_order_x = "spectral",
+  tree_order_y = "spectral",
+  axis_text_y = NA,
+  title = "Spectral order of cells and genes"
+)
+```
+
+![Heatmap of 400 simulated cells as rows and 12 genes as columns, both
+in spectral order without dendrograms, in which the genes run from
+Gene_1 to Gene_12 and the high values of each gene follow one another in
+a band from the top left to the bottom right, as the cells progress
+along their
+trajectory.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/09ca532af6b1e786ad776ddd903aa2d6d029e72e/vignettes/HeatmapR/HeatmapR-spectral.png)
+
+With a dendrogram (`tree_y = TRUE`), `"spectral"` orders its branches by
+the mean spectral position of their rows instead, so the dendrogram is
+kept and a gradient runs in one direction across it. Rows grouped by
+`tree_cut_y` or `tree_kmeans_y` without a dendrogram keep the spectral
+order within each group. Up to `clust_max` rows are ordered exactly,
+5000 in under half a second; larger data is ordered from a sample of
+`clust_max` landmark rows, with every other row placed beside its
+nearest landmark (200,000 rows take about 4 seconds).
+
+#### 5.1.3 Branch Support
 
 A dendrogram always has branches, whether or not the data support them.
 `tree_support_y` (and `tree_support_x`) shows how stable each branch is:
@@ -1102,7 +1158,53 @@ groups of variables and 5 groups of cars, each group marked by a
 coloured bar numbered 1 to 4 above the columns or 1 to 5 beside the
 rows.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-13.png)
 
-#### 5.2.1 Manual Clustering
+#### 5.2.1 Choosing the Number of Clusters
+
+`tree_cut_y = "auto"` (or `tree_cut_x`) chooses the number of clusters
+from the data. The dendrogram is cut into 2 to 20 clusters, and the cut
+with the largest mean silhouette width is kept: each row’s silhouette
+compares its mean distance to the other rows of its cluster with its
+mean distance to the rows of the nearest other cluster, from 1 (well
+inside its cluster) through 0 (between two clusters) to -1 (closer to
+another cluster). Kaufman and Rousseeuw read a mean width above 0.7 as
+strong structure, above 0.5 as reasonable structure and above 0.25 as
+weak structure; when no cut reaches 0.25 the dendrogram isn’t cut. The
+widths of every cut are computed together, so trying 19 cuts takes
+little longer than one, and dendrograms with more than `clust_max` rows
+are scored on a sample of `clust_max` of them. The widths are returned
+with the dendrogram, and
+[`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+reports the choice.
+
+``` r
+
+set.seed(6)
+# 4 groups of 30 samples, 10 measurements
+centres <- matrix(rnorm(4 * 10, sd = 3), 4)
+groups <- centres[rep(1:4, each = 30), ] + matrix(rnorm(120 * 10), 120)
+hm <- heat_map(
+  groups,
+  tree_y = TRUE,
+  tree_cut_y = "auto",
+  tree_label_y = TRUE,
+  axis_text_y = NA,
+  popup = FALSE
+)
+round(heat_map_info(hm)$tree_y$auto_cut$silhouette[1:6], 2)
+#>    2    3    4    5    6    7
+#> 0.40 0.59 0.69 0.56 0.41 0.28
+```
+
+The four groups are found (a mean width of 0.69), and
+`heat_map_describe(hm)` says so: “The dendrogram was cut automatically
+into 4 clusters, the number from 2 to 20 with the largest mean
+silhouette width (0.69, reasonable structure on Kaufman and Rousseeuw’s
+scale).”
+
+`heat_map_clust(cut = "auto")` makes the same choice for a dendrogram on
+its own, and returns the widths in its `auto_cut` element.
+
+#### 5.2.2 Manual Clustering
 
 In addition to automatic hierarchical clustering, **HeatmapR** allows
 you to manually define clusters in two ways: by specifying the number of
@@ -1226,7 +1328,7 @@ info$row_clusters
 rownames(mtcars)[info$row_order]
 ```
 
-#### 5.2.2 k-means Clusters
+#### 5.2.3 k-means Clusters
 
 For thousands of rows, `tree_kmeans_y` (or `tree_kmeans_x` for columns)
 splits the rows into k-means clusters instead of cutting a dendrogram.

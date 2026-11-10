@@ -322,11 +322,22 @@ default.</p></dd>
 <dd><p>how the branches of the x axis dendrogram are ordered,
 either <code>"default"</code> (the order from <code>hclust</code>), <code>"olo"</code>
 (optimal leaf ordering, which flips branches so that neighbouring columns
-are as similar as possible) or <code>"mean"</code> (branches ordered by their
+are as similar as possible), <code>"mean"</code> (branches ordered by their
 mean values - <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code> orders them by the sum of
-their columns' means instead, which favours small branches). Optimal leaf ordering
-is exact for up to 4000 columns, which takes well under a second; larger
-dendrograms are ordered in blocks (see <code><a href="heat_map_clust.html">heat_map_clust</a></code>).</p></dd>
+their columns' means instead, which favours small branches) or
+<code>"spectral"</code>. Optimal leaf ordering is exact for up to 4000
+columns, which takes well under a second; larger dendrograms are ordered
+in blocks (see <code><a href="heat_map_clust.html">heat_map_clust</a></code>). A spectral order needs no
+dendrogram: the columns are ordered by recursive spectral bisection of
+the graph joining each column to its 6 nearest neighbours (by
+<code>dist_method</code>), which lays gradients and trajectories out along
+their length, cycles around their loop and clusters one after another,
+and runs of up to 12 columns are then reversed where that brings
+similar columns together. With a dendrogram, its branches are ordered by
+the mean spectral position of their columns. Up to <code>clust_max</code>
+columns are ordered exactly; more are ordered from a sample of
+<code>clust_max</code> landmarks, each other column placed beside its nearest
+landmark (200,000 take about 4 seconds).</p></dd>
 
 
 <dt id="arg-tree-support-x">tree_support_x<a class="anchor" aria-label="anchor" href="#arg-tree-support-x"></a></dt>
@@ -346,9 +357,12 @@ is drawn. <code><a href="heat_map_info.html">heat_map_info()</a></code> returns 
 <dt id="arg-tree-cut-x">tree_cut_x<a class="anchor" aria-label="anchor" href="#arg-tree-cut-x"></a></dt>
 <dd><p>either a numeric ranging from 0 to 1 indicating the branch
 cut height for x axis dendrogram (proportional for non-cosine distances,
-or absolute cosine distance threshold when <code>dist_method = "cosine"</code>)
-or an integer indicating the desired number of clusters to obtain by
-cutting the x axis dendrogram.
+or absolute cosine distance threshold when <code>dist_method = "cosine"</code>),
+an integer indicating the desired number of clusters to obtain by
+cutting the x axis dendrogram, or <code>"auto"</code> to choose the number of
+clusters from the data by their mean silhouette width (from 2 to 20
+clusters, or none when no cut reaches a width of 0.25; see
+<code><a href="heat_map_clust.html">heat_map_clust</a></code>).
 Alternatively, clusters can be manually defined by specifying the number of
 columns to include in each cluster in the displayed order (e.g.,
 c(3,4,5)), or a vector of cluster indices can be supplied to assign each
@@ -459,8 +473,12 @@ default.</p></dd>
 
 <dt id="arg-tree-order-y">tree_order_y<a class="anchor" aria-label="anchor" href="#arg-tree-order-y"></a></dt>
 <dd><p>how the branches of the y axis dendrogram are ordered,
-either <code>"default"</code>, <code>"olo"</code> or <code>"mean"</code>, as for
-<code>tree_order_x</code>.</p></dd>
+either <code>"default"</code>, <code>"olo"</code>, <code>"mean"</code> or
+<code>"spectral"</code>, as for <code>tree_order_x</code>. A spectral order without
+a dendrogram orders the rows on their own (e.g. cells along a
+differentiation trajectory or samples along a time course); rows
+grouped by <code>tree_cut_y</code> or <code>tree_kmeans_y</code> keep it within
+each group.</p></dd>
 
 
 <dt id="arg-tree-support-y">tree_support_y<a class="anchor" aria-label="anchor" href="#arg-tree-support-y"></a></dt>
@@ -478,9 +496,10 @@ support as a percentage, set to TRUE by default.</p></dd>
 <dt id="arg-tree-cut-y">tree_cut_y<a class="anchor" aria-label="anchor" href="#arg-tree-cut-y"></a></dt>
 <dd><p>either a numeric ranging from 0 to 1 indicating the branch
 cut height for y axis dendrogram (proportional for non-cosine distances,
-or absolute cosine distance threshold when <code>dist_method = "cosine"</code>)
-or an integer indicating the desired number of clusters to obtain by
-cutting the y axis dendrogram.
+or absolute cosine distance threshold when <code>dist_method = "cosine"</code>),
+an integer indicating the desired number of clusters to obtain by
+cutting the y axis dendrogram, or <code>"auto"</code> to choose the number of
+clusters by mean silhouette width, as for <code>tree_cut_x</code>.
 Alternatively, clusters can be manually defined by specifying the number of
 rows to include in each cluster in the displayed order, starting from the
 top of the heatmap (e.g., c(3,4,5)), or a vector of cluster indices can
@@ -1521,6 +1540,19 @@ cell colours, can be extracted with <code><a href="heat_map_info.html">heat_map_
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   3                   2                   2                   2 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      Ford Pantera L        Ferrari Dino       Maserati Bora          Volvo 142E </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                   4                   4                   4                   2 </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Number of row clusters chosen by mean silhouette width, rows in spectral</span></span></span>
+<span class="r-in"><span><span class="co"># order (no dendrogram needed for a spectral order)</span></span></span>
+<span class="r-in"><span><span class="fu">heat_map</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">mtcars</span>,</span></span>
+<span class="r-in"><span>  scale <span class="op">=</span> <span class="st">"column"</span>,</span></span>
+<span class="r-in"><span>  tree_cut_y <span class="op">=</span> <span class="st">"auto"</span>,</span></span>
+<span class="r-in"><span>  tree_order_y <span class="op">=</span> <span class="st">"spectral"</span>,</span></span>
+<span class="r-in"><span>  tree_order_x <span class="op">=</span> <span class="st">"spectral"</span>,</span></span>
+<span class="r-in"><span>  popup <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Applying range scaling to each column...</span>
+<span class="r-plt img"><img src="heat_map-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

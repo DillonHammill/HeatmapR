@@ -100,8 +100,17 @@ better visualisation, set to FALSE by default.</p></dd>
 <dt id="arg-cut">cut<a class="anchor" aria-label="anchor" href="#arg-cut"></a></dt>
 <dd><p>value from 0 to less than 1 specifying the tree cutpoint as a
 proportion of the tree height (for non-cosine distances) or as an absolute
-cosine distance threshold (when <code>dist = "cosine"</code>), or a value
-greater than or equal to 1 indicating the number of desired clusters.</p></dd>
+cosine distance threshold (when <code>dist = "cosine"</code>), a value
+greater than or equal to 1 indicating the number of desired clusters, or
+<code>"auto"</code> to choose the number of clusters from the data. An
+automatic cut tries 2 to 20 clusters and keeps the one with the largest
+mean silhouette width (Rousseeuw 1987: each leaf compares its mean
+distance to the rest of its cluster with that to the nearest other
+cluster, from -1 to 1), unless no cut reaches 0.25 - the width below
+which Kaufman and Rousseeuw (1990) find no substantial structure - when
+the tree isn't cut. Trees with more than <code>max</code> leaves are scored on
+a sample of <code>max</code> leaves (fixed seed); 5000 leaves take well under
+a second.</p></dd>
 
 
 <dt id="arg-order">order<a class="anchor" aria-label="anchor" href="#arg-order"></a></dt>
@@ -110,7 +119,11 @@ greater than or equal to 1 indicating the number of desired clusters.</p></dd>
 branches to minimise the distances between neighbouring leaves (optimal
 leaf ordering) and <code>"mean"</code> orders branches by their mean values
 (<code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code> orders them by the sum of their leaves'
-means instead, which favours small branches). Optimal leaf ordering is exact for up to
+means instead, which favours small branches). <code>"spectral"</code> orders
+branches by the mean position of their leaves in a spectral order
+(recursive spectral bisection of the graph joining each leaf to its 6
+nearest neighbours), so that gradients and trajectories run in one
+direction across the dendrogram. Optimal leaf ordering is exact for up to
 4000 leaves, which takes well under a second; its time grows with the cube of
 the number of leaves (and its memory with the square), so larger trees are
 ordered in blocks (of 4000 leaves, down to 100 for the largest trees), each
@@ -144,7 +157,10 @@ with a warning.</p></dd>
 the clustering process. Branch heights are rescaled to the range
 <code>[0, 1]</code> for display. When <code>cut</code> is supplied, the returned object
 also contains a <code>cut</code> element holding the cluster assigned to each
-leaf in dendrogram order. A tree clustered in two stages (more than
+leaf in dendrogram order (an automatic cut also adds an <code>auto_cut</code>
+element: the number of clusters <code>k</code>, 1 when the tree isn't cut,
+the mean silhouette width of each cut tried and the number of leaves
+scored). A tree clustered in two stages (more than
 <code>max</code> rows) has a <code>two_stage</code> element giving the size of the
 sample and the number of groups.</p>
     </div>
@@ -177,6 +193,11 @@ returns while being equally valid.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Hierarchical clustering</span></span></span>
 <span class="r-in"><span><span class="va">heat_map_hclust</span> <span class="op">&lt;-</span> <span class="fu">heat_map_clust</span><span class="op">(</span><span class="va">mtcars</span>, cut <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Number of clusters chosen by mean silhouette width</span></span></span>
+<span class="r-in"><span><span class="va">heat_map_hclust</span> <span class="op">&lt;-</span> <span class="fu">heat_map_clust</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span>, cut <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">heat_map_hclust</span><span class="op">$</span><span class="va">auto_cut</span><span class="op">$</span><span class="va">k</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 11</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

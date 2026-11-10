@@ -64,9 +64,17 @@ heat_map_clust(
 
   value from 0 to less than 1 specifying the tree cutpoint as a
   proportion of the tree height (for non-cosine distances) or as an
-  absolute cosine distance threshold (when `dist = "cosine"`), or a
-  value greater than or equal to 1 indicating the number of desired
-  clusters.
+  absolute cosine distance threshold (when `dist = "cosine"`), a value
+  greater than or equal to 1 indicating the number of desired clusters,
+  or `"auto"` to choose the number of clusters from the data. An
+  automatic cut tries 2 to 20 clusters and keeps the one with the
+  largest mean silhouette width (Rousseeuw 1987: each leaf compares its
+  mean distance to the rest of its cluster with that to the nearest
+  other cluster, from -1 to 1), unless no cut reaches 0.25 - the width
+  below which Kaufman and Rousseeuw (1990) find no substantial
+  structure - when the tree isn't cut. Trees with more than `max` leaves
+  are scored on a sample of `max` leaves (fixed seed); 5000 leaves take
+  well under a second.
 
 - order:
 
@@ -76,12 +84,16 @@ heat_map_clust(
   orders branches by their mean values
   ([`heatmap`](https://rdrr.io/r/stats/heatmap.html) orders them by the
   sum of their leaves' means instead, which favours small branches).
-  Optimal leaf ordering is exact for up to 4000 leaves, which takes well
-  under a second; its time grows with the cube of the number of leaves
-  (and its memory with the square), so larger trees are ordered in
-  blocks (of 4000 leaves, down to 100 for the largest trees), each
-  ordered exactly, with the blocks then ordered and turned to meet their
-  neighbours. 200,000 leaves take about a second.
+  `"spectral"` orders branches by the mean position of their leaves in a
+  spectral order (recursive spectral bisection of the graph joining each
+  leaf to its 6 nearest neighbours), so that gradients and trajectories
+  run in one direction across the dendrogram. Optimal leaf ordering is
+  exact for up to 4000 leaves, which takes well under a second; its time
+  grows with the cube of the number of leaves (and its memory with the
+  square), so larger trees are ordered in blocks (of 4000 leaves, down
+  to 100 for the largest trees), each ordered exactly, with the blocks
+  then ordered and turned to meet their neighbours. 200,000 leaves take
+  about a second.
 
 - max:
 
@@ -110,9 +122,11 @@ object of class `hclust` which describes the tree produced by the
 clustering process. Branch heights are rescaled to the range `[0, 1]`
 for display. When `cut` is supplied, the returned object also contains a
 `cut` element holding the cluster assigned to each leaf in dendrogram
-order. A tree clustered in two stages (more than `max` rows) has a
-`two_stage` element giving the size of the sample and the number of
-groups.
+order (an automatic cut also adds an `auto_cut` element: the number of
+clusters `k`, 1 when the tree isn't cut, the mean silhouette width of
+each cut tried and the number of leaves scored). A tree clustered in two
+stages (more than `max` rows) has a `two_stage` element giving the size
+of the sample and the number of groups.
 
 ## Details
 
@@ -144,4 +158,9 @@ Dillon Hammill (dillon.hammill21@gmail.com)
 ``` r
 # Hierarchical clustering
 heat_map_hclust <- heat_map_clust(mtcars, cut = 5)
+
+# Number of clusters chosen by mean silhouette width
+heat_map_hclust <- heat_map_clust(scale(mtcars), cut = "auto")
+heat_map_hclust$auto_cut$k
+#> [1] 11
 ```
