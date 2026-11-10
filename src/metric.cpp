@@ -226,7 +226,7 @@ double euclidean_na(const double* a, const double* b, int p) {
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
       double dev = a[k] - b[k];
-      dist += dev * dev;
+      dist += prod(dev, dev);
       count++;
     }
   }
@@ -361,13 +361,13 @@ double cosine_na(const double* a, const double* b, int p) {
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
       n++;
-      sab += a[k] * b[k];
-      saa += a[k] * a[k];
-      sbb += b[k] * b[k];
+      sab += prod(a[k], b[k]);
+      saa += prod(a[k], a[k]);
+      sbb += prod(b[k], b[k]);
     }
   }
   if (n == 0) return NA;
-  double den = std::sqrt(saa * sbb);
+  double den = std::sqrt(prod(saa, sbb));
   double r = den > 0 ? sab / den : 0;
   return clip2(1 - r);
 }

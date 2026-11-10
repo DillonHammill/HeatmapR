@@ -26,7 +26,19 @@
 #include <limits>
 #include <vector>
 
+#include "distance.h"
+
 namespace metric {
+
+// a * b rounded on its own: never fused with the sum or difference it goes
+// into, whatever the compiler flags (GCC fuses by default when the target has
+// fused multiply-adds, e.g. -march=x86-64-v3), so that the arithmetic stays
+// that of R's own (unfused) code - stats::dist(), hclust() and kmeans()
+inline double prod(double a, double b) {
+  double t = a * b;
+  DIST_ROUNDED(t);
+  return t;
+}
 
 enum Code {
   EUCLIDEAN = 1,

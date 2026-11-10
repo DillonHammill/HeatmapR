@@ -11,6 +11,7 @@
 #include <cmath>
 #include <vector>
 
+#include "metric.h"
 #include "parallel.h"
 
 // Scores of the rows of x (n x p, no missing values, p >= 2) on their first
@@ -170,7 +171,7 @@ struct Kmns {
           const double* c1 = c(l1);
           for (int j = 0; j < n; ++j) {
             double df = ai[j] - c1[j];
-            de = de + df * df;
+            de = de + metric::prod(df, df);
           }
           d[i] = de * an1[l1];
         }
@@ -178,7 +179,7 @@ struct Kmns {
         const double* c2 = c(l2);
         for (int j = 0; j < n; ++j) {
           double db = ai[j] - c2[j];
-          da = da + db * db;
+          da = da + metric::prod(db, db);
         }
         double r2 = da * an2[l2];
         for (int l = 0; l < k; ++l) {
@@ -189,7 +190,7 @@ struct Kmns {
           bool out = false;
           for (int j = 0; j < n; ++j) {
             double dd = ai[j] - cl[j];
-            dc = dc + dd * dd;
+            dc = dc + metric::prod(dd, dd);
             if (dc >= rr) {
               out = true;
               break;
@@ -225,8 +226,8 @@ struct Kmns {
     double* c1 = c(l1);
     double* c2 = c(l2);
     for (int j = 0; j < n; ++j) {
-      c1[j] = (c1[j] * al1 - ai[j]) / alw;
-      c2[j] = (c2[j] * al2 + ai[j]) / alt;
+      c1[j] = (metric::prod(c1[j], al1) - ai[j]) / alw;
+      c2[j] = (metric::prod(c2[j], al2) + ai[j]) / alt;
     }
     nc[l1] = nc[l1] - 1;
     nc[l2] = nc[l2] + 1;
@@ -259,7 +260,7 @@ struct Kmns {
             const double* c1 = c(l1);
             for (int j = 0; j < n; ++j) {
               double db = ai[j] - c1[j];
-              da = da + db * db;
+              da = da + metric::prod(db, db);
             }
             d[i] = da * an1[l1];
           }
@@ -270,7 +271,7 @@ struct Kmns {
             bool out = false;
             for (int j = 0; j < n; ++j) {
               double de = ai[j] - c2[j];
-              dd = dd + de * de;
+              dd = dd + metric::prod(de, de);
               if (dd >= r2) {
                 out = true;
                 break;
@@ -360,7 +361,7 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
       const double* cl = Cv + static_cast<size_t>(il) * n;
       for (int j = 0; j < n; ++j) {
         double da = ai[j] - cl[j];
-        dt[il] = dt[il] + da * da;
+        dt[il] = dt[il] + metric::prod(da, da);
       }
     }
     int c1 = 0, c2 = 1;
@@ -375,7 +376,7 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
       bool out = false;
       for (int j = 0; j < n; ++j) {
         double dc = ai[j] - cl[j];
-        db = db + dc * dc;
+        db = db + metric::prod(dc, dc);
         if (db >= dt[1]) {
           out = true;
           break;
