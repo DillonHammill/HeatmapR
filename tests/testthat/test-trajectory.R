@@ -80,7 +80,7 @@ test_that("metadata columns, features and sparse data are smoothed alike", {
   skip_if_not_installed("SingleCellExperiment")
   sce <- SingleCellExperiment::SingleCellExperiment(
     list(logcounts = Matrix::t(sp)),
-    colData = S4Vectors::DataFrame(pseudotime = d$pt)
+    colData = data.frame(pseudotime = d$pt)
   )
   s <- heat_map_smooth(sce, along = "pseudotime", bins = 25)
   ref <- heat_map_smooth(d$genes, along = d$pt, bins = 25)
