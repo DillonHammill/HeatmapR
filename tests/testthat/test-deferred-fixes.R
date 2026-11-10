@@ -70,7 +70,7 @@ test_that("missing values: pairwise distances match stats::dist() and cor()", {
   x[5, 1:2] <- 0
   x[6, 1:2] <- 0
   for (m in c("euclidean", "manhattan", "maximum", "minkowski", "canberra")) {
-    expect_equal(unname(.cross_na(x, x, m, 3)), unname(as.matrix(dist(x, m, p = 3))),
+    expect_equal(unname(.dist_to(x, x, m, p = 3)), unname(as.matrix(dist(x, m, p = 3))),
                  info = m)
   }
   r <- suppressWarnings(cor(t(x), use = "pairwise.complete.obs"))

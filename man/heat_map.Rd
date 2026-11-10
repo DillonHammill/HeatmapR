@@ -219,12 +219,13 @@ by default. See \code{?hclust} for alternatives.}
 \item{clust_max}{the largest number of rows (or columns) clustered exactly,
 set to 5000 by default. Exact clustering needs the distances between every
 pair of rows, so its memory and time grow with the square of their number
-(about 400 MB and 3 seconds for 10,000 rows). Larger margins are
+(about 400 MB and 1.2 seconds on two cores for 10,000 rows). Larger
+margins are
 clustered in two stages: a sample of \code{clust_max} rows is clustered
 exactly, its dendrogram is split into groups, every row joins the group
 of its nearest group medoid and each group is clustered exactly beneath
 the sample's dendrogram (see \code{\link{heat_map_clust}}). 100,000 rows
-take about 2 seconds. Branch support (\code{tree_support_x},
+take about half a second. Branch support (\code{tree_support_x},
 \code{tree_support_y}) is only computed for up to \code{clust_max} rows or
 columns. Set to \code{Inf} to always cluster exactly. Rows or columns
 grouped by \code{tree_cut_x} or \code{tree_cut_y} (or
@@ -403,7 +404,9 @@ differ from the supplied indices when the dendrogram order is kept.}
 \item{tree_kmeans_y}{number of k-means clusters to split the rows of
 \code{x} into, an alternative to \code{tree_cut_y} that is quick for many
 rows (e.g. \code{tree_kmeans_y = 4}). The rows are clustered on the
-numeric columns of \code{x} after scaling, starting from the centres of
+numeric columns of \code{x} after scaling (by the Hartigan-Wong
+algorithm, giving the clusters \code{stats::kmeans()} gives, in compiled
+code), starting from the centres of
 equal slices of the rows along their first principal component, so the
 clusters don't depend on the random seed. The clusters are ordered so
 that similar clusters are neighbours (optimal leaf order of their

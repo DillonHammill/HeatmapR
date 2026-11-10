@@ -162,7 +162,7 @@ test_that("compiled linkage gives stats::hclust() trees", {
     n <- sample(c(2, 3, 5, 20, 80, 150), 1)
     x <- matrix(rnorm(n * 5), n, dimnames = list(paste0("r", seq_len(n)), NULL))
     d <- dist(x)
-    for (method in names(.NN_CHAIN)) {
+    for (method in names(.LINKAGE)) {
       ours <- .hclust_dist(d, method)
       theirs <- hclust(d, method)
       expect_identical(ours$merge, theirs$merge, info = method)
@@ -189,10 +189,13 @@ test_that("compiled linkage gives stats::hclust() trees", {
   expect_equal(ours$height, hclust(dist(x), "single")$height)
   expect_equal(ours$order, .merge_order(ours$merge))
   expect_true(all(ours$merge < seq_len(39)))
-  # OTHER METHODS AND PARTIAL NAMES GO TO stats::hclust(); MISSING DISTANCES FAIL
+  # CENTROID AND MEDIAN LINKAGE BY hclust()'S OWN ALGORITHM - IDENTICAL, WITH
+  # INVERSIONS; PARTIAL NAMES; MISSING DISTANCES FAIL
   d <- dist(matrix(rnorm(30), 10))
-  expect_identical(.hclust_dist(d, "centroid")$merge, hclust(d, "centroid")$merge)
-  expect_identical(.hclust_dist(d, "median")$order, hclust(d, "median")$order)
+  for (method in c("centroid", "median")) {
+    expect_identical(.hclust_dist(d, method)[c("merge", "height", "order")],
+                     hclust(d, method)[c("merge", "height", "order")])
+  }
   expect_identical(.hclust_dist(d, "ave")$merge, hclust(d, "average")$merge)
   d[3] <- NA
   expect_error(.hclust_dist(d), "distances are missing")
@@ -227,15 +230,17 @@ test_that("groups are clustered in one call with the same distances", {
     ref <- hclust(.dist_matrix(x[groups[[g]], , drop = FALSE], "spearman"), "single")
     expect_equal(trees[[g]]$height, ref$height, tolerance = 1e-12)
   }
-  # DISTANCES THE COMPILED CODE LEAVES TO R
-  expect_null(.compiled_metric(x, "canberra"))
-  expect_null(.compiled_metric(x, "kendall"))
+  # EVERY BUILT-IN DISTANCE IS COMPILED, MISSING VALUES INCLUDED; ONLY
+  # DISTANCE FUNCTIONS AND INVALID POWERS ARE LEFT TO R
+  expect_identical(.compiled_metric(x, "canberra")$code, 8L)
+  expect_identical(.compiled_metric(x, "kendall")$code, 10L)
   expect_null(.compiled_metric(x, function(m) dist(m)))
   expect_null(.compiled_metric(x, "minkowski", p = -1))
+  expect_false(.compiled_metric(x, "euclidean")$missing)
   x[1, 1] <- Inf
-  expect_null(.compiled_metric(x, "euclidean"))
+  expect_true(.compiled_metric(x, "euclidean")$missing)
   x[1, 1] <- NA
-  expect_null(.compiled_metric(x, "euclidean"))
+  expect_true(.compiled_metric(x, "euclidean")$missing)
   # INTEGER DATA, DATA FRAMES AND TEXT
   m <- .compiled_metric(matrix(1:6, 3), "euclidean")
   expect_true(is.double(m$x))
@@ -249,7 +254,7 @@ test_that("distances from rows give the trees of dist objects", {
   set.seed(6)
   x <- matrix(sample(0:9, 300, TRUE), 60, dimnames = list(paste0("r", 1:60), NULL))
   for (d in c("euclidean", "manhattan", "maximum")) {
-    for (method in names(.NN_CHAIN)) {
+    for (method in names(.LINKAGE)) {
       rows <- .hclust_rows(x, .compiled_metric(x, d), method)
       from_dist <- .hclust_dist(dist(x, d), method)
       expect_identical(rows[c("merge", "height", "order")],
@@ -270,8 +275,7 @@ test_that("rows join their nearest medoid by pruned search or matrix products", 
   for (dist in c("euclidean", "manhattan", "maximum", "minkowski", "pearson",
                  "cosine")) {
     metric <- .compiled_metric(x, dist, p = 3)
-    expected <- if (metric$code == 5L) brute(metric$x, "cosine") else brute(x, dist)
-    expect_identical(.assign_rows(x, rows, med, metric, dist, p = 3), expected,
+    expect_identical(.assign_rows(x, rows, med, metric, dist, p = 3), brute(x, dist),
                      info = dist)
   }
   # NOISE - THE SEARCH VISITS MOST MEDOIDS, SO MATRIX PRODUCTS AFTER THE FIRST
@@ -283,7 +287,7 @@ test_that("rows join their nearest medoid by pruned search or matrix products", 
   x[med[3], ] <- 0
   metric <- .compiled_metric(x, "cosine")
   expect_identical(.assign_rows(x, rows, med, metric, "cosine"),
-                   brute(metric$x, "cosine"))
+                   brute(x, "cosine"))
   expect_identical(.assign_rows(x, rows, med, NULL, "canberra"), brute(x, "canberra"))
 })
 
