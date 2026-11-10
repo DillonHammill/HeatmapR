@@ -64,8 +64,12 @@ graphics approach.
 - **HeatmapR** clusters large datasets quickly: distances, linkage,
   cuts, k-means and optimal leaf ordering run in compiled C++ code shared
   between threads (`heat_map_threads()`), and rows or columns beyond
-  `clust_max` are clustered in two stages, so 100,000 rows take about half
-  a second on two cores.
+  `clust_max` are clustered in two stages, so 100,000 rows are clustered
+  in under a second on two cores. A clustered heatmap of 20,000 rows takes under a
+  second (7 seconds clustered exactly), against half a minute to two
+  minutes and several times the memory with pheatmap, `heatmap.2()` or
+  ComplexHeatmap: see the [speed
+  comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html).
 - **HeatmapR** shows sample or feature metadata as annotation tracks
   (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
   labels and bar plots, and adapts the layout so that labels and legends
@@ -136,9 +140,11 @@ annotations</a>
 </tr>
 </table>
 
-See the
+The [guides](https://dillonhammill.github.io/HeatmapR/articles/index.html)
+on the website cover ordering, large heatmaps, cells, and working with
+other packages, and the
 [changelog](https://dillonhammill.github.io/HeatmapR/news/index.html)
-for everything new in **HeatmapR** 2.0.0.
+lists everything new in **HeatmapR** 2.0.0.
 
 ## Installation
 

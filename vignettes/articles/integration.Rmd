@@ -1,0 +1,166 @@
+---
+title: "Working with heatmaps"
+description: >
+  Redrawing and saving heatmaps, extracting their orders and clusters, tidy
+  data for ggplot2, heatmaps beside ggplot2 plots and alternative text for
+  screen readers.
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 7,
+  out.width = "100%",
+  fig.align = "center"
+)
+```
+
+`heat_map()` draws a heatmap and returns it as an object. This article shows what you can do with that object: redraw it with changes, save it, take its orders and clusters for further analysis, rebuild it in `ggplot2`, place it beside `ggplot2` plots, and describe it in words for readers who can't see it.
+
+```{r first, fig.alt = "The mtcars heatmap with each column converted to z-scores, the cars and variables clustered by dendrograms and the cars cut into three groups labelled A, B and C."}
+library(HeatmapR)
+hm <- heat_map(
+  mtcars,
+  scale = "zscore",
+  tree = "both",
+  tree_cut_y = 3,
+  tree_label_y = TRUE,
+  tree_label_text_y = c("A", "B", "C"),
+  tree_label_text_col_y = "white",
+  legend_title = "z-score",
+  title = "mtcars"
+)
+```
+
+## Redrawing and saving
+
+A `heat_map` object is the `recordedplot` of the heatmap together with the arguments that made it. `print()` and `plot()` draw it again, with any argument replaced, and `data` draws other data with the same settings. The slow steps (dendrograms, k-means clusters, branch support) are reused when nothing they depend on has changed, so a redraw only draws.
+
+```{r redraw, fig.alt = "The same z-scored mtcars heatmap redrawn with circles sized by the absolute z-score and a new title, with the same dendrograms and the three groups of cars labelled A, B and C."}
+plot(hm, cell_shape = "circle", cell_size = abs(scale(mtcars)),
+     title = "mtcars, redrawn")
+```
+
+`heat_map_save()` writes a heatmap to a file (PNG, JPEG, TIFF, PDF, SVG or EPS, from the extension), at the size and resolution you choose: either the object itself (`x = hm`) or every heatmap drawn after the call until `heat_map_complete()`.
+
+```{r save}
+file <- tempfile(fileext = ".pdf")
+heat_map_save(file, x = hm, width = 6, height = 7)
+file.exists(file)
+```
+
+## Orders, clusters and colours
+
+`heat_map_info()` returns what the heatmap is made of: the data as displayed (after scaling), the order of the rows and columns, the cluster of each row and column, the dendrograms, the colour, size and shape of every cell, and the bounding box of every component in inches.
+
+```{r info}
+info <- heat_map_info(hm)
+names(info)
+# THE ROWS IN THE ORDER THEY ARE SHOWN, FROM THE TOP
+head(rownames(mtcars)[info$row_order])
+# THE CLUSTER OF EACH CAR
+split(rownames(mtcars), info$row_clusters)
+info$layout[1:4, ]
+```
+
+The clusters are numbered from the top of the heatmap, as they are labelled, so they can be used straight away, e.g. to compare the cars of each cluster:
+
+```{r clusters}
+aggregate(mtcars[, c("mpg", "hp", "wt")], list(cluster = info$row_clusters), mean)
+```
+
+## Tidy data for ggplot2
+
+`heat_map_data()` returns what the heatmap shows as tidy tables: one row per cell, row, column or dendrogram segment. `x` and `y` are the centres of the cells in the heatmap's own co-ordinates, including the gaps between clusters, so a heatmap can be rebuilt or restyled with `ggplot2`, exported, or drawn on with base graphics.
+
+```{r data}
+cells <- heat_map_data(hm)
+head(cells)
+```
+
+```{r ggplot, fig.alt = "A ggplot2 version of the mtcars heatmap built from the tidy data: tiles in the heatmap's order and grouping on a red-blue scale, with the row dendrogram drawn as segments to the right of the tiles."}
+library(ggplot2)
+rows <- heat_map_data(hm, "rows")
+cols <- heat_map_data(hm, "columns")
+tree <- heat_map_data(hm, "tree_y")
+edge <- max(cells$x) + 0.5
+grow <- function(h) edge + 3 * h / max(tree$x)
+ggplot(cells) +
+  geom_tile(aes(x, y, fill = value), colour = "white") +
+  geom_segment(data = tree, aes(x = grow(x), y = y, xend = grow(xend), yend = yend)) +
+  scale_fill_distiller(palette = "RdBu", name = "z-score") +
+  scale_x_continuous(breaks = cols$x, labels = cols$column) +
+  scale_y_continuous(breaks = rows$y, labels = rows$row) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+Drawn straight after `heat_map()`, base graphics land on the cells. Below, the largest value in each column is marked with a star:
+
+```{r points, fig.alt = "The z-scored mtcars heatmap with a white star on the cell holding the highest value of each column."}
+hm <- heat_map(mtcars, scale = "zscore", tree = "both", legend_title = "z-score")
+cells <- heat_map_data(hm)
+top <- cells[ave(cells$value, cells$column, FUN = max) == cells$value, ]
+points(top$x, top$y, pch = 8, col = "white", cex = 1.5)
+```
+
+## Beside ggplot2 plots
+
+`heat_map_grob()` turns a heatmap into a `grid` graphical object, so it can sit beside `ggplot2` plots in `patchwork`, `cowplot` or `gridExtra` layouts. The grob draws the heatmap again whenever its space changes, so dendrograms, legends and text are sized for the space it is given. It needs the **gridGraphics** package.
+
+```{r patchwork, fig.width = 11, fig.height = 6, fig.alt = "A scatter plot of miles per gallon against weight for the mtcars cars coloured by number of cylinders, on the left, beside the clustered mtcars heatmap on the right, arranged with patchwork."}
+library(patchwork)
+p <- ggplot(mtcars, aes(wt, mpg, colour = factor(cyl))) +
+  geom_point(size = 2) +
+  labs(x = "Weight (1000 lbs)", y = "Miles per gallon", colour = "Cylinders") +
+  theme_bw()
+p + heat_map_grob(hm, title = "mtcars") + plot_layout(widths = c(1, 1.5))
+```
+
+Several heatmaps can also share one figure with `heat_map_custom()`, which takes a layout (a number of rows and columns, or a matrix as in `graphics::layout()`), and `heat_map_complete()` to finish it.
+
+```{r layout, fig.width = 10, fig.height = 4.5, fig.alt = "Three heatmaps side by side, one each for the Mercedes cars, the Mazda and Toyota cars, and the Hornet, Datsun and Volvo cars, each with its own title."}
+heat_map_custom(popup = FALSE, layout = c(1, 3))
+heat_map(mtcars[grepl("Merc", rownames(mtcars)), ], scale = "column",
+         legend = FALSE, title = "Mercedes")
+heat_map(mtcars[grepl("Mazda|Toyota", rownames(mtcars)), ], scale = "column",
+         legend = FALSE, title = "Mazda | Toyota")
+heat_map(mtcars[grepl("Hornet|Datsun|Volvo", rownames(mtcars)), ],
+         scale = "column", legend = FALSE, title = "Hornet | Datsun | Volvo")
+heat_map_complete()
+```
+
+## Alternative text
+
+Figures in reports and on the web need alternative text for readers using screen readers, and a heatmap is hard to describe by hand. `heat_map_describe()` writes the description from the heatmap itself: its size and scaling, what the colours show (naming the colours of the scale), the most extreme values, how the rows and columns are ordered, and where each cluster is highest and lowest, plus branch support, uncertainty, annotations, bars and zoom panels when the heatmap has them.
+
+```{r describe, fig.show = "hide"}
+hm <- heat_map(mtcars, scale = "zscore", tree = "both", tree_cut_y = 3,
+               legend_title = "z-score", title = "mtcars")
+heat_map_describe(hm)
+```
+
+In R Markdown and Quarto the description can be the figure's alternative text: draw the heatmap in one chunk and pass the description to the `fig.alt` option of the chunk that shows it.
+
+````markdown
+```{r, include = FALSE}`r ''`
+hm <- heat_map(mtcars, scale = "zscore", tree = "both", tree_cut_y = 3)
+```
+
+```{r, fig.alt = heat_map_describe(hm)}`r ''`
+hm
+```
+````
+
+```{r alt, include = FALSE}
+hm <- heat_map(mtcars, scale = "zscore", tree = "both", tree_cut_y = 3,
+               legend_title = "z-score", title = "Described by heat_map_describe()")
+```
+
+```{r alt-show, fig.alt = as.character(heat_map_describe(hm))}
+hm
+```
