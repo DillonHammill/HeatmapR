@@ -263,3 +263,48 @@ test_that("tree checks reject what the R checks rejected", {
   t$order <- as.character(h$order)
   expect_identical(check(t), "ok")
 })
+
+test_that("ramps through tied positions are interpolated as approx1() does", {
+  # (THE BINARY SEARCH OF stats' approx1() FINDS THE INTERVAL)
+  approx1 <- function(v, x, y) {
+    i <- 1
+    j <- length(x)
+    while(i < j - 1) {
+      ij <- (i + j) %/% 2
+      if(v < x[ij]) j <- ij else i <- ij
+    }
+    if(v == x[j]) return(y[j])
+    if(v == x[i]) return(y[i])
+    y[i] + (y[j] - y[i]) * ((v - x[i]) / (x[j] - x[i]))
+  }
+  knots <- c(0, 0.25, 0.25, 0.6, 1)
+  channels <- cbind(c(0, 0.2, 0.9, 0.5, 1), c(1, 0.5, 0.25, 0, 0.3), c(0.1, 0.4, 0.4, 0.8, 0.2))
+  k <- c(0, 0.1, 0.25, 0.3, 0.6, 0.99, 1, runif(200))
+  ref <- vapply(k, function(v) {
+    ch <- vapply(1:3, function(h) {
+      a <- min(max(approx1(v, knots, channels[, h]), 0), 1)
+      as.integer(a * 255)
+    }, integer(1))
+    grDevices::rgb(ch[1], ch[2], ch[3], maxColorValue = 255)
+  }, character(1))
+  expect_identical(packed_strings_cpp(ramp_packed_cpp(k, knots, channels), FALSE), ref)
+  expect_identical(
+    ramp_cells_cpp(k, 0, 1, knots, channels, 0L, 1L),
+    ramp_packed_cpp(k, knots, channels)
+  )
+  expect_error(ramp_cells_cpp(k, 0, 1, 0, channels[1, , drop = FALSE], 0L, 1L), "two colours")
+})
+
+test_that("zoom panels draw their cells' borders from the mask", {
+  m <- test_matrix(8, 4)
+  mask <- matrix(rep_len(c(TRUE, FALSE, FALSE), 32), 8, 4)
+  hm <- draw(m, cell_border_mask = mask, cell_border_line_col = "red", zoom_y = 3:5,
+             legend = FALSE)
+  rects <- Filter(function(r) length(r[[1]]) == 12, drawn(hm, "C_rect"))
+  expect_length(rects, 1)
+  # THE BAND'S CELLS, COLUMN BY COLUMN FROM ITS TOP ROW
+  info <- heat_map_info(hm)
+  rows <- info$row_order[info$row_order %in% 3:5]
+  band <- mask[cbind(rep(rows, 4), rep(info$col_order, each = 3))]
+  expect_identical(rects[[1]][[6]], ifelse(band, grDevices::adjustcolor("red"), "transparent"))
+})

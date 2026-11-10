@@ -2105,7 +2105,6 @@ heat_map <- function(x,
   cells_ind <- function(i) {
     cbind(disp_row[(i - 1L) %% n_row + 1L], col_ind[(i - 1L) %/% n_row + 1L])
   }
-  cells_num <- function(i) (col_ind %in% num_cols)[(i - 1L) %/% n_row + 1L]
   cells_sizes <- function(i) {
     if(is.null(size_mat)) rep(1, length(i)) else cell_sizes[i]
   }
@@ -2118,13 +2117,8 @@ heat_map <- function(x,
   cells_number <- function(i) {
     if(any_shape("number")) cell_number[i] else logical(length(i))
   }
-  cells_r <- function(i) {
-    if(any_shape("ellipse")) {
-      cell_r[i]
-    } else {
-      pmin(pmax(ifelse(cells_num(i), cell_num_val[i], NA_real_), -1), 1)
-    }
-  }
+  # (ONLY ELLIPSES USE cell_r)
+  cells_r <- function(i) cell_r[i]
   cells_borders_all <- function(i) {
     if(is.null(mask_mat)) {
       border_col_adjusted[(i - 1L) %% length(border_col_adjusted) + 1L]
