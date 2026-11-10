@@ -2,6 +2,34 @@ url: https://dillonhammill.github.io/HeatmapR/
 template:
   bootstrap: 5
 
+navbar:
+  structure:
+    left: [intro, reference, articles, benchmarks, news]
+  components:
+    benchmarks:
+      text: Speed
+      href: articles/benchmarks.html
+
+articles:
+- title: Get started
+  navbar: ~
+  contents:
+  - HeatmapR
+- title: Guides
+  navbar: Guides
+  desc: >
+    Deeper looks at what HeatmapR can do, with every figure drawn as the
+    site is built.
+  contents:
+  - articles/ordering
+  - articles/large-data
+  - articles/cells
+  - articles/integration
+- title: Performance
+  navbar: Performance
+  contents:
+  - articles/benchmarks
+
 reference:
 - title: Draw heatmaps
   contents:

@@ -34,6 +34,8 @@ knitr::opts_chunk$set(
 -   `heat_map_complete()` can be called when creating complex layouts to indicate when the resulting layout should be saved to file using `heat_map_save()`.
 -   `heat_map_reset()` resets all **HeatmapR** associated settings in case things are not working as they should.
 
+The [HeatmapR website](https://dillonhammill.github.io/HeatmapR/) has guides that go further, with every figure drawn as the site is built: [ordering rows and columns](https://dillonhammill.github.io/HeatmapR/articles/ordering.html), [large heatmaps](https://dillonhammill.github.io/HeatmapR/articles/large-data.html), [more than colour](https://dillonhammill.github.io/HeatmapR/articles/cells.html) (uncertainty, split cells, distributions and annotations), [working with heatmaps](https://dillonhammill.github.io/HeatmapR/articles/integration.html) (redraws, tidy data, `ggplot2` and alternative text), and a [speed comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html) with other heatmap packages.
+
 ## 1. Construct a Basic Heatmap
 
 Constructing a heatmap is as simple loading the **HeatmapR** package and supplying your dataset to the `heat_map()` function. The constructed heatmap will be in the same orientation as the input data, the first row at the top and the first column at the left as when the data is printed, and each numeric cell in the heatmap will be coloured using the colour scale supplied to `cell_col_scale`. By default, `heat_map()` uses a hybrid colour blind friendly `viridis` palette to offer high visual contrast.

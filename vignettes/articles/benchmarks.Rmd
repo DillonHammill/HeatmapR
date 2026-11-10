@@ -1,0 +1,256 @@
+---
+title: "Speed comparison"
+description: >
+  The time and memory HeatmapR, ComplexHeatmap, pheatmap, gplots, stats and
+  ggplot2 need to draw and cluster heatmaps from 10,000 to 9 million cells,
+  and of clustering and leaf ordering on their own.
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  echo = FALSE,
+  fig.width = 8,
+  fig.height = 5,
+  out.width = "100%",
+  fig.align = "center"
+)
+library(HeatmapR)
+res <- utils::read.csv("benchmarks.csv", stringsAsFactors = FALSE)
+info <- readLines("benchmarks-info.txt")
+info <- stats::setNames(sub("^[^:]*: ", "", info), sub(":.*", "", info))
+res$size <- paste(format(res$rows, big.mark = ",", trim = TRUE),
+                  format(res$cols, big.mark = ",", trim = TRUE), sep = " x ")
+res$cells <- as.numeric(res$rows) * res$cols
+
+# MEDIAN TIME AND PEAK MEMORY OF EACH CASE, OR WHY IT FAILED
+summary_of <- function(task) {
+  r <- res[res$task == task, ]
+  key <- paste(r$method, r$size, sep = "\r")
+  out <- do.call(rbind, lapply(split(r, factor(key, levels = unique(key))), function(z) {
+    ok <- z$status == "ok"
+    data.frame(
+      method = z$method[1],
+      size = z$size[1],
+      rows = z$rows[1],
+      cells = z$cells[1],
+      seconds = if(any(ok)) stats::median(z$seconds[ok]) else NA,
+      peak_mb = if(any(ok)) max(z$peak_mb[ok]) else NA,
+      status = if(any(ok)) "ok" else z$status[1]
+    )
+  }))
+  rownames(out) <- NULL
+  out
+}
+fmt_time <- function(s, status) {
+  ifelse(
+    status == "ok",
+    ifelse(s < 1, sprintf("%.2f", s), ifelse(s < 10, sprintf("%.1f", s), sprintf("%.0f", s))),
+    status
+  )
+}
+fmt_mem <- function(m, status) {
+  ifelse(status == "ok", format(round(pmax(m, 0)), big.mark = ","), status)
+}
+# THE ORDER OF THE METHODS IN TABLES AND LEGENDS
+method_order <- c(
+  "HeatmapR", "HeatmapR (1 thread)", "HeatmapR (exact)",
+  "HeatmapR (exact, 1 thread)", "ComplexHeatmap", "pheatmap", "heatmap.2",
+  "stats::heatmap", "ggplot2", "fastcluster", "stats::hclust", "seriation"
+)
+methods_of <- function(s) intersect(method_order, s$method)
+# A TABLE WITH ONE ROW PER SIZE AND ONE COLUMN PER METHOD
+wide <- function(s, value = c("time", "memory"), methods = methods_of(s)) {
+  value <- match.arg(value)
+  sizes <- unique(s$size[order(s$cells)])
+  tab <- sapply(methods, function(m) {
+    z <- s[s$method == m, ]
+    z <- z[match(sizes, z$size), ]
+    v <- if(value == "time") fmt_time(z$seconds, z$status) else fmt_mem(z$peak_mb, z$status)
+    v[is.na(z$method)] <- ""
+    v
+  })
+  tab <- matrix(tab, nrow = length(sizes), dimnames = list(sizes, methods))
+  knitr::kable(tab, align = "r")
+}
+# TIME AGAINST SIZE, ONE LINE PER METHOD (FAILURES AS CROSSES AT THE TOP)
+palette <- c(
+  "HeatmapR" = "#D7191C", "HeatmapR (1 thread)" = "#FDAE61",
+  "HeatmapR (exact)" = "#7B1416", "HeatmapR (exact, 1 thread)" = "#F4A582",
+  "ComplexHeatmap" = "#2C7BB6", "pheatmap" = "#1A9641",
+  "heatmap.2" = "#984EA3", "stats::heatmap" = "#666666",
+  "ggplot2" = "#E6AB02", "fastcluster" = "#2C7BB6",
+  "stats::hclust" = "#666666", "seriation" = "#1A9641"
+)
+plot_times <- function(s, x = c("cells", "rows"), xlab = NULL, main = NULL) {
+  x <- match.arg(x)
+  ok <- s$status == "ok"
+  xv <- s[[x]]
+  ylim <- range(s$seconds[ok]) * c(0.7, 5)
+  op <- graphics::par(mar = c(4.5, 4.5, 2, 13))
+  on.exit(graphics::par(op))
+  graphics::plot(xv[ok], s$seconds[ok], log = "xy", type = "n", xlab = xlab,
+                 ylab = "Seconds (log scale)", ylim = ylim, main = main,
+                 axes = FALSE)
+  ticks <- sort(unique(xv))
+  short <- ifelse(ticks >= 1e6, paste0(ticks / 1e6, "M"),
+                  ifelse(ticks >= 1e3, paste0(ticks / 1e3, "k"), ticks))
+  graphics::axis(1, at = ticks, labels = short, cex.axis = 0.85)
+  graphics::axis(2, at = 10^(-2:3), labels = c("0.01", "0.1", "1", "10", "100", "1000"),
+                 las = 1)
+  graphics::box()
+  graphics::abline(h = 10^(-2:3), col = "grey90")
+  methods <- methods_of(s)
+  # FAILURES AT THE SAME SIZE ARE STACKED DOWN FROM THE TOP
+  failed <- stats::setNames(numeric(length(ticks)), ticks)
+  for(m in methods) {
+    z <- s[s$method == m, ]
+    z <- z[order(z[[x]]), ]
+    col <- palette[[m]]
+    lwd <- if(grepl("^HeatmapR", m)) 3 else 1.5
+    good <- z$status == "ok"
+    graphics::lines(z[[x]][good], z$seconds[good], col = col, lwd = lwd,
+                    type = "o", pch = 19)
+    for(v in z[[x]][!good]) {
+      i <- as.character(v)
+      graphics::points(v, ylim[2] / 1.2 / 1.35^failed[[i]], pch = 4, col = col,
+                       lwd = 2, cex = 1.2)
+      failed[[i]] <- failed[[i]] + 1
+    }
+  }
+  graphics::legend(
+    "topleft", inset = c(1.02, 0), legend = c(methods, "out of memory or time"),
+    col = c(palette[methods], "black"), lwd = c(rep(2, length(methods)), NA),
+    pch = c(rep(19, length(methods)), 4), bty = "n", xpd = TRUE, cex = 0.9
+  )
+}
+draw <- summary_of("draw")
+clust <- summary_of("cluster")
+hc <- summary_of("hclust")
+olo <- summary_of("olo")
+get <- function(s, method, size, what = "seconds") {
+  z <- s[s$method == method & s$size == size, ]
+  if(nrow(z) == 0) NA else z[[what]][1]
+}
+speedup <- function(s, size, baseline) {
+  round(get(s, baseline, size) / get(s, "HeatmapR", size))
+}
+```
+
+How long does a heatmap take? For a few hundred rows any package will do, but single-cell data, cytometry events and expression matrices have tens of thousands to millions of rows, and that is where heatmap packages part ways. This article measures the time and memory **HeatmapR** and five other ways of drawing heatmaps in R need, from 10,000 to 9 million cells, with and without clustering, and the clustering and leaf ordering behind them.
+
+## Summary
+
+- **Clustered heatmaps.** Clustering rows and columns exactly, as every package does by default, HeatmapR was `r speedup(clust, "5,000 x 50", "pheatmap")` times faster than the fastest of the others (pheatmap) and `r speedup(clust, "5,000 x 50", "ComplexHeatmap")` times faster than ComplexHeatmap on 5,000 rows of 50 columns, and `r round(get(clust, "pheatmap", "3,000 x 3,000") / get(clust, "HeatmapR", "3,000 x 3,000"))` to `r round(get(clust, "ComplexHeatmap", "3,000 x 3,000") / get(clust, "HeatmapR", "3,000 x 3,000"))` times faster on a 3,000 x 3,000 matrix (`r round(get(clust, "HeatmapR", "3,000 x 3,000"), 1)` seconds rather than `r round(get(clust, "stats::heatmap", "3,000 x 3,000") / 60, 1)` minutes or more). On 20,000 rows the others took `r round(min(clust$seconds[clust$size == "20,000 x 30" & !grepl("^HeatmapR", clust$method)], na.rm = TRUE))` to `r round(max(clust$seconds[clust$size == "20,000 x 30" & !grepl("^HeatmapR", clust$method)], na.rm = TRUE))` seconds; HeatmapR `r round(get(clust, "HeatmapR (exact)", "20,000 x 30"), 1)` seconds clustering exactly, or `r round(get(clust, "HeatmapR", "20,000 x 30"), 1)` with its default two-stage clustering, which also clustered 100,000 rows in `r round(get(clust, "HeatmapR", "100,000 x 30"), 1)` seconds, where every other package ran out of memory.
+- **Drawing.** Without clustering, HeatmapR drew 100,000 x 30 cells in `r round(get(draw, "HeatmapR", "100,000 x 30"), 2)` seconds and 9 million cells in `r round(get(draw, "HeatmapR", "3,000 x 3,000"), 2)`, `r round(get(draw, "stats::heatmap", "3,000 x 3,000") / get(draw, "HeatmapR", "3,000 x 3,000"))` times faster than the fastest of the others (`stats::heatmap()`) and `r speedup(draw, "3,000 x 3,000", "ComplexHeatmap")` times faster than ComplexHeatmap and ggplot2. For a small heatmap (100 x 100) every package but ComplexHeatmap takes less than a fifth of a second, and `stats::heatmap()` and `heatmap.2()` are the quickest.
+- **Clustering alone.** HeatmapR's exact clustering builds the same trees as `stats::hclust()` and was `r round(get(hc, "stats::hclust", "20,000 x 30") / get(hc, "HeatmapR (exact)", "20,000 x 30"), 1)` times faster than it and `r round(get(hc, "fastcluster", "20,000 x 30") / get(hc, "HeatmapR (exact)", "20,000 x 30"), 1)` times faster than fastcluster on 20,000 rows (`r round(get(hc, "stats::hclust", "20,000 x 30") / get(hc, "HeatmapR (exact, 1 thread)", "20,000 x 30"), 1)` and `r round(get(hc, "fastcluster", "20,000 x 30") / get(hc, "HeatmapR (exact, 1 thread)", "20,000 x 30"), 1)` times on one core), with half the memory. Two-stage clustering handled a million rows in `r round(get(hc, "HeatmapR", "1,000,000 x 30"))` seconds and `r fmt_mem(get(hc, "HeatmapR", "1,000,000 x 30", "peak_mb"), "ok")` MB.
+- **Optimal leaf ordering.** HeatmapR clustered and optimally ordered 4,000 rows in `r round(get(olo, "HeatmapR (exact)", "4,000 x 30"), 2)` seconds, `r round(get(olo, "seriation", "4,000 x 30") / get(olo, "HeatmapR (exact)", "4,000 x 30"))` times faster than the seriation package.
+- **Memory.** To cluster and draw 20,000 rows HeatmapR needed `r fmt_mem(get(clust, "HeatmapR (exact)", "20,000 x 30", "peak_mb"), "ok")` MB clustering exactly and `r fmt_mem(get(clust, "HeatmapR", "20,000 x 30", "peak_mb"), "ok")` MB in two stages; the others needed `r fmt_mem(min(clust$peak_mb[clust$size == "20,000 x 30" & !grepl("^HeatmapR", clust$method)], na.rm = TRUE), "ok")` to `r fmt_mem(max(clust$peak_mb[clust$size == "20,000 x 30" & !grepl("^HeatmapR", clust$method)], na.rm = TRUE), "ok")` MB.
+
+## How the comparison was run
+
+Each package was called as it usually is, with its defaults wherever they don't change what is drawn:
+
+| Method | Call |
+|---|---|
+| HeatmapR `r info[["HeatmapR"]]` | `heat_map(x, tree = "both")` |
+| ComplexHeatmap `r info[["ComplexHeatmap"]]` | `draw(Heatmap(x))` |
+| pheatmap `r info[["pheatmap"]]` | `pheatmap(x)` |
+| gplots `r info[["gplots"]]` | `heatmap.2(x, trace = "none")` |
+| stats (R `r sub("R version ([^ ]*).*", "\\1", info[["R"]])`) | `heatmap(x, scale = "none")` |
+| ggplot2 `r info[["ggplot2"]]` | `ggplot(df, aes(col, row, fill = value)) + geom_raster()` (no clustering) |
+
+- **Data.** Normal noise around five blocks of rows and five blocks of columns, so that clustering finds structure, with row and column names. Names were drawn for up to 200 rows or columns and turned off beyond that in every package.
+- **Clustering.** Rows and columns were clustered with complete linkage of Euclidean distances, the default of every package, or not at all ("drawing only"). HeatmapR clusters more than `clust_max = 5000` rows in two stages (a sample of 5,000 rows clustered exactly, every other row placed beneath its nearest group; see [Large heatmaps](large-data.html)); "HeatmapR (exact)" sets `clust_max = Inf` and clusters every row exactly, as the other packages do.
+- **Timing.** Each run drew one heatmap to a 7 x 7 inch, 150 dpi PNG file, in a fresh R process after drawing a small heatmap to load the package and the device. The time includes opening the device, clustering, drawing and writing the file. Each case ran three times (once when a run took more than 30 seconds) and the median is shown; runs were stopped after 10 minutes.
+- **Memory.** The growth of the process's resident memory from just before the run to its peak, which includes memory used by compiled code.
+- **Machine.** `r info[["cpu"]]`, `r info[["cores"]]` cores, `r info[["memory_gb"]]` GB of memory, `r info[["R"]]`, `r info[["date"]]`. HeatmapR used both cores; "HeatmapR (1 thread)" used one. The other packages use one core.
+
+## Clustered heatmaps
+
+Rows and columns clustered, dendrograms drawn. Times in seconds; HeatmapR clusters up to 5,000 rows exactly by default, so "HeatmapR (exact)" is only shown for larger data:
+
+```{r clust-table}
+wide(clust)
+```
+
+The chart shows the tall matrices (30 to 100 columns) against their number of rows, which is what the time of clustering depends on:
+
+```{r clust-plot, fig.alt = "Line chart of the seconds taken to cluster and draw tall heatmaps against the number of rows, on log scales, for each package. HeatmapR's lines stay below one second up to 100,000 rows, its exact clustering reaches 7 seconds at 20,000 rows, while the other packages rise from a few seconds to two minutes at 20,000 rows and fail, marked by crosses, at 100,000."}
+plot_times(clust[clust$cells / clust$rows <= 100 & clust$rows >= 1000, ], "rows",
+           xlab = "Rows (log scale)", main = "Clustered heatmaps")
+```
+
+The time of the other packages is dominated by clustering: R's `dist()` and `hclust()` compute and store every distance between rows, so their time grows with the square of the number of rows (and the cube for `hclust()` in the worst case) and their memory with its square. 20,000 rows need 1.6 GB of distances before any copies, and 100,000 rows 40 GB, which only HeatmapR's two-stage clustering could cluster here. HeatmapR computes distances in compiled code with SIMD instructions, builds the tree by the nearest-neighbour chain algorithm (the same tree as `hclust()`), and above `clust_max` rows clusters in two stages, so its memory grows with the number of rows rather than its square.
+
+Peak memory in MB:
+
+```{r clust-memory}
+wide(clust, "memory")
+```
+
+## Drawing only
+
+No clustering, the rows and columns in the order of the data. Times in seconds:
+
+```{r draw-table}
+wide(draw)
+```
+
+```{r draw-plot, fig.alt = "Line chart of the seconds taken to draw heatmaps without clustering against the number of cells, on log scales, for each package. HeatmapR stays between a tenth and half a second up to 9 million cells; ComplexHeatmap, pheatmap, ggplot2 and stats::heatmap grow with the number of cells to between 4 and 26 seconds; heatmap.2 takes minutes or fails from 500,000 cells."}
+plot_times(draw, "cells", xlab = "Cells (log scale)", main = "Drawing without clustering")
+```
+
+HeatmapR draws heatmaps of more than 50,000 cells as one raster image whose colours are worked out in compiled code, and only the text, dendrograms and legend as vector graphics. pheatmap draws one rectangle per cell, so its time and memory grow with the number of cells. ComplexHeatmap rasterises large heatmaps too, but its layout and drawing take a second or more at any size. `heatmap.2()` without a row dendrogram builds a dummy one from the distances between the rows of an identity matrix with one row per row of the data, which takes `r ifelse(draw$status[draw$method == "heatmap.2" & draw$size == "10,000 x 50"] == "ok", paste(round(get(draw, "heatmap.2", "10,000 x 50")), "seconds"), "more than 10 minutes")` for 10,000 rows and doesn't fit in memory for 100,000.
+
+Peak memory in MB:
+
+```{r draw-memory}
+wide(draw, "memory")
+```
+
+## Clustering on its own
+
+The rows of a matrix with 30 columns clustered by complete linkage, without drawing: `stats::hclust(dist(x))`, `fastcluster::hclust(dist(x))` (fastcluster `r info[["fastcluster"]]`), and `heat_map_clust(x)`, exactly (`max = Inf`) or in two stages above 5,000 rows (the default). Times in seconds:
+
+```{r hclust-table}
+wide(hc)
+```
+
+```{r hclust-plot, fig.alt = "Line chart of the seconds taken to cluster the rows of a 30-column matrix against the number of rows, on log scales. HeatmapR's exact clustering is several times faster than fastcluster and stats::hclust at every size, all three fail beyond 20,000 or 50,000 rows, and HeatmapR's two-stage clustering continues to a million rows."}
+plot_times(hc, "rows", xlab = "Rows (log scale)", main = "Clustering the rows")
+```
+
+Peak memory in MB:
+
+```{r hclust-memory}
+wide(hc, "memory")
+```
+
+HeatmapR's exact clustering computes the distances in blocks that stay in the cache, four at a time with SIMD instructions and on all cores, keeps them in one matrix without the copies that `hclust()` makes, and merges clusters by the nearest-neighbour chain algorithm, which needs O(n^2) time for complete, average, McQuitty and Ward linkage (single linkage is built from a minimum spanning tree, centroid and median linkage by `hclust()`'s own algorithm). When distances are distinct the tree is the one `hclust()` returns.
+
+## Optimal leaf ordering
+
+Clustering and optimal leaf ordering of the rows (complete linkage, Euclidean distances): `seriation::seriate(dist(x), "OLO")` (seriation `r info[["seriation"]]`) and `heat_map_clust(x, order = "olo")`. Times in seconds:
+
+```{r olo-table}
+wide(olo)
+```
+
+Both find the exact optimal leaf order (Bar-Joseph, Gifford and Jaakkola, 2001), whose worst case is a cube of the number of rows. HeatmapR computes its min-plus products in cache-sized blocks with SIMD instructions and skips the steps that bounds show can't improve the order.
+
+## Caveats
+
+- **Versions.** The other packages are the versions in Ubuntu 24.04 (listed above), which may be older than those on CRAN and Bioconductor.
+- **Features.** The packages don't draw the same things: ComplexHeatmap and pheatmap draw more legends and annotations by default, and offer features HeatmapR doesn't (and the other way round). The times are those of drawing comparable heatmaps with each package's defaults, not of the packages' best possible use: ComplexHeatmap and pheatmap, for example, accept precomputed dendrograms, which could come from `heat_map_clust()`.
+- **Approximation.** HeatmapR's default two-stage clustering above 5,000 rows is not exact clustering, though its clusters agree closely with exact ones on data with structure (see [Large heatmaps](large-data.html)). "HeatmapR (exact)" is the like-for-like comparison.
+- **Cores.** HeatmapR shares its larger jobs between cores; the "1 thread" rows show it on one core.
+
+## Reproducing the benchmark
+
+The scripts are in [`data-raw/benchmarks`](https://github.com/DillonHammill/HeatmapR/tree/master/data-raw/benchmarks): `case.R` runs one case in its own process and `run.R` runs them all and writes `vignettes/articles/benchmarks.csv`, which this page reads. Run on an otherwise idle machine:
+
+```bash
+Rscript data-raw/benchmarks/run.R
+```
