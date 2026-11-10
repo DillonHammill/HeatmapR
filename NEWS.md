@@ -1,3 +1,13 @@
+# HeatmapR (development version)
+
+## Single-cell data
+
+* `heat_map()` and `heat_map_summarise()` read single-cell data: `SingleCellExperiment` and `SummarizedExperiment` objects, `Seurat` objects, `flowFrame` and `flowSet` objects and sparse matrices (`dgCMatrix` and the other `Matrix` classes), as well as matrices and data.frames. Cells are drawn as rows and features as columns. The packages are only needed to read their own objects (SummarizedExperiment, SeuratObject and Matrix are suggested; flowFrames and flowSets are read without flowCore).
+* New arguments choose what to show: `features` (genes, proteins or markers by name - row names, gene symbols in `rowData()`, flow marker or channel names - or index; missing features are an error that names them), `assay` (an assay of a SingleCellExperiment, by default `"logcounts"`, else `"exprs"`; an assay or layer of a Seurat object, by default `"data"`), `group_by` (a metadata column or a vector, grouping the cells as `tree_cut_y` does, labelled by group) and `annotation_by` (metadata columns drawn as annotation tracks). `swap_axes = TRUE` draws features as rows and cells as columns, as Seurat's `DoHeatmap()` does.
+* `heat_map_downsample(groups, n = 500)` keeps at most `n` cells of each group, drawn with a fixed seed, and `heat_map(..., group_max = n)` uses it so that small clusters stay visible next to large ones. Arguments with one value per cell are kept for the cells shown.
+* Sparse data are read without a dense copy: only the chosen features of the cells shown are made dense (40 genes of 50,000 cells in 0.1 seconds), and `heat_map_summarise()` finds the mean, sum, number, proportion detected and median of each feature in each group from the non-zero values, in compiled code (all 20,000 genes of 50,000 cells in 20 groups: 0.2-0.6 seconds for means, 0.6-1.7 seconds for medians), giving the same numbers as for the dense data. A message warns when dense values would take more than 1 GB.
+* Redraws with new data (`plot(hm, data = sce2)`) read it with the same single-cell arguments.
+
 # HeatmapR 2.0.0
 
 HeatmapR 2.0.0 is a major release: a new layout that sizes every part of a heatmap from its contents, clustering in compiled code that scales to hundreds of thousands of rows, and many new kinds of heatmap (annotations, split cells, distributions inside cells, zoom panels, correlation heatmaps, branch support and more). Some conventions and defaults have changed; they are listed first.

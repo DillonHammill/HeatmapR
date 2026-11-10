@@ -184,11 +184,24 @@ heat_map(
   fit_text = TRUE,
   popup = TRUE,
   popup_size = c(7, 7),
+  features = NULL,
+  assay = NULL,
+  group_by = NULL,
+  group_max = NULL,
+  annotation_by = NULL,
+  swap_axes = FALSE,
   ...
 )
 }
 \arguments{
-\item{x}{matrix or data.frame containing the data to display in the heatmap.}
+\item{x}{matrix or data.frame containing the data to display in the heatmap,
+or single-cell data: a \code{SingleCellExperiment} or
+\code{SummarizedExperiment}, a \code{Seurat} object, a \code{flowFrame}
+or \code{flowSet}, or a sparse matrix (e.g. a \code{dgCMatrix}, one cell
+per row). Single-cell data are drawn with one row per cell and one
+column per feature (see \code{features}, \code{assay},
+\code{group_by}, \code{group_max}, \code{annotation_by} and
+\code{swap_axes}).}
 
 \item{scale}{logical indicating whether the data should be scaled prior to
 constructing the heatmap (\code{TRUE} scales each column). Additional
@@ -1084,6 +1097,57 @@ sessions the heatmap is drawn on the current device.}
 \item{popup_size}{vector to control the height and width of the popup window
 in inches, set to \code{c(7,7)}.}
 
+\item{features}{the features (genes, proteins or markers) of single-cell
+data to show, as names (or indices), in the order to show them. Only
+these features are read from sparse data, so a few markers of a large
+dataset need little memory. Features are matched to the row names of
+\code{SingleCellExperiment} and \code{Seurat} objects (or to gene
+symbols in the \code{rowData()} column \code{Symbol},
+\code{gene_name} or similar), to the marker names (\code{desc}) or
+channel names of a \code{flowFrame} or \code{flowSet} and to the
+column names of matrices and data.frames. Missing features are an error
+that names them. Set to \code{NULL} by default to show every feature;
+a message is shown when the dense values would take more than 1 GB.}
+
+\item{assay}{the values of single-cell data to show: an assay of a
+\code{SingleCellExperiment} or \code{SummarizedExperiment} (by name or
+number; by default \code{"logcounts"}, else \code{"exprs"}, else the
+first), or for a \code{Seurat} object an assay (its \code{"data"}
+layer), a layer of the default assay (e.g. \code{"counts"} or
+\code{"scale.data"}) or both as \code{c(assay, layer)}.}
+
+\item{group_by}{the group of each cell (e.g. its cluster or cell type): the
+name of a column of the cells' metadata (\code{colData()} of a
+\code{SingleCellExperiment}, \code{meta.data} of a \code{Seurat}
+object, \code{"sample"} or a \code{pData()} column of a
+\code{flowSet}), of a column of a matrix, data.frame or
+\code{flowFrame} (left out of the features), or a vector with the group
+of each cell. The cells are grouped as by \code{tree_cut_y}, in the order
+of the groups' factor levels (sorted for other vectors), and the groups
+are labelled (\code{tree_label_y}). Cells without a group (\code{NA})
+are left out with a message.}
+
+\item{group_max}{the largest number of cells to show from each group of
+\code{group_by} (or in all when there are no groups), drawn with a fixed
+seed by \code{\link{heat_map_downsample}}, so that small groups stay
+visible next to large ones. Arguments with one value per cell
+(\code{bar_values_y}, a logical \code{mark_y}, and matrices given to
+\code{cell_size}, \code{cell_text}, \code{cell_split},
+\code{cell_uncertainty}, \code{cell_values} and
+\code{cell_border_mask}) are kept for the cells shown. Set to
+\code{NULL} by default to show every cell.}
+
+\item{annotation_by}{annotations of the cells drawn as tracks beside the
+heatmap (as \code{annotation_y}): names of columns of the cells'
+metadata (see \code{group_by}), or a data.frame with one row per cell.}
+
+\item{swap_axes}{logical indicating whether single-cell data should be
+drawn with one row per feature and one column per cell (as Seurat's
+\code{DoHeatmap()} draws them) instead of one row per cell, set to
+\code{FALSE} by default. The groups and annotations of the cells are
+then drawn along the x axis (\code{tree_cut_x}, \code{annotation_x});
+other arguments refer to the heatmap as drawn.}
+
 \item{...}{additional arguments passed to \code{\link{heat_map_clust}} (and
 on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other
 arguments are ignored with a warning, which catches misspelled argument
@@ -1133,6 +1197,26 @@ hm <- heat_map(
 
 # Extract cluster assignments and display order
 heat_map_info(hm)$row_clusters
+
+# Single cells grouped by cluster, at most 20 cells of each, with their
+# sample as an annotation (a data.frame here; a SingleCellExperiment, Seurat
+# object or flowSet is read in the same way)
+set.seed(1)
+cells <- data.frame(
+  CD3 = c(rnorm(200, 4), rnorm(30, 1)),
+  CD19 = c(rnorm(200, 1), rnorm(30, 4)),
+  CD56 = rnorm(230, 2),
+  cluster = rep(c("T cells", "B cells"), c(200, 30)),
+  sample = sample(c("A", "B"), 230, replace = TRUE)
+)
+heat_map(
+  cells,
+  features = c("CD3", "CD19", "CD56"),
+  group_by = "cluster",
+  group_max = 20,
+  annotation_by = "sample",
+  popup = FALSE
+)
 
 # Number of row clusters chosen by mean silhouette width, rows in spectral
 # order (no dendrogram needed for a spectral order)

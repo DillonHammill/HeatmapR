@@ -1788,6 +1788,10 @@ plot.heat_map <- function(x, ...) {
     dots[["x"]] <- dots[["data"]]
     dots[["data"]] <- NULL
   }
+  # NEW SINGLE-CELL DATA - READ WITH THE SINGLE-CELL ARGUMENTS AGAIN
+  if("x" %in% names(dots)) {
+    args <- .cells_restore(args)
+  }
   if(length(dots) > 0) {
     args[names(dots)] <- dots
   }

@@ -9,12 +9,22 @@ heat_map_summarise(
   group_x = NULL,
   group_y = NULL,
   fun = "mean",
-  threshold = 0
+  threshold = 0,
+  features = NULL,
+  assay = NULL,
+  group_by = NULL
 )
 }
 \arguments{
-\item{x}{a matrix or data.frame. Only numeric columns are summarised;
-other columns are dropped with a message.}
+\item{x}{a matrix or data.frame, or single-cell data (a
+\code{SingleCellExperiment} or \code{SummarizedExperiment}, a
+\code{Seurat} object, a \code{flowFrame} or \code{flowSet}, or a sparse
+matrix with one cell per row; see \code{\link{heat_map}}). Only numeric
+columns are summarised; other columns are dropped with a message.
+Single-cell data are summarised with one row per group of cells and one
+column per feature. The mean, sum, number, proportion detected and
+median of sparse data are found from the non-zero values, without a
+dense copy, and equal those of the dense data.}
 
 \item{group_x}{a vector assigning each column of \code{x} to a group, in
 the order of the columns of \code{x} (or named by column name). Each
@@ -38,6 +48,18 @@ inside the cells.}
 
 \item{threshold}{values above \code{threshold} are counted by
 \code{fun = "detected"}, set to 0 by default.}
+
+\item{features}{the features of single-cell data to summarise, as names
+(or indices); see \code{\link{heat_map}}. Set to \code{NULL} by
+default for every feature.}
+
+\item{assay}{the values of single-cell data to summarise; see
+\code{\link{heat_map}}.}
+
+\item{group_by}{the group of each cell of single-cell data: the name of a
+column of the cells' metadata, or a vector with the group of each cell
+(as \code{group_y}); see \code{\link{heat_map}}. Each group becomes
+one row of the result.}
 }
 \value{
 a numeric matrix with one column per group of \code{group_x} (or
@@ -77,6 +99,14 @@ heat_map(
   cell_shape = "circle",
   popup = FALSE
 )
+
+# Single cells - the median of each marker in each cluster
+cells <- data.frame(
+  CD3 = c(rnorm(200, 4), rnorm(30, 1)),
+  CD19 = c(rnorm(200, 1), rnorm(30, 4)),
+  cluster = rep(c("T cells", "B cells"), c(200, 30))
+)
+heat_map_summarise(cells, group_by = "cluster", fun = "median")
 
 }
 \seealso{

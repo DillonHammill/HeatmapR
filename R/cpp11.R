@@ -128,6 +128,18 @@ scale_cpp <- function(x, margin, method, threads) {
   .Call(`_HeatmapR_scale_cpp`, x, margin, method, threads)
 }
 
+sparse_dense_cpp <- function(i, p, x, nrow, ncol, sel, cells, cells_by_column, threads) {
+  .Call(`_HeatmapR_sparse_dense_cpp`, i, p, x, nrow, ncol, sel, cells, cells_by_column, threads)
+}
+
+sparse_group_sums_cpp <- function(i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threshold, threads) {
+  .Call(`_HeatmapR_sparse_group_sums_cpp`, i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threshold, threads)
+}
+
+sparse_group_medians_cpp <- function(i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threads) {
+  .Call(`_HeatmapR_sparse_group_medians_cpp`, i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threads)
+}
+
 spectral_rows_cpp <- function(x, metric, q, k, threads) {
   .Call(`_HeatmapR_spectral_rows_cpp`, x, metric, q, k, threads)
 }
