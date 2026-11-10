@@ -20,7 +20,10 @@ jobs:
           use-public-rspm: true
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: github::satijalab/seurat-data, any::Seurat, local::.
+          extra-packages: any::Seurat, any::remotes, local::.
           needs: website
+      - name: Install SeuratData
+        run: remotes::install_github("satijalab/seurat-data", dependencies = NA, upgrade = "never")
+        shell: Rscript {0}
       - name: Probe
         run: Rscript data-raw/probe/seurat-data-probe.R
