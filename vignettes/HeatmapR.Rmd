@@ -1685,7 +1685,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Row z-scored heatmap of 2,000 simulated genes across 12 samples, split by k-means into four clusters separated by gaps and clustered by a dendrogram within each, in which three clusters are high in samples S9 to S12, S1 to S4 and S5 to S8 respectively and one shows no pattern."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-kmeans.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/175cde17305a4b00524495d238953733d926d18a/vignettes/HeatmapR/HeatmapR-kmeans.png')
 ```
 
 ### 5.3 Group Summaries
