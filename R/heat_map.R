@@ -128,6 +128,13 @@
 #'   when the clusters are contiguous in its order. Clusters are always
 #'   numbered, and labelled by \code{tree_label_text_x}, in the displayed
 #'   order from left to right.
+#' @param tree_col_x colours for the branches of the x axis dendrogram: one
+#'   colour for the whole tree or, with clusters (\code{tree_cut_x} or
+#'   \code{tree_kmeans_x}), one colour for each cluster from left to right,
+#'   which colours the branches within the cluster (the branches joining
+#'   clusters stay black), or \code{TRUE} for distinct colours. Set to
+#'   \code{NULL} by default for black branches. The colours of
+#'   \code{tree_label_col_x} match the branches to the cluster labels.
 #' @param tree_kmeans_x number of k-means clusters (Hartigan and Wong 1979) to
 #'   split the columns of \code{x} into, an alternative to \code{tree_cut_x}
 #'   (e.g. \code{tree_kmeans_x = 3}). See \code{tree_kmeans_y}.
@@ -170,6 +177,9 @@
 #'   \code{tree_cut_y} is supplied.
 #' @param tree_size_y numeric to control the width of the dendrogram for the y
 #'   axis, set to 1 by default (0.6 inches).
+#' @param tree_col_y colours for the branches of the y axis dendrogram, as
+#'   \code{tree_col_x}, with one colour for each cluster from top to
+#'   bottom.
 #' @param tree_scale_y logical indicating whether the branch heights of the y
 #'   axis dendrogram should be scaled for better visualisation, set to FALSE by
 #'   default.
@@ -300,9 +310,14 @@
 #'   a matrix of the same dimensions as \code{x} containing the values by which
 #'   the size of each cell should be scaled.
 #' @param cell_col_palette a vector of colours from which colours are selected
-#'   for columns containing non-numeric data. Alternatively, the name of a
-#'   palette listed in \code{\link[grDevices]{hcl.pals}} (e.g. \code{"Dark 3"})
-#'   or a function that returns \code{n} colours.
+#'   for columns containing non-numeric data, one for each distinct value
+#'   (interpolated between the colours when there are more values).
+#'   Alternatively, the name of a palette listed in
+#'   \code{\link[grDevices]{hcl.pals}} (e.g. \code{"Dark 3"}) or a function
+#'   that returns \code{n} colours. With the default colours, values beyond
+#'   the six take distinct colours of several lightnesses, each the furthest
+#'   from the colours before it (as Glasbey et al. 2007 choose them), so that
+#'   dozens of values can be told apart.
 #' @param cell_col_scale a vector of colours to use for the colour scale of
 #'   numeric values. By default the scale runs through the colour-blind friendly
 #'   viridis colours (as in \pkg{viridisLite}) from dark purple to yellow, then
@@ -731,13 +746,13 @@
 #'   otherwise overlap, set to TRUE by default. Axis labels that still don't
 #'   fit at half their size are thinned to every second, third, ... label.
 #' @param legend logical indicating whether to include a legend in the heatmap,
-#'   set to TRUE by default to include colour and size legends.
-#'   Alternatively, a character vector containing any of \code{"colour"},
-#'   \code{"size"}, \code{"both"} (colour and size) or \code{"levels"} to
-#'   indicate the type(s) of legends to include in the heatmap. The
-#'   \code{"levels"} legend shows the colours assigned to values in
-#'   non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
-#'   \code{FALSE}, \code{NA} or \code{"none"} to remove the legend.
+#'   set to TRUE by default to include the colour, size and levels legends
+#'   that apply. Alternatively, a character vector containing any of
+#'   \code{"colour"}, \code{"size"}, \code{"both"} (colour and size) or
+#'   \code{"levels"} to indicate the type(s) of legends to include in the
+#'   heatmap. The \code{"levels"} legend shows the colours assigned to values
+#'   in non-numeric columns, e.g. \code{legend = "both"} leaves it out. Set
+#'   to \code{FALSE}, \code{NA} or \code{"none"} to remove the legend.
 #' @param legend_size numeric to control the amount of space allocated to the
 #'   legend, set to 1 by default. The legend is sized from its contents and
 #'   \code{legend_size} scales the legend keys (colour bars, swatches and size
@@ -915,6 +930,10 @@
 #' Garnier, S. et al. viridisLite: colorblind-friendly color maps (lite
 #'   version). \url{https://CRAN.R-project.org/package=viridisLite}
 #'
+#' Glasbey, C., van der Heijden, G., Toh, V. F. K. and Gray, A. (2007).
+#'   Colour displays for categorical images. \emph{Color Research and
+#'   Application}, 32(4), 304-309. \doi{10.1002/col.20327}
+#'
 #' Grunau, C., Ozudogru, A. A., Rozhon, V. and Tetek, J. (2023). A nearly
 #'   tight analysis of greedy k-means++. \emph{Proceedings of the 2023
 #'   ACM-SIAM Symposium on Discrete Algorithms (SODA 2023)}, 1012-1070.
@@ -1038,6 +1057,7 @@ heat_map <- function(x,
                      tree = FALSE,
                      tree_x = NULL,
                      tree_size_x = 1,
+                     tree_col_x = NULL,
                      tree_scale_x = FALSE,
                      tree_order_x = "default",
                      tree_support_x = NULL,
@@ -1055,6 +1075,7 @@ heat_map <- function(x,
                      tree_label_text_col_alpha_x = 1,
                      tree_y = NULL,
                      tree_size_y = 1,
+                     tree_col_y = NULL,
                      tree_scale_y = FALSE,
                      tree_order_y = "default",
                      tree_support_y = NULL,
@@ -1941,6 +1962,17 @@ heat_map <- function(x,
   cut_x <- if(is.list(tree_x)) tree_x$cut else NULL
   cut_y <- if(is.list(tree_y)) tree_y$cut else NULL
 
+  # BRANCH COLOURS - ONE PER CLUSTER FROM THE LEFT (FROM THE TOP FOR ROWS,
+  # REVERSED BELOW WITH THE OTHER SETTINGS OF THE ROW CLUSTERS)
+  tree_col_x <- .check_tree_col(
+    tree_col_x,
+    if(is.null(cut_x)) 0L else max(cut_x),
+    "tree_col_x"
+  )
+  if(is.null(cut_y)) {
+    tree_col_y <- .check_tree_col(tree_col_y, 0L, "tree_col_y")
+  }
+
   # ONE CLUSTER LABEL, OR ONE FOR EACH CLUSTER
   for(ax in c("x", "y")) {
     cut <- get(paste0("cut_", ax))
@@ -1963,6 +1995,8 @@ heat_map <- function(x,
     }
     tree_label_text_y <- flip_y(tree_label_text_y)
     tree_label_col_y <- flip_y(tree_label_col_y)
+    tree_col_y <- .check_tree_col(tree_col_y, max(cut_y), "tree_col_y")
+    tree_col_y <- flip_y(tree_col_y)
     tree_label_col_alpha_y <- flip_y(tree_label_col_alpha_y)
     tree_label_text_font_y <- flip_y(tree_label_text_font_y)
     tree_label_text_size_y <- flip_y(tree_label_text_size_y)
@@ -2322,17 +2356,29 @@ heat_map <- function(x,
     if(missing(cell_col_scale)) NULL else cell_col_scale
   )
 
-  # CELL_COL_PALETTE
-  cell_col_palette <- .col_palette(cell_col_palette)
+  # CELL_COL_PALETTE - DISTINCT COLOURS FOR MANY VALUES BY DEFAULT
+  cell_col_palette <- .col_palette(
+    cell_col_palette,
+    distinct = identical(cell_col_palette,
+                         eval(formals(heat_map)$cell_col_palette))
+  )
 
   # CHARACTER COLUMN COLOURS - ONE PER DISTINCT VALUE, SO THAT VALUES SHARED
-  # BY SEVERAL COLUMNS DON'T TAKE NEIGHBOURING COLOURS OF A LONGER PALETTE
+  # BY SEVERAL COLUMNS DON'T TAKE NEIGHBOURING COLOURS OF A LONGER PALETTE;
+  # IN THE ORDER OF THE LEVELS OF FACTORS, SORTED OTHERWISE (AS ANNOTATIONS)
   cell_levels <- NULL
   if (length(char_cols) != 0) {
     cell_levels <- unique(unlist(
       lapply(char_cols, function(z) {
-        levels <- unique(chr_mat[, z])
-        levels[!is.na(levels)]
+        present <- unique(chr_mat[, z])
+        present <- present[!is.na(present)]
+        v <- .column(x, z)
+        if(is.factor(v)) {
+          lev <- levels(v)
+          c(lev[lev %in% present], setdiff(present, lev))
+        } else {
+          sort(present)
+        }
       }),
       use.names = FALSE
     ))
@@ -3857,7 +3903,7 @@ heat_map <- function(x,
 
   # TREES ----------------------------------------------------------------------
 
-  # X AXIS TREE
+  # X AXIS TREE - BRANCHES COLOURED BY CLUSTER
   if(inherits(tree_x, "hclust")) {
     heat_map_tree(
       tree_x,
@@ -3865,7 +3911,8 @@ heat_map <- function(x,
       ylim = tree_x_ylim,
       centers_x = x_centers,
       support = support_x,
-      support_labels = tree_support_labels
+      support_labels = tree_support_labels,
+      col = .branch_colours(tree_x, cut_x, tree_col_x)
     )
   }
 
@@ -3877,7 +3924,8 @@ heat_map <- function(x,
       ylim = tree_y_ylim,
       centers_y = y_centers,
       support = support_y,
-      support_labels = tree_support_labels
+      support_labels = tree_support_labels,
+      col = .branch_colours(tree_y, cut_y, tree_col_y)
     )
   }
 

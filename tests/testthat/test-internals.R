@@ -10,7 +10,8 @@ test_that("range and layout helpers handle edge cases", {
 })
 
 test_that("legend types are validated", {
-  expect_equal(.legend_types(TRUE), c("colour", "size"))
+  expect_equal(.legend_types(TRUE), c("colour", "size", "levels"))
+  expect_equal(.legend_types("both"), c("colour", "size"))
   expect_equal(.legend_types(c("levels", "colour")), c("colour", "levels"))
   expect_equal(.legend_types(character(0)), character(0))
   expect_error(.legend_types(1), "'legend' must be TRUE, FALSE")

@@ -42,8 +42,10 @@
 #'   from (\code{x}, \code{y}) to (\code{xend}, \code{yend}). Along the
 #'   heatmap the segments are in plot co-ordinates; across it they are the
 #'   branch heights, from 0 at the leaves. Branch support is added as
-#'   \code{support} (see \code{tree_support_x}). \code{NULL} when the heatmap
-#'   has no such dendrogram.
+#'   \code{support} (see \code{tree_support_x}), and with clusters the
+#'   cluster below each segment as \code{cluster} (\code{NA} for the
+#'   branches joining clusters, as \code{tree_col_x} colours them).
+#'   \code{NULL} when the heatmap has no such dendrogram.
 #' }
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
@@ -262,6 +264,15 @@ heat_map_data <- function(x,
   support <- info[[paste0("support_", axis)]]
   if(!is.null(support)) {
     out$support <- rep(support, 4)
+  }
+  # THE CLUSTER BELOW EACH SEGMENT - NA FOR THOSE JOINING CLUSTERS
+  clusters <- info[[if(axis == "x") "col_clusters" else "row_clusters"]]
+  if(!is.null(clusters) && nrow(tree$merge) > 0) {
+    out$cluster <- .branch_colours(
+      tree,
+      unname(clusters)[tree$order],
+      seq_len(max(clusters))
+    )
   }
   out
 }

@@ -220,8 +220,8 @@ heat_map(
 )
 ```
 
-```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 25 randomly sampled rows of the iris data with each value written in its cell, the four measurements coloured on a yellow to black scale, the Species column coloured by species, and the missing values shown as empty grey cells."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-2.png')
+```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 25 randomly sampled rows of the iris data with each value written in its cell, the four measurements coloured on a yellow to black scale, the Species column coloured by species with a legend of the species, and the missing values shown as empty grey cells."}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/a476410d3cb8d1d7bbb9e527c91adcb60b70bd8a/vignettes/HeatmapR/HeatmapR-2.png')
 ```
 
 #### 2.3.1 Uncertainty in Colour
@@ -1434,6 +1434,48 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-13.png')
 ```
 
+The branches of each cluster can be coloured too: `tree_col_x` and `tree_col_y` take one colour for each cluster (from left to right and from top to bottom), or `TRUE` for distinct colours, and colour the branches within each cluster and the edge into it, while the branches joining clusters stay black. With `TRUE` the clusters take the colours of `hcl.colors(k, "Dark 3")`, which the cluster labels can share:
+
+```{r, eval = FALSE}
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  tree_cut_y = 5,
+  tree_split_y = 1,
+  tree_col_y = TRUE,
+  tree_label_y = TRUE,
+  tree_label_col_y = hcl.colors(5, "Dark 3"),
+  title = "Branch Colours"
+)
+```
+
+```{r, eval = FALSE, echo = FALSE}
+heat_map_save(
+  "vignettes/HeatmapR/HeatmapR-branch-colours.png",
+  height = 9,
+  width = 7,
+  res = 500
+)
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  tree_cut_y = 5,
+  tree_split_y = 1,
+  tree_col_y = TRUE,
+  tree_label_y = TRUE,
+  tree_label_col_y = hcl.colors(5, "Dark 3"),
+  title = "Branch Colours"
+)
+```
+
+```{r echo = FALSE, out.width = '85%', fig.align="center", fig.alt = "The column-scaled mtcars heatmap, titled Branch Colours, with a row dendrogram cut into 5 groups of cars: the branches of each group drawn in its own colour, matching the coloured label bar beside its rows, and the branches joining the groups in black."}
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/a476410d3cb8d1d7bbb9e527c91adcb60b70bd8a/vignettes/HeatmapR/HeatmapR-branch-colours.png')
+```
+
 #### 5.2.1 Choosing the Number of Clusters
 
 `tree_cut_y = "auto"` (or `tree_cut_x`) chooses the number of clusters from the data. The dendrogram is cut into 2 to 20 clusters, and the cut with the largest mean silhouette width (Rousseeuw 1987) is kept: each row's silhouette compares its mean distance to the other rows of its cluster with its mean distance to the rows of the nearest other cluster, from 1 (well inside its cluster) through 0 (between two clusters) to -1 (closer to another cluster). Kaufman and Rousseeuw (1990) read a mean width above 0.7 as strong structure, above 0.5 as reasonable structure and above 0.25 as weak structure; when no cut reaches 0.25 the dendrogram isn't cut. The widths of every cut are computed together, so trying 19 cuts takes little longer than one, and dendrograms with more than `clust_max` rows are scored on a sample of `clust_max` of them. The widths are returned with the dendrogram, and `heat_map_describe()` reports the choice.
@@ -1840,7 +1882,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 ## 6. Legends
 
-`heat_map()` will automatically add legends for the colour scale and size of the cells in the heatmap. The `legend` argument controls the type(s) of legends to display including `"colour"`, `"size"` or `"both"`, and `"levels"` can be added (e.g. `legend = c("both", "levels")`) to include a legend for the colours of non-numeric columns. The legend is sized from its contents: `legend_size` scales the legend keys (colour bars, swatches and size legend shapes) and `legend_col_scale_size` controls the width of the colour scale. The titles and text displayed in the legend(s) are also fully customisable using the `legend_title_` and `legend_text_` family of arguments.
+`heat_map()` will automatically add legends for the colour scale and size of the cells in the heatmap. The `legend` argument controls the type(s) of legends to display including `"colour"`, `"size"`, `"both"` (colour and size) and `"levels"`, a legend for the colours of non-numeric columns, which is drawn by default whenever there are any (`legend = "both"` leaves it out). The legend is sized from its contents: `legend_size` scales the legend keys (colour bars, swatches and size legend shapes) and `legend_col_scale_size` controls the width of the colour scale. The titles and text displayed in the legend(s) are also fully customisable using the `legend_title_` and `legend_text_` family of arguments.
 
 ```{r, eval = FALSE}
 heat_map(
