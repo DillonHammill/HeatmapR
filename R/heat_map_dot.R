@@ -49,7 +49,16 @@
 #'   \code{c(-2.5, 2.5)} for z-scores by default (Seurat's \code{col.min} and
 #'   \code{col.max}) and not clipped otherwise.
 #' @param threshold values above \code{threshold} are counted as detected, set
-#'   to 0 by default.
+#'   to 0 by default - after \code{transform}.
+#' @param transform \code{"asinh"} to transform the values of the cells with
+#'   the inverse hyperbolic sine of each value divided by \code{cofactor}
+#'   before their means are taken (the usual transform of cytometry
+#'   intensities), or \code{NULL} (default) to use the values as they are, as
+#'   in \code{\link{heat_map_summarise}}. The zeros of sparse data stay zeros,
+#'   so they are transformed without a dense copy.
+#' @param cofactor the cofactor of \code{transform = "asinh"}: one number (5
+#'   by default, as for mass cytometry; about 150 is common for flow
+#'   cytometry) or one per feature, named by feature.
 #' @param dot_min the smallest proportion of a group's cells detected for a
 #'   dot to be drawn, set to 0 by default (as Seurat's \code{dot.min}).
 #' @param swap_axes logical indicating whether the features should be drawn
@@ -152,6 +161,8 @@ heat_map_dot <- function(x,
                          dot_min = 0,
                          swap_axes = FALSE,
                          bimodal = FALSE,
+                         transform = NULL,
+                         cofactor = 5,
                          marker_colour = "logfc",
                          marker_size = "p_adj",
                          ...) {
@@ -196,7 +207,8 @@ heat_map_dot <- function(x,
       split_by = !is.null(split_by),
       assay = !is.null(assay),
       threshold = !missing(threshold),
-      bimodal = !isFALSE(bimodal)
+      bimodal = !isFALSE(bimodal),
+      transform = !is.null(transform)
     )
     if(any(unused)) {
       stop(
@@ -226,6 +238,23 @@ heat_map_dot <- function(x,
     stop("'bimodal' can't be combined with 'split_by'.", call. = FALSE)
   }
   feat <- .cell_features(features, src, drop = c(by$cols, sp$cols))
+  # THE ASINH OF THE VALUES OF THE CELLS - OF THE NON-ZERO VALUES OF SPARSE
+  # DATA, OR OF THE CHOSEN FEATURES AS A DENSE MATRIX
+  if(!is.null(.summary_transform(transform))) {
+    if(inherits(src$values, "dgCMatrix")) {
+      src$values <- .sparse_asinh(src, feat, cofactor)
+    } else {
+      dense <- .cell_dense(src, feat$index, NULL, feat$names)
+      dense <- heat_map_scale(
+        dense,
+        method = "asinh",
+        cofactor = .scale_cofactor(cofactor, colnames(dense), ncol(dense))
+      )
+      src <- .cell_source(dense)
+      feat <- list(index = seq_len(ncol(dense)), names = colnames(dense),
+                   groups = feat$groups)
+    }
+  }
   s <- .cell_summaries(
     src,
     feat,

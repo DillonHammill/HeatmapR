@@ -819,7 +819,8 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
 // the fit with the smallest total within-cluster sum of squares (summed in
 // row order) - the first when the sums are equal to a relative 1e-10, so that
 // rounding doesn't decide - among those without ifault 1 or 3: as
-// kmeans_hw_cpp, with start (its 1-based position) and wss; NULL when no
+// kmeans_hw_cpp, with start (its 1-based position) and wss, and all_wss and
+// all_centers (every fit, NA and NULL for those that failed); NULL when no
 // start worked. The fits don't depend on the number of threads.
 [[cpp11::register]]
 SEXP kmeans_hw_best_cpp(cpp11::doubles_matrix<> x, cpp11::list starts, int iter_max,
@@ -871,9 +872,81 @@ SEXP kmeans_hw_best_cpp(cpp11::doubles_matrix<> x, cpp11::list starts, int iter_
   cpp11::writable::doubles_matrix<> centers(k, p);
   std::copy(fit_cen[best].begin(), fit_cen[best].end(), REAL(centers.data()));
   cpp11::writable::integers cluster(cls[best].begin(), cls[best].end());
+  // (EVERY FIT'S SUM OF SQUARES AND CENTRES - NA AND NULL FOR THOSE THAT
+  // FAILED - SO THAT THE BEST FEW FITS OF A SAMPLE CAN BE REFITTED ON ALL
+  // THE ROWS)
+  cpp11::writable::doubles all_wss(static_cast<R_xlen_t>(n_starts));
+  cpp11::writable::list all_centers(static_cast<R_xlen_t>(n_starts));
+  for (size_t s = 0; s < n_starts; ++s) {
+    if (faults[s] == 1 || faults[s] == 3) {
+      all_wss[static_cast<R_xlen_t>(s)] = NA_REAL;
+      continue;
+    }
+    all_wss[static_cast<R_xlen_t>(s)] = wss[s];
+    cpp11::writable::doubles_matrix<> c(ks[s], p);
+    std::copy(fit_cen[s].begin(), fit_cen[s].end(), REAL(c.data()));
+    all_centers[static_cast<R_xlen_t>(s)] = c;
+  }
   return cpp11::writable::list({"cluster"_nm = cluster, "centers"_nm = centers,
                                 "iter"_nm = iters[best], "ifault"_nm = faults[best],
-                                "start"_nm = best + 1, "wss"_nm = wss[best]});
+                                "start"_nm = best + 1, "wss"_nm = wss[best],
+                                "all_wss"_nm = all_wss, "all_centers"_nm = all_centers});
+}
+
+// The k-means cost of each set of centres (a list of k x p matrices) on the
+// rows of x (no missing values): the sum over the rows of the squared
+// distance to the closest centre, as kmeans_hw_best_cpp sums it per point.
+// Rows are taken in blocks of 4,096, their sums added in block order, so the
+// costs don't depend on the number of threads.
+[[cpp11::register]]
+cpp11::doubles kmeans_cost_cpp(cpp11::doubles_matrix<> x, cpp11::list centres,
+                               int threads) {
+  const size_t m = x.nrow();
+  const int p = x.ncol();
+  if (threads < 1) threads = 1;
+  const double* xv = REAL(x.data());
+  const size_t n_sets = static_cast<size_t>(centres.size());
+  // (EACH SET OF CENTRES ROW BY ROW - p CONSECUTIVE VALUES PER CENTRE)
+  std::vector<std::vector<double>> cen(n_sets);
+  std::vector<int> ks(n_sets);
+  for (size_t s = 0; s < n_sets; ++s) {
+    cpp11::doubles_matrix<> c(centres[static_cast<R_xlen_t>(s)]);
+    if (c.ncol() != p) cpp11::stop("the centres must have the columns of the data");
+    ks[s] = c.nrow();
+    if (ks[s] < 1) cpp11::stop("each set of centres needs at least one centre");
+    cen[s].resize(static_cast<size_t>(ks[s]) * p);
+    for (int l = 0; l < ks[s]; ++l) {
+      for (int j = 0; j < p; ++j) cen[s][static_cast<size_t>(l) * p + j] = c(l, j);
+    }
+  }
+  const size_t block = 4096;
+  const size_t n_blocks = (m + block - 1) / block;
+  std::vector<double> sums(n_blocks * n_sets, 0.0);
+  par::parallel_for(n_blocks, threads, [&](size_t b) {
+    const size_t from = b * block, to = std::min(m, from + block);
+    for (size_t s = 0; s < n_sets; ++s) {
+      const double* cs = cen[s].data();
+      double w = 0;
+      for (size_t i = from; i < to; ++i) {
+        // (THE CLOSEST CENTRE BY A PARTIAL-DISTANCE SEARCH - A DISTANCE
+        // STOPPED EARLY ISN'T THE SMALLEST)
+        double best = hw_dist(xv + i, m, cs, p);
+        for (int l = 1; l < ks[s]; ++l) {
+          const double d = hw_dist_below(xv + i, m, cs + static_cast<size_t>(l) * p, p, best);
+          if (d < best) best = d;
+        }
+        w += best;
+      }
+      sums[b * n_sets + s] = w;
+    }
+  });
+  cpp11::writable::doubles out(static_cast<R_xlen_t>(n_sets));
+  for (size_t s = 0; s < n_sets; ++s) {
+    double w = 0;
+    for (size_t b = 0; b < n_blocks; ++b) w += sums[b * n_sets + s];
+    out[static_cast<R_xlen_t>(s)] = w;
+  }
+  return out;
 }
 
 // Which rows of x (no missing values) are the first of their values, as

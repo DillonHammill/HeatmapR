@@ -1171,8 +1171,8 @@ heat_map_clust <- function(x,
 
 #' Deterministic k-means clusters of the rows of a matrix
 #'
-#' k-means (Hartigan-Wong) is run from four starts - the centres of k equal
-#' slices of the rows along their first principal component, and three
+#' k-means (Hartigan-Wong) is run from ten starts - the centres of k equal
+#' slices of the rows along their first principal component, and nine
 #' greedy k-means++ starts (Arthur and Vassilvitskii 2007) drawn with
 #' HeatmapR's own random numbers from fixed seeds - and the clusters with the
 #' smallest total within-cluster sum of squares are kept, so the clusters
@@ -1181,7 +1181,11 @@ heat_map_clust <- function(x,
 #' very different sizes, whose small clusters slices can miss. For more than
 #' \code{.KMEANS_SAMPLE} rows the starts are compared on a sample of rows
 #' (fixed seed), and every row is then fitted once, from the centres of the
-#' best. The clusters are numbered so that similar clusters are neighbours:
+#' fit of the sample that fits all the rows best (the smallest sum of squared
+#' distances to its closest centres): a sample can rank two close fits the
+#' wrong way round, so the best distinct fits of the sample - at most three
+#' (\code{.KMEANS_REFIT}), within 2\% of the best (\code{.KMEANS_REFIT_TOL})
+#' - are compared on all the rows. The clusters are numbered so that similar clusters are neighbours:
 #' in the optimal leaf order of their centres, starting from the end with the
 #' lowest scores on the first principal component.
 #'
@@ -1227,8 +1231,17 @@ heat_map_clust <- function(x,
   fit <- if(sampled) {
     s <- .with_seed(2357, sort(sample.int(n, .KMEANS_SAMPLE)))
     best <- .kmeans_best(m[s, , drop = FALSE], k)
-    # EVERY ROW FITTED FROM THE CENTRES OF THE BEST
-    if(!is.null(best)) .try_kmeans(m, best$centers)
+    # EVERY ROW FITTED ONCE, FROM THE CENTRES OF THE FIT OF THE SAMPLE THAT
+    # FITS ALL THE ROWS BEST - AMONG ITS CLOSE FITS, WHICH A SAMPLE CAN RANK
+    # THE WRONG WAY ROUND
+    if(!is.null(best)) {
+      top <- .kmeans_top(best)
+      if(length(top) > 1) {
+        cost <- kmeans_cost_cpp(m, top, .threads())
+        top <- top[.first_min(cost)]
+      }
+      .try_kmeans(m, top[[1]])
+    }
   } else {
     .kmeans_best(m, k)
   }
@@ -1278,8 +1291,10 @@ heat_map_clust <- function(x,
 
 # k-means++ starts compared with the slices along the first principal
 # component, and the number of rows on which the starts are compared
-.KMEANS_STARTS <- 3L
+.KMEANS_STARTS <- 9L
 .KMEANS_SAMPLE <- 20000L
+.KMEANS_REFIT <- 3L
+.KMEANS_REFIT_TOL <- 0.02
 
 #' k-means of the rows of a matrix from the best of several starts
 #'
@@ -1323,6 +1338,44 @@ heat_map_clust <- function(x,
   if(is.null(fit)) {
     return(NULL)
   }
-  list(cluster = fit$cluster, centers = fit$centers)
+  list(cluster = fit$cluster, centers = fit$centers, all_wss = fit$all_wss,
+       all_centers = fit$all_centers)
+}
+
+#' The position of the smallest value, the first when values are equal to a
+#' relative 1e-10 (so that rounding doesn't decide)
+#' @noRd
+.first_min <- function(x) {
+  best <- 1L
+  for(i in seq_along(x)[-1]) {
+    if(x[i] < x[best] * (1 - 1e-10)) {
+      best <- i
+    }
+  }
+  best
+}
+
+#' The centres of the best few distinct fits (at most \code{.KMEANS_REFIT})
+#' of \code{.kmeans_best()}, best first: those whose sums of squares are
+#' within \code{.KMEANS_REFIT_TOL} (relative) of the best - fits whose sums
+#' agree to a relative 1e-9 count as one
+#' @noRd
+.kmeans_top <- function(best) {
+  w <- best$all_wss
+  ord <- order(w, na.last = NA)
+  keep <- integer(0)
+  for(i in ord) {
+    if(length(keep) == .KMEANS_REFIT ||
+       w[i] > w[ord[1]] * (1 + .KMEANS_REFIT_TOL)) {
+      break
+    }
+    if(!any(abs(w[keep] - w[i]) <= 1e-9 * w[i])) {
+      keep <- c(keep, i)
+    }
+  }
+  lapply(best$all_centers[keep], function(z) {
+    storage.mode(z) <- "double"
+    z
+  })
 }
 

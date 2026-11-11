@@ -16,6 +16,8 @@ heat_map_dot(
   dot_min = 0,
   swap_axes = FALSE,
   bimodal = FALSE,
+  transform = NULL,
+  cofactor = 5,
   marker_colour = "logfc",
   marker_size = "p_adj",
   ...
@@ -64,7 +66,7 @@ themselves.}
 \code{col.max}) and not clipped otherwise.}
 
 \item{threshold}{values above \code{threshold} are counted as detected, set
-to 0 by default.}
+to 0 by default - after \code{transform}.}
 
 \item{dot_min}{the smallest proportion of a group's cells detected for a
 dot to be drawn, set to 0 by default (as Seurat's \code{dot.min}).}
@@ -80,6 +82,17 @@ dip to outline. Set to \code{FALSE} by default. See
 \code{\link{heat_map_summarise}} for how the
 dips are found and \code{\link{heat_map}} for when a dot is outlined.
 Can't be combined with \code{split_by}.}
+
+\item{transform}{\code{"asinh"} to transform the values of the cells with
+the inverse hyperbolic sine of each value divided by \code{cofactor}
+before their means are taken (the usual transform of cytometry
+intensities), or \code{NULL} (default) to use the values as they are, as
+in \code{\link{heat_map_summarise}}. The zeros of sparse data stay zeros,
+so they are transformed without a dense copy.}
+
+\item{cofactor}{the cofactor of \code{transform = "asinh"}: one number (5
+by default, as for mass cytometry; about 150 is common for flow
+cytometry) or one per feature, named by feature.}
 
 \item{marker_colour, marker_size}{for a dot plot of markers (\code{x} from
 \code{\link{heat_map_markers}}), the columns of the markers that colour

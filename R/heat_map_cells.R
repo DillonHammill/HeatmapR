@@ -483,6 +483,10 @@ heat_map_downsample <- function(groups,
         paste(utils::head(missing, 5), collapse = ", "),
         if(length(missing) > 5) paste0(" and ", length(missing) - 5, " more"),
         ".",
+        # (THE NAMES OF THE ROWS OF A MATRIX OF FEATURES BY CELLS)
+        if(.cells_as_rows(src) && all(missing %in% src$cells)) {
+          paste0(" They are names of the rows of 'x'.", .FLIPPED)
+        },
         call. = FALSE
       )
     }
@@ -704,6 +708,15 @@ heat_map_downsample <- function(groups,
     }
     return(list(values = by, cols = integer(0)))
   }
+  # (ONE VALUE PER COLUMN OF A MATRIX OF FEATURES BY CELLS)
+  if(.cells_as_rows(src) && is.atomic(by) &&
+     length(by) == .source_dim(src)[2] && length(by) != n) {
+    stop(
+      "'", arg, "' has ", length(by), " values, one for each column of 'x', ",
+      "but 'x' has ", n, " cells (its rows).", .FLIPPED,
+      call. = FALSE
+    )
+  }
   avail <- c(meta_names, data_names)
   missing <- if(is.character(by)) setdiff(by, avail)
   stop(
@@ -726,6 +739,22 @@ heat_map_downsample <- function(groups,
     call. = FALSE
   )
 }
+
+#' Whether the cells of single-cell data are the rows of a matrix (a matrix
+#' or sparse matrix given as it is, not a data.frame or an object)
+#' @noRd
+.cells_as_rows <- function(src) {
+  !src$by_column && !is.data.frame(src$values) &&
+    (is.matrix(src$values) || inherits(src$values, "dgCMatrix"))
+}
+
+#' The hint for a matrix of features by cells read as cells by features
+#' @noRd
+.FLIPPED <- paste0(
+  " A matrix is read with cells as rows and features as columns (unlike ",
+  "SingleCellExperiment and Seurat objects) - if the cells of 'x' are its ",
+  "columns, give t(x)."
+)
 
 #' The chosen features of some cells as a dense matrix (cells as rows)
 #'

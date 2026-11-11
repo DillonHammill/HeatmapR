@@ -103,6 +103,24 @@ heat_map_tree <- function(x,
 
 }
 
+#' One value of a setting of the cluster labels, or one for each of the k
+#' clusters - other lengths recycled (from the left, or from the top) with a
+#' warning
+#' @noRd
+.recycle_clusters <- function(v,
+                              k,
+                              arg) {
+  if(k < 1 || length(v) <= 1 || length(v) == k) {
+    return(v)
+  }
+  warning(
+    "'", arg, "' has ", length(v), " values for ", k, " clusters - ",
+    if(length(v) > k) paste0("the first ", k, " are used.") else "recycled.",
+    call. = FALSE
+  )
+  rep_len(v, k)
+}
+
 #' Check the colours of the branches of a dendrogram
 #'
 #' @param col \code{NULL} or \code{FALSE} (black), \code{TRUE} (distinct

@@ -50,7 +50,9 @@ and the current graphics device are left unchanged. Without a
 heatmaps require a pdf file or \code{multiple = TRUE}.}
 
 \item{...}{additional arguments for the appropriate \code{png()},
-\code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.}
+\code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.
+TIFF files are compressed without loss (\code{compression = "lzw"})
+unless another \code{compression} is given.}
 }
 \value{
 No return value, called for side effects.

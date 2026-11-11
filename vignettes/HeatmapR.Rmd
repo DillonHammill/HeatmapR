@@ -613,7 +613,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 #### 2.7.1 Zooming Into a Band of Rows
 
-Mark labels name a few rows, but they don't show their values. `zoom_y` (and `zoom_x` for columns) enlarges a band of rows in a panel beside the heatmap instead, so the detail of a few rows can be read together with the whole. The band runs from the first to the last of the rows you choose in the displayed order (giving the first and last rows is enough), is outlined on the heatmap and joined to the panel by a wedge. The panel sits on the axis text side and is labelled with the names of the enlarged rows, in place of the axis text. `zoom_size_y` sets the width of the panel relative to the heatmap (the same width by default), and enlarged rows are at most 0.3 inches tall.
+Mark labels name a few rows, but they don't show their values. `zoom_y` (and `zoom_x` for columns) enlarges a band of rows in a panel beside the heatmap instead, so the detail of a few rows can be read together with the whole. The band runs from the first to the last of the rows you choose in the displayed order (giving the first and last rows is enough), is outlined on the heatmap and joined to the panel by a wedge. The panel sits on the axis text side and is labelled with the names of the enlarged rows, in place of the axis text. `zoom_size_y` sets the width of the panel relative to the heatmap (by default the same width for a panel as long as the heatmap, and narrower for a shorter panel, so that enlarging a few rows doesn't halve the heatmap), and enlarged rows are at most 0.3 inches tall.
 
 ```{r, eval = FALSE}
 set.seed(2)
@@ -1434,7 +1434,7 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-13.png')
 ```
 
-The branches of each cluster can be coloured too: `tree_col_x` and `tree_col_y` take one colour for each cluster (from left to right and from top to bottom), or `TRUE` for distinct colours, and colour the branches within each cluster and the edge into it, while the branches joining clusters stay black. With `TRUE` the clusters take the colours of `hcl.colors(k, "Dark 3")`, which the cluster labels can share:
+The branches of each cluster can be coloured too: `tree_col_x` and `tree_col_y` take one colour for each cluster (from left to right and from top to bottom), or `TRUE` for distinct colours, and colour the branches within each cluster and the edge into it, while the branches joining clusters stay black. With `TRUE` the clusters take the colours of `hcl.colors(k, "Dark 3")`, and the cluster labels take the colours of their branches unless `tree_label_col_y` is given:
 
 ```{r, eval = FALSE}
 heat_map(
@@ -1446,7 +1446,6 @@ heat_map(
   tree_split_y = 1,
   tree_col_y = TRUE,
   tree_label_y = TRUE,
-  tree_label_col_y = hcl.colors(5, "Dark 3"),
   title = "Branch Colours"
 )
 ```
@@ -1467,7 +1466,6 @@ heat_map(
   tree_split_y = 1,
   tree_col_y = TRUE,
   tree_label_y = TRUE,
-  tree_label_col_y = hcl.colors(5, "Dark 3"),
   title = "Branch Colours"
 )
 ```
@@ -1670,7 +1668,7 @@ rownames(mtcars)[info$row_order]
 
 #### 5.2.3 k-means Clusters
 
-For thousands of rows, `tree_kmeans_y` (or `tree_kmeans_x` for columns) splits the rows into k-means clusters (Hartigan and Wong 1979) instead of cutting a dendrogram. The rows are clustered on the scaled data from several starts: the centres of equal slices of the rows along their first principal component, which suit clusters strung out along it, and three k-means++ starts (Arthur and Vassilvitskii 2007), which spread the starting centres over the data so that small clusters get one of their own. The clusters with the smallest within-cluster sum of squares are kept. The starts use fixed seeds, so the same clusters are found every time whatever the random seed, and similar clusters are placed next to each other. The k-means clusters then work like clusters supplied to `tree_cut_y`: they are separated by splits and can be labelled, and with `tree_y = TRUE` the rows are clustered within each k-means cluster. `heat_map_info()$row_clusters` returns the cluster of each row.
+For thousands of rows, `tree_kmeans_y` (or `tree_kmeans_x` for columns) splits the rows into k-means clusters (Hartigan and Wong 1979) instead of cutting a dendrogram. The rows are clustered on the scaled data from several starts: the centres of equal slices of the rows along their first principal component, which suit clusters strung out along it, and nine k-means++ starts (Arthur and Vassilvitskii 2007), which spread the starting centres over the data so that small clusters get one of their own. The clusters with the smallest within-cluster sum of squares are kept. The starts use fixed seeds, so the same clusters are found every time whatever the random seed, and similar clusters are placed next to each other. The k-means clusters then work like clusters supplied to `tree_cut_y`: they are separated by splits and can be labelled, and with `tree_y = TRUE` the rows are clustered within each k-means cluster. `heat_map_info()$row_clusters` returns the cluster of each row.
 
 ```{r, eval = FALSE}
 set.seed(5)
