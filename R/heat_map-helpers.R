@@ -28,9 +28,10 @@
 #'   heatmaps require a pdf file or \code{multiple = TRUE}.
 #' @param ... additional arguments for the appropriate \code{png()},
 #'   \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.
-#'   TIFF files are compressed without loss (\code{compression = "lzw"},
-#'   drawn with cairo on macOS, whose quartz bitmaps can't be compressed)
-#'   unless another \code{compression} is given.
+#'   TIFF files are compressed without loss (\code{compression = "lzw"})
+#'   unless another \code{compression} is given, except when they are drawn
+#'   by quartz (the default on macOS), which can't compress them
+#'   (\code{type = "cairo"} can, where R has cairo).
 #'
 #' @return No return value, called for side effects.
 #'
@@ -141,16 +142,10 @@ heat_map_save <- function(save_as,
     # WRITES UNCOMPRESSED FILES BY DEFAULT, 3 BYTES PER PIXEL)
   } else if (format == "tiff") {
     dots <- list(...)
-    if(is.null(dots$compression)) {
-      # (macOS DRAWS BITMAPS WITH QUARTZ, WHICH CAN'T COMPRESS - CAIRO CAN)
-      type <- if(is.null(dots$type)) getOption("bitmapType") else dots$type
-      if(identical(type, "quartz") && is.null(dots$type) &&
-         isTRUE(capabilities("cairo"))) {
-        dots$type <- type <- "cairo"
-      }
-      if(!identical(type, "quartz")) {
-        dots$compression <- "lzw"
-      }
+    # (EXCEPT WITH QUARTZ ON macOS, WHOSE TIFF FILES CAN'T BE COMPRESSED)
+    type <- if(is.null(dots$type)) getOption("bitmapType") else dots$type
+    if(is.null(dots$compression) && !identical(type, "quartz")) {
+      dots$compression <- "lzw"
     }
     do.call(
       tiff,
