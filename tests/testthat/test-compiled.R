@@ -189,12 +189,15 @@ test_that("compiled linkage gives stats::hclust() trees", {
   expect_equal(ours$height, hclust(dist(x), "single")$height)
   expect_equal(ours$order, .merge_order(ours$merge))
   expect_true(all(ours$merge < seq_len(39)))
-  # CENTROID AND MEDIAN LINKAGE BY hclust()'S OWN ALGORITHM - IDENTICAL, WITH
-  # INVERSIONS; PARTIAL NAMES; MISSING DISTANCES FAIL
+  # CENTROID AND MEDIAN LINKAGE BY THE GENERIC ALGORITHM - hclust()'S TREES,
+  # WITH INVERSIONS; PARTIAL NAMES; MISSING DISTANCES FAIL
   d <- dist(matrix(rnorm(30), 10))
   for (method in c("centroid", "median")) {
-    expect_identical(.hclust_dist(d, method)[c("merge", "height", "order")],
-                     hclust(d, method)[c("merge", "height", "order")])
+    ours <- .hclust_dist(d, method)
+    theirs <- hclust(d, method)
+    expect_identical(ours[c("merge", "order")], theirs[c("merge", "order")])
+    # (THE HEIGHTS TO A RELATIVE 1e-12, NOT BIT FOR BIT)
+    expect_equal(ours$height, theirs$height, tolerance = 1e-12)
   }
   expect_identical(.hclust_dist(d, "ave")$merge, hclust(d, "average")$merge)
   d[3] <- NA

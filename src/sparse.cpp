@@ -91,27 +91,25 @@ std::vector<int> cell_groups(cpp11::integers group, int n, int n_groups) {
   return out;
 }
 
-// The mean of two values as R's mean() finds it (in extended precision,
-// then refined by the mean of the differences)
+// The mean of two finite values, as R's mean(c(a, b)) gives it. Written
+// from ?mean and mean()'s results, compared as a black box: the two-pass
+// mean in extended precision (the sum divided by two, plus the mean of the
+// residuals from it), rounded once. Where long double has no wider range
+// than double (e.g. 64-bit ARM macOS) the sum of two large values of the
+// same sign can overflow; their halves are then exact and their sum, rounded
+// once, is the correctly rounded mean - what the extended-precision sum
+// gives where it has the range.
 double r_mean2(double a, double b) {
-  long double s = 0.0;
+  long double s = 0;
   s += a;
   s += b;
-  if (std::isfinite(static_cast<double>(s))) {
-    s /= 2;
-  } else {
-    // (AN INFINITE SUM, MAYBE AN OVERFLOW - THE HALVES ADDED INSTEAD)
-    long double t = 0.0;
-    t += a / 2;
-    t += b / 2;
-    s = t;
-  }
-  if (std::isfinite(static_cast<double>(s))) {
-    long double t = 0.0;
-    t += (a - s);
-    t += (b - s);
-    s += t / 2;
-  }
+  if (!std::isfinite(s)) return a / 2 + b / 2;
+  s /= 2;
+  // THE CORRECTION - THE MEAN OF THE RESIDUALS
+  long double t = 0;
+  t += a - s;
+  t += b - s;
+  s += t / 2;
   return static_cast<double>(s);
 }
 

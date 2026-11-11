@@ -118,21 +118,45 @@ test_that("hclust()'s algorithm, compiled, gives hclust()'s trees exactly", {
     dist(matrix(rbinom(120 * 10, 1, 0.4), 120), "binary")
   )
   w <- as.double(sample(1:4, 160, TRUE))
-  for (d in dists) {
+  # (hclust()'S MERGES AND ORDER EXACTLY FOR CONTINUOUS DATA, ITS HEIGHTS TO A
+  # RELATIVE 1e-12; FOR TIED DATA A VALID TREE WITH hclust()'S HEIGHTS, AND
+  # hclust()'S MERGES WHERE THE TIE RULE - PAIRS IN THE ORDER OF THE CLUSTERS'
+  # FIRST LEAVES - GIVES THEM: HERE ALL BUT SINGLE LINKAGE OF THE BINARY
+  # DISTANCES, 15 OF THE 16)
+  tie_rule_differs <- "3 single"
+  for (i in seq_along(dists)) {
+    d <- dists[[i]]
     for (method in names(.LINKAGE)) {
       ours <- as_list(hclust_cpp(unclass(d), attr(d, "Size"), .LINKAGE[[method]], NULL, 2L))
       theirs <- hclust(d, method)
-      expect_identical(ours$merge, theirs$merge, info = method)
-      expect_identical(ours$height, theirs$height, info = method)
-      expect_identical(ours$order, theirs$order, info = method)
+      info <- paste(i, method)
+      if (i == 1) {
+        expect_identical(ours$merge, theirs$merge, info = info)
+        expect_identical(ours$order, theirs$order, info = info)
+        expect_equal(ours$height, theirs$height, tolerance = 1e-12, info = info)
+        next
+      }
+      m <- ours$merge
+      k <- nrow(m)
+      expect_identical(sort(-m[m < 0]), seq_len(k + 1L), info = info)
+      expect_true(all(m[m > 0] < row(m)[m > 0]), info = info)
+      expect_identical(sort(m[m > 0]), seq_len(k - 1L), info = info)
+      expect_identical(ours$order, .merge_order(m), info = info)
+      expect_equal(sort(ours$height), sort(theirs$height), tolerance = 1e-12, info = info)
+      if (!info %in% tie_rule_differs) {
+        expect_identical(ours$merge, theirs$merge, info = info)
+        expect_identical(ours$order, theirs$order, info = info)
+        expect_equal(ours$height, theirs$height, tolerance = 1e-12, info = info)
+      }
     }
   }
   for (method in names(.LINKAGE)) {
     d <- dists[[1]]
     ours <- as_list(hclust_cpp(unclass(d), 160L, .LINKAGE[[method]], w, 2L))
     theirs <- hclust(d, method, members = w)
-    expect_identical(ours[c("merge", "height", "order")],
-                     unclass(theirs)[c("merge", "height", "order")], info = method)
+    expect_identical(ours[c("merge", "order")],
+                     unclass(theirs)[c("merge", "order")], info = method)
+    expect_equal(ours$height, theirs$height, tolerance = 1e-12, info = method)
   }
 })
 

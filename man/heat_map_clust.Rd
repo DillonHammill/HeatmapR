@@ -126,10 +126,10 @@ the values both rows have (as \code{cor(use =
 rows that share no values can't be clustered. Kendall's tau is computed
 by Knight's (1966) algorithm. Single linkage is computed from a minimum
 spanning tree (Prim's algorithm, Prim 1957, which needs no matrix of
-distances; Gower and Ross 1969) and centroid and median linkage by
-\code{hclust}'s own algorithm (the nearest-neighbour list of Murtagh
-1985, ported from R's \code{hclust.f}), both giving the tree
-\code{hclust} gives. Complete, average, McQuitty and Ward linkage are
+distances; Gower and Ross 1969) and centroid and median linkage by the
+generic algorithm of Mullner (2011), which merges the closest pair of
+clusters at every step, both giving the tree \code{hclust} gives when
+the distances are distinct. Complete, average, McQuitty and Ward linkage are
 computed by the nearest-neighbour chain algorithm (Murtagh 1983; Mullner
 2011), which builds the same tree as \code{\link[stats]{hclust}}
 when the distances are distinct. When distances are tied (common for
@@ -187,9 +187,6 @@ algorithms. \emph{arXiv}:1109.2378. \doi{10.48550/arXiv.1109.2378}
 Murtagh, F. (1983). A survey of recent advances in hierarchical
 clustering algorithms. \emph{The Computer Journal}, 26(4), 354-359.
 \doi{10.1093/comjnl/26.4.354}
-
-Murtagh, F. (1985). \emph{Multidimensional Clustering Algorithms}.
-COMPSTAT Lectures 4. Physica-Verlag.
 
 Murtagh, F. and Contreras, P. (2012). Algorithms for hierarchical
 clustering: an overview. \emph{WIREs Data Mining and Knowledge

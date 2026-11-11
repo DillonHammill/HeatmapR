@@ -5,21 +5,12 @@
 // distribution function: 0 for one peak of any shape (a unimodal
 // distribution function is convex up to its mode and concave after it), and
 // larger the more the values look like two or more populations, up to 0.25.
-// It is found from the greatest convex minorant and the least concave
-// majorant of the empirical distribution, narrowing the modal interval until
-// the dip no longer grows - algorithm AS 217 (Hartigan 1985), as corrected in
-// the diptest package by Martin Maechler, whose dips these equal.
-//
-// dip_sorted() follows diptest's C code (src/dip.c): AS 217, Copyright (C)
-// Royal Statistical Society 1985; Fortran and S-PLUS code by Dario Ringach;
-// translated to C and corrected by Martin Maechler, Copyright (C) Martin
-// Maechler, distributed under the GNU GPL (version 2 or later). See
-// inst/COPYRIGHTS.
+// dip_sorted() is computed from the greatest convex minorant and least
+// concave majorant of the empirical distribution function on a modal
+// interval narrowed step by step (see dip_points()).
 //
 // Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
 //   The Annals of Statistics, 13(1), 70-84.
-// Hartigan, P. M. (1985). Algorithm AS 217: computation of the dip
-//   statistic to test for unimodality. Applied Statistics, 34(3), 320-325.
 //
 // Before the dip, the values of a group of cells are prepared so that the
 // measurement, not the transformation of the data, decides the dip:
@@ -38,8 +29,10 @@
 //   in the same way.
 
 #include <cpp11.hpp>
+#include <stdexcept>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <vector>
 
@@ -47,131 +40,246 @@
 
 namespace dip {
 
-double dip_sorted(const double* xs, std::size_t n_) {
-  const int n = static_cast<int>(n_);
-  if (n < 1) return std::numeric_limits<double>::quiet_NaN();
-  // (TWICE n TIMES THE DIP UNTIL THE END, AS IN AS 217)
-  double dip = 1.0;
-  if (n < 2 || xs[0] == xs[n - 1]) return dip / (2.0 * n);
-  // 1-BASED INDICES, AS IN AS 217
-  auto X = [xs](int i) { return xs[i - 1]; };
-  std::vector<int> mn(n + 1), mj(n + 1), gcm(n + 1), lcm(n + 1);
+namespace {
 
-  // THE POINTS OVER WHICH THE CONVEX MINORANT (GCM) IS TAKEN, LOOKING BACK
-  mn[1] = 1;
-  for (int j = 2; j <= n; ++j) {
-    mn[j] = j - 1;
-    for (;;) {
-      int a = mn[j], b = mn[a];
-      if (a == 1 || (X(j) - X(a)) * (a - b) < (X(a) - X(b)) * (j - a)) break;
-      mn[j] = b;
-    }
+// The dip is found from the points (x[i], i) of the sorted values x[0..n-1]:
+// the empirical distribution function, counted in values. Tied values are
+// taken as the limit of separating them in their order (x[i] + i * eps as eps
+// goes to 0), which is how diptest::dip() treats them. In that limit the
+// cross products below are the same for every small eps (the terms in eps
+// cancel because the points rise by 1 count each), so the hulls and slopes
+// need no division, and a line between two points of the same value passes
+// through each point between them.
+
+// a + b exactly, as s + e (Knuth's two-sum, which needs no branch)
+inline void two_sum(double a, double b, double& s, double& e) {
+  s = a + b;
+  const double bb = s - a;
+  e = (a - (s - bb)) + (b - bb);
+}
+
+// p * (xa - xb) - q * (xc - xd), for counts p and q: the cross products of
+// the points. The differences of x are kept exactly as sums of two doubles
+// and the rounding errors of the products recovered with fused multiply-adds,
+// so that the result is accurate to a few units in its last place however
+// much the two products cancel (they cancel to a few counts in lattice-like
+// data of 10^5 values, where plain arithmetic loses 1e-11 of the dip).
+inline double cross_accurate(double p, double xa, double xb, double q, double xc, double xd) {
+  double d1, e1, d2, e2;
+  two_sum(xa, -xb, d1, e1);
+  two_sum(xc, -xd, d2, e2);
+  const double p1 = p * d1, p2 = q * d2;
+  const double r1 = std::fma(p, d1, -p1), r2 = std::fma(q, d2, -p2);
+  // (P1 - P2 IS EXACT WHEN THE PRODUCTS CANCEL; THE REST IS SMALL)
+  return (p1 - p2) + ((r1 - r2) + (p * e1 - q * e2));
+}
+
+// The sign of the same cross product (p, q, xa - xb and xc - xd all at least
+// 0): from plain arithmetic when its rounding can't change the sign (nearly
+// always), from cross_accurate() otherwise
+inline int cross_sign(double p, double xa, double xb, double q, double xc, double xd) {
+  const double t1 = p * (xa - xb), t2 = q * (xc - xd);
+  const double s = t1 - t2;
+  // (EACH DIFFERENCE, PRODUCT AND THE SUBTRACTION ROUND ONCE: WELL INSIDE
+  // 4 EPSILON OF T1 + T2. THE TEST SCALES S UP RATHER THAN THE BOUND DOWN,
+  // WHICH WOULD BE SUBNORMAL, AND SLOW, FOR VALUES NEAR 1E-300.)
+  constexpr double inv_bound = 0.25 / std::numeric_limits<double>::epsilon();
+  if (std::fabs(s) * inv_bound > t1 + t2) return (s > 0.0) - (s < 0.0);
+  const double e = cross_accurate(p, xa, xb, q, xc, xd);
+  return (e > 0.0) - (e < 0.0);
+}
+
+// A difference of indices as a double (through a signed integer, which
+// converts in one instruction on x86-64; an unsigned 64-bit one doesn't)
+template <typename Index>
+inline double count(Index d) {
+  return static_cast<double>(static_cast<std::int64_t>(d));
+}
+
+// The turn of the points a < k < b at k: positive when point k lies above the
+// line from a to b, negative below it, 0 on it
+template <typename Index>
+inline int turn(const double* x, Index a, Index k, Index b) {
+  return cross_sign(count(k - a), x[b], x[k], count(b - k), x[k], x[a]);
+}
+
+// Does the edge from point a to point b rise more steeply than the edge from
+// c to e (a < b, c < e)?
+template <typename Index>
+inline bool steeper(const double* x, Index a, Index b, Index c, Index e) {
+  return cross_sign(count(b - a), x[e], x[c], count(e - c), x[b], x[a]) > 0;
+}
+
+// How far point k lies above the line from point a to point b (a < k < b),
+// in counts: the index of point k minus the index of the line at x[k]. 0 when
+// the three values are equal (the line runs through the tie).
+template <typename Index>
+inline double above_line(const double* x, Index a, Index k, Index b) {
+  const double run = x[b] - x[a];
+  if (!(run > 0.0)) return 0.0;
+  return cross_accurate(count(k - a), x[b], x[k], count(b - k), x[k], x[a]) / run;
+}
+
+// Written from the definition of the dip of Hartigan and Hartigan (1985) and
+// the outline of its computation (the greatest
+// convex minorant and least concave majorant of the empirical distribution
+// function on a modal interval narrowed step by step), worked out in detail
+// from first principles; the scale (at least 1 / (2n)) and the treatment of
+// ties were found by running diptest::dip() as a black box.
+//
+// In counts (the points (x[i], i)), the dip is (D + 1) / (2n), where D is
+// the largest vertical distance found while narrowing the modal interval
+// [l, u], which starts as all the points:
+//
+// 1. Take the minorant G and the majorant L of the points l..u. L - G is
+//    concave, so it rises to its largest value d, at a vertex of one of
+//    them, and falls after it.
+// 2. If d is at most D, stop. Otherwise narrow the interval: to [k, the next
+//    vertex of L] when d is at a vertex k of G, or to [the previous vertex of
+//    G, k] when it is at a vertex k of L.
+// 3. D becomes the largest of D, the distances above G of the points cut off
+//    on the left and the distances below L of those cut off on the right, and
+//    the search goes on in the new interval.
+//
+// The + 1 is the jump of 1 count at each value, which no continuous unimodal
+// distribution function can follow: half of it is the dip of a sample that is
+// unimodal itself. When several vertices share the largest gap, any of them
+// may be taken: in checks against diptest::dip() on tied data the choice
+// never changed D.
+//
+// Each new l is a vertex of G and each new u a vertex of L, so (by induction)
+// l is always a vertex of the minorant of points 0..u and u a vertex of the
+// majorant of points l..n-1: G is the minorant of the prefix 0..u from l on,
+// and L the majorant of the suffix l..n-1 up to u. One monotone-stack pass
+// each way (Andrew's monotone chain for one side of a hull) gives, for every
+// point, the vertex before it in the minorant of the prefix that it ends and
+// the vertex after it in the majorant of the suffix that it starts, from
+// which G and L are kept as arrays as the interval narrows: each point enters
+// each at most once. With the arrays, d is found by binary search, and the
+// points cut off are each looked at once, so the time is O(n) for the passes
+// and the cut-off points plus O(log^2 n) for each step (a handful of steps
+// for real data; about 140 for values spread evenly in log scale over 300
+// orders of magnitude).
+template <typename Index>
+double dip_points(const double* x, std::size_t n_) {
+  const Index n = static_cast<Index>(n_);
+  std::vector<Index> pred(n), succ(n), gb(n), lb(n);
+  // THE MINORANTS OF THE PREFIXES (PRED), ON A STACK AT THE START OF GB THAT
+  // ENDS AS THE MINORANT OF ALL THE POINTS
+  Index top = 0;
+  for (Index c = 0; c < n; ++c) {
+    while (top >= 2 && turn(x, gb[top - 2], gb[top - 1], c) >= 0) --top;
+    pred[c] = top > 0 ? gb[top - 1] : c;
+    gb[top++] = c;
   }
-  // ... AND THE CONCAVE MAJORANT (LCM), LOOKING FORWARD
-  mj[n] = n;
-  for (int k = n - 1; k >= 1; --k) {
-    mj[k] = k + 1;
-    for (;;) {
-      int a = mj[k], b = mj[a];
-      if (a == n || (X(k) - X(a)) * (a - b) < (X(a) - X(b)) * (k - a)) break;
-      mj[k] = b;
-    }
+  Index gs = 0, ge = top;
+  // THE MAJORANTS OF THE SUFFIXES (SUCC), ON A STACK DOWN FROM THE END OF LB
+  // THAT ENDS AS THE MAJORANT OF ALL THE POINTS, IN INCREASING ORDER
+  Index ls = n;
+  for (Index c = n; c-- > 0;) {
+    while (n - ls >= 2 && turn(x, c, lb[ls], lb[ls + 1]) <= 0) ++ls;
+    succ[c] = ls < n ? lb[ls] : c;
+    lb[--ls] = c;
   }
-
-  int low = 1, high = n;
-  for (;;) {
-    // THE CHANGE POINTS OF THE GCM FROM high DOWN TO low, AND OF THE LCM
-    // FROM low UP TO high
-    int i = 1;
-    gcm[1] = high;
-    while (gcm[i] > low) {
-      gcm[i + 1] = mn[gcm[i]];
-      ++i;
+  Index le = n;
+  Index l = 0, u = n - 1;
+  double D = 0.0;
+  while (u - l >= 2) {
+    const Index* G = gb.data() + gs;
+    const Index* L = lb.data() + ls;
+    const Index ng = ge - gs, nl = le - ls;
+    // THE LARGEST GAP. L - G RISES WHERE L IS STEEPER THAN G: FIRST FIND THE
+    // FIRST VERTEX OF G AFTER WHICH IT STOPS RISING...
+    Index lo = 0, hi = ng - 1;
+    while (lo < hi) {
+      const Index mid = lo + (hi - lo) / 2;
+      const Index j = static_cast<Index>(std::upper_bound(L, L + nl, G[mid]) - L) - 1;
+      if (steeper(x, L[j], L[j + 1], G[mid], G[mid + 1])) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
     }
-    const int l_gcm = i;
-    int ig = l_gcm, ix = l_gcm - 1;
-    i = 1;
-    lcm[1] = low;
-    while (lcm[i] < high) {
-      lcm[i + 1] = mj[lcm[i]];
-      ++i;
+    // (NOT RISING FROM THE FIRST POINT: L - G IS 0 THROUGHOUT)
+    if (lo == 0) break;
+    const Index c = G[lo - 1], e = G[lo];
+    // ...THEN THE FIRST VERTEX OF L BETWEEN C AND E AFTER WHICH IT STOPS
+    // RISING, IF ANY: THE LARGEST GAP IS THERE, OR ELSE AT E
+    const Index j0 = static_cast<Index>(std::upper_bound(L, L + nl, c) - L);
+    const Index j1 = static_cast<Index>(std::lower_bound(L, L + nl, e) - L);
+    Index a = j0, b = j1;
+    while (a < b) {
+      const Index mid = a + (b - a) / 2;
+      if (steeper(x, L[mid], L[mid + 1], c, e)) {
+        a = mid + 1;
+      } else {
+        b = mid;
+      }
     }
-    const int l_lcm = i;
-    int ih = l_lcm, iv = 2;
-
-    // THE LARGEST DISTANCE BETWEEN THE GCM AND THE LCM FROM low TO high
-    long double d = 0.0L;
-    if (l_gcm != 2 || l_lcm != 2) {
-      do {
-        const int g = gcm[ix], l = lcm[iv];
-        if (g > l) {
-          // THE NEXT POINT IS FROM THE LCM
-          const int g1 = gcm[ix + 1];
-          long double dx = (l - g1 + 1) -
-                           (static_cast<long double>(X(l)) - X(g1)) * (g - g1) /
-                               (X(g) - X(g1));
-          ++iv;
-          if (dx >= d) {
-            d = dx;
-            ig = ix + 1;
-            ih = iv - 1;
-          }
-        } else {
-          // THE NEXT POINT IS FROM THE GCM
-          const int l1 = lcm[iv - 1];
-          long double dx = (static_cast<long double>(X(g)) - X(l1)) * (l - l1) /
-                               (X(l) - X(l1)) -
-                           (g - l1 - 1);
-          --ix;
-          if (dx >= d) {
-            d = dx;
-            ig = ix + 1;
-            ih = iv;
-          }
-        }
-        if (ix < 1) ix = 1;
-        if (iv > l_lcm) iv = l_lcm;
-      } while (gcm[ix] != lcm[iv]);
+    double d;
+    Index new_l, new_u, at_u;
+    if (a < j1) {
+      new_l = c;
+      new_u = L[a];
+      at_u = a;
+      d = above_line(x, c, new_u, e);
     } else {
-      d = 1.0L;
+      // (E IS A VERTEX OF L TOO: THE LARGEST GAP IS 0)
+      if (L[j1] == e) break;
+      new_l = e;
+      new_u = L[j1];
+      at_u = j1;
+      d = -above_line(x, L[j1 - 1], e, L[j1]);
     }
-    if (d < dip) break;
-
-    // THE DIPS OF THE CONVEX MINORANT AND THE CONCAVE MAJORANT
-    double dip_l = 0.0, dip_u = 0.0;
-    for (int j = ig; j < l_gcm; ++j) {
-      double best = 1.0;
-      const int jb = gcm[j + 1], je = gcm[j];
-      if (je - jb > 1 && X(je) != X(jb)) {
-        const double C = (je - jb) / (X(je) - X(jb));
-        for (int jj = jb; jj <= je; ++jj) {
-          double t = (jj - jb + 1) - (X(jj) - X(jb)) * C;
-          if (best < t) best = t;
-        }
+    if (!(d > D)) break;
+    // THE POINTS CUT OFF: ABOVE G ON THE LEFT, BELOW L ON THE RIGHT
+    Index at_l = 0;
+    for (; G[at_l] < new_l; ++at_l) {
+      for (Index k = G[at_l] + 1; k < G[at_l + 1]; ++k) {
+        D = std::max(D, above_line(x, G[at_l], k, G[at_l + 1]));
       }
-      if (dip_l < best) dip_l = best;
     }
-    for (int k = ih; k < l_lcm; ++k) {
-      double best = 1.0;
-      const int kb = lcm[k], ke = lcm[k + 1];
-      if (ke - kb > 1 && X(ke) != X(kb)) {
-        const double C = (ke - kb) / (X(ke) - X(kb));
-        for (int kk = kb; kk <= ke; ++kk) {
-          double t = (X(kk) - X(kb)) * C - (kk - kb - 1);
-          if (best < t) best = t;
-        }
+    for (Index j = nl - 1; L[j] > new_u; --j) {
+      for (Index k = L[j - 1] + 1; k < L[j]; ++k) {
+        D = std::max(D, -above_line(x, L[j - 1], k, L[j]));
       }
-      if (dip_u < best) dip_u = best;
     }
-    const double dip_new = std::max(dip_l, dip_u);
-    if (dip < dip_new) dip = dip_new;
-
-    // NARROW THE MODAL INTERVAL, UNLESS IT NO LONGER CHANGES
-    if (low == gcm[ig] && high == lcm[ih]) break;
-    low = gcm[ig];
-    high = lcm[ih];
+    // THE MINORANT OF THE NEW INTERVAL: G FROM NEW_L TO ITS LAST VERTEX NOT
+    // AFTER NEW_U, THEN THE MINORANT OF THE PREFIX THAT NEW_U ENDS FROM THERE
+    gs += at_l;
+    ge = gs + static_cast<Index>(std::upper_bound(gb.data() + gs, gb.data() + ge, new_u) -
+                                 (gb.data() + gs));
+    Index end = ge;
+    for (Index t = new_u; t > gb[ge - 1]; t = pred[t]) gb[end++] = t;
+    std::reverse(gb.data() + ge, gb.data() + end);
+    ge = end;
+    // THE MAJORANT OF THE NEW INTERVAL: THE MAJORANT OF THE SUFFIX THAT NEW_L
+    // STARTS UP TO THE FIRST VERTEX OF L NOT BEFORE NEW_L, THEN L UP TO NEW_U
+    le = ls + at_u + 1;
+    ls = static_cast<Index>(std::lower_bound(lb.data() + ls, lb.data() + le, new_l) -
+                            lb.data());
+    Index start = ls;
+    for (Index t = new_l; t < lb[ls]; t = succ[t]) lb[--start] = t;
+    std::reverse(lb.data() + start, lb.data() + ls);
+    ls = start;
+    l = new_l;
+    u = new_u;
   }
-  return dip / (2.0 * n);
+  return (D + 1.0) / (2.0 * count(n));
+}
+
+}  // namespace
+
+// The dip of Hartigan and Hartigan (1985) of the sorted values xs[0..n-1], on
+// the scale of diptest::dip() (see dip_points()): NaN without values
+double dip_sorted(const double* xs, std::size_t n) {
+  if (n == 0) return std::numeric_limits<double>::quiet_NaN();
+  if (n <= 2) return 0.5 / static_cast<double>(n);
+  // (32-BIT INDICES HALVE THE MEMORY OF THE FOUR ARRAYS)
+  if (n <= std::numeric_limits<std::uint32_t>::max()) {
+    return dip_points<std::uint32_t>(xs, n);
+  }
+  return dip_points<std::size_t>(xs, n);
 }
 
 namespace {

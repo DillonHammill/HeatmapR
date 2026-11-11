@@ -3,42 +3,12 @@ Type: Package
 Title: Create Heatmaps Using Base Graphics
 Version: 2.0.0
 Date: 2026-11-11
-Authors@R: c(
+Authors@R: 
     person(given = "Dillon",
            family = "Hammill",
            role = c("aut", "cre", "cph"),
            email = "dillon.hammill21@gmail.com",
-           comment = c(ORCID = "0000-0002-1407-7223")),
-    person(given = "Fionn",
-           family = "Murtagh",
-           role = "ctb",
-           comment = "hierarchical clustering code (hclust.f in R's 'stats' package), ported in src/linkage.cpp"),
-    person(given = "J. A.",
-           family = "Hartigan",
-           role = "ctb",
-           comment = "k-means algorithm AS 136 with M. A. Wong, ported in src/kmeans.cpp"),
-    person(given = "M. A.",
-           family = "Wong",
-           role = "ctb",
-           comment = "k-means algorithm AS 136 with J. A. Hartigan, ported in src/kmeans.cpp"),
-    person(given = "P. M.",
-           family = "Hartigan",
-           role = "ctb",
-           comment = "dip algorithm AS 217, ported in src/dip.cpp"),
-    person(given = "Dario",
-           family = "Ringach",
-           role = "ctb",
-           comment = "Fortran and S-PLUS dip code on which the 'diptest' package builds"),
-    person(given = "Martin",
-           family = "Maechler",
-           role = c("ctb", "cph"),
-           comment = "corrected dip code of the 'diptest' package, followed in src/dip.cpp"),
-    person("R Core Team",
-           role = c("ctb", "cph"),
-           comment = "hclust.f and kmns.f of R's 'stats' package, ported in src/linkage.cpp and src/kmeans.cpp"),
-    person("Royal Statistical Society",
-           role = "cph",
-           comment = "Applied Statistics algorithms AS 136 and AS 217"))
+           comment = c(ORCID = "0000-0002-1407-7223"))
 Description: Provides a lightweight framework for creating high quality, complex 
     heatmaps using base graphics. Supports hierarchical clustering with 
     dendrograms, column and row scaling, cluster sub-divisions, customizable 
@@ -48,9 +18,10 @@ Description: Provides a lightweight framework for creating high quality, complex
     hierarchical clustering and distance computations are described in 
     Murtagh and Contreras (2012) <doi:10.1002/widm.53>; linkage uses the
     nearest-neighbour chain algorithm, a minimum spanning tree for single
-    linkage and the nearest-neighbour list of 'hclust()' for centroid and
-    median linkage, leaves are ordered optimally as in Bar-Joseph, Gifford
-    and Jaakkola (2001) <doi:10.1093/bioinformatics/17.suppl_1.S22>, Kendall
+    linkage and the generic algorithm of Mullner (2011)
+    <doi:10.48550/arXiv.1109.2378> for centroid and median linkage,
+    leaves are ordered optimally as in Bar-Joseph, Gifford and Jaakkola
+    (2001) <doi:10.1093/bioinformatics/17.suppl_1.S22>, Kendall
     correlations are computed by Knight's (1966) algorithm
     <doi:10.1080/01621459.1966.10480879>, k-means by Hartigan and Wong
     (1979) <doi:10.2307/2346830> and the dip statistic of unimodality, which
@@ -71,9 +42,7 @@ Imports:
   tools
 LinkingTo:
   cpp11
-License: GPL-2
-Copyright: See the file inst/COPYRIGHTS for the copyright holders of code
-    ported from R's 'stats' package and the 'diptest' package.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

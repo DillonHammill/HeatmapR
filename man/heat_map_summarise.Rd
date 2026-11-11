@@ -123,9 +123,10 @@ discrete values such as counts spread evenly over the gaps between them
 (so that the comb of 1, 2, 3, ... counts isn't read as several peaks)
 and, for continuous values, the piles at the lowest and highest values
 (clipping, saturated detectors) left out. Groups with fewer than 20
-such values have no dip. The dips are computed in compiled code, by
-algorithm AS 217 (Hartigan 1985) as corrected in the \pkg{diptest}
-package.
+such values have no dip. The dips are computed in compiled code, from
+the greatest convex minorant and least concave majorant of the
+distribution of the values (Hartigan and Hartigan 1985), and equal those
+of the \pkg{diptest} package.
 
 Populations that differ in several features at once (most often whether
 the features are detected at all, as in a cluster combining CD4 and CD8 T
@@ -230,10 +231,6 @@ heat_map(medians, bar_values_y = "n", bar_type_y = "stack", popup = FALSE)
 Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of
 unimodality. \emph{The Annals of Statistics}, 13(1), 70-84.
 \doi{10.1214/aos/1176346577}
-
-Hartigan, P. M. (1985). Algorithm AS 217: computation of the dip
-statistic to test for unimodality. \emph{Applied Statistics}, 34(3),
-320-325. \doi{10.2307/2347485}
 
 Marchenko, V. A. and Pastur, L. A. (1967). Distribution of eigenvalues
 for some sets of random matrices. \emph{Mathematics of the USSR-Sbornik},

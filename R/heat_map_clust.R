@@ -87,10 +87,10 @@
 #'   rows that share no values can't be clustered. Kendall's tau is computed
 #'   by Knight's (1966) algorithm. Single linkage is computed from a minimum
 #'   spanning tree (Prim's algorithm, Prim 1957, which needs no matrix of
-#'   distances; Gower and Ross 1969) and centroid and median linkage by
-#'   \code{hclust}'s own algorithm (the nearest-neighbour list of Murtagh
-#'   1985, ported from R's \code{hclust.f}), both giving the tree
-#'   \code{hclust} gives. Complete, average, McQuitty and Ward linkage are
+#'   distances; Gower and Ross 1969) and centroid and median linkage by the
+#'   generic algorithm of Mullner (2011), which merges the closest pair of
+#'   clusters at every step, both giving the tree \code{hclust} gives when
+#'   the distances are distinct. Complete, average, McQuitty and Ward linkage are
 #'   computed by the nearest-neighbour chain algorithm (Murtagh 1983; Mullner
 #'   2011), which builds the same tree as \code{\link[stats]{hclust}}
 #'   when the distances are distinct. When distances are tied (common for
@@ -149,9 +149,6 @@
 #' Murtagh, F. (1983). A survey of recent advances in hierarchical
 #'   clustering algorithms. \emph{The Computer Journal}, 26(4), 354-359.
 #'   \doi{10.1093/comjnl/26.4.354}
-#'
-#' Murtagh, F. (1985). \emph{Multidimensional Clustering Algorithms}.
-#'   COMPSTAT Lectures 4. Physica-Verlag.
 #'
 #' Murtagh, F. and Contreras, P. (2012). Algorithms for hierarchical
 #'   clustering: an overview. \emph{WIREs Data Mining and Knowledge
@@ -524,8 +521,8 @@ heat_map_clust <- function(x,
 
 # Linkages of the compiled code (src/linkage.cpp), numbered as in
 # stats::hclust: single linkage by a minimum spanning tree, centroid and
-# median linkage by hclust()'s own algorithm, the others by the
-# nearest-neighbour chain
+# median linkage by the generic algorithm (the closest pair at every step),
+# the others by the nearest-neighbour chain
 .LINKAGE <- c(
   ward.D = 1L,
   single = 2L,
@@ -551,11 +548,11 @@ heat_map_clust <- function(x,
 #' Hierarchical clustering of a dist object
 #'
 #' Every linkage is computed in compiled code and returns the hclust object
-#' stats::hclust() returns: centroid and median linkage exactly (by
-#' hclust()'s own algorithm), single linkage from a minimum spanning tree and
-#' the others by the nearest-neighbour chain, which finds the same merges -
-#' only merges at exactly equal heights (e.g. tied distances) can come out in
-#' a different order. Infinite distances go to stats::hclust().
+#' stats::hclust() returns: centroid and median linkage by the generic
+#' algorithm, which merges the closest pair at every step, single linkage
+#' from a minimum spanning tree and the others by the nearest-neighbour chain,
+#' which find the same merges - only merges at exactly equal heights (e.g.
+#' tied distances) can come out in a different order. Infinite distances go to stats::hclust().
 #'
 #' @param members initial cluster sizes, as for \code{hclust()}.
 #'
@@ -1145,10 +1142,9 @@ heat_map_clust <- function(x,
 
 #' k-means from given centres - NULL when it fails (e.g. an empty cluster)
 #'
-#' The Hartigan-Wong algorithm of \code{stats::kmeans()}, ported to compiled
-#' code with the same steps and arithmetic (so the same clusters), without
-#' kmeans()'s copies of the data. Running out of iterations or transfer steps
-#' on large data still gives clusters, which are used for display.
+#' The Hartigan-Wong algorithm (Hartigan and Wong 1979) in compiled code
+#' (kmeans_hw_cpp), without kmeans()'s copies of the data. Running out of
+#' iterations on large data still gives clusters, which are used for display.
 #'
 #' @noRd
 .try_kmeans <- function(m,

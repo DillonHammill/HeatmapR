@@ -7,10 +7,12 @@
 // the iteration runs on it, and a last pass gives the scores.
 
 #include <cpp11.hpp>
+#include <stdexcept>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -135,512 +137,628 @@ cpp11::doubles first_pc_cpp(cpp11::doubles_matrix<> x, int threads) {
 }
 
 // HARTIGAN-WONG K-MEANS -----------------------------------------------------
-
-// A port of stats::kmeans()'s Fortran (kmns.f, Hartigan and Wong 1979, AS
-// 136, with R's changes): the same steps, comparisons and arithmetic, so the
-// clusters are those kmeans(algorithm = "Hartigan-Wong") gives. The rows are
-// copied once into row-major order, the first assignment of every row to
-// its two nearest centres is shared between threads, and none of kmeans()'s
-// copies of the data are made.
 //
-// kmns.f is based on Applied Statistics algorithm AS 136 (Hartigan, J. A.
-// and Wong, M. A. (1979). A k-means clustering algorithm. Applied
-// Statistics, 28(1), 100-108), Copyright (C) Royal Statistical Society
-// 1979, with changes for R by B. D. Ripley and M. Maechler, Copyright (C)
-// The R Core Team, distributed with R under the GNU GPL (version 2 or 3).
-// See inst/COPYRIGHTS.
+// The algorithm of Hartigan and Wong (1979), as their sections 1-3 describe
+// it. Each point starts in the cluster of its closest centre (IC1), its
+// second closest (IC2) noted, and the centres become the means of their
+// points. Then two stages alternate. The optimal-transfer stage takes each
+// point i in turn, in its cluster L1 of n1 points, and moves it to the
+// cluster L2 (of n2 points) that minimises R2 = n2 d(i, L2)^2 / (n2 + 1)
+// when that is below R1 = n1 d(i, L1)^2 / (n1 - 1), the loss of taking it
+// out of L1; only the clusters of the "live set" (those changed lately) need
+// be searched for points whose own cluster hasn't changed. The
+// quick-transfer stage only swaps points between IC1 and IC2, pass after
+// pass, until it has gone through every point without a transfer. The
+// iterations stop when an optimal-transfer pass moves no point.
+//
+// Hartigan and Wong leave some details open; they were settled by comparing
+// the clusters and iteration counts with those of stats::kmeans(), used as a
+// black box, on thousands of problems (many with tied distances):
+//
+// - ties for the closest and second closest centres go to the lower-numbered
+//   cluster;
+// - R1 and R2 are d^2 times the ratios n / (n - 1) and n / (n + 1), worked
+//   out whenever a cluster's size changes;
+// - the search for L2 starts from the point's IC2 and takes another cluster
+//   when d^2 < R2 / (n / (n + 1)) for the best R2 so far, the clusters in
+//   their order; the point moves when R2 < R1 (otherwise L2 becomes its IC2);
+// - the quick-transfer stage moves a point when d(i, IC2)^2 < R1 / (n2 / (n2
+//   + 1));
+// - when a point moves, the centres become (c n1 - x) / (n1 - 1) and (c n2 +
+//   x) / (n2 + 1);
+// - a cluster that an optimal-transfer step updates stays live for the next
+//   M - 1 steps of that stage (M being the number of points: so not at the
+//   next turn of the point that moved), and one updated in the
+//   quick-transfer stage stays live throughout the next optimal-transfer
+//   pass; a point whose own cluster is live is compared with every cluster;
+// - the quick-transfer stage checks a point only when one of its two
+//   clusters changed within the last M - 1 steps of either stage; it ends
+//   after M steps without a transfer, and it gives up (ifault 4, which ends
+//   the fit) when it reaches its (50 M)-th step;
+// - with two clusters the fit ends after the first quick-transfer stage.
+//
+// Distances are sums of squares taken in column order (as R's compiled code
+// adds them): the SIMD kernels below take four points or four centres at a
+// time, one per lane, so that each distance sees the same operations in the
+// same order as in the scalar code (products rounded on their own on x86,
+// see HEATMAPR_PROD) and the results don't depend on the kernel. Threads
+// share the first assignment and the final means, whose results don't
+// depend on them either; the two stages visit the points in turn, as the
+// algorithm defines them, on one thread.
+//
+// The quick-transfer stage takes most of the time on large data: it checks
+// nearly every point on each of up to 50 passes, and few checks move a point.
+// Each point keeps an upper bound on its distance to its IC1 and a lower
+// bound on its distance to its IC2, from the last distances computed and how
+// far those centres have travelled since (the triangle inequality); a check
+// is skipped when the bounds show, by a margin far wider than any rounding
+// error, that its distances would keep the point where it is. So the bounds
+// change the work, never the clusters.
+
 namespace {
 
-// kmns.f's BIG is a single-precision constant stored in double precision
-const double BIG = static_cast<double>(1.0e30f);
+// Steps of the stages (counted over all their passes)
+typedef int64_t hw_count;
 
-// SQUARED DISTANCES FROM A ROW TO EVERY CENTRE
-//
-// kmns.f sums (a[j] - c[j])^2 over j in order, stopping once the sum passes a
-// threshold. The sums only grow (adding a square never makes a rounded sum
-// smaller), so a sum passes the threshold part way if and only if its whole
-// passes it: the steps can take whole sums, and the sums of several centres
-// can be made at once - one centre per SIMD lane, each lane adding in the
-// order of j with the arithmetic of the scalar code (products rounded on
-// their own on x86, fused on 64-bit ARM, as HEATMAPR_PROD() leaves them). The
-// centres are kept transposed for this: T[j * kp + l], kp the number of
-// centres rounded up to the lanes of the kernel (8).
+const double HW_INF = std::numeric_limits<double>::infinity();
 
-using CentreDists = void (*)(const double* a, const double* T, int n, int kp, double* out);
+// The relative margin of the bounds on distances: far wider than the
+// rounding errors of a sum of squares (about p units in the last place,
+// 2^-52), so the bounds settle only what the distances would settle; and the
+// smallest lower bound used, which keeps squares clear of the subnormal
+// numbers
+const double HW_MARGIN = 1e-8;
+const double HW_TINY = 1e-100;
 
-void centre_dists_scalar(const double* a, const double* T, int n, int kp, double* out) {
+// Written from Hartigan & Wong (1979), section 2 (squared Euclidean
+// distances), the squares added in column order.
+// The squared distance between a point (p values `stride` apart) and a
+// centre (p consecutive values)
+inline double hw_dist(const double* a, size_t stride, const double* c, int p) {
+  double s = 0;
+  for (int j = 0; j < p; ++j) {
+    double d = a[static_cast<size_t>(j) * stride] - c[j];
+    s += HEATMAPR_PROD(d, d);
+  }
+  return s;
+}
+
+// Written for this package: hw_dist() from one point (p values `stride`
+// apart) to two centres at once, into d1 and d2
+inline void hw_dist2(const double* a, size_t stride, const double* c1, const double* c2,
+                     int p, double& d1, double& d2) {
+  double s1 = 0, s2 = 0;
+  for (int j = 0; j < p; ++j) {
+    const double v = a[static_cast<size_t>(j) * stride];
+    const double e1 = v - c1[j], e2 = v - c2[j];
+    s1 += HEATMAPR_PROD(e1, e1);
+    s2 += HEATMAPR_PROD(e2, e2);
+  }
+  d1 = s1;
+  d2 = s2;
+}
+
+// Written for this package (a partial-distance search): hw_dist(), stopped
+// once the sum reaches `limit`. Sums only grow, so a sum stopped early (at
+// least `limit`) tells, as the whole distance would, that the distance isn't
+// below `limit`.
+inline double hw_dist_below(const double* a, size_t stride, const double* c, int p,
+                            double limit) {
+  double s = 0;
+  int j = 0;
+  for (; j + 4 <= p; j += 4) {
+    const double* aj = a + static_cast<size_t>(j) * stride;
+    double d0 = aj[0] - c[j], d1 = aj[stride] - c[j + 1];
+    double d2 = aj[2 * stride] - c[j + 2], d3 = aj[3 * stride] - c[j + 3];
+    s += HEATMAPR_PROD(d0, d0);
+    s += HEATMAPR_PROD(d1, d1);
+    s += HEATMAPR_PROD(d2, d2);
+    s += HEATMAPR_PROD(d3, d3);
+    if (s >= limit) return s;
+  }
+  for (; j < p; ++j) {
+    double d = a[static_cast<size_t>(j) * stride] - c[j];
+    s += HEATMAPR_PROD(d, d);
+  }
+  return s;
+}
+
+// Written for this package: hw_dist() from the four points a, a + 1, a + 2
+// and a + 3 (p values `stride` apart) to the centres cen[0..kp) (p values
+// each, kp a multiple of 4), into out[l * 4 + r]
+void hw_points4_scalar(const double* a, size_t stride, const double* cen, int kp, int p,
+                       double* out) {
   for (int l = 0; l < kp; ++l) {
-    double s = 0;
-    for (int j = 0; j < n; ++j) {
-      double d = a[j] - T[static_cast<size_t>(j) * kp + l];
-      s = s + HEATMAPR_PROD(d, d);
-    }
-    out[l] = s;
+    for (int r = 0; r < 4; ++r) out[l * 4 + r] = hw_dist(a + r, stride, cen + static_cast<size_t>(l) * p, p);
   }
 }
 
 #ifdef HEATMAPR_DIST_X86
-// (THE PRODUCTS ARE KEPT APART FROM THE SUMS, AS IN THE SCALAR CODE)
-__attribute__((target("avx2"))) void centre_dists_avx2(const double* a, const double* T, int n,
-                                                       int kp, double* out) {
-  for (int l = 0; l < kp; l += 8) {
+
+// s + (a - b)^2 in the four lanes, the product rounded on its own
+#define HW_AVX_TERM(s, a, b)                    \
+  {                                             \
+    __m256d d_ = _mm256_sub_pd((a), (b));       \
+    __m256d t_ = _mm256_mul_pd(d_, d_);         \
+    DIST_ROUNDED(t_);                           \
+    s = _mm256_add_pd(s, t_);                   \
+  }
+
+// Written for this package: hw_points4_scalar() with one point per lane
+__attribute__((target("avx2"))) void hw_points4_avx2(const double* a, size_t stride,
+                                                     const double* cen, int kp, int p,
+                                                     double* out) {
+  for (int l = 0; l < kp; l += 4) {
+    const double* c0 = cen + static_cast<size_t>(l) * p;
+    const double* c1 = c0 + p;
+    const double* c2 = c1 + p;
+    const double* c3 = c2 + p;
     __m256d s0 = _mm256_setzero_pd(), s1 = _mm256_setzero_pd();
-    for (int j = 0; j < n; ++j) {
-      const double* t = T + static_cast<size_t>(j) * kp + l;
-      __m256d aj = _mm256_set1_pd(a[j]);
-      __m256d d0 = _mm256_sub_pd(aj, _mm256_loadu_pd(t));
-      __m256d d1 = _mm256_sub_pd(aj, _mm256_loadu_pd(t + 4));
-      __m256d p0 = _mm256_mul_pd(d0, d0);
-      __m256d p1 = _mm256_mul_pd(d1, d1);
-      DIST_ROUNDED(p0);
-      DIST_ROUNDED(p1);
-      s0 = _mm256_add_pd(s0, p0);
-      s1 = _mm256_add_pd(s1, p1);
+    __m256d s2 = _mm256_setzero_pd(), s3 = _mm256_setzero_pd();
+    for (int j = 0; j < p; ++j) {
+      __m256d v = _mm256_loadu_pd(a + static_cast<size_t>(j) * stride);
+      HW_AVX_TERM(s0, v, _mm256_broadcast_sd(c0 + j))
+      HW_AVX_TERM(s1, v, _mm256_broadcast_sd(c1 + j))
+      HW_AVX_TERM(s2, v, _mm256_broadcast_sd(c2 + j))
+      HW_AVX_TERM(s3, v, _mm256_broadcast_sd(c3 + j))
+    }
+    _mm256_storeu_pd(out + l * 4, s0);
+    _mm256_storeu_pd(out + l * 4 + 4, s1);
+    _mm256_storeu_pd(out + l * 4 + 8, s2);
+    _mm256_storeu_pd(out + l * 4 + 12, s3);
+  }
+}
+
+// Written for this package: hw_dist() from a point (p consecutive values) to
+// the centres, transposed (value j of centre l at ct[j * kp + l]), into
+// out[0..kp), with one centre per lane and up to 16 centres per sweep over
+// the point's values
+__attribute__((target("avx2"))) void hw_centres_avx2(const double* a, const double* ct, int kp,
+                                                     int p, double* out) {
+  for (int l = 0; l < kp; l += 16) {
+    const int g = std::min(4, (kp - l) / 4);
+    const double* c = ct + l;
+    __m256d s0 = _mm256_setzero_pd(), s1 = _mm256_setzero_pd();
+    __m256d s2 = _mm256_setzero_pd(), s3 = _mm256_setzero_pd();
+    switch (g) {
+      case 4:
+        for (int j = 0; j < p; ++j, c += kp) {
+          __m256d v = _mm256_broadcast_sd(a + j);
+          HW_AVX_TERM(s0, v, _mm256_loadu_pd(c))
+          HW_AVX_TERM(s1, v, _mm256_loadu_pd(c + 4))
+          HW_AVX_TERM(s2, v, _mm256_loadu_pd(c + 8))
+          HW_AVX_TERM(s3, v, _mm256_loadu_pd(c + 12))
+        }
+        break;
+      case 3:
+        for (int j = 0; j < p; ++j, c += kp) {
+          __m256d v = _mm256_broadcast_sd(a + j);
+          HW_AVX_TERM(s0, v, _mm256_loadu_pd(c))
+          HW_AVX_TERM(s1, v, _mm256_loadu_pd(c + 4))
+          HW_AVX_TERM(s2, v, _mm256_loadu_pd(c + 8))
+        }
+        break;
+      case 2:
+        for (int j = 0; j < p; ++j, c += kp) {
+          __m256d v = _mm256_broadcast_sd(a + j);
+          HW_AVX_TERM(s0, v, _mm256_loadu_pd(c))
+          HW_AVX_TERM(s1, v, _mm256_loadu_pd(c + 4))
+        }
+        break;
+      default:
+        for (int j = 0; j < p; ++j, c += kp) {
+          __m256d v = _mm256_broadcast_sd(a + j);
+          HW_AVX_TERM(s0, v, _mm256_loadu_pd(c))
+        }
+        break;
     }
     _mm256_storeu_pd(out + l, s0);
-    _mm256_storeu_pd(out + l + 4, s1);
+    if (g > 1) _mm256_storeu_pd(out + l + 4, s1);
+    if (g > 2) _mm256_storeu_pd(out + l + 8, s2);
+    if (g > 3) _mm256_storeu_pd(out + l + 12, s3);
   }
 }
 
-void centre_dists_sse2(const double* a, const double* T, int n, int kp, double* out) {
-  for (int l = 0; l < kp; l += 8) {
-    __m128d s[4] = {_mm_setzero_pd(), _mm_setzero_pd(), _mm_setzero_pd(), _mm_setzero_pd()};
-    for (int j = 0; j < n; ++j) {
-      const double* t = T + static_cast<size_t>(j) * kp + l;
-      __m128d aj = _mm_set1_pd(a[j]);
-      for (int g = 0; g < 4; ++g) {
-        __m128d d = _mm_sub_pd(aj, _mm_loadu_pd(t + 2 * g));
-        __m128d p = _mm_mul_pd(d, d);
-        DIST_ROUNDED(p);
-        s[g] = _mm_add_pd(s[g], p);
+#undef HW_AVX_TERM
+
+#endif
+
+// Written from Hartigan & Wong (1979), sections 2 and 3, with the details
+// settled against stats::kmeans() listed above.
+// A Hartigan-Wong fit: the data, the clusters, their centres and the
+// bookkeeping of the live set
+struct HWFit {
+  const double* x = nullptr;  // m x p, column-major
+  size_t m = 0;
+  int p = 0;
+  int k = 0;
+  int kp = 0;                 // k rounded up to a multiple of 4
+  bool simd = false;          // AVX2 kernels
+  hw_count M = 0;
+  std::vector<double> cen;    // the centres, k x p by rows
+  std::vector<double> cent;   // the same transposed, p x kp (for SIMD only)
+  std::vector<int> ic1, ic2;  // each point's closest and second closest clusters
+  std::vector<int> nc;        // cluster sizes
+  std::vector<double> an1;    // n / (n - 1) (infinite for one point)
+  std::vector<double> an2;    // n / (n + 1)
+  // The live set: cluster l is live at optimal-transfer step s when
+  // updated in the last quick-transfer stage (or at the start), or when s <
+  // live_to[l]; the quick-transfer stage checks a point when one of its
+  // clusters has step < changed_to[l] (steps of both stages counted)
+  std::vector<unsigned char> itran;
+  std::vector<hw_count> live_to;
+  std::vector<hw_count> changed_to;
+  hw_count step = 0;          // optimal-transfer steps
+  hw_count all_steps = 0;     // steps of both stages
+  std::vector<double> xi;     // the point at hand
+  std::vector<double> dd;     // its distances to every centre
+  // Bounds that settle most quick-transfer checks without distances: how
+  // far each centre has moved in all (the lengths of its moves added up,
+  // rounded up), and for each point an upper bound on its distance to its
+  // IC1 and a lower bound on its distance to its IC2, with the movements of
+  // those centres when the bounds were set
+  std::vector<double> travel;
+  std::vector<double> up1, up1_at, lo2, lo2_at;
+
+  void set_ratios(int l) {
+    const double n = nc[l];
+    an2[l] = n / (n + 1);
+    an1[l] = nc[l] > 1 ? n / (n - 1) : HW_INF;
+  }
+
+  // Point i's bounds from its squared distances (as computed) to its IC1
+  // (d1) and IC2 (d2, or less), and the movements of those centres then
+  void set_bounds(size_t i, double d1, double at1, double d2, double at2) {
+    up1[i] = std::sqrt(d1) * (1 + HW_MARGIN);
+    up1_at[i] = at1;
+    lo2[i] = std::sqrt(d2) * (1 - HW_MARGIN);
+    lo2_at[i] = at2;
+  }
+
+  // Whether point i's bounds show that a quick-transfer check would keep it
+  // in l1 (its IC1, l2 its IC2): its distance to l2 at least (an1 / an2)^(1/2)
+  // times that to l1, by a margin far wider than the rounding errors of the
+  // distances (the triangle inequality: the point is at most as much further
+  // from l1, and at most as much closer to l2, as those centres have
+  // travelled since the bounds were set)
+  bool stays(size_t i, int l1, int l2) const {
+    const double u = up1[i] + (travel[l1] - up1_at[i]) * (1 + HW_MARGIN);
+    const double w = lo2[i] - (travel[l2] - lo2_at[i]) * (1 + HW_MARGIN);
+    return w > HW_TINY && w * w * an2[l2] > u * u * an1[l1] * (1 + HW_MARGIN);
+  }
+
+  // Centre l moved by the square root of sq (as computed): added to its
+  // travel, rounded up
+  void add_move(int l, double sq) {
+    travel[l] = std::nextafter(travel[l] + std::sqrt(sq) * (1 + HW_MARGIN), HW_INF);
+  }
+
+  // Point i moves from cluster l1 to cluster l2: both centres updated in
+  // place, as Hartigan & Wong update them
+  void transfer(size_t i, int l1, int l2) {
+    const double n1 = nc[l1], n2 = nc[l2];
+    double* c1 = cen.data() + static_cast<size_t>(l1) * p;
+    double* c2 = cen.data() + static_cast<size_t>(l2) * p;
+    double sq1 = 0, sq2 = 0;
+    for (int j = 0; j < p; ++j) {
+      const double v = x[i + static_cast<size_t>(j) * m];
+      const double o1 = c1[j], o2 = c2[j];
+      c1[j] = (HEATMAPR_PROD(o1, n1) - v) / (n1 - 1);
+      c2[j] = (HEATMAPR_PROD(o2, n2) + v) / (n2 + 1);
+      const double e1 = c1[j] - o1, e2 = c2[j] - o2;
+      sq1 += e1 * e1;
+      sq2 += e2 * e2;
+    }
+    add_move(l1, sq1);
+    add_move(l2, sq2);
+    if (simd) {
+      for (int j = 0; j < p; ++j) {
+        cent[static_cast<size_t>(j) * kp + l1] = c1[j];
+        cent[static_cast<size_t>(j) * kp + l2] = c2[j];
       }
     }
-    for (int g = 0; g < 4; ++g) _mm_storeu_pd(out + l + 2 * g, s[g]);
-  }
-}
-#endif
-
-#ifdef HEATMAPR_DIST_NEON
-void centre_dists_neon(const double* a, const double* T, int n, int kp, double* out) {
-  for (int l = 0; l < kp; l += 8) {
-    float64x2_t s[4] = {vdupq_n_f64(0), vdupq_n_f64(0), vdupq_n_f64(0), vdupq_n_f64(0)};
-    for (int j = 0; j < n; ++j) {
-      const double* t = T + static_cast<size_t>(j) * kp + l;
-      float64x2_t aj = vdupq_n_f64(a[j]);
-      for (int g = 0; g < 4; ++g) {
-        float64x2_t d = vsubq_f64(aj, vld1q_f64(t + 2 * g));
-        s[g] = vfmaq_f64(s[g], d, d);
-      }
-    }
-    for (int g = 0; g < 4; ++g) vst1q_f64(out + l + 2 * g, s[g]);
-  }
-}
-#endif
-
-// The squared distances from a row to two centres at once (one per lane),
-// each summed as kmns.f sums it
-using PairDists = void (*)(const double* a, const double* c1, const double* c2, int n,
-                           double* s);
-
-void pair_dists_scalar(const double* a, const double* c1, const double* c2, int n, double* s) {
-  double s1 = 0, s2 = 0;
-  for (int j = 0; j < n; ++j) {
-    double d1 = a[j] - c1[j];
-    double d2 = a[j] - c2[j];
-    s1 = s1 + HEATMAPR_PROD(d1, d1);
-    s2 = s2 + HEATMAPR_PROD(d2, d2);
-  }
-  s[0] = s1;
-  s[1] = s2;
-}
-
-#ifdef HEATMAPR_DIST_X86
-void pair_dists_sse2(const double* a, const double* c1, const double* c2, int n, double* s) {
-  __m128d acc = _mm_setzero_pd();
-  for (int j = 0; j < n; ++j) {
-    __m128d d = _mm_sub_pd(_mm_set1_pd(a[j]), _mm_set_pd(c2[j], c1[j]));
-    __m128d p = _mm_mul_pd(d, d);
-    DIST_ROUNDED(p);
-    acc = _mm_add_pd(acc, p);
-  }
-  _mm_storeu_pd(s, acc);
-}
-#endif
-
-#ifdef HEATMAPR_DIST_NEON
-void pair_dists_neon(const double* a, const double* c1, const double* c2, int n, double* s) {
-  float64x2_t acc = vdupq_n_f64(0);
-  for (int j = 0; j < n; ++j) {
-    float64x2_t c = vcombine_f64(vld1_f64(c1 + j), vld1_f64(c2 + j));
-    float64x2_t d = vsubq_f64(vdupq_n_f64(a[j]), c);
-    acc = vfmaq_f64(acc, d, d);
-  }
-  vst1q_f64(s, acc);
-}
-#endif
-
-PairDists pair_dists_kernel() {
-  const std::string name = dist::kernel_name();
-#ifdef HEATMAPR_DIST_X86
-  if (name != "scalar") return pair_dists_sse2;
-#endif
-#ifdef HEATMAPR_DIST_NEON
-  if (name == "neon") return pair_dists_neon;
-#endif
-  return pair_dists_scalar;
-}
-
-// The kernel for the distance kernel chosen (dist::kernel_name(): "scalar"
-// for tests)
-CentreDists centre_dists_kernel() {
-  const std::string name = dist::kernel_name();
-#ifdef HEATMAPR_DIST_X86
-  if (name == "avx2") return centre_dists_avx2;
-  if (name != "scalar") return centre_dists_sse2;
-#endif
-#ifdef HEATMAPR_DIST_NEON
-  if (name == "neon") return centre_dists_neon;
-#endif
-  return centre_dists_scalar;
-}
-
-struct Kmns {
-  const double* A;     // m x n, row-major
-  const double* Acol;  // m x n, column-major (R's matrix)
-  int m, n, k;
-  std::vector<double> C;  // k x n, row-major
-  std::vector<int> ic1, ic2, nc, ncp, itran, live;
-  std::vector<double> an1, an2, d;
-  int max_qtr;
-  // THE CENTRES TRANSPOSED (n x kp) FOR THE KERNEL, AND ITS DISTANCES
-  int kp = 0;
-  std::vector<double> T, dists;
-  std::vector<int> cand;
-  CentreDists kernel = centre_dists_scalar;
-  PairDists pair = pair_dists_scalar;
-
-  void set_t(int l) {
-    const double* cl = C.data() + static_cast<size_t>(l) * n;
-    for (int j = 0; j < n; ++j) T[static_cast<size_t>(j) * kp + l] = cl[j];
-  }
-
-  // a(i)'s squared distance to centre l, as kmns.f sums it
-  double dist(const double* ai, int l) const {
-    const double* cl = C.data() + static_cast<size_t>(l) * n;
-    double s = 0;
-    for (int j = 0; j < n; ++j) {
-      double df = ai[j] - cl[j];
-      s = s + HEATMAPR_PROD(df, df);
-    }
-    return s;
-  }
-
-  const double* a(int i) const { return A + static_cast<size_t>(i) * n; }
-  double* c(int l) { return C.data() + static_cast<size_t>(l) * n; }
-
-  void optra(int& indx) {
-    for (int l = 0; l < k; ++l) {
-      if (itran[l] == 1) live[l] = m + 1;
-    }
-    for (int i = 0; i < m; ++i) {
-      if (i % 4096 == 0) par::poll();
-      int I = i + 1;  // (1-BASED, AS live AND ncp HOLD THEM)
-      indx = indx + 1;
-      int l1 = ic1[i], l2 = ic2[i], ll = l2;
-      const double* ai = a(i);
-      if (nc[l1] != 1) {
-        // THE CENTRES TO COMPARE WITH (THE CONDITIONS DON'T CHANGE DURING THE
-        // COMPARISONS) - THEIR DISTANCES ALL AT ONCE WHEN THERE ARE SEVERAL
-        int nk = 0;
-        for (int l = 0; l < k; ++l) {
-          if ((I >= live[l1] && I >= live[l]) || l == l1 || l == ll) continue;
-          cand[nk++] = l;
-        }
-        bool batch = nk >= 2;
-        if (batch) kernel(ai, T.data(), n, kp, dists.data());
-        if (ncp[l1] != 0) {
-          double de = batch ? dists[l1] : dist(ai, l1);
-          d[i] = de * an1[l1];
-        }
-        double da = batch ? dists[l2] : dist(ai, l2);
-        double r2 = da * an2[l2];
-        for (int q = 0; q < nk; ++q) {
-          int l = cand[q];
-          double rr = r2 / an2[l];
-          // (kmns.f STOPS ADDING ONCE THE SUM PASSES rr: THE WHOLE SUM DOES
-          // TOO)
-          double dc = batch ? dists[l] : dist(ai, l);
-          if (dc >= rr) continue;
-          r2 = dc * an2[l];
-          l2 = l;
-        }
-        if (r2 >= d[i]) {
-          ic2[i] = l2;
-        } else {
-          indx = 0;
-          live[l1] = m + I;
-          live[l2] = m + I;
-          ncp[l1] = I;
-          ncp[l2] = I;
-          transfer(i, l1, l2);
-        }
-      }
-      if (indx == m) return;
-    }
-    for (int l = 0; l < k; ++l) {
-      itran[l] = 0;
-      live[l] = live[l] - m;
-    }
-  }
-
-  // Row i moves from cluster l1 to l2
-  void transfer(int i, int l1, int l2) {
-    const double* ai = a(i);
-    double al1 = nc[l1], alw = al1 - 1.0, al2 = nc[l2], alt = al2 + 1.0;
-    double* c1 = c(l1);
-    double* c2 = c(l2);
-    for (int j = 0; j < n; ++j) {
-      c1[j] = (HEATMAPR_PROD(c1[j], al1) - ai[j]) / alw;
-      c2[j] = (HEATMAPR_PROD(c2[j], al2) + ai[j]) / alt;
-    }
-    set_t(l1);
-    set_t(l2);
-    nc[l1] = nc[l1] - 1;
-    nc[l2] = nc[l2] + 1;
-    an2[l1] = alw / al1;
-    an1[l1] = BIG;
-    if (alw > 1.0) an1[l1] = alw / (alw - 1.0);
-    an1[l2] = alt / al2;
-    an2[l2] = alt / (alt + 1.0);
+    nc[l1]--;
+    nc[l2]++;
+    set_ratios(l1);
+    set_ratios(l2);
     ic1[i] = l2;
     ic2[i] = l1;
   }
 
-  // false when the quick-transfer steps run out
-  bool qtran(int& indx) {
-    int icoun = 0, istep = 0;
-    while (true) {
-      par::check_interrupt();
-      for (int i = 0; i < m; ++i) {
-        icoun = icoun + 1;
-        istep = istep + 1;
-        if (istep >= max_qtr) {
-          max_qtr = -1;
-          return false;
+  // Centres from the column-major k x p matrix c
+  void set_centres(const double* c) {
+    for (int l = 0; l < k; ++l) {
+      for (int j = 0; j < p; ++j) cen[static_cast<size_t>(l) * p + j] = c[l + static_cast<size_t>(j) * k];
+    }
+    if (simd) {
+      std::fill(cent.begin(), cent.end(), 0.0);
+      for (int j = 0; j < p; ++j) {
+        for (int l = 0; l < k; ++l) cent[static_cast<size_t>(j) * kp + l] = c[l + static_cast<size_t>(j) * k];
+      }
+    }
+  }
+
+  bool live(int l) const { return itran[l] || step < live_to[l]; }
+
+  // Each point's closest and second closest centres (ties to the lower
+  // number), blocks of points shared between threads
+  void nearest_two(int threads) {
+    // (THE CENTRES PADDED WITH ZEROS TO A MULTIPLE OF FOUR)
+    std::vector<double> padded(static_cast<size_t>(kp) * p, 0.0);
+    std::copy(cen.begin(), cen.end(), padded.begin());
+    const size_t block = 256;
+    const size_t n_blocks = (m + block - 1) / block;
+    const double work = static_cast<double>(m) * k * p;
+    par::parallel_for(n_blocks, work < 1048576.0 ? 1 : threads, [&](size_t b) {
+      std::vector<double> out(static_cast<size_t>(kp) * 4);
+      const size_t lo = b * block, hi = std::min(m, lo + block);
+      for (size_t i = lo; i < hi; i += 4) {
+        const size_t r_n = std::min<size_t>(4, hi - i);
+        if (r_n == 4) {
+#ifdef HEATMAPR_DIST_X86
+          if (simd) {
+            hw_points4_avx2(x + i, m, padded.data(), kp, p, out.data());
+          } else {
+            hw_points4_scalar(x + i, m, padded.data(), kp, p, out.data());
+          }
+#else
+          hw_points4_scalar(x + i, m, padded.data(), kp, p, out.data());
+#endif
+        } else {
+          for (int l = 0; l < k; ++l) {
+            for (size_t r = 0; r < r_n; ++r) {
+              out[l * 4 + r] = hw_dist(x + i + r, m, cen.data() + static_cast<size_t>(l) * p, p);
+            }
+          }
         }
-        int l1 = ic1[i], l2 = ic2[i];
-        if (nc[l1] != 1) {
-          const double* ai = a(i);
-          // BOTH DISTANCES NEEDED - BOTH AT ONCE (kmns.f STOPS ADDING THE
-          // SECOND ONCE IT PASSES r2, WHICH ITS WHOLE SUM DOES TOO)
-          if (istep <= ncp[l1] && (istep < ncp[l1] || istep < ncp[l2])) {
-            double sum[2];
-            pair(ai, c(l1), c(l2), n, sum);
-            d[i] = sum[0] * an1[l1];
-            double r2 = d[i] / an2[l2];
-            if (sum[1] < r2) {
-              icoun = 0;
-              indx = 0;
-              itran[l1] = 1;
-              itran[l2] = 1;
-              ncp[l1] = istep + m;
-              ncp[l2] = istep + m;
-              transfer(i, l1, l2);
-            }
-            if (icoun == m) return true;
-            continue;
+        for (size_t r = 0; r < r_n; ++r) {
+          // (A RUNNING SEARCH, THE CLOSEST near1 AT d1 AND THE SECOND near2
+          // AT d2: A LATER CLUSTER TAKES A PLACE ONLY WHEN STRICTLY CLOSER)
+          double d1 = out[r], d2 = out[4 + r];
+          int near1 = 0, near2 = 1;
+          if (d2 < d1) {
+            std::swap(d1, d2);
+            near1 = 1;
+            near2 = 0;
           }
-          if (istep <= ncp[l1]) {
-            double da = 0;
-            const double* c1 = c(l1);
-            for (int j = 0; j < n; ++j) {
-              double db = ai[j] - c1[j];
-              da = da + HEATMAPR_PROD(db, db);
-            }
-            d[i] = da * an1[l1];
-          }
-          if (istep < ncp[l1] || istep < ncp[l2]) {
-            double r2 = d[i] / an2[l2];
-            double dd = 0;
-            const double* c2 = c(l2);
-            bool out = false;
-            for (int j = 0; j < n; ++j) {
-              double de = ai[j] - c2[j];
-              dd = dd + HEATMAPR_PROD(de, de);
-              if (dd >= r2) {
-                out = true;
-                break;
+          for (int l = 2; l < k; ++l) {
+            const double d = out[l * 4 + r];
+            if (d < d2) {
+              if (d < d1) {
+                d2 = d1;
+                near2 = near1;
+                d1 = d;
+                near1 = l;
+              } else {
+                d2 = d;
+                near2 = l;
               }
             }
-            if (!out) {
-              icoun = 0;
-              indx = 0;
-              itran[l1] = 1;
-              itran[l2] = 1;
-              ncp[l1] = istep + m;
-              ncp[l2] = istep + m;
-              transfer(i, l1, l2);
-            }
           }
+          ic1[i + r] = near1;
+          ic2[i + r] = near2;
         }
-        if (icoun == m) return true;
       }
+    });
+  }
+
+  // The mean of each cluster's points, into the column-major k x p matrix
+  // out: each column summed over the cluster's points in row order, then
+  // divided by the count (as rowsum(x, cluster) / tabulate(cluster, k))
+  void means(double* out, int threads) const {
+    par::parallel_for(static_cast<size_t>(p), static_cast<double>(m) * p < 1048576.0 ? 1 : threads,
+                      [&](size_t j) {
+      std::vector<double> sum(k, 0.0);
+      const double* col = x + j * m;
+      for (size_t i = 0; i < m; ++i) sum[ic1[i]] += col[i];
+      for (int l = 0; l < k; ++l) out[j * k + l] = sum[l] / nc[l];
+    });
+  }
+
+  // One pass of the optimal-transfer stage; whether a point moved
+  bool optimal_transfer() {
+    bool any = false;
+    for (size_t i = 0; i < m; ++i, ++step, ++all_steps) {
+      if ((i & 1023) == 0) par::poll();
+      const int l1 = ic1[i];
+      // (A CLUSTER OF ONE POINT KEEPS IT)
+      if (nc[l1] == 1) continue;
+      const int l0 = ic2[i];
+      // THE CLUSTERS TO SEARCH: ALL WHEN THE POINT'S OWN IS LIVE, OTHERWISE
+      // THE LIVE ONES (AND THE SECOND CLOSEST, THE BEST SO FAR AT THE START)
+      const bool all = live(l1);
+      for (int j = 0; j < p; ++j) xi[j] = x[i + static_cast<size_t>(j) * m];
+      bool have_all = false;
+#ifdef HEATMAPR_DIST_X86
+      if (simd) {
+        int need = 2;
+        if (all) {
+          need = k;
+        } else {
+          for (int l = 0; l < k; ++l) need += (l != l1 && l != l0 && live(l));
+        }
+        // (ALL THE DISTANCES AT ONCE WHEN THAT COSTS NO MORE THAN ONE
+        // CENTRE AT A TIME)
+        if (4 * need >= kp) {
+          hw_centres_avx2(xi.data(), cent.data(), kp, p, dd.data());
+          have_all = true;
+        }
+      }
+#endif
+      const double* c = cen.data();
+      const double d1 = have_all ? dd[l1] : hw_dist(xi.data(), 1, c + static_cast<size_t>(l1) * p, p);
+      const double r1 = d1 * an1[l1];
+      int l2 = l0;
+      double d2 = have_all ? dd[l0] : hw_dist(xi.data(), 1, c + static_cast<size_t>(l0) * p, p);
+      double best = d2 * an2[l0];
+      for (int l = 0; l < k; ++l) {
+        if (l == l1 || l == l0 || !(all || live(l))) continue;
+        const double limit = best / an2[l];
+        const double d = have_all ? dd[l] : hw_dist_below(xi.data(), 1, c + static_cast<size_t>(l) * p, p, limit);
+        if (d < limit) {
+          best = d * an2[l];
+          d2 = d;
+          l2 = l;
+        }
+      }
+      if (best >= r1) {
+        // (NO TRANSFER: THE BEST CLUSTER BECOMES THE SECOND CLOSEST)
+        ic2[i] = l2;
+        set_bounds(i, d1, travel[l1], d2, travel[l2]);
+      } else {
+        set_bounds(i, d2, travel[l2], d1, travel[l1]);
+        transfer(i, l1, l2);
+        live_to[l1] = live_to[l2] = step + M;
+        changed_to[l1] = changed_to[l2] = all_steps + M;
+        any = true;
+      }
+    }
+    return any;
+  }
+
+  // The quick-transfer stage; false when it reached its step limit
+  bool quick_transfer() {
+    const hw_count limit = 50 * M - 1;
+    hw_count q = 0, since = 0;
+    size_t i = 0;
+    for (;;) {
+      if ((q & 4095) == 0) par::poll();
+      const int l1 = ic1[i], l2 = ic2[i];
+      bool swapped = false;
+      // (ONLY POINTS WHOSE CLUSTERS CHANGED LATELY - AND WHOSE BOUNDS DON'T
+      // ALREADY SETTLE IT; A CLUSTER OF ONE POINT KEEPS IT)
+      if ((all_steps < changed_to[l1] || all_steps < changed_to[l2]) && nc[l1] > 1 &&
+          !stays(i, l1, l2)) {
+        double d1, d2;
+        hw_dist2(x + i, m, cen.data() + static_cast<size_t>(l1) * p, cen.data() + static_cast<size_t>(l2) * p, p,
+                 d1, d2);
+        const double r1 = d1 * an1[l1];
+        if (d2 < r1 / an2[l2]) {
+          set_bounds(i, d2, travel[l2], d1, travel[l1]);
+          transfer(i, l1, l2);
+          itran[l1] = itran[l2] = 1;
+          changed_to[l1] = changed_to[l2] = all_steps + M;
+          swapped = true;
+        } else {
+          set_bounds(i, d1, travel[l1], d2, travel[l2]);
+        }
+      }
+      ++q;
+      ++all_steps;
+      since = swapped ? 0 : since + 1;
+      if (since >= M) return true;
+      if (q >= limit) return false;
+      if (++i == m) i = 0;
     }
   }
 };
 
 }  // namespace
 
-// k-means of the rows of x (no missing values) from the rows of centres:
-// list(cluster (1-based), centers (k x p), iter, ifault) as kmns.f returns
-// them (ifault 1: an empty cluster, 2: not converged in iter_max
-// iterations, 3: k outside 2..n - 1, 4: too many quick-transfer steps)
+// Written from Hartigan & Wong (1979), sections 1-3, Hartigan (1975),
+// chapter 4, and ?kmeans, with stats::kmeans() as a black box for the
+// details listed above.
+// k-means of the rows of x (no missing values) from the rows of centres
+// (distinct), by the algorithm of Hartigan and Wong: list(cluster (1-based),
+// centers (k x p, the means of the clusters), iter (the optimal-transfer
+// passes, iter_max + 1 when they didn't converge), ifault: 0 converged; 1 an
+// empty cluster (cluster: each point's closest centre, centers: the starting
+// ones); 2 not converged in iter_max iterations; 3 k < 2 or k >= m (cluster
+// NA); 4 the quick-transfer stage stopped at its step limit)
 [[cpp11::register]]
 cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> centres,
                           int iter_max, int threads) {
-  const int m = x.nrow(), n = x.ncol(), k = centres.nrow();
-  if (centres.ncol() != n) cpp11::stop("centres need the columns of x");
-  Kmns w;
-  w.m = m;
-  w.n = n;
-  w.k = k;
-  w.Acol = REAL(x.data());
   using namespace cpp11::literals;
-  auto result = [&](int ifault, int iter) {
-    cpp11::writable::integers cluster(m);
-    for (int i = 0; i < m; ++i) cluster[i] = ifault == 3 ? NA_INTEGER : w.ic1.empty() ? NA_INTEGER : w.ic1[i] + 1;
-    cpp11::writable::doubles_matrix<> cen(k, n);
-    for (int l = 0; l < k; ++l) {
-      for (int j = 0; j < n; ++j) cen(l, j) = w.C.empty() ? NA_REAL : w.C[static_cast<size_t>(l) * n + j];
-    }
-    return cpp11::writable::list({"cluster"_nm = cluster, "centers"_nm = cen,
+  const size_t m = x.nrow();
+  const int p = x.ncol();
+  const int k = centres.nrow();
+  if (centres.ncol() != p) cpp11::stop("the centres must have the columns of the data");
+  if (iter_max < 1) cpp11::stop("iter_max must be at least 1");
+  if (threads < 1) threads = 1;
+  const double* cv = REAL(centres.data());
+  cpp11::writable::doubles_matrix<> centers(k, p);
+  double* co = REAL(centers.data());
+  std::copy(cv, cv + static_cast<size_t>(k) * p, co);
+  cpp11::writable::integers cluster(static_cast<R_xlen_t>(m));
+  int* cl = INTEGER(cluster);
+  auto result = [&](int iter, int ifault) {
+    return cpp11::writable::list({"cluster"_nm = cluster, "centers"_nm = centers,
                                   "iter"_nm = iter, "ifault"_nm = ifault});
   };
-  if (k <= 1 || k >= m) return result(3, 0);
-  // ROWS IN ROW-MAJOR ORDER (NOT ZERO-FILLED FIRST), IN TILES OF 64 ROWS AND
-  // 16 COLUMNS
-  std::unique_ptr<double[]> rows(new double[static_cast<size_t>(m) * n]);
-  {
-    const size_t block = 64;
-    size_t nb = (static_cast<size_t>(m) + block - 1) / block;
-    double* rv = rows.get();
-    par::parallel_for(nb, static_cast<double>(m) * n < 1048576.0 ? 1 : threads, [&](size_t b) {
-      size_t lo = b * block, hi = std::min<size_t>(m, lo + block);
-      for (int j0 = 0; j0 < n; j0 += 16) {
-        int j1 = std::min(n, j0 + 16);
-        for (size_t i = lo; i < hi; ++i) {
-          for (int j = j0; j < j1; ++j) rv[i * n + j] = w.Acol[static_cast<size_t>(j) * m + i];
-        }
-      }
-    }, 16);
+  // INVALID NUMBER OF CLUSTERS
+  if (k < 2 || static_cast<size_t>(k) >= m) {
+    std::fill(cl, cl + m, NA_INTEGER);
+    return result(0, 3);
   }
-  w.A = rows.get();
-  w.C.resize(static_cast<size_t>(k) * n);
+  HWFit f;
+  f.x = REAL(x.data());
+  f.m = m;
+  f.p = p;
+  f.k = k;
+  f.kp = (k + 3) / 4 * 4;
+  f.M = static_cast<hw_count>(m);
+#ifdef HEATMAPR_DIST_X86
+  f.simd = std::strcmp(dist::kernel_name(), "avx2") == 0;
+#endif
+  f.cen.assign(static_cast<size_t>(k) * p, 0.0);
+  if (f.simd) f.cent.assign(static_cast<size_t>(p) * f.kp, 0.0);
+  f.ic1.assign(m, 0);
+  f.ic2.assign(m, 0);
+  f.nc.assign(k, 0);
+  f.an1.assign(k, 0.0);
+  f.an2.assign(k, 0.0);
+  f.xi.assign(p, 0.0);
+  f.dd.assign(f.kp, 0.0);
+  // (NO BOUNDS YET: AN INFINITE UPPER BOUND SETTLES NOTHING)
+  f.travel.assign(k, 0.0);
+  f.up1.assign(m, HW_INF);
+  f.up1_at.assign(m, 0.0);
+  f.lo2.assign(m, 0.0);
+  f.lo2_at.assign(m, 0.0);
+  // EACH POINT'S CLOSEST AND SECOND CLOSEST STARTING CENTRES
+  f.set_centres(cv);
+  f.nearest_two(threads);
+  for (size_t i = 0; i < m; ++i) f.nc[f.ic1[i]]++;
+  // (AN EMPTY CLUSTER: A STARTING CENTRE CLOSEST TO NO POINT)
   for (int l = 0; l < k; ++l) {
-    for (int j = 0; j < n; ++j) w.C[static_cast<size_t>(l) * n + j] = centres(l, j);
-  }
-  w.ic1.assign(m, 0);
-  w.ic2.assign(m, 1);
-  w.nc.assign(k, 0);
-  w.ncp.assign(k, 0);
-  w.itran.assign(k, 0);
-  w.live.assign(k, 0);
-  w.an1.assign(k, 0);
-  w.an2.assign(k, 0);
-  w.d.assign(m, 0);
-  w.max_qtr = static_cast<int>(std::min<long long>(2147483647LL, 50LL * m));
-  // THE KERNEL AND THE TRANSPOSED CENTRES
-  w.kernel = centre_dists_kernel();
-  w.pair = pair_dists_kernel();
-  w.kp = (k + 7) / 8 * 8;
-  w.T.assign(static_cast<size_t>(n) * w.kp, 0.0);
-  for (int l = 0; l < k; ++l) w.set_t(l);
-  w.dists.assign(w.kp, 0.0);
-  w.cand.assign(k, 0);
-  // EVERY ROW'S NEAREST AND SECOND NEAREST CENTRES (THREADS - EACH ROW ON ITS
-  // OWN): kmns.f STOPS ADDING ONCE A SUM PASSES THE SECOND NEAREST SO FAR,
-  // WHICH THE WHOLE SUM DOES TOO
-  par::parallel_for((static_cast<size_t>(m) + 255) / 256,
-                    static_cast<double>(m) * n * k < 1048576.0 ? 1 : threads, [&](size_t b) {
-    std::vector<double> dt_all(w.kp);
-    size_t lo = b * 256, hi = std::min<size_t>(m, lo + 256);
-    for (size_t ii = lo; ii < hi; ++ii) {
-      const double* ai = w.A + ii * n;
-      w.kernel(ai, w.T.data(), n, w.kp, dt_all.data());
-      double dt[2] = {dt_all[0], dt_all[1]};
-      int c1 = 0, c2 = 1;
-      if (dt[0] > dt[1]) {
-        c1 = 1;
-        c2 = 0;
-        std::swap(dt[0], dt[1]);
-      }
-      for (int l = 2; l < k; ++l) {
-        double db = dt_all[l];
-        if (db >= dt[1]) continue;
-        if (db >= dt[0]) {
-          dt[1] = db;
-          c2 = l;
-        } else {
-          dt[1] = dt[0];
-          c2 = c1;
-          dt[0] = db;
-          c1 = l;
-        }
-      }
-      w.ic1[ii] = c1;
-      w.ic2[ii] = c2;
+    if (f.nc[l] == 0) {
+      for (size_t i = 0; i < m; ++i) cl[i] = f.ic1[i] + 1;
+      return result(0, 1);
     }
-  }, 4);
-  // CENTRES OF THE CLUSTERS (EACH COLUMN SUMMED IN ROW ORDER)
-  for (int i = 0; i < m; ++i) w.nc[w.ic1[i]]++;
-  auto centre_sums = [&]() {
-    // (EACH COLUMN'S SUMS IN A VECTOR OF ITS OWN, SO THAT THREADS DON'T
-    // SHARE CACHE LINES)
-    par::parallel_for(static_cast<size_t>(n), static_cast<double>(m) * n < 1048576.0 ? 1 : threads,
-                      [&](size_t j) {
-      const double* col = w.Acol + j * m;
-      const int* cl = w.ic1.data();
-      std::vector<double> sum(k, 0.0);
-      for (int i = 0; i < m; ++i) sum[cl[i]] += col[i];
-      for (int l = 0; l < k; ++l) w.C[static_cast<size_t>(l) * n + j] = sum[l];
-    });
-  };
-  centre_sums();
-  for (int l = 0; l < k; ++l) {
-    if (w.nc[l] == 0) return result(1, 0);
-    double aa = w.nc[l];
-    for (int j = 0; j < n; ++j) w.C[static_cast<size_t>(l) * n + j] /= aa;
-    w.an2[l] = aa / (aa + 1.0);
-    w.an1[l] = BIG;
-    if (aa > 1.0) w.an1[l] = aa / (aa - 1.0);
-    w.itran[l] = 1;
-    w.ncp[l] = -1;
-    w.set_t(l);
   }
-  int indx = 0, ifault = 2, ij = 1;
-  for (; ij <= iter_max; ++ij) {
-    w.optra(indx);
-    if (indx == m) {
+  // THE CENTRES OF THE CLUSTERS, EVERY CLUSTER LIVE
+  std::vector<double> mu(static_cast<size_t>(k) * p);
+  f.means(mu.data(), threads);
+  f.set_centres(mu.data());
+  for (int l = 0; l < k; ++l) f.set_ratios(l);
+  f.itran.assign(k, 1);
+  f.live_to.assign(k, -f.M);
+  f.changed_to.assign(k, -f.M);
+  // THE TWO STAGES IN TURN
+  int iter = 0, ifault = 2;
+  while (iter < iter_max) {
+    ++iter;
+    if (!f.optimal_transfer()) {
       ifault = 0;
       break;
     }
-    if (!w.qtran(indx)) {
+    std::fill(f.itran.begin(), f.itran.end(), 0);
+    if (!f.quick_transfer()) {
       ifault = 4;
       break;
     }
+    // (TWO CLUSTERS: EACH POINT'S OTHER CLUSTER IS ITS SECOND CLOSEST, SO
+    // THE QUICK-TRANSFER STAGE HAS FOUND THE OPTIMUM)
     if (k == 2) {
       ifault = 0;
       break;
     }
-    std::fill(w.ncp.begin(), w.ncp.end(), 0);
   }
-  int iter = ij > iter_max ? iter_max + 1 : ij;
-  // FINAL CENTRES
-  centre_sums();
-  for (int j = 0; j < n; ++j) {
-    for (int l = 0; l < k; ++l) w.C[static_cast<size_t>(l) * n + j] /= static_cast<double>(w.nc[l]);
-  }
-  return result(ifault, iter);
+  if (ifault == 2 && iter_max < std::numeric_limits<int>::max()) iter = iter_max + 1;
+  // THE CLUSTERS AND THEIR EXACT MEANS
+  for (size_t i = 0; i < m; ++i) cl[i] = f.ic1[i] + 1;
+  f.means(co, threads);
+  return result(iter, ifault);
 }
 
 // Means of the rows of x (no missing values) in each of groups 1..k (every

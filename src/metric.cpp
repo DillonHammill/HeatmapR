@@ -37,41 +37,52 @@ inline double maximum(const double* a, const double* b, int p) { return dist::ro
 inline double minkowski(const double* a, const double* b, int p, double q) { return dist::row_dist(a, b, p, 4, q); }
 inline double dot_dist(const double* a, const double* b, int p) { return dist::row_dist(a, b, p, 5, 2); }
 
-// The Canberra distance as stats::dist() computes it: terms whose numerator
-// and denominator are both zero are dropped and the sum scaled up to all the
-// columns
-inline double canberra(const double* a, const double* b, int p) {
-  double dist = 0;
-  int count = 0;
-  for (int k = 0; k < p; ++k) {
-    double sum = std::fabs(a[k]) + std::fabs(b[k]);
-    double diff = std::fabs(a[k] - b[k]);
-    if (sum > DBL_MIN || diff > DBL_MIN) {
-      double dev = diff / sum;
-      if (!std::isnan(dev) || (!std::isfinite(diff) && diff == sum && ((dev = 1.), true))) {
-        dist += dev;
-        count++;
-      }
-    }
-  }
+// A sum over `count` of p columns scaled up to all p, as stats::dist()
+// scales it (dividing by the fraction of the columns used); NA without
+// columns. (Written from ?dist; the order of the operations is the one whose
+// results are identical to dist()'s, found by comparing them.)
+inline double scaled_sum(double sum, int count, int p) {
   if (count == 0) return NA;
-  if (count != p) dist /= (static_cast<double>(count) / p);
-  return dist;
+  if (count == p) return sum;
+  return sum / (static_cast<double>(count) / p);
 }
 
-// The binary (asymmetric Jaccard) distance: of the columns where either row
-// is non-zero, the proportion where only one is
+// One column's term of the Canberra distance, |x - y| / (|x| + |y|), added
+// to sum and counted - unless numerator and denominator are both zero
+// (values no larger than DBL_MIN count as zero, as in stats::dist()), when
+// the column is left out. Finite values of opposite signs whose difference
+// overflows give Inf / Inf: the exact ratio is then 1, which is what dist()
+// counts. (Written from ?dist and dist()'s results.)
+inline void canberra_add(double x, double y, double& sum, int& count) {
+  double num = std::fabs(x - y);
+  double den = std::fabs(x) + std::fabs(y);
+  if (num <= DBL_MIN && den <= DBL_MIN) return;
+  double t = num / den;
+  sum += std::isnan(t) ? 1.0 : t;
+  ++count;
+}
+
+// The Canberra and binary distances of two rows without missing values.
+// Written from ?dist (Canberra: terms with zero numerator and denominator
+// left out and the sum scaled up; binary: the proportion of the columns
+// where exactly one row is non-zero among those where at least one is, 0
+// when neither is) and stats::dist()'s results, compared as a black box.
+// The terms are added in the order of the columns.
+inline double canberra(const double* a, const double* b, int p) {
+  double sum = 0;
+  int count = 0;
+  for (int k = 0; k < p; ++k) canberra_add(a[k], b[k], sum, count);
+  return scaled_sum(sum, count, p);
+}
 inline double binary(const double* a, const double* b, int p) {
-  int count = 0, dist = 0;
+  int either = 0, one = 0;
   for (int k = 0; k < p; ++k) {
-    bool x = a[k] != 0., y = b[k] != 0.;
-    if (x || y) {
-      count++;
-      if (!(x && y)) dist++;
-    }
+    bool u = a[k] != 0, v = b[k] != 0;
+    either += u || v;
+    one += u != v;
   }
-  if (count == 0) return 0;
-  return static_cast<double>(dist) / count;
+  if (either == 0) return 0;
+  return static_cast<double>(one) / either;
 }
 
 // The binary distance from bit vectors: (one non-zero) / (either non-zero)
@@ -181,26 +192,26 @@ TauCounts tau_counts(const double* a, const double* b, int m, Scratch& w) {
   return c;
 }
 
-// Tau of rows without missing values, as cor(method = "kendall") computes it
-// (sums over every ordered pair, twice those over l < k)
-inline double tau_complete(const TauCounts& c) {
+// Kendall's tau from the counts of tau_counts() (c.s: the sum over pairs
+// l < k of sign(a[k] - a[l]) * sign(b[k] - b[l]); c.xa, c.xb: the pairs l < k
+// whose values differ in a, in b): for rows without missing values
+// (tau_complete) and for the m values two rows share (tau_pairwise).
+// Written from Kendall (1945) (tau-b, s / sqrt(xa * xb)) and cor(method =
+// "kendall")'s results, compared as a black box: the counts are taken over
+// ordered pairs (2s, 2xa and 2xb, each a whole number held exactly) and the
+// two square roots taken apart, which is how cor() rounds tau-b - as the
+// sign vectors of kendall_complete() do. Missing (NaN) when a row's values
+// are all tied.
+inline double tau_b(const TauCounts& c) {
+  if (c.xa == 0 || c.xb == 0) return NA;
   double num = static_cast<double>(2 * c.s);
-  double va = static_cast<double>(2 * c.xa), vb = static_cast<double>(2 * c.xb);
-  double xa = std::sqrt(va), xb = std::sqrt(vb);
-  if (xa == 0 || xb == 0) return NA;
-  return clamp1(num / (xa * xb));
+  double den = std::sqrt(static_cast<double>(2 * c.xa)) * std::sqrt(static_cast<double>(2 * c.xb));
+  return clamp1(num / den);
 }
-
-// Tau of the values two rows share, as cor(use = "pairwise.complete.obs")
-// computes it for each pair
+inline double tau_complete(const TauCounts& c) { return tau_b(c); }
 inline double tau_pairwise(const TauCounts& c, int m) {
   if (m <= 1) return NA;
-  double xa = static_cast<double>(std::sqrt(static_cast<long double>(2 * c.xa)));
-  double xb = static_cast<double>(std::sqrt(static_cast<long double>(2 * c.xb)));
-  if (xa == 0. || xb == 0.) return NA;
-  double r = static_cast<double>(2 * c.s);
-  r /= (xa * xb);
-  return clamp1(r);
+  return tau_b(c);
 }
 
 inline double one_minus(double r) { return std::isnan(r) ? 1 : 1 - r; }
@@ -218,142 +229,133 @@ double kendall_complete(const Data& a, int i, const Data& b, int j, Scratch& w) 
   return one_minus(tau_complete(tau_counts(a.row(i), b.row(j), a.p, w)));
 }
 
-// PAIRS WITH MISSING VALUES - AS R COMPUTES THEM ----------------------------
+// PAIRS WITH MISSING VALUES -------------------------------------------------
 
 inline bool ok(double v) { return std::isfinite(v); }
 
+// The distances of stats::dist() between two rows with missing values,
+// over the columns where both values are finite (NA without any). Written
+// from ?dist (missing values left out, sums scaled up to all the columns)
+// and dist()'s results on the same rows with non-finite values as NA,
+// compared as a black box: the terms are added in the order of the columns
+// in double precision and scaled as scaled_sum() scales them, which gives
+// dist()'s results exactly (each product rounded on its own, as R's
+// compiled code rounds it, see HEATMAPR_PROD).
 double euclidean_na(const double* a, const double* b, int p) {
-  double dist = 0;
+  double sum = 0;
   int count = 0;
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
-      double dev = a[k] - b[k];
-      dist += HEATMAPR_PROD(dev, dev);
-      count++;
+      double d = a[k] - b[k];
+      sum += HEATMAPR_PROD(d, d);
+      ++count;
     }
   }
   if (count == 0) return NA;
-  if (count != p) dist /= (static_cast<double>(count) / p);
-  return std::sqrt(dist);
+  return std::sqrt(scaled_sum(sum, count, p));
 }
-
 double manhattan_na(const double* a, const double* b, int p) {
-  double dist = 0;
+  double sum = 0;
   int count = 0;
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
-      dist += std::fabs(a[k] - b[k]);
-      count++;
+      sum += std::fabs(a[k] - b[k]);
+      ++count;
     }
   }
-  if (count == 0) return NA;
-  if (count != p) dist /= (static_cast<double>(count) / p);
-  return dist;
+  return scaled_sum(sum, count, p);
 }
-
+// (THE LARGEST DIFFERENCE IS NOT SCALED)
 double maximum_na(const double* a, const double* b, int p) {
-  double dist = -DBL_MAX;
+  double v = 0;
   int count = 0;
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
       double dev = std::fabs(a[k] - b[k]);
-      if (dev > dist) dist = dev;
-      count++;
+      if (dev > v) v = dev;
+      ++count;
     }
   }
-  if (count == 0) return NA;
-  return dist;
+  return count == 0 ? NA : v;
 }
-
-inline double r_pow(double x, double y) {
-  if (x == 1. || y == 0.) return 1.;
-  if (y == 2.0) return x * x;
-  return std::pow(x, y);
-}
-
 double minkowski_na(const double* a, const double* b, int p, double q) {
-  double dist = 0;
+  double sum = 0;
   int count = 0;
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
-      dist += r_pow(std::fabs(a[k] - b[k]), q);
-      count++;
+      sum += std::pow(std::fabs(a[k] - b[k]), q);
+      ++count;
     }
   }
   if (count == 0) return NA;
-  if (count != p) dist /= (static_cast<double>(count) / p);
-  return r_pow(dist, 1.0 / q);
+  return std::pow(scaled_sum(sum, count, p), 1.0 / q);
 }
-
+// (COLUMNS WHOSE TERM IS 0 / 0 ARE LEFT OUT TOO: count IS THE COLUMNS KEPT)
 double canberra_na(const double* a, const double* b, int p) {
-  double dist = 0;
+  double sum = 0;
   int count = 0;
   for (int k = 0; k < p; ++k) {
+    if (ok(a[k]) && ok(b[k])) canberra_add(a[k], b[k], sum, count);
+  }
+  return scaled_sum(sum, count, p);
+}
+// (NA WITHOUT SHARED COLUMNS; 0 WHEN NO SHARED COLUMN IS NON-ZERO)
+double binary_na(const double* a, const double* b, int p) {
+  int count = 0, either = 0, one = 0;
+  for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
-      double sum = std::fabs(a[k]) + std::fabs(b[k]);
-      double diff = std::fabs(a[k] - b[k]);
-      if (sum > DBL_MIN || diff > DBL_MIN) {
-        double dev = diff / sum;
-        if (!std::isnan(dev)) {
-          dist += dev;
-          count++;
-        }
-      }
+      bool u = a[k] != 0, v = b[k] != 0;
+      ++count;
+      either += u || v;
+      one += u != v;
     }
   }
   if (count == 0) return NA;
-  if (count != p) dist /= (static_cast<double>(count) / p);
-  return dist;
+  if (either == 0) return 0;
+  return static_cast<double>(one) / either;
 }
 
-double binary_na(const double* a, const double* b, int p) {
-  int total = 0, count = 0, dist = 0;
-  for (int k = 0; k < p; ++k) {
-    if (ok(a[k]) && ok(b[k])) {
-      if (a[k] != 0. || b[k] != 0.) {
-        count++;
-        if (!(a[k] != 0. && b[k] != 0.)) dist++;
-      }
-      total++;
-    }
-  }
-  if (total == 0) return NA;
-  if (count == 0) return 0;
-  return static_cast<double>(dist) / count;
-}
-
-// Pearson correlation over the shared values, as cor(use =
-// "pairwise.complete.obs") computes it; a missing correlation counts as 0
+// One minus the Pearson correlation of the values two rows share, as cor(a,
+// b, use = "pairwise.complete.obs") computes it for the pair (clamped to
+// [-1, 1]); 1 (a missing correlation counts as zero) for fewer than two
+// shared values or no variation among either row's shared values. Written
+// from ?cor and cor()'s results, compared as a black box, with the usual
+// two-pass computation: the means first, then the sums of products of the
+// deviations from them. Everything is kept in extended precision (long
+// double) and rounded once at the end; that arithmetic gives cor()'s
+// results exactly (including its zero correlations for constant rows whose
+// extended-precision mean is inexact).
 double pearson_na(const double* a, const double* b, int p) {
-  long double xmean = 0, ymean = 0;
-  int nobs = 0;
+  // THE MEANS OF THE SHARED VALUES
+  long double sa = 0, sb = 0;
+  int m = 0;
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
-      nobs++;
-      xmean += a[k];
-      ymean += b[k];
+      sa += a[k];
+      sb += b[k];
+      ++m;
     }
   }
-  if (nobs < 2) return 1;
-  xmean /= nobs;
-  ymean /= nobs;
-  int n1 = nobs - 1;
-  long double xsd = 0, ysd = 0, sum = 0;
+  if (m < 2) return 1;
+  long double ma = sa / m, mb = sb / m;
+  // THE SUMS OF SQUARES AND PRODUCTS OF THE DEVIATIONS
+  long double sab = 0, saa = 0, sbb = 0;
   for (int k = 0; k < p; ++k) {
     if (ok(a[k]) && ok(b[k])) {
-      long double xm = a[k] - xmean, ym = b[k] - ymean;
-      sum += xm * ym;
-      xsd += xm * xm;
-      ysd += ym * ym;
+      long double da = a[k] - ma, db = b[k] - mb;
+      sab += da * db;
+      saa += da * da;
+      sbb += db * db;
     }
   }
-  if (xsd == 0. || ysd == 0.) return 1;
-  xsd /= n1;
-  ysd /= n1;
-  sum /= n1;
-  sum /= (std::sqrt(xsd) * std::sqrt(ysd));
-  sum = clamp1l(sum);
-  return clip2(1 - static_cast<double>(sum));
+  if (saa == 0 || sbb == 0) return 1;
+  // THE COVARIANCE OVER THE PRODUCT OF THE STANDARD DEVIATIONS
+  long double n1 = m - 1;
+  long double r = (sab / n1) / (std::sqrt(saa / n1) * std::sqrt(sbb / n1));
+  // (CLAMPED BEFORE IT IS ROUNDED: THE SAME AS ROUNDING THEN CLAMPING)
+  double rd = static_cast<double>(clamp1l(r));
+  if (std::isnan(rd)) return 1;
+  return clip2(1 - rd);
 }
 
 // Cosine similarity over the shared values; no shared values - missing
@@ -389,17 +391,50 @@ int shared(const double* a, const double* b, int p, Scratch& w) {
   return m;
 }
 
-// Mean as cov.c's MEAN computes it (two passes)
-long double mean2(const double* x, int m) {
-  long double sum = 0;
-  for (int k = 0; k < m; ++k) sum += x[k];
-  long double tmp = sum / m;
-  if (std::isfinite(static_cast<double>(tmp))) {
-    sum = 0;
-    for (int k = 0; k < m; ++k) sum += (x[k] - tmp);
-    tmp = tmp + sum / m;
+// The mean of v[0..m) in extended precision with a correction (the mean of
+// the residuals added), rounded to double - the two-pass mean of mean()
+inline double mean_corrected(const double* v, int m) {
+  long double s = 0;
+  for (int i = 0; i < m; ++i) s += v[i];
+  s /= m;
+  long double t = 0;
+  for (int i = 0; i < m; ++i) t += v[i] - s;
+  s += t / m;
+  return static_cast<double>(s);
+}
+
+// One minus the Pearson correlation of the ranks xx and yy (m >= 2 values
+// each), for Spearman's correlation of the values two rows share; 1 when
+// either has no variation. cor(method = "spearman", use =
+// "pairwise.complete.obs") ranks each pair's shared values and correlates
+// the ranks as cor() correlates complete vectors, which rounds differently
+// from its pairwise Pearson correlation (pearson_na()). Written from ?cor
+// and cor()'s results, compared as a black box: means rounded to double,
+// sums of products of the deviations in extended precision, then the
+// covariance and the two standard deviations each rounded to double (the
+// standard deviations as square roots of the extended-precision variances)
+// and the covariance divided by their product. (The sums are exact for
+// ranks, so only these last steps decide the result.)
+double rank_corr_dist(const double* xx, const double* yy, int m) {
+  // THE MEANS
+  long double mx = mean_corrected(xx, m), my = mean_corrected(yy, m);
+  // THE SUMS OF SQUARES AND PRODUCTS OF THE DEVIATIONS
+  long double sxy = 0, sxx = 0, syy = 0;
+  for (int i = 0; i < m; ++i) {
+    long double dx = xx[i] - mx, dy = yy[i] - my;
+    sxy += dx * dy;
+    sxx += dx * dx;
+    syy += dy * dy;
   }
-  return tmp;
+  if (sxx == 0 || syy == 0) return 1;
+  // THE CORRELATION FROM THE COVARIANCE AND STANDARD DEVIATIONS
+  long double n1 = m - 1;
+  double cov = static_cast<double>(sxy / n1);
+  double sdx = static_cast<double>(std::sqrt(sxx / n1));
+  double sdy = static_cast<double>(std::sqrt(syy / n1));
+  double r = cov / (sdx * sdy);
+  if (std::isnan(r)) return 1;
+  return clip2(1 - clamp1(r));
 }
 
 // Spearman correlation of the values two rows share: each ranked among the
@@ -463,28 +498,7 @@ double spearman_na(const double* a, const double* b, int p, const int* oa,
     average_ranks(w.a.data(), m, w.ra.data(), w.o);
     average_ranks(w.b.data(), m, w.rb.data(), w.o);
   }
-  const double* xx = w.ra.data();
-  const double* yy = w.rb.data();
-  long double xxm = static_cast<double>(mean2(xx, m));
-  long double yym = static_cast<double>(mean2(yy, m));
-  int n1 = m - 1;
-  long double sum = 0;
-  for (int k = 0; k < m; ++k) {
-    sum += static_cast<long double>(xx[k] - xxm) * (yy[k] - yym);
-  }
-  double ans = static_cast<double>(sum / n1);
-  long double sx = 0, sy = 0;
-  for (int k = 0; k < m; ++k) {
-    sx += static_cast<long double>(xx[k] - xxm) * (xx[k] - xxm);
-    sy += static_cast<long double>(yy[k] - yym) * (yy[k] - yym);
-  }
-  sx /= n1;
-  sy /= n1;
-  double xm = static_cast<double>(std::sqrt(sx));
-  double ym = static_cast<double>(std::sqrt(sy));
-  if (xm == 0. || ym == 0.) return 1;
-  ans /= (xm * ym);
-  return 1 - clamp1(ans);
+  return rank_corr_dist(w.ra.data(), w.rb.data(), m);
 }
 
 double kendall_na(const double* a, const double* b, int p, Scratch& w) {

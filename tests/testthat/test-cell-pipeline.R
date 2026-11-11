@@ -264,19 +264,9 @@ test_that("tree checks reject what the R checks rejected", {
   expect_identical(check(t), "ok")
 })
 
-test_that("ramps through tied positions are interpolated as approx1() does", {
-  # (THE BINARY SEARCH OF stats' approx1() FINDS THE INTERVAL)
-  approx1 <- function(v, x, y) {
-    i <- 1
-    j <- length(x)
-    while(i < j - 1) {
-      ij <- (i + j) %/% 2
-      if(v < x[ij]) j <- ij else i <- ij
-    }
-    if(v == x[j]) return(y[j])
-    if(v == x[i]) return(y[i])
-    y[i] + (y[j] - y[i]) * ((v - x[i]) / (x[j] - x[i]))
-  }
+test_that("ramps through tied positions are interpolated as approx() does", {
+  # (stats::approx() WITH ties = "ordered" KEEPS TIED POSITIONS, AS A RAMP DOES)
+  approx1 <- function(v, x, y) stats::approx(x, y, xout = v, ties = "ordered")$y
   knots <- c(0, 0.25, 0.25, 0.6, 1)
   channels <- cbind(c(0, 0.2, 0.9, 0.5, 1), c(1, 0.5, 0.25, 0, 0.3), c(0.1, 0.4, 0.4, 0.8, 0.2))
   k <- c(0, 0.1, 0.25, 0.3, 0.6, 0.99, 1, runif(200))

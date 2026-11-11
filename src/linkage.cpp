@@ -2,11 +2,10 @@
 //
 // Three algorithms, each building the tree stats::hclust() builds:
 //
-// - The nearest-neighbour list of stats::hclust() itself (hclust.f, Murtagh
-//   1985), ported step by step: every merge, height and tie is resolved as
-//   hclust() resolves it, so the tree is identical to hclust()'s for every
-//   linkage, including centroid and median linkage (whose heights can
-//   decrease) and tied distances.
+// - A generic algorithm for every linkage, which merges the closest pair of
+//   clusters at each step (used for centroid and median linkage, whose
+//   heights can decrease, and for every linkage when HEATMAPR_LINKAGE=list):
+//   the generic algorithm of Mullner (2011).
 // - The nearest-neighbour chain (Murtagh 1983; Mullner 2011) for the
 //   reducible linkages (Ward, complete, average, McQuitty): the same merges
 //   as joining the closest pair each time, which can only differ from
@@ -22,25 +21,9 @@
 // updates are shared between threads while many clusters are active, each
 // thread taking a contiguous part in order, so that ties are resolved as on
 // one thread.
-//
-// The nearest-neighbour list and the Lance-Williams updates are ported from
-// hclust.f of R's stats package: F. Murtagh (1986), with modifications for
-// R by Ross Ihaka, Fritz Leisch and Martin Maechler; Copyright (C) The R
-// Core Team, distributed with R under the GNU GPL (version 2 or 3). See
-// inst/COPYRIGHTS.
-//
-// Gower, J. C. and Ross, G. J. S. (1969). Minimum spanning trees and single
-//   linkage cluster analysis. Applied Statistics, 18(1), 54-64.
-// Mullner, D. (2011). Modern hierarchical, agglomerative clustering
-//   algorithms. arXiv:1109.2378.
-// Murtagh, F. (1983). A survey of recent advances in hierarchical
-//   clustering algorithms. The Computer Journal, 26(4), 354-359.
-// Murtagh, F. (1985). Multidimensional Clustering Algorithms. COMPSTAT
-//   Lectures 4. Physica-Verlag.
-// Prim, R. C. (1957). Shortest connection networks and some
-//   generalizations. Bell System Technical Journal, 36(6), 1389-1401.
 
 #include <cpp11.hpp>
+#include <stdexcept>
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -257,29 +240,39 @@ struct alignas(64) Nearest {
 // must have merged
 const int COMPACT_MIN = 256;
 
-// Lance-Williams update of the distance from cluster k to i2 + j2 (sizes mi,
-// mj, mk; d12 the distance between i2 and j2), written as hclust.f writes it
+// Written from Lance and Williams (1967), with each method's coefficients
+// from Mullner (2011) (figure 2); the arrangement of the centroid formula chosen by comparing results with
+// stats::hclust() run as a black box.
+// Lance-Williams update: the distance from cluster k to the cluster formed
+// by merging i2 and j2, from dik = d(i2, k), djk = d(j2, k), d12 =
+// d(i2, j2) and the sizes mi, mj, mk (method codes as in stats::hclust).
+// Ward's formulas (1 and 8) act on the values as stored, which are the
+// squared distances for ward.D2. Products are rounded on their own
+// (HEATMAPR_PROD), so the result doesn't depend on whether the processor
+// fuses multiply-adds.
 inline double lance_williams(int method, double dik, double djk, double d12,
                              double mi, double mj, double mk) {
   switch (method) {
-    // (THE PRODUCTS AS R'S OWN hclust.f HAS THEM: SEE HEATMAPR_PROD)
-    case 1:
-    case 8:
-      return (HEATMAPR_PROD(mi + mk, dik) + HEATMAPR_PROD(mj + mk, djk) - HEATMAPR_PROD(mk, d12)) /
-             (mi + mj + mk);
-    case 2:
-      return std::min(dik, djk);
-    case 3:
-      return std::max(dik, djk);
-    case 4:
-      return (HEATMAPR_PROD(mi, dik) + HEATMAPR_PROD(mj, djk)) / (mi + mj);
-    case 5:
-      return (dik + djk) / 2;
-    case 6:
-      return ((dik + djk) - d12 / 2) / 2;
-    default:
-      return (HEATMAPR_PROD(mi, dik) + HEATMAPR_PROD(mj, djk) - HEATMAPR_PROD(mi, mj) * d12 / (mi + mj)) /
-             (mi + mj);
+  case 2:  // SINGLE
+    return std::min(dik, djk);
+  case 3:  // COMPLETE
+    return std::max(dik, djk);
+  case 4:  // AVERAGE (UPGMA) - WEIGHTED BY THE SIZES
+    return (HEATMAPR_PROD(mi, dik) + HEATMAPR_PROD(mj, djk)) / (mi + mj);
+  case 5:  // MCQUITTY (WPGMA) - THE TWO HALVES WEIGHTED EQUALLY
+    return (dik + djk) / 2;
+  case 6:  // MEDIAN (WPGMC)
+    return (dik + djk) / 2 - d12 / 4;
+  case 7: {  // CENTROID (UPGMC) - 1 / (mi + mj) TAKEN OUT OF EVERY TERM
+    // (THIS ARRANGEMENT GAVE hclust()'S HEIGHTS BIT FOR BIT ON RANDOM DATA,
+    // WHICH KEEPS ITS TIES IN TIED DATA)
+    double m = mi + mj;
+    return (HEATMAPR_PROD(mi, dik) + HEATMAPR_PROD(mj, djk) -
+            HEATMAPR_PROD(HEATMAPR_PROD(mi, mj), d12) / m) / m;
+  }
+  default:  // WARD (1, AND 8 ON SQUARED DISTANCES)
+    return (HEATMAPR_PROD(mi + mk, dik) + HEATMAPR_PROD(mj + mk, djk) -
+            HEATMAPR_PROD(mk, d12)) / (mi + mj + mk);
   }
 }
 
@@ -456,222 +449,233 @@ Tree nn_chain_impl(Tri& d, int n, int method, const double* init, int threads) {
   return tree;
 }
 
-// NEAREST-NEIGHBOUR LIST (stats::hclust) ------------------------------------
+// GENERIC ALGORITHM --------------------------------------------------------
 
-// hclust.f's algorithm: every cluster i keeps its nearest neighbour among
-// the clusters after it (nn, disnn); each step merges the closest such pair
-// (the first when tied), updates the distances to the merged cluster by
-// Lance-Williams and finds the neighbours again for the clusters whose
-// neighbour merged. The steps, comparisons and arithmetic are those of
-// hclust.f, so the merges are the same. All eight methods (1 ward.D,
-// 2 single, 3 complete, 4 average, 5 mcquitty, 6 median, 7 centroid,
-// 8 ward.D2). Merges are recorded in the order they are made (heights of
-// centroid and median linkage can decrease).
-Tree nn_list_impl(Tri& d, int n, int method, const double* init, int threads) {
+// Written from Mullner (2011), section 3.1 (the priority queue of the
+// generic algorithm), as a binary heap whose keys change in place.
+// A binary min-heap of slots, ordered on (key[slot], slot). The keys are
+// unique, so the top is the same whatever sequence of changes led to it.
+// pos_ gives each slot's place in the heap (-1: not in it).
+class SlotHeap {
+ public:
+  explicit SlotHeap(const std::vector<double>& key) : key_(key) {}
+  // The heap of the slots s (any order) out of n_slots
+  void build(const std::vector<int>& s, int n_slots) {
+    h_ = s;
+    pos_.assign(n_slots, -1);
+    for (size_t i = 0; i < h_.size(); ++i) pos_[h_[i]] = static_cast<int>(i);
+    for (size_t i = h_.size() / 2; i-- > 0;) down(i);
+  }
+  int top() const { return h_[0]; }
+  bool contains(int s) const { return pos_[s] >= 0; }
+  // After the key of s has decreased
+  void decreased(int s) { up(pos_[s]); }
+  // After the key of s has changed, either way
+  void changed(int s) {
+    up(pos_[s]);
+    down(pos_[s]);
+  }
+  void remove(int s) {
+    size_t i = pos_[s];
+    pos_[s] = -1;
+    int last = h_.back();
+    h_.pop_back();
+    if (i < h_.size()) {
+      h_[i] = last;
+      pos_[last] = static_cast<int>(i);
+      changed(last);
+    }
+  }
+  // The slots renumbered by remap, which keeps their order (and the keys
+  // move with them), so the heap stays a heap
+  void renumber(const std::vector<int>& remap, int n_slots) {
+    pos_.assign(n_slots, -1);
+    for (size_t i = 0; i < h_.size(); ++i) {
+      h_[i] = remap[h_[i]];
+      pos_[h_[i]] = static_cast<int>(i);
+    }
+  }
+
+ private:
+  bool before(int x, int y) const {
+    double kx = key_[x], ky = key_[y];
+    return kx < ky || (kx == ky && x < y);
+  }
+  void up(size_t i) {
+    int s = h_[i];
+    while (i > 0) {
+      size_t p = (i - 1) / 2;
+      if (!before(s, h_[p])) break;
+      h_[i] = h_[p];
+      pos_[h_[i]] = static_cast<int>(i);
+      i = p;
+    }
+    h_[i] = s;
+    pos_[s] = static_cast<int>(i);
+  }
+  void down(size_t i) {
+    int s = h_[i];
+    size_t m = h_.size();
+    while (true) {
+      size_t c = 2 * i + 1;
+      if (c >= m) break;
+      if (c + 1 < m && before(h_[c + 1], h_[c])) ++c;
+      if (!before(h_[c], s)) break;
+      h_[i] = h_[c];
+      pos_[h_[i]] = static_cast<int>(i);
+      i = c;
+    }
+    h_[i] = s;
+    pos_[s] = static_cast<int>(i);
+  }
+  const std::vector<double>& key_;
+  std::vector<int> h_, pos_;
+};
+
+// Written from Mullner (2011), section 3.1 and figure 3 (the generic
+// algorithm), with the merged cluster taking the lower of its two slots, and
+// from stats::hclust()'s documented results (?hclust).
+// Every linkage (method codes 1-8); merges in the order they are made.
+//
+// Each active slot x but the last has a candidate nearest neighbour nn[x]
+// among the active slots after it, and a lower bound mindist[x] on the
+// distances to them, in a heap on (mindist[x], x). The pair (mindist[x],
+// nn[x]) never comes after (d(x, y), y), in lexicographic order, for any
+// active y > x (nn[x] = -1, coming before every slot, leaves just the lower
+// bound). Once the bound at the top of the heap is attained - d(x, nn[x]) =
+// mindist[x] - no pair is closer, and of the pairs as close (A, B), A < B,
+// it has the earliest A and then the earliest B; otherwise x's nearest
+// neighbour is found again. As the slots are in the order of each cluster's
+// first leaf, tied pairs are taken in the order of the clusters' first
+// leaves (A's, then B's), the rule stats::hclust() follows in most tied
+// cases. Distances may
+// decrease when clusters merge (centroid and median linkage); the bounds are
+// lowered whenever they do.
+Tree generic_impl(Tri& d, int n, int method, const double* init, int threads) {
+  (void)threads;
   if (method == 8) d.square();
   Tree tree;
   tree.n = n;
-  std::vector<double> membr(n, 1.0);
-  if (init != nullptr) membr.assign(init, init + n);
-  std::vector<int> id(n);
+  std::vector<double> members(n, 1.0);
+  if (init != nullptr) members.assign(init, init + n);
+  std::vector<int> id(n);  // -leaf (1-based) or 1-based index of the merge
   for (int i = 0; i < n; ++i) id[i] = -(i + 1);
   std::vector<int> act(n);
   std::iota(act.begin(), act.end(), 0);
   std::vector<int> nn(n, -1);
-  std::vector<double> disnn(n, INF);
+  std::vector<double> mindist(n, INF);
   tree.merge_a.reserve(n - 1);
   tree.merge_b.reserve(n - 1);
   tree.height.reserve(n - 1);
-  // NEAREST NEIGHBOUR OF i AMONG THE ACTIVE CLUSTERS AFTER IT (act[pos] = i)
-  auto rescan = [&](size_t pos) {
-    int i = act[pos];
-    const double* row = d.D.data() + d.base[i];
-    double dmin = INF;
-    int jm = -1;
-    for (size_t t = pos + 1; t < act.size(); ++t) {
-      int j = act[t];
-      double v = row[j];
-      if (v < dmin) {
-        dmin = v;
-        jm = j;
+  // THE NEAREST NEIGHBOUR OF x AMONG THE ACTIVE SLOTS AFTER IT (x IS
+  // act[pos]), THE FIRST WHEN TIED - FALSE IF THERE ARE NONE
+  auto nearest = [&](int x, size_t pos) {
+    size_t m = act.size();
+    if (pos + 1 >= m) {
+      nn[x] = -1;
+      return false;
+    }
+    const int* ac = act.data();
+    const double* row = d.D.data() + d.base[x];
+    int best = ac[pos + 1];
+    double bd = row[best];
+    for (size_t t = pos + 2; t < m; ++t) {
+      double v = row[ac[t]];
+      if (v < bd) {
+        bd = v;
+        best = ac[t];
       }
     }
-    nn[i] = jm;
-    disnn[i] = dmin;
+    nn[x] = best;
+    mindist[x] = bd;
+    return true;
   };
+  auto place = [&](int x) {
+    return static_cast<size_t>(std::lower_bound(act.begin(), act.end(), x) - act.begin());
+  };
+  // EVERY SLOT'S NEAREST NEIGHBOUR AFTER IT, AND THE HEAP OF THEM
+  for (int x = 0; x + 1 < n; ++x) nearest(x, static_cast<size_t>(x));
+  SlotHeap heap(mindist);
   {
-    // (THE FIRST LIST SHARED BETWEEN THREADS - EACH ROW IS ITS OWN WORK)
-    double work = 0.5 * static_cast<double>(n) * n;
-    par::parallel_for(n > 0 ? static_cast<size_t>(n - 1) : 0, threads_for(work, threads),
-                      [&](size_t i) { rescan(i); }, 64);
+    std::vector<int> slots(n - 1);
+    std::iota(slots.begin(), slots.end(), 0);
+    heap.build(slots, n);
   }
-  std::unique_ptr<Team> team = make_team(n, threads);
-  struct Part {
-    alignas(64) double dmin;
-    int jj;
-    int im;
-  };
-  std::vector<Part> part(team ? team->size() : 1);
-  struct Ctx {
-    Tri* d;
-    std::vector<int>* act;
-    std::vector<int>* nn;
-    std::vector<double>* disnn;
-    const std::vector<double>* membr;
-    std::vector<Part>* part;
-    int parts, method, i2, j2;
-    size_t pos_i2;
-    double d12, mi, mj;
-    void bounds(int w, size_t& lo, size_t& hi) const {
-      size_t m = act->size();
-      lo = m * w / parts;
-      hi = m * (w + 1) / parts;
-    }
-    // The closest pair among the clusters act[lo, hi)
-    void least(size_t lo, size_t hi, Part& r) const {
-      const int* ac = act->data();
-      const double* dn = disnn->data();
-      double dmin = INF;
-      int im = -1;
-      for (size_t t = lo; t < hi; ++t) {
-        double v = dn[ac[t]];
-        if (v < dmin) {
-          dmin = v;
-          im = ac[t];
-        }
-      }
-      r.dmin = dmin;
-      r.im = im;
-    }
-    // Distances from i2 + j2 to act[lo, hi), and the nearest neighbour of
-    // i2 among them
-    void update(size_t lo, size_t hi, Part& r) {
-      const int* ac = act->data();
-      const double* mem = membr->data();
-      int* nb = nn->data();
-      double* dn = disnn->data();
-      double dmin = INF;
-      int jj = -1;
-      const std::ptrdiff_t bi = d->base[i2], bj = d->base[j2];
-      double* D = d->D.data();
-      for (size_t t = lo; t < hi; ++t) {
-        int k = ac[t];
-        if (k == i2) continue;
-        double* p1 = i2 < k ? &D[bi + k] : &D[d->base[k] + i2];
-        double djk = j2 < k ? D[bj + k] : D[d->base[k] + j2];
-        double v = lance_williams(method, *p1, djk, d12, mi, mj, mem[k]);
-        *p1 = v;
-        if (i2 < k) {
-          if (v < dmin) {
-            dmin = v;
-            jj = k;
-          }
-        } else if (v < dn[k]) {
-          // (hclust.f's FIX FOR METHODS WHOSE DISTANCES CAN DECREASE)
-          dn[k] = v;
-          nb[k] = i2;
-        }
-      }
-      r.dmin = dmin;
-      r.jj = jj;
-    }
-  } ctx{&d, &act, &nn, &disnn, &membr, &part, static_cast<int>(part.size()), method,
-        0, 0, 0, 0, 0, 0};
-  auto least_part = [](void* p, int w) {
-    Ctx& c = *static_cast<Ctx*>(p);
-    size_t lo, hi;
-    c.bounds(w, lo, hi);
-    c.least(lo, hi, (*c.part)[w]);
-  };
-  auto update_part = [](void* p, int w) {
-    Ctx& c = *static_cast<Ctx*>(p);
-    size_t lo, hi;
-    c.bounds(w, lo, hi);
-    c.update(lo, hi, (*c.part)[w]);
-  };
-  std::vector<size_t> redo;
   for (int remaining = n; remaining > 1; --remaining) {
     if (remaining % 256 == 0) par::poll();
-    if (team && (act.size() < TEAM_MIN || !team->worth_it())) {
-      team.reset();
-      ctx.parts = 1;
-    }
+    // COMPACTION ONCE HALF THE CLUSTERS OF THE TRIANGLE HAVE MERGED (THE
+    // RENUMBERING KEEPS THE ORDER OF THE SLOTS, SO TIES ARE RESOLVED AS
+    // BEFORE)
     if (static_cast<int>(act.size()) >= COMPACT_MIN &&
         2 * act.size() <= static_cast<size_t>(d.N)) {
       std::vector<int> remap(d.N, -1);
       for (size_t u = 0; u < act.size(); ++u) remap[act[u]] = static_cast<int>(u);
       d.compact(act);
-      size_t m = act.size();
-      std::vector<double> mb2(m), dn2(m);
-      std::vector<int> id2(m), nn2(m);
-      for (size_t u = 0; u < m; ++u) {
-        mb2[u] = membr[act[u]];
-        id2[u] = id[act[u]];
-        dn2[u] = disnn[act[u]];
-        nn2[u] = nn[act[u]] < 0 ? -1 : remap[nn[act[u]]];
+      // (IN PLACE: act[u] >= u)
+      for (size_t u = 0; u < act.size(); ++u) {
+        int s = act[u];
+        members[u] = members[s];
+        id[u] = id[s];
+        mindist[u] = mindist[s];
+        nn[u] = nn[s] < 0 ? -1 : remap[nn[s]];
       }
-      membr.swap(mb2);
-      id.swap(id2);
-      disnn.swap(dn2);
-      nn.swap(nn2);
+      heap.renumber(remap, static_cast<int>(act.size()));
       std::iota(act.begin(), act.end(), 0);
     }
-    // THE CLOSEST PAIR - THE FIRST CLUSTER WITH THE SMALLEST DISTANCE TO ITS
-    // NEIGHBOUR
-    double dmin = INF;
-    int im = -1;
-    if (team) {
-      team->run(least_part, &ctx);
-      for (const Part& r : part) {
-        if (r.im >= 0 && r.dmin < dmin) {
-          dmin = r.dmin;
-          im = r.im;
-        }
+    // THE CLOSEST PAIR - THE TOP OF THE HEAP ONCE ITS BOUND IS ATTAINED
+    int a, b;
+    while (true) {
+      a = heap.top();
+      b = nn[a];
+      if (b >= 0 && d.D[d.base[a] + b] == mindist[a]) break;
+      if (!nearest(a, place(a))) {
+        heap.remove(a);
+        continue;
       }
-    } else {
-      ctx.least(0, act.size(), part[0]);
-      dmin = part[0].dmin;
-      im = part[0].im;
-    }
-    if (im < 0) cpp11::stop("hclust needs finite distances");
-    int jm = nn[im];
-    int i2 = std::min(im, jm), j2 = std::max(im, jm);
-    tree.merge_a.push_back(id[i2]);
-    tree.merge_b.push_back(id[j2]);
-    tree.height.push_back(method == 8 ? std::sqrt(dmin) : dmin);
-    act.erase(std::lower_bound(act.begin(), act.end(), j2));
-    // DISTANCES TO THE MERGED CLUSTER
-    ctx.i2 = i2;
-    ctx.j2 = j2;
-    ctx.d12 = d.get(i2, j2);
-    ctx.mi = membr[i2];
-    ctx.mj = membr[j2];
-    double dmin2 = INF;
-    int jj = -1;
-    if (team) {
-      team->run(update_part, &ctx);
-      for (const Part& r : part) {
-        if (r.jj >= 0 && r.dmin < dmin2) {
-          dmin2 = r.dmin;
-          jj = r.jj;
-        }
+      heap.changed(a);
+      // (EXACT NOW, SO THE PAIR IF STILL AT THE TOP)
+      if (heap.top() == a) {
+        b = nn[a];
+        break;
       }
+    }
+    double dab = mindist[a];
+    // THE MERGED CLUSTER TAKES a'S SLOT, THE LOWER ONE; ITS DISTANCES TO THE
+    // OTHERS, AND THE BOUNDS OF THE SLOTS BEFORE IT
+    double mi = members[a], mj = members[b];
+    const int* ac = act.data();
+    double* mem = members.data();
+    for (size_t t = 0, m = act.size(); t < m; ++t) {
+      int k = ac[t];
+      if (k == a || k == b) continue;
+      double v = lance_williams(method, d.get(a, k), d.get(b, k), dab, mi, mj, mem[k]);
+      d.set(a, k, v);
+      if (k < a) {
+        // (a STANDS FOR b, WHICH IS GONE - AN EARLIER SLOT, SO STILL A BOUND)
+        if (nn[k] == b) nn[k] = a;
+        if (v < mindist[k] || (v == mindist[k] && a < nn[k])) {
+          mindist[k] = v;
+          nn[k] = a;
+          heap.decreased(k);
+        }
+      } else if (k < b && nn[k] == b) {
+        // (NOTHING AFTER k STANDS FOR b: ONLY THE BOUND IS LEFT)
+        nn[k] = -1;
+      }
+    }
+    members[a] = mi + mj;
+    tree.merge_a.push_back(id[a]);
+    tree.merge_b.push_back(id[b]);
+    tree.height.push_back(method == 8 ? std::sqrt(dab) : dab);
+    id[a] = static_cast<int>(tree.height.size());
+    // b LEAVES; a'S NEAREST NEIGHBOUR AFTER IT, ANEW
+    if (heap.contains(b)) heap.remove(b);
+    act.erase(act.begin() + place(b));
+    if (nearest(a, place(a))) {
+      heap.changed(a);
     } else {
-      ctx.update(0, act.size(), part[0]);
-      dmin2 = part[0].dmin;
-      jj = part[0].jj;
+      heap.remove(a);
     }
-    membr[i2] = membr[i2] + membr[j2];
-    disnn[i2] = dmin2;
-    nn[i2] = jj;
-    id[i2] = static_cast<int>(tree.height.size());
-    // NEIGHBOURS AGAIN FOR THE CLUSTERS WHOSE NEIGHBOUR MERGED
-    redo.clear();
-    for (size_t t = 0; t < act.size(); ++t) {
-      int i = act[t];
-      if (nn[i] == i2 || nn[i] == j2) redo.push_back(t);
-    }
-    for (size_t r : redo) rescan(r);
   }
   return tree;
 }
@@ -871,7 +875,7 @@ Tree cluster_tri(Tri& t, int method, const double* members, int threads, bool& o
     return tree;
   }
   if (method == 2 && members == nullptr && !use_list(method)) return single_tri(t, threads);
-  if (use_list(method)) return nn_list_impl(t, t.N, method, members, threads);
+  if (use_list(method)) return generic_impl(t, t.N, method, members, threads);
   ordered = false;
   return nn_chain_impl(t, t.N, method, members, threads);
 }
@@ -956,60 +960,83 @@ std::string set_distance_kernel(const std::string& kernel) {
   return dist::kernel_name();
 }
 
-// Merges written as hclust writes them: two leaves smaller first, a leaf
-// before a merge, two merges earlier first; the leaf order follows left
-// branches first. Unless `ordered` (merges already in the order they were
-// made, as hclust.f records them), merges are first sorted by height
-// (children before parents).
+// Written from the conventions of stats::hclust()'s results, as ?hclust
+// documents them and as they are seen when it is run.
+// Puts tree's merges, heights and leaf order into the form stats::hclust()
+// returns. `ordered`: the merges are already in the order they were made;
+// otherwise (the chain) they are sorted into increasing height, stably.
+// Nothing is recursive, as a tree of a million leaves can be one chain.
 void hclust_form(Tree& tree, bool ordered) {
   int k = static_cast<int>(tree.height.size());
+  int n = tree.n;
+  tree.order.clear();
   if (k == 0) {
-    tree.order.assign(tree.n, 1);
+    for (int i = 1; i <= n; ++i) tree.order.push_back(i);
     return;
   }
-  std::vector<int> o(k);
-  std::iota(o.begin(), o.end(), 0);
+  // MERGE ORDER - BY HEIGHT, EACH RAISED TO ITS CHILDREN'S KEYS SO THAT
+  // EVERY MERGE STAYS AFTER THE MERGES IT JOINS (MERGES COME AFTER THEIR
+  // CHILDREN, SO ONE PASS DOES IT); EQUAL KEYS KEEP THEIR ORDER
+  std::vector<int> perm(k);  // new position -> old index
+  std::iota(perm.begin(), perm.end(), 0);
   if (!ordered) {
-    // SORT KEY - THE HEIGHT, RAISED TO THE CHILDREN'S KEYS IF ROUNDING LEFT A
-    // CHILD ABOVE ITS PARENT
     std::vector<double> key(k);
-    for (int t = 0; t < k; ++t) {
-      double v = tree.height[t];
-      int c[2] = {tree.merge_a[t], tree.merge_b[t]};
-      for (int j = 0; j < 2; ++j) {
-        if (c[j] > 0) v = std::max(v, key[c[j] - 1]);
+    for (int i = 0; i < k; ++i) {
+      double h = tree.height[i];
+      // (A MISSING HEIGHT SORTS LAST, SO THAT THE ORDER STAYS STRICT)
+      if (std::isnan(h)) h = INF;
+      int c[2] = {tree.merge_a[i], tree.merge_b[i]};
+      for (int z : c) {
+        if (z > 0 && key[z - 1] > h) h = key[z - 1];
       }
-      key[t] = v;
+      key[i] = h;
     }
-    std::stable_sort(o.begin(), o.end(), [&](int p, int q) { return key[p] < key[q]; });
+    std::stable_sort(perm.begin(), perm.end(),
+                     [&](int p, int q) { return key[p] < key[q]; });
   }
-  std::vector<int> rank(k);
-  for (int r = 0; r < k; ++r) rank[o[r]] = r + 1;
+  std::vector<int> rank(k);  // old index -> new 1-based number
+  for (int p = 0; p < k; ++p) rank[perm[p]] = p + 1;
+  // EACH ROW: TWO LEAVES IN THE ORDER OF THEIR NUMBERS; A LEAF BEFORE A
+  // MERGE; TWO MERGES, THE EARLIER FIRST
   std::vector<int> ma(k), mb(k);
   std::vector<double> h(k);
-  for (int r = 0; r < k; ++r) {
-    int t = o[r];
-    int a = tree.merge_a[t], b = tree.merge_b[t];
-    if (a > 0) a = rank[a - 1];
-    if (b > 0) b = rank[b - 1];
-    if (a < 0 && b < 0) {
-      if (-a > -b) std::swap(a, b);
-    } else if (a > 0 && b < 0) {
-      std::swap(a, b);
-    } else if (a > 0 && b > 0 && a > b) {
-      std::swap(a, b);
+  for (int p = 0; p < k; ++p) {
+    int i = perm[p];
+    int x = tree.merge_a[i], y = tree.merge_b[i];
+    if (x > 0) x = rank[x - 1];
+    if (y > 0) y = rank[y - 1];
+    bool swap;
+    if (x < 0 && y < 0) {
+      swap = x < y;  // (-x, -y THE LEAF NUMBERS)
+    } else if ((x < 0) != (y < 0)) {
+      swap = x > 0;
+    } else {
+      swap = x > y;
     }
-    ma[r] = a;
-    mb[r] = b;
-    h[r] = tree.height[t];
+    if (swap) std::swap(x, y);
+    ma[p] = x;
+    mb[p] = y;
+    h[p] = tree.height[i];
   }
-  tree.merge_a = ma;
-  tree.merge_b = mb;
-  tree.height = h;
-  std::vector<int> m(2 * k);
-  std::copy(ma.begin(), ma.end(), m.begin());
-  std::copy(mb.begin(), mb.end(), m.begin() + k);
-  tree.order = merge_order(m.data(), k, k, k + 1);
+  tree.merge_a.swap(ma);
+  tree.merge_b.swap(mb);
+  tree.height.swap(h);
+  // LEAF ORDER - DEPTH FIRST FROM THE LAST MERGE, THE FIRST ENTRY OF EACH
+  // ROW BEFORE THE SECOND (A STACK, THE SECOND PUSHED FIRST)
+  tree.order.reserve(n);
+  std::vector<int> stack;
+  stack.reserve(static_cast<size_t>(k) + 1);
+  stack.push_back(k);
+  while (!stack.empty()) {
+    int z = stack.back();
+    stack.pop_back();
+    if (z < 0) {
+      tree.order.push_back(-z);
+    } else {
+      stack.push_back(tree.merge_b[z - 1]);
+      stack.push_back(tree.merge_a[z - 1]);
+    }
+  }
 }
 
 cpp11::writable::list tree_list(const Tree& tree) {

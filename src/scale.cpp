@@ -1,8 +1,8 @@
 // Scaling the columns or rows of a matrix (heat_map_scale())
 //
-// Each column (or row) is scaled from its finite values, with the arithmetic
-// of R's mean(), sd(), min(), max() and quantile(), so the result is the one
-// the R version gave; columns or rows are shared between threads.
+// Each column (or row) is scaled from its finite values, giving the results
+// of R's mean(), sd(), min(), max() and quantile(); columns or rows are
+// shared between threads.
 
 #include <cpp11.hpp>
 #include <algorithm>
@@ -21,24 +21,60 @@ inline double product(double a, double b) {
   return q;
 }
 
-// The p quantile of the values (their order is changed) as quantile(type = 7)
-// finds it: from the order statistics either side of 1 + (n - 1) p
+// The p quantile of the values in fin (type 7 of quantile(); their order
+// may be changed). Written from ?quantile and Hyndman and Fan (1996),
+// definition 7, and quantile()'s results, compared as a black box: with n
+// values in order x[1..n], h = 1 + (n - 1) p, j = floor(h) and g = h - j,
+// the quantile is (1 - g) x[j] + g x[j + 1] - or x[j] itself when g is
+// zero or x[j + 1] equals x[j] (which is also what keeps infinite values
+// infinite rather than NaN). Each product is rounded on its own, as R
+// rounds it. The j-th value is found by selection (nth_element) and the
+// next as the smallest of those after it.
 double quantile7(std::vector<double>& fin, double p) {
-  size_t n = fin.size();
-  double index = 1 + product(static_cast<double>(n - 1), p);
-  size_t lo = static_cast<size_t>(std::floor(index));
-  size_t hi = static_cast<size_t>(std::ceil(index));
-  std::nth_element(fin.begin(), fin.begin() + (lo - 1), fin.end());
-  double qs = fin[lo - 1];
-  if (index > lo && hi > lo) {
-    // THE NEXT ORDER STATISTIC - THE SMALLEST OF THE VALUES AFTER lo
-    double next = *std::min_element(fin.begin() + lo, fin.end());
-    if (next != qs) {
-      double h = index - lo;
-      qs = product(1 - h, qs) + product(h, next);
-    }
+  const size_t n = fin.size();
+  // THE POSITION AMONG THE VALUES IN ORDER (1-BASED)
+  double h = 1 + product(static_cast<double>(n) - 1, p);
+  double j = std::floor(h);
+  double g = h - j;
+  size_t lo = j < 1 ? 0 : static_cast<size_t>(j) - 1;
+  if (lo > n - 1) lo = n - 1;
+  std::nth_element(fin.begin(), fin.begin() + lo, fin.end());
+  double xl = fin[lo];
+  if (g == 0 || lo + 1 >= n) return xl;
+  // THE NEXT VALUE IN ORDER, AND THE INTERPOLATION BETWEEN THE TWO
+  double xh = *std::min_element(fin.begin() + lo + 1, fin.end());
+  if (xh == xl) return xl;
+  return product(1 - g, xl) + product(g, xh);
+}
+
+// The mean and the standard deviation of the finite values fin, as R's
+// mean() and sd() give them. Written from ?mean, ?sd and ?var (denominator
+// n - 1) and mean()'s and sd()'s results, compared as a black box, with
+// the usual two-pass computations in extended precision (long double, which
+// is what R accumulates in): the mean is the sum divided by the count, plus
+// the mean of the residuals from it (a correction pass), rounded once; the
+// standard deviation is the square root of the sum of squared deviations
+// from that mean divided by n - 1 (rounded to double before the root).
+double finite_mean(const std::vector<double>& fin) {
+  const size_t n = fin.size();
+  long double s = 0;
+  for (double v : fin) s += v;
+  s /= n;
+  // THE CORRECTION - THE MEAN OF THE RESIDUALS
+  long double t = 0;
+  for (double v : fin) t += v - s;
+  s += t / n;
+  return static_cast<double>(s);
+}
+double finite_sd(const std::vector<double>& fin, double mean) {
+  const size_t n = fin.size();
+  const long double mu = mean;
+  long double ss = 0;
+  for (double v : fin) {
+    long double d = v - mu;
+    ss += d * d;
   }
-  return qs;
+  return std::sqrt(static_cast<double>(ss / (n - 1)));
 }
 
 // Scales v[0..m) in place: method 1 range, 2 mean, 3 z-score, 4 to 0-1
@@ -59,7 +95,9 @@ void scale_values(double* v, size_t m, int method, std::vector<double>& fin,
     double d = qhi - qlo;
     for (size_t i = 0; i < m; ++i) {
       if (std::isnan(v[i])) continue;
-      double s = (v[i] - qlo) / d;
+      // (EQUAL QUANTILES: 1 ABOVE THEM, 0 OTHERWISE - WHATEVER THE SIGNS OF
+      // TWO ZERO QUANTILES, WHICH WOULD OTHERWISE DECIDE THE SIGN OF d)
+      double s = d == 0 ? (v[i] > qhi ? 1 : 0) : (v[i] - qlo) / d;
       if (std::isnan(s) || s < 0) s = 0;
       if (s > 1) s = 1;
       v[i] = s;
@@ -76,18 +114,7 @@ void scale_values(double* v, size_t m, int method, std::vector<double>& fin,
     if (f < lo) lo = f;
     if (f > hi) hi = f;
   }
-  // mean() - TWO PASSES IN LONG DOUBLE
-  auto mean = [&]() {
-    long double s = 0;
-    for (double f : fin) s += f;
-    s /= nf;
-    if (std::isfinite(static_cast<double>(s))) {
-      long double t = 0;
-      for (double f : fin) t += (f - s);
-      s += t / nf;
-    }
-    return static_cast<double>(s);
-  };
+  auto mean = [&]() { return finite_mean(fin); };
   if (method == 1) {
     if (hi == lo) {
       for (size_t i = 0; i < m; ++i) {
@@ -110,15 +137,8 @@ void scale_values(double* v, size_t m, int method, std::vector<double>& fin,
     for (size_t i = 0; i < m; ++i) v[i] = (v[i] - mu) / r;
     return;
   }
-  // sd() - var()'S DEVIATIONS FROM THE MEAN (ROUNDED TO DOUBLE), SUMMED IN
-  // LONG DOUBLE
   double mu = mean();
-  double sd = NAN;
-  if (nf > 1) {
-    long double xxm = mu, s = 0;
-    for (double f : fin) s += static_cast<long double>(f - xxm) * (f - xxm);
-    sd = std::sqrt(static_cast<double>(s / (nf - 1)));
-  }
+  double sd = nf > 1 ? finite_sd(fin, mu) : NAN;
   if (std::isnan(sd) || sd == 0) {
     for (size_t i = 0; i < m; ++i) {
       if (std::isfinite(v[i])) v[i] = 0;
