@@ -48,7 +48,9 @@ a data.frame:
 - `"tree_x"`, `"tree_y"`: one row per dendrogram segment, from (`x`,
   `y`) to (`xend`, `yend`). Along the heatmap the segments are in plot
   co-ordinates; across it they are the branch heights, from 0 at the
-  leaves. Branch support is added as `support` (see `tree_support_x`).
+  leaves. Branch support is added as `support` (see `tree_support_x`),
+  and with clusters the cluster below each segment as `cluster` (`NA`
+  for the branches joining clusters, as `tree_col_x` colours them).
   `NULL` when the heatmap has no such dendrogram.
 
 ## Details

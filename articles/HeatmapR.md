@@ -240,9 +240,9 @@ heat_map(
 
 ![Heatmap of 25 randomly sampled rows of the iris data with each value
 written in its cell, the four measurements coloured on a yellow to black
-scale, the Species column coloured by species, and the missing values
-shown as empty grey
-cells.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-2.png)
+scale, the Species column coloured by species with a legend of the
+species, and the missing values shown as empty grey
+cells.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/a476410d3cb8d1d7bbb9e527c91adcb60b70bd8a/vignettes/HeatmapR/HeatmapR-2.png)
 
 #### 2.3.1 Uncertainty in Colour
 
@@ -332,8 +332,11 @@ and a stimulated half (lower right) on one colour scale, the genes
 clustered by a dendrogram and a legend naming the two
 halves.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-split.png)
 
-Split cells need full-size rectangles, so `cell_size` and other
-`cell_shape`s can’t be used with them.
+Split cells need full-size rectangles or circles: circles
+(`cell_shape = "circle"`) are split down the middle instead, `x` on the
+left and `cell_split` on the right, and each half can have its own size
+(`cell_size` and `cell_split_size`), as in the split dots of
+`heat_map_dot(split_by = )`.
 
 ### 2.4 Cell Borders
 
@@ -546,8 +549,10 @@ choose in the displayed order (giving the first and last rows is
 enough), is outlined on the heatmap and joined to the panel by a wedge.
 The panel sits on the axis text side and is labelled with the names of
 the enlarged rows, in place of the axis text. `zoom_size_y` sets the
-width of the panel relative to the heatmap (the same width by default),
-and enlarged rows are at most 0.3 inches tall.
+width of the panel relative to the heatmap (by default the same width
+for a panel as long as the heatmap, and narrower for a shorter panel, so
+that enlarging a few rows doesn’t halve the heatmap), and enlarged rows
+are at most 0.3 inches tall.
 
 ``` r
 
@@ -1203,6 +1208,35 @@ groups of variables and 5 groups of cars, each group marked by a
 coloured bar numbered 1 to 4 above the columns or 1 to 5 beside the
 rows.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f65c889cc6e0c9cdcb6f0fcae/vignettes/HeatmapR/HeatmapR-13.png)
 
+The branches of each cluster can be coloured too: `tree_col_x` and
+`tree_col_y` take one colour for each cluster (from left to right and
+from top to bottom), or `TRUE` for distinct colours, and colour the
+branches within each cluster and the edge into it, while the branches
+joining clusters stay black. With `TRUE` the clusters take the colours
+of `hcl.colors(k, "Dark 3")`, and the cluster labels take the colours of
+their branches unless `tree_label_col_y` is given:
+
+``` r
+
+heat_map(
+  mtcars,
+  scale = "column",
+  tree_y = TRUE,
+  tree_size_y = 0.8,
+  tree_cut_y = 5,
+  tree_split_y = 1,
+  tree_col_y = TRUE,
+  tree_label_y = TRUE,
+  title = "Branch Colours"
+)
+```
+
+![The column-scaled mtcars heatmap, titled Branch Colours, with a row
+dendrogram cut into 5 groups of cars: the branches of each group drawn
+in its own colour, matching the coloured label bar beside its rows, and
+the branches joining the groups in
+black.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/a476410d3cb8d1d7bbb9e527c91adcb60b70bd8a/vignettes/HeatmapR/HeatmapR-branch-colours.png)
+
 #### 5.2.1 Choosing the Number of Clusters
 
 `tree_cut_y = "auto"` (or `tree_cut_x`) chooses the number of clusters
@@ -1380,7 +1414,7 @@ splits the rows into k-means clusters (Hartigan and Wong 1979) instead
 of cutting a dendrogram. The rows are clustered on the scaled data from
 several starts: the centres of equal slices of the rows along their
 first principal component, which suit clusters strung out along it, and
-three k-means++ starts (Arthur and Vassilvitskii 2007), which spread the
+nine k-means++ starts (Arthur and Vassilvitskii 2007), which spread the
 starting centres over the data so that small clusters get one of their
 own. The clusters with the smallest within-cluster sum of squares are
 kept. The starts use fixed seeds, so the same clusters are found every
@@ -1526,14 +1560,14 @@ populations.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 will automatically add legends for the colour scale and size of the
 cells in the heatmap. The `legend` argument controls the type(s) of
-legends to display including `"colour"`, `"size"` or `"both"`, and
-`"levels"` can be added (e.g. `legend = c("both", "levels")`) to include
-a legend for the colours of non-numeric columns. The legend is sized
-from its contents: `legend_size` scales the legend keys (colour bars,
-swatches and size legend shapes) and `legend_col_scale_size` controls
-the width of the colour scale. The titles and text displayed in the
-legend(s) are also fully customisable using the `legend_title_` and
-`legend_text_` family of arguments.
+legends to display including `"colour"`, `"size"`, `"both"` (colour and
+size) and `"levels"`, a legend for the colours of non-numeric columns,
+which is drawn by default whenever there are any (`legend = "both"`
+leaves it out). The legend is sized from its contents: `legend_size`
+scales the legend keys (colour bars, swatches and size legend shapes)
+and `legend_col_scale_size` controls the width of the colour scale. The
+titles and text displayed in the legend(s) are also fully customisable
+using the `legend_title_` and `legend_text_` family of arguments.
 
 ``` r
 

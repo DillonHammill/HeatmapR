@@ -103,8 +103,10 @@ of any annotations (<code>annotation_y</code> or <code>annotation_x</code>).</p>
 from (<code>x</code>, <code>y</code>) to (<code>xend</code>, <code>yend</code>). Along the
 heatmap the segments are in plot co-ordinates; across it they are the
 branch heights, from 0 at the leaves. Branch support is added as
-<code>support</code> (see <code>tree_support_x</code>). <code>NULL</code> when the heatmap
-has no such dendrogram.</p></li>
+<code>support</code> (see <code>tree_support_x</code>), and with clusters the
+cluster below each segment as <code>cluster</code> (<code>NA</code> for the
+branches joining clusters, as <code>tree_col_x</code> colours them).
+<code>NULL</code> when the heatmap has no such dendrogram.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

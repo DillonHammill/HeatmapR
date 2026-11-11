@@ -85,7 +85,10 @@ of each group. Given to `features` in
 or
 [`heat_map_dot`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md),
 the rows with `top = TRUE` are shown, grouped by the group they mark;
-edit `top` to choose other markers.
+edit `top` to choose other markers. Given to `x` in
+[`heat_map_dot`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md),
+the markers are drawn as a dot plot coloured by fold change and sized by
+adjusted p-value.
 
 ## Details
 

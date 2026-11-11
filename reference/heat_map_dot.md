@@ -21,6 +21,7 @@ heat_map_dot(
   x,
   features = NULL,
   group_by = NULL,
+  split_by = NULL,
   assay = NULL,
   scale = "zscore",
   scale_limits = NULL,
@@ -28,6 +29,10 @@ heat_map_dot(
   dot_min = 0,
   swap_axes = FALSE,
   bimodal = FALSE,
+  transform = NULL,
+  cofactor = 5,
+  marker_colour = "logfc",
+  marker_size = "p_adj",
   ...
 )
 ```
@@ -37,7 +42,10 @@ heat_map_dot(
 - x:
 
   single-cell data, a matrix or a data.frame (see
-  [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)).
+  [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)),
+  or the markers returned by
+  [`heat_map_markers`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+  for a dot plot of markers.
 
 - features:
 
@@ -53,7 +61,23 @@ heat_map_dot(
   the group of each cell, the name of a column of its metadata or a
   vector (see
   [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)).
-  Each group is one row.
+  Each group is one row. Several column names give one row per
+  combination, e.g. `c("cell_type", "condition")` for each cell type in
+  each condition: the rows are grouped by the first variable (in
+  labelled strips) and each row is labelled by the others.
+
+- split_by:
+
+  a variable with two values (e.g. two conditions, or two samples) by
+  which to split each dot down the middle: the name of a column of the
+  cells' metadata or a vector with one value per cell, as `group_by`.
+  The left half of each dot shows the cells of the group with the first
+  value (the first factor level, or first in sorted order) and the right
+  half those with the second, each half with its own colour and size, on
+  the same scales: the means are scaled within each feature across the
+  groups and both values. Cells without a value are left out, and the
+  halves of groups without cells are not drawn. Set to `NULL` by default
+  for whole dots.
 
 - assay:
 
@@ -76,7 +100,8 @@ heat_map_dot(
 
 - threshold:
 
-  values above `threshold` are counted as detected, set to 0 by default.
+  values above `threshold` are counted as detected, set to 0 by
+  default - after `transform`.
 
 - dot_min:
 
@@ -98,7 +123,41 @@ heat_map_dot(
   [`heat_map_summarise`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
   for how the dips are found and
   [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-  for when a dot is outlined.
+  for when a dot is outlined. Can't be combined with `split_by`.
+
+- transform:
+
+  `"asinh"` to transform the values of the cells with the inverse
+  hyperbolic sine of each value divided by `cofactor` before their means
+  are taken (the usual transform of cytometry intensities), or `NULL`
+  (default) to use the values as they are, as in
+  [`heat_map_summarise`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md).
+  The zeros of sparse data stay zeros, so they are transformed without a
+  dense copy.
+
+- cofactor:
+
+  the cofactor of `transform = "asinh"`: one number (5 by default, as
+  for mass cytometry; about 150 is common for flow cytometry) or one per
+  feature, named by feature.
+
+- marker_colour, marker_size:
+
+  for a dot plot of markers (`x` from
+  [`heat_map_markers`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)),
+  the columns of the markers that colour and size the dots: `"logfc"`
+  (the default colour, on a diverging scale centred at 0), `"auc"`
+  (centred at 0.5, and sized from 0.5), `"p_adj"` (the default size) or
+  `"p_value"` (as -log10(p)), `"mean_in"`, `"mean_out"`, `"detected_in"`
+  or `"detected_out"`. Each column of the plot is a feature, as
+  `features` chooses them (by default the top markers of each group,
+  grouped by the group they mark), and each row a group; a feature has a
+  dot in each group where it passed the filters of
+  [`heat_map_markers`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+  (all of them with `min_detected = 0` and `min_logfc = -Inf`). The
+  colours are not scaled unless `scale` is given, and `dot_min` leaves
+  out the dots of groups in which fewer cells are detected
+  (`detected_in`).
 
 - ...:
 
@@ -113,8 +172,9 @@ heat_map_dot(
 
 an object of class `heat_map`, as returned by
 [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
-whose data are the scaled means. The means, the proportions detected and
-the cells in each group are returned by
+whose data are the scaled means (of the first value of `split_by`, whose
+second is in `cell_split`). The means, the proportions detected and the
+cells in each group are returned by
 [`heat_map_summarise`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md).
 
 ## References
@@ -162,6 +222,19 @@ heat_map_dot(
   scale = "range",
   popup = FALSE
 )
+
+
+# Markers of each cluster, coloured by log fold change and sized by
+# -log10 of the adjusted p-value
+markers <- heat_map_markers(cells, group_by = "cluster", n = 2,
+                            min_detected = 0, min_logfc = -Inf)
+heat_map_dot(markers, popup = FALSE)
+
+
+# Each dot split by condition - control on the left, treated on the right
+cells$condition <- rep(c("control", "treated"), 130)
+heat_map_dot(cells, group_by = "cluster", split_by = "condition",
+             popup = FALSE)
 
 
 # Blood cells, with the dots of groups whose cells look like two

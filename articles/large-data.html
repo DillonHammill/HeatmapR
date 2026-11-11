@@ -117,7 +117,7 @@ populations of different sizes.</p>
 <p><img src="large-data_files/figure-html/big-1.png" class="r-plt" alt="Heatmap of 100,000 simulated cells by 30 markers with dendrograms on both axes, drawn as a raster image; the cells fall into five blocks of different heights with distinct marker patterns." width="100%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">time</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="co">#&gt; [1] 1.615</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.979</span></span></code></pre></div>
 <p>Two things make this fast: the cells are drawn as an image, and the
 rows are clustered in two stages.</p>
 <div class="section level3">
@@ -145,8 +145,8 @@ cells (300,000 cells of the heatmap) to a PDF each way:</p>
 <span><span class="op">}</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>raster <span class="op">=</span> <span class="fu">save_pdf</span><span class="op">(</span><span class="cn">TRUE</span><span class="op">)</span>, rectangles <span class="op">=</span> <span class="fu">save_pdf</span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            megabytes seconds</span></span>
-<span><span class="co">#&gt; raster          0.67    0.11</span></span>
-<span><span class="co">#&gt; rectangles      1.94    1.03</span></span></code></pre></div>
+<span><span class="co">#&gt; raster          0.67    0.06</span></span>
+<span><span class="co">#&gt; rectangles      1.94    0.61</span></span></code></pre></div>
 <p>A dendrogram adds a line for every branch, so the PDF of the
 clustered 100,000-row heatmap above is larger than the image of its
 cells.</p>
@@ -211,15 +211,17 @@ you want is a handful of groups, and k-means finds them quickly:
 <code>tree_kmeans_y = 5</code> splits the rows into 5 clusters (the
 Hartigan-Wong algorithm of <code><a href="https://rdrr.io/r/stats/kmeans.html" class="external-link">stats::kmeans()</a></code>, Hartigan and
 Wong 1979, in compiled code). k-means runs from the centres of equal
-slices of the rows along their first principal component and from three
+slices of the rows along their first principal component and from nine
 k-means++ starts (Arthur and Vassilvitskii 2007), and keeps the clusters
 with the smallest within-cluster sum of squares; for more than 20,000
-rows the starts are compared on a sample of 20,000 and the best is
-fitted to every row. The starts use fixed seeds, so the clusters don’t
-depend on the random seed, and they are ordered so that similar clusters
-are neighbours. They then act like groups supplied to
-<code>tree_cut_y</code>: separated by gaps, labelled, and with
-<code>tree_y = TRUE</code>, clustered within each cluster.</p>
+rows the starts are compared on a sample of 20,000, the best few fits of
+the sample are compared on every row (a sample can rank two close fits
+the wrong way round), and the best is fitted to every row. The starts
+use fixed seeds, so the clusters don’t depend on the random seed, and
+they are ordered so that similar clusters are neighbours. They then act
+like groups supplied to <code>tree_cut_y</code>: separated by gaps,
+labelled, and with <code>tree_y = TRUE</code>, clustered within each
+cluster.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">cells</span>,</span>
@@ -328,7 +330,7 @@ when heatmaps are drawn in parallel processes.</p>
 <span><span class="va">all</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="../reference/heat_map_clust.html">heat_map_clust</a></span><span class="op">(</span><span class="va">cells</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10000</span>, <span class="op">]</span>, max <span class="op">=</span> <span class="cn">Inf</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>threads_1 <span class="op">=</span> <span class="va">one</span>, threads_all <span class="op">=</span> <span class="va">all</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   threads_1 threads_all </span></span>
-<span><span class="co">#&gt;       1.492       0.928</span></span></code></pre></div>
+<span><span class="co">#&gt;       0.833       0.631</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="memory-and-redraws">Memory and redraws<a class="anchor" aria-label="anchor" href="#memory-and-redraws"></a>
@@ -355,7 +357,7 @@ draws:</p>
 <span><span class="va">again</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hm</span>, title <span class="op">=</span> <span class="st">"Redrawn"</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>first <span class="op">=</span> <span class="va">first</span>, redraw <span class="op">=</span> <span class="va">again</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  first redraw </span></span>
-<span><span class="co">#&gt;  1.365  0.854</span></span></code></pre></div>
+<span><span class="co">#&gt;  0.757  0.485</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="summaries-of-groups">Summaries of groups<a class="anchor" aria-label="anchor" href="#summaries-of-groups"></a>

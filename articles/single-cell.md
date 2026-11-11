@@ -2,8 +2,9 @@
 
 **HeatmapR** reads single-cell data where it lives:
 `SingleCellExperiment` and `SummarizedExperiment` objects, `Seurat`
-objects, `flowFrame` and `flowSet` objects, and sparse matrices, as well
-as matrices and data frames. Features are chosen by name, groups and
+objects, `flowFrame` and `flowSet` objects, and sparse matrices, in
+memory or on disk (DelayedArray, HDF5Array and BPCells), as well as
+matrices and data frames. Features are chosen by name, groups and
 annotations come from the cells’ metadata, and only the chosen features
 of the cells shown are ever made dense, so a few markers of a million
 cells need little memory. Five arguments do most of the work, in
@@ -16,7 +17,7 @@ and
 |----|----|
 | `features` | the genes, proteins or markers to show, by name (or a named list of groups of them) |
 | `assay` | which values: an assay of a `SingleCellExperiment`, an assay or layer of a `Seurat` object |
-| `group_by` | a metadata column (or vector) grouping the cells, e.g. clusters or cell types |
+| `group_by` | a metadata column (or vector) grouping the cells, e.g. clusters or cell types; several columns for their combinations, e.g. cell type and condition |
 | `group_max` | the most cells to show from each group, so small groups stay visible |
 | `annotation_by` | metadata columns drawn as annotation tracks |
 
@@ -209,6 +210,50 @@ heat_map(
 simulated data, grouped by cell
 type.](single-cell_files/figure-html/seurat-1.png)
 
+### On-disk data
+
+Assays too large for memory can stay on disk. A `SingleCellExperiment`
+whose assays are `DelayedArray` objects - e.g. written with HDF5Array’s
+`writeHDF5Array()` or `writeTENxMatrix()`, or loaded with
+`HDF5Array::loadHDF5SummarizedExperiment()` - and a `Seurat` object
+whose layers are BPCells matrices are read like those in memory:
+heatmaps and dot plots read only the chosen features of the cells shown,
+and summaries, markers and scores of every gene read the data a block of
+genes at a time, each block realised as a sparse (or dense) matrix and
+passed to the same compiled code, so the results are the same as those
+of the data in memory. (A `DelayedArray` that only wraps a matrix in
+memory is read as that matrix.) Here the logs of the counts are left as
+a delayed operation, which is read in blocks like data on disk:
+
+``` r
+
+disk <- sce
+assay(disk, "log1p") <- log1p(DelayedArray::DelayedArray(counts(sce)))
+class(assay(disk, "log1p"))
+#> [1] "DelayedMatrix"
+#> attr(,"package")
+#> [1] "DelayedArray"
+memory <- sce
+assay(memory, "log1p") <- log1p(counts(sce))
+all.equal(
+  heat_map_markers(disk, group_by = "cell_type", assay = "log1p"),
+  heat_map_markers(memory, group_by = "cell_type", assay = "log1p")
+)
+#> [1] TRUE
+```
+
+``` r
+
+# AN HDF5-BACKED OBJECT, SAVED ONCE AND LOADED WITHOUT READING THE COUNTS
+HDF5Array::saveHDF5SummarizedExperiment(sce, "pbmc_h5")
+disk <- HDF5Array::loadHDF5SummarizedExperiment("pbmc_h5")
+heat_map_summarise(disk, group_by = "cell_type")
+```
+
+A block holds 2^24 values of all the cells (128 MB as a dense matrix) or
+eight times as many values of sparse data;
+`options(HeatmapR.block_values = )` sets the size.
+
 ## Summaries of groups
 
 [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
@@ -360,6 +405,157 @@ heat_map_dot(sce, features = m, group_by = "cell_type", scale = "range",
 each gene and a dendrogram of the cell types on the left, which places
 related types such as CD4 and CD8 T cells next to each
 other.](single-cell_files/figure-html/dot-range-1.png)
+
+The markers themselves can be drawn as a dot plot: `heat_map_dot(m)`
+colours each dot by the log fold change of the gene in the group and
+sizes it by -log10 of the adjusted p-value (as scanpy’s
+`rank_genes_groups_dotplot()`), with `marker_colour` and `marker_size`
+for other columns (e.g. `"auc"` or `"detected_in"`). A gene has a dot in
+each group where it passed the filters of
+[`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md);
+with `min_detected = 0` and `min_logfc = -Inf` every gene passes in
+every group, so the dot plot also shows where each marker is lower than
+in the other cells:
+
+``` r
+
+all_pairs <- heat_map_markers(sce, group_by = "cell_type", n = 3,
+                              min_detected = 0, min_logfc = -Inf)
+heat_map_dot(all_pairs, title = "Markers by fold change and p-value")
+```
+
+![Dot plot of the three top markers of each of six cell types, coloured
+by log fold change and sized by minus log10 of the adjusted p-value.
+Each type's markers are large red dots in its row, and the same genes
+are small light blue dots in the other rows, lower there than in the
+other cells.](single-cell_files/figure-html/dot-markers-1.png)
+
+### Groups within groups
+
+Several columns in `group_by` group the cells by their combinations,
+ordered by the first column and then the next within it. A dot plot then
+has one row per combination, grouped by the first column in labelled
+strips and labelled by the others, so conditions can be compared within
+each cell type:
+
+``` r
+
+heat_map_dot(sce, features = m, group_by = c("cell_type", "condition"),
+             title = "Markers in each condition")
+```
+
+![Dot plot of the three top markers of each cell type with two rows per
+cell type, control and treated, grouped in labelled strips by cell type.
+The markers of each type are large dark red dots in both of its
+rows.](single-cell_files/figure-html/dot-condition-1.png)
+
+`split_by` shows two conditions in one row instead, each dot split down
+the middle (see the cytometry example below).
+
+[`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+splits and labels the cells of each combination (`group_max` then takes
+that many cells from each), and
+[`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+gives one row per combination, e.g. a pseudobulk of the counts of each
+cell type in each donor:
+
+``` r
+
+pseudobulk <- heat_map_summarise(sce, features = unlist(markers), assay = "counts",
+                                 group_by = c("cell_type", "sample"), fun = "sum")
+dim(pseudobulk)
+#> [1] 24 24
+head(rownames(pseudobulk))
+#> [1] "CD4 T / donor1" "CD4 T / donor2" "CD4 T / donor3" "CD4 T / donor4"
+#> [5] "CD8 T / donor1" "CD8 T / donor2"
+```
+
+## Gene-set scores
+
+[`heat_map_score()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_score.md)
+scores each cell for each of several sets of genes, so a heatmap or dot
+plot can show a handful of pathways or programs in place of hundreds of
+genes. `method = "zscore"` (the default) averages the genes of a set
+after z-scoring each across the cells, so a highly expressed gene
+doesn’t outweigh the others; `"mean"` averages the values themselves;
+and `"module"` subtracts the mean of control genes of similar expression
+(the score of Tirosh et al. 2016, as Seurat’s `AddModuleScore()`
+computes it): every gene is binned by its mean expression and, for each
+gene of the set, 100 genes of its bin are drawn as controls with a fixed
+seed, so a score above zero means more expression than genes of that
+level usually have. The scores are computed from the non-zero values of
+sparse data, and come back as one column per set with the metadata of
+the cells, so they are drawn and summarised like genes:
+
+``` r
+
+programs <- list(
+  T = c("CD3E", "IL7R", "CD8A", "CD8B"),
+  B = c("MS4A1", "CD79A", "CD79B", "BANK1"),
+  Myeloid = c("LYZ", "S100A8", "S100A9", "FCER1A", "CST3"),
+  NK = c("GNLY", "NKG7", "PRF1", "GZMB")
+)
+scores <- heat_map_score(sce, programs, method = "module")
+head(scores)
+#>                 T          B     Myeloid         NK
+#> cell1  0.53752600 -1.2280584 -0.89457312 -0.5504025
+#> cell2 -1.23145835 -1.2187556  1.05666537  0.2443310
+#> cell3  1.07676934  0.2613228 -0.53361971 -0.2821408
+#> cell4 -0.56509943 -0.5460668  0.09644342  2.3956009
+#> cell5  0.05907123  1.1074705 -0.50459187 -0.5757233
+#> cell6 -0.43638977 -0.4035027  0.31067944  3.1705679
+heat_map_dot(scores, group_by = "cell_type", title = "Module scores")
+```
+
+![Dot plot of four module scores, T, B, myeloid and NK, in six cell
+types. Each score is a large dark red dot in the cell types of its
+program, and small blue dots
+elsewhere.](single-cell_files/figure-html/scores-1.png)
+
+In the dot plot the size of each dot is the share of the group’s cells
+scoring above zero (`threshold`). The markers of
+[`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+give one set per group (`heat_map_score(sce, m)`), and sets naming genes
+that aren’t in the data are scored on the genes that are, with a
+message.
+
+### Aligned data sets
+
+[`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
+draws data sets measured on the same cells or groups side by side -
+genes and surface proteins (ADT) of CITE-seq, expression and chromatin
+accessibility, or genes and scores - as blocks of one heatmap. The rows
+are matched by name and put in one order, clustered (`tree = TRUE`) or
+split by k-means (`tree_kmeans`) on the `main` data set alone; each
+block is scaled on its own and has its own colour scale and legend, so
+values in different units never share a scale. The mean marker genes of
+each cell type beside their module scores, the genes z-scored within
+each gene and the scores on a diverging scale centred at zero:
+
+``` r
+
+program_means <- heat_map_summarise(scores, group_by = "cell_type")
+heat_map_align(
+  list(Genes = means, Programs = program_means),
+  scale = list("column", NULL),
+  cell_col_scale = list(NULL, "Blue-Red 3"),
+  cell_col_scale_center = list(NULL, 0),
+  tree = TRUE,
+  title = "Marker genes and module scores of each cell type"
+)
+```
+
+![Two heatmap blocks side by side for six cell types: the mean
+expression of 24 marker genes, z-scored within each gene, and four
+module scores on a blue to red scale centred at zero. The rows are
+clustered on the genes, and each block has its own colour legend. Each
+cell type is high for its own four marker genes and for its own
+program's score.](single-cell_files/figure-html/align-1.png)
+
+With `axis = "y"` data sets that share their columns (e.g. genes and
+proteins as rows, groups as columns) are stacked as blocks of rows.
+`heat_map(cell_col_blocks_x = )` gives any heatmap blocks of columns on
+their own colour scales.
 
 ## Cytometry
 
@@ -528,6 +724,27 @@ strips and annotated by sample and condition, with bars of the number of
 events in each row; HLA-DR is higher in the stimulated samples of
 clusters C5 and
 C6.](single-cell_files/figure-html/cytometry-states-1.png)
+
+A dot plot split by condition compares the conditions in each dot: with
+`split_by = "condition"`, the left half of each dot shows the control
+events of the cluster and the right half the stimulated, each half
+coloured by its mean of the asinh-transformed intensities
+(`transform = "asinh"`, z-scored within each marker across the clusters
+and both conditions) and sized by the proportion of its events above
+`threshold`, here asinh 2 as positive:
+
+``` r
+
+heat_map_dot(events, features = markers, group_by = "cluster",
+             split_by = "condition", transform = "asinh", threshold = 2,
+             title = "Control (left) and stimulated (right)")
+```
+
+![Dot plot of 12 markers in eight clusters with each dot split down the
+middle, the control events of the cluster in the left half and the
+stimulated in the right. The halves match except for HLA-DR in clusters
+C5 and C6, whose right halves are larger and darker
+red.](single-cell_files/figure-html/cytometry-split-1.png)
 
 ## Clusters that may be two populations
 
@@ -906,6 +1123,11 @@ for some sets of random matrices. *Mathematics of the USSR-Sbornik*,
 Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
 inference for single-cell transcriptomics. *BMC Genomics*, 19, 477.
 [doi:10.1186/s12864-018-4772-0](https://doi.org/10.1186/s12864-018-4772-0)
+
+Tirosh, I. et al. (2016). Dissecting the multicellular ecosystem of
+metastatic melanoma by single-cell RNA-seq. *Science*, 352(6282),
+189-196.
+[doi:10.1126/science.aad0501](https://doi.org/10.1126/science.aad0501)
 
 Wilcoxon, F. (1945). Individual comparisons by ranking methods.
 *Biometrics Bulletin*, 1(6), 80-83.

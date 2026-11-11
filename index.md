@@ -108,18 +108,28 @@ text, legends and layouts, **HeatmapR** can:
 
 **HeatmapR** reads single-cell data where it lives -
 `SingleCellExperiment` and `Seurat` objects, `flowFrame` and `flowSet`
-objects and sparse matrices - choosing features by name and grouping and
+objects and sparse matrices, in memory or on disk (DelayedArray,
+HDF5Array and BPCells) - choosing features by name and grouping and
 annotating cells from their metadata. Only the chosen features of the
 cells shown are made dense, so a few markers of a million cells need
-little memory.
+little memory, and summaries, markers and scores of every gene read
+on-disk data a block of genes at a time.
 
-- **Dot plots and markers** -
+- **Dot plots, markers and gene-set scores** -
   [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
   draws the mean of each group as colour and the proportion of its cells
-  detected as size, and
+  detected as size (or two conditions in the halves of each dot),
   [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
   ranks the markers of each group by their AUC, with Wilcoxon p-values,
-  ready to pass to `features`.
+  ready to pass to `features` or to draw as a dot plot, and
+  [`heat_map_score()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_score.md)
+  scores each cell for sets of genes (z-scored means or module scores).
+- **Aligned heatmaps** -
+  [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
+  lines up data sets measured on the same cells or groups, such as genes
+  and surface proteins, as blocks of one heatmap, each scaled and
+  coloured on its own with its own legend, with the rows clustered on
+  one of them.
 - **Summaries of groups** -
   [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
   finds the mean, median, sum or proportion detected of each feature in
@@ -211,10 +221,11 @@ groups.](reference/figures/README-HeatmapR-1.png)
 code that follows the methods of the `stats` package
 ([`stats::dist()`](https://rdrr.io/r/stats/dist.html) and
 [`stats::hclust()`](https://rdrr.io/r/stats/hclust.html)), which it
-still uses for the methods the compiled code doesn’t cover. The
-dendrogram line segments follow the layout used by the
-[ggdendro](https://github.com/andrie/ggdendro) package, which earlier
-versions of **HeatmapR** used modified code from.
+still uses for the methods the compiled code doesn’t cover. Dendrograms
+are drawn by **HeatmapR**’s own code. Versions up to 1.1.0 drew them
+with modified functions of the
+[ggdendro](https://github.com/andrie/ggdendro) package, which were
+removed in 2.0.0.
 
 ## Code of Conduct
 

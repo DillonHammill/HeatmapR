@@ -78,7 +78,10 @@ heat_map_save(
   [`tiff()`](https://rdrr.io/r/grDevices/png.html),
   [`jpeg()`](https://rdrr.io/r/grDevices/png.html),
   [`svg()`](https://rdrr.io/r/grDevices/cairo.html) or `pdf` graphics
-  devices.
+  devices. TIFF files are compressed without loss
+  (`compression = "lzw"`) unless another `compression` is given, except
+  when they are drawn by quartz (the default on macOS), which can't
+  compress them (`type = "cairo"` can, where R has cairo).
 
 ## Value
 

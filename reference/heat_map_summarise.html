@@ -106,7 +106,9 @@ columns are summarised; other columns are dropped with a message.
 Single-cell data are summarised with one row per group of cells and one
 column per feature. The mean, sum, number, proportion detected and
 median of sparse data are found from the non-zero values, without a
-dense copy, and equal those of the dense data.</p></dd>
+dense copy, and equal those of the dense data. Assays held on disk
+(<code>DelayedArray</code>, HDF5Array and BPCells matrices) are summarised a
+block of features at a time, with the same results.</p></dd>
 
 
 <dt id="arg-group-x">group_x<a class="anchor" aria-label="anchor" href="#arg-group-x"></a></dt>
@@ -158,7 +160,8 @@ default for every feature.</p></dd>
 <dd><p>the group of each cell of single-cell data: the name of a
 column of the cells' metadata, or a vector with the group of each cell
 (as <code>group_y</code>); see <code><a href="heat_map.html">heat_map</a></code>. Each group becomes
-one row of the result. Several column names group the cells by their
+one row of the result. Several column names (or a data.frame or list of
+several variables, with one value per cell) group the cells by their
 combinations, e.g. <code>c("cluster", "sample")</code> for the medians of each
 cluster in each sample, in rows named <code>"cluster / sample"</code> and
 ordered by cluster, then sample.</p></dd>

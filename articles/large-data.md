@@ -51,7 +51,7 @@ patterns.](large-data_files/figure-html/big-1.png)
 ``` r
 
 time[["elapsed"]]
-#> [1] 1.615
+#> [1] 0.979
 ```
 
 Two things make this fast: the cells are drawn as an image, and the rows
@@ -84,8 +84,8 @@ save_pdf <- function(raster) {
 }
 rbind(raster = save_pdf(TRUE), rectangles = save_pdf(FALSE))
 #>            megabytes seconds
-#> raster          0.67    0.11
-#> rectangles      1.94    1.03
+#> raster          0.67    0.06
+#> rectangles      1.94    0.61
 ```
 
 A dendrogram adds a line for every branch, so the PDF of the clustered
@@ -155,14 +155,15 @@ you want is a handful of groups, and k-means finds them quickly:
 algorithm of [`stats::kmeans()`](https://rdrr.io/r/stats/kmeans.html),
 Hartigan and Wong 1979, in compiled code). k-means runs from the centres
 of equal slices of the rows along their first principal component and
-from three k-means++ starts (Arthur and Vassilvitskii 2007), and keeps
+from nine k-means++ starts (Arthur and Vassilvitskii 2007), and keeps
 the clusters with the smallest within-cluster sum of squares; for more
-than 20,000 rows the starts are compared on a sample of 20,000 and the
-best is fitted to every row. The starts use fixed seeds, so the clusters
-don’t depend on the random seed, and they are ordered so that similar
-clusters are neighbours. They then act like groups supplied to
-`tree_cut_y`: separated by gaps, labelled, and with `tree_y = TRUE`,
-clustered within each cluster.
+than 20,000 rows the starts are compared on a sample of 20,000, the best
+few fits of the sample are compared on every row (a sample can rank two
+close fits the wrong way round), and the best is fitted to every row.
+The starts use fixed seeds, so the clusters don’t depend on the random
+seed, and they are ordered so that similar clusters are neighbours. They
+then act like groups supplied to `tree_cut_y`: separated by gaps,
+labelled, and with `tree_y = TRUE`, clustered within each cluster.
 
 ``` r
 
@@ -294,7 +295,7 @@ heat_map_threads(old)
 all <- system.time(heat_map_clust(cells[1:10000, ], max = Inf))[["elapsed"]]
 c(threads_1 = one, threads_all = all)
 #>   threads_1 threads_all 
-#>       1.492       0.928
+#>       0.833       0.631
 ```
 
 ## Memory and redraws
@@ -329,7 +330,7 @@ first <- system.time(
 again <- system.time(plot(hm, title = "Redrawn"))[["elapsed"]]
 c(first = first, redraw = again)
 #>  first redraw 
-#>  1.365  0.854
+#>  0.757  0.485
 ```
 
 ## Summaries of groups

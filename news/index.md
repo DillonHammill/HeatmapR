@@ -147,6 +147,12 @@ conventions and defaults have changed; they are listed first.
   [`dist()`](https://rdrr.io/r/stats/dist.html) nor
   [`hclust()`](https://rdrr.io/r/stats/hclust.html) use give a warning,
   catching misspelled argument names that were previously ignored.
+- The colours of non-numeric cells are shown in a legend by default:
+  `legend = TRUE` now draws the `"levels"` legend whenever `x` has
+  non-numeric columns (`legend = "both"` leaves it out, as `TRUE` did).
+  The values take the colours of `cell_col_palette` in the order of
+  their factor levels, or sorted, as annotations do (they were taken in
+  the order the values first appear).
 - Requires R \>= 3.6.0 (for
   [`hcl.colors()`](https://rdrr.io/r/grDevices/palettes.html)), and
   installing from source needs a C++ compiler: the package now contains
@@ -163,6 +169,26 @@ conventions and defaults have changed; they are listed first.
   with a colour ramp; `annotation_colours` sets colours per annotation
   (named vectors, palettes or functions). `annotation_size_*`,
   `annotation_text_*` and `annotation_legend` control their appearance.
+- Distinct colours for many categories: with the default
+  `cell_col_palette`, non-numeric values beyond the six default colours
+  take distinct colours of several lightnesses, each the furthest in
+  CIELAB from the colours before it and from white (as Glasbey et
+  al. 2007 choose them), instead of colours interpolated between the
+  six; annotations with more than 12 levels and stacked bars of more
+  than 12 parts keep the first eight colours of their palette and
+  continue the same way, so that 30 clusters can be told apart. The
+  colours are the same each time, and palettes that are given are used
+  as before.
+- Branch colours: `tree_col_x` and `tree_col_y` colour the branches of a
+  dendrogram by cluster - one colour for each cluster of
+  `tree_cut_x`/`tree_cut_y` (or k-means), from left to right and from
+  top to bottom, colouring the branches within each cluster and the edge
+  into it while the branches joining clusters stay black (as
+  dendextend’s `color_branches()`), `TRUE` for distinct colours, or one
+  colour for the whole tree. The cluster labels take the colours of
+  their branches unless `tree_label_col_x`/`tree_label_col_y` is given,
+  and `heat_map_data(hm, "tree_y")` gives the cluster below each
+  segment.
 - When `tree_cut_x`/`tree_cut_y` is a factor or character vector and
   cluster labels are shown, the clusters are labelled with their levels
   by default.
@@ -368,10 +394,13 @@ conventions and defaults have changed; they are listed first.
   other side they are drawn beyond the dendrogram and other tracks,
   which a lane carries each band across, are labelled on their outer
   side, and the heatmap keeps its axis text (or `mark_y` labels).
-  `zoom_size_y` sets the width of the panels relative to the heatmap (1
-  by default) and enlarged cells are at most 0.3 inches along the band,
-  but never smaller than the cells of the heatmap; gaps between clusters
-  keep their size in the panels.
+  `zoom_size_y` sets the width of the panels relative to the heatmap (by
+  default as wide as the heatmap for panels as long as it, and narrower,
+  down to 0.3, for shorter panels, so that enlarging a few rows -
+  e.g. one cell of single-cell data - doesn’t halve the heatmap) and
+  enlarged cells are at most 0.3 inches along the band, but never
+  smaller than the cells of the heatmap; gaps between clusters keep
+  their size in the panels.
   [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
   returns the enlarged rows and columns (a list for several bands).
 - Correlation heatmaps: new
@@ -433,6 +462,42 @@ conventions and defaults have changed; they are listed first.
 
 ### Single-cell data
 
+- Groups within groups: `group_by` takes several metadata columns (or a
+  data.frame of variables) in
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  and
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md),
+  grouping the cells by their combinations,
+  e.g. `group_by = c("cell_type", "condition")` for each cell type in
+  each condition (scanpy’s multi-column `groupby`, Seurat’s `split.by`).
+  Groups are ordered by the first variable, then the next within it, and
+  named `"CD4 T / control"`.
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  splits and labels the cells of each combination (`group_max` takes
+  that many cells from each),
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  gives one row per combination, grouped by the first variable in
+  labelled strips and labelled by the others, and
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  one row per combination (e.g. a pseudobulk of each cell type in each
+  sample with `fun = "sum"`).
+- Split dots: `heat_map_dot(split_by = "condition")` splits each dot
+  down the middle by a variable with two values - the cells of the group
+  with the first value in the left half and those with the second in the
+  right half, each half coloured by its mean and sized by its proportion
+  detected on the same scales (the means are scaled within each feature
+  across the groups and both values), so two conditions are compared in
+  each dot without doubling the rows. In
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
+  `cell_split` now also splits circles (`cell_shape = "circle"`) down
+  the middle, `cell_split_size` sizes their right halves on the size
+  scale of `cell_size` (with `cell_size = TRUE`, by the values of
+  `cell_split`), halves with a missing size are not drawn, and
+  `heat_map_info()$split_sizes` returns the sizes of the right halves.
+- Axis text named by the row (column) names of `x` (`axis_text_y`,
+  `axis_text_x`) labels each row (column) by name, wherever clustering
+  draws it.
 - [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   and
   [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
@@ -498,6 +563,83 @@ conventions and defaults have changed; they are listed first.
   only for features that pass the filters (all 20,000 genes of 50,000
   cells in 1.4 seconds on two cores; 30 markers of a million cells in
   0.6 seconds).
+- [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  takes `transform = "asinh"` and `cofactor`, as
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  does: the values of the cells are transformed before their means are
+  taken and `threshold` applies to the transformed values, so cytometry
+  intensities need no transform beforehand (the zeros of sparse data
+  stay zeros, without a dense copy).
+- Gene-set scores: new
+  [`heat_map_score()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_score.md)
+  scores each cell for each of several sets of genes (e.g. pathways or
+  programs) - the mean of the set’s genes z-scored across the cells (the
+  default), their plain mean, or a module score (`method = "module"`, as
+  Tirosh et al. 2016 and Seurat’s `AddModuleScore()`: the mean less that
+  of control genes drawn from the same bins of mean expression, with a
+  fixed seed). The scores are computed in compiled code from the
+  non-zero values of sparse data and returned as cells by sets with the
+  cells’ metadata, so
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  and
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  draw and summarise them by `group_by`. The markers of
+  [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+  give one set per group; genes that aren’t in the data are left out
+  with a message.
+- Aligned heatmaps: new
+  [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
+  draws several data sets measured on the same rows - e.g. the genes
+  (RNA) and surface proteins (ADT) of the same groups of cells, or the
+  expression and module scores of the same cell types - as one heatmap,
+  as ComplexHeatmap’s heatmap lists do. The rows are matched by name and
+  lined up in one order; each data set is a block of columns, labelled
+  by its name, scaled on its own (`scale`) and drawn on its own colour
+  scale with its own legend (`cell_col_scale`, `cell_col_scale_limits`
+  and `cell_col_scale_center` take one setting for all or a list with
+  one per data set). The rows are clustered (`tree = TRUE`) or split by
+  k-means (`tree_kmeans`) on the `main` data set alone, and `axis = "y"`
+  stacks data sets that share their columns as blocks of rows. The
+  blocks are drawn by `heat_map(cell_col_blocks_x = )` (or
+  `cell_col_blocks_y`), which gives any heatmap columns (rows) on their
+  own colour scales; `heat_map_info()$col_blocks` returns each block’s
+  limits and
+  [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+  its range and extremes.
+- On-disk data: assays held on disk - `DelayedArray` objects such as the
+  `HDF5Matrix` and `TENxMatrix` of HDF5Array, and BPCells matrices such
+  as those of Seurat v5 layers - are read a block of features at a time.
+  Each block of every cell is realised in memory as a `dgCMatrix`
+  (sparse data) or a dense matrix and summarised by the compiled code
+  used for data in memory, so
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md),
+  [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md),
+  [`heat_map_score()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_score.md),
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  and
+  [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
+  of every gene of a large data set hold one block in memory at a time
+  (2^24 values of dense data, eight times more of sparse data;
+  `options(HeatmapR.block_values = )` sets it) and give the same results
+  as the data in memory. Heatmaps read only the chosen features of the
+  cells shown, as before. A `DelayedArray` or BPCells matrix given on
+  its own is read like a sparse matrix, one cell per row. A
+  `DelayedArray` that only wraps a matrix or sparse matrix in memory,
+  without delayed operations, is read as that matrix.
+- Marker dot plots: `heat_map_dot(markers)` draws the markers returned
+  by
+  [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
+  as a dot plot, one row per group and one column per top marker
+  (grouped by the group it marks, or chosen with `features`), coloured
+  by the log fold change on a diverging scale centred at 0 and sized by
+  -log10 of the adjusted p-value (as scanpy’s
+  `rank_genes_groups_dotplot()`). `marker_colour` and `marker_size`
+  choose other columns (`"auc"`, `"p_value"`, `"mean_in"`,
+  `"detected_in"`, …); a feature has a dot in each group where it passed
+  the filters of
+  [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md),
+  in all of them with `min_detected = 0` and `min_logfc = -Inf`.
 - `features` takes a named list of features
   (e.g. `list(T = c("CD3E", "CD3D"), B = "MS4A1")`) or the markers from
   [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md),
@@ -676,24 +818,30 @@ conventions and defaults have changed; they are listed first.
   [`stats::kmeans()`](https://rdrr.io/r/stats/kmeans.html)’s clusters
   without its copies of the data. It runs from the centres of equal
   slices of the rows along their first principal component (computed
-  from the covariance matrix in one pass) and from three greedy
-  k-means++ starts (Arthur and Vassilvitskii 2007; Grunau et al. 2023;
-  HeatmapR’s own random numbers from fixed seeds), fitted on separate
-  threads, and keeps the clusters with the smallest within-cluster sum
-  of squares; for more than 20,000 rows the starts are compared on a
-  sample of 20,000 and every row is then fitted once, from the centres
-  of the best. On clusters of very different sizes, which slices split
-  badly, the within-cluster sum of squares was 19-31% smaller on three
-  simulated examples, and nothing changes where the slices do best.
-  Distances to the centres are computed four points or centres at a time
-  (AVX2), bounds on each point’s distances skip most of the checks of
-  the quick-transfer stage, the k-means++ starts are drawn in blocks of
-  rows on several threads (the same starts whatever the number of
-  threads), and rows are compared by their numbers rather than by
+  from the covariance matrix in one pass) and from nine greedy k-means++
+  starts (Arthur and Vassilvitskii 2007; Grunau et al. 2023; HeatmapR’s
+  own random numbers from fixed seeds), fitted on separate threads, and
+  keeps the clusters with the smallest within-cluster sum of squares;
+  for more than 20,000 rows the starts are compared on a sample of
+  20,000, the distinct fits of the sample within 2% of the best (at most
+  three) are compared on every row by the sum of squared distances to
+  their closest centres, and every row is then fitted once, from the
+  centres of the best. On clusters of very different sizes, which slices
+  split badly, the within-cluster sum of squares was 19-31% smaller on
+  three simulated examples, and nothing changes where the slices do
+  best. On 50,000 cytometry events (raw, asinh and z-scored, 4-8
+  clusters, four subsamples) the within-cluster sum of squares was at
+  most 0.6% above that of `stats::kmeans(nstart = 10)` and 2.7% below it
+  on average, in about 0.1 seconds against 2-3. Distances to the centres
+  are computed four points or centres at a time (AVX2), bounds on each
+  point’s distances skip most of the checks of the quick-transfer stage,
+  the k-means++ starts are drawn in blocks of rows on several threads
+  (the same starts whatever the number of threads), and rows are
+  compared by their numbers rather than by
   [`duplicated()`](https://rdrr.io/r/base/duplicated.html)’s 15-digit
   strings when a message needs the number of distinct rows: on two
-  cores, 1,000,000 rows of 30 values take 2.5 seconds for 10 clusters,
-  and 200,000 rows 0.9 seconds for 30 clusters.
+  cores, 1,000,000 rows of 30 random values take 3.0 seconds for 10
+  clusters, and 200,000 rows 2.3 seconds for 30 clusters.
   [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)
   scales in compiled code (1,000,000 x 30 in 0.7 seconds instead of 5.5,
   with identical results).
@@ -841,7 +989,21 @@ conventions and defaults have changed; they are listed first.
   codes when `cell_text = TRUE`.
 - [`heat_map_save()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md)
   now accepts `.jpg` and `.tif` extensions and is case-insensitive
-  (e.g. `.PNG`).
+  (e.g. `.PNG`), and compresses TIFF files without loss
+  (`compression = "lzw"`, 20 times smaller for a 7 x 7 inch heatmap at
+  300 dpi) unless another `compression` is given.
+- [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md)
+  drew missing correlations (e.g. of a constant column) as empty white
+  circles; their cells are now left blank in the grid.
+- `margins` must be four numbers or NA (shorter vectors were padded with
+  NA, longer ones cut), and settings of cluster labels
+  (`tree_label_col_x`, `tree_label_text_size_y`, …) with neither one
+  value nor one per cluster are recycled with a warning (they were
+  recycled silently, and rows from the bottom).
+- Single-cell data given as a matrix of features by cells (e.g. a
+  `dgCMatrix` from a Seurat or SingleCellExperiment object) is read with
+  cells as rows; when `group_by` has one value per column, or `features`
+  are row names, the error now says so and suggests `t(x)`.
 - If
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   fails while saving, the graphics device opened by
@@ -938,7 +1100,8 @@ conventions and defaults have changed; they are listed first.
 - Levels and annotation legends are stacked with space in proportion to
   their contents.
 - Removed unused and commented-out code, including the modified
-  `ggdendro` functions and unused internal helpers.
+  `ggdendro` functions of 1.1.0 (dendrograms are drawn by HeatmapR’s own
+  code) and unused internal helpers.
 - The test suite now checks the output of each feature (through
   [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
   and the recorded drawing calls) rather than only that no error occurs,

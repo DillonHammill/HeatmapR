@@ -16,6 +16,7 @@ heat_map(
   tree = FALSE,
   tree_x = NULL,
   tree_size_x = 1,
+  tree_col_x = NULL,
   tree_scale_x = FALSE,
   tree_order_x = "default",
   tree_support_x = NULL,
@@ -33,6 +34,7 @@ heat_map(
   tree_label_text_col_alpha_x = 1,
   tree_y = NULL,
   tree_size_y = 1,
+  tree_col_y = NULL,
   tree_scale_y = FALSE,
   tree_order_y = "default",
   tree_support_y = NULL,
@@ -56,6 +58,8 @@ heat_map(
   cell_col_scale_limits = NULL,
   cell_col_scale_center = NULL,
   cell_col_scale_breaks = NULL,
+  cell_col_blocks_x = NULL,
+  cell_col_blocks_y = NULL,
   cell_size_scale_limits = NULL,
   cell_size_scale_method = "linear",
   cell_size_scale_range = c(0, 1),
@@ -65,6 +69,7 @@ heat_map(
   cell_uncertainty_title = "Uncertainty",
   cell_split = NULL,
   cell_split_labels = c("x", "cell_split"),
+  cell_split_size = NULL,
   cell_col_empty = "white",
   cell_border_line_type = 1,
   cell_border_line_width = 1,
@@ -173,8 +178,8 @@ heat_map(
   mark_line_col = "grey40",
   zoom_x = NULL,
   zoom_y = NULL,
-  zoom_size_x = 1,
-  zoom_size_y = 1,
+  zoom_size_x = NULL,
+  zoom_size_y = NULL,
   zoom_side_x = NULL,
   zoom_side_y = NULL,
   cell_raster = "auto",
@@ -207,9 +212,12 @@ heat_map(
   matrix or data.frame containing the data to display in the heatmap, or
   single-cell data: a `SingleCellExperiment` or `SummarizedExperiment`,
   a `Seurat` object, a `flowFrame` or `flowSet`, or a sparse matrix
-  (e.g. a `dgCMatrix`, one cell per row). Single-cell data are drawn
-  with one row per cell and one column per feature (see `features`,
-  `assay`, `group_by`, `group_max`, `annotation_by` and `swap_axes`).
+  (e.g. a `dgCMatrix`, one cell per row). Assays can be held on disk:
+  `DelayedArray` objects (e.g. the `HDF5Matrix` and `TENxMatrix` of
+  HDF5Array) and BPCells matrices (e.g. in `Seurat` layers) are read a
+  block of features at a time. Single-cell data are drawn with one row
+  per cell and one column per feature (see `features`, `assay`,
+  `group_by`, `group_max`, `annotation_by` and `swap_axes`).
 
 - scale:
 
@@ -292,6 +300,16 @@ heat_map(
 
   numeric to control the height of the dendrogram for the x axis, set to
   1 by default (0.6 inches).
+
+- tree_col_x:
+
+  colours for the branches of the x axis dendrogram: one colour for the
+  whole tree or, with clusters (`tree_cut_x` or `tree_kmeans_x`), one
+  colour for each cluster from left to right, which colours the branches
+  within the cluster (the branches joining clusters stay black), or
+  `TRUE` for distinct colours. Set to `NULL` by default for black
+  branches. The cluster labels take the same colours unless
+  `tree_label_col_x` is given.
 
 - tree_scale_x:
 
@@ -410,8 +428,11 @@ heat_map(
 
 - tree_label_col_x:
 
-  vector of colours to use for x axis tree cluster labels, set to
-  "grey85" (light grey) by default.
+  vector of colours to use for x axis tree cluster labels from left to
+  right, set to "grey85" (light grey) by default - or, with one colour
+  per cluster in `tree_col_x`, to the colours of the branches. The
+  settings of the cluster labels take one value, or one for each
+  cluster; other lengths are recycled with a warning.
 
 - tree_label_col_alpha_x:
 
@@ -461,6 +482,11 @@ heat_map(
 
   numeric to control the width of the dendrogram for the y axis, set to
   1 by default (0.6 inches).
+
+- tree_col_y:
+
+  colours for the branches of the y axis dendrogram, as `tree_col_x`,
+  with one colour for each cluster from top to bottom.
 
 - tree_scale_y:
 
@@ -528,13 +554,14 @@ heat_map(
   `tree_kmeans_y = 4`). The rows are clustered on the numeric columns of
   `x` after scaling, by the Hartigan-Wong algorithm (in compiled code),
   from the centres of equal slices of the rows along their first
-  principal component and from three k-means++ starts (Arthur and
+  principal component and from nine k-means++ starts (Arthur and
   Vassilvitskii 2007, greedy as in Grunau et al. 2023), fitted on
   separate threads, keeping the clusters with the smallest
   within-cluster sum of squares (for more than 20,000 rows, the starts
-  are compared on a sample of 20,000 and every row is then fitted from
-  the best). The starts use fixed seeds, so the clusters don't depend on
-  the random seed. The clusters are ordered so that similar clusters are
+  are compared on a sample of 20,000, the best few fits of the sample
+  are compared on every row, and every row is then fitted from the
+  best). The starts use fixed seeds, so the clusters don't depend on the
+  random seed. The clusters are ordered so that similar clusters are
   neighbours (optimal leaf order of their centres) and then act like
   groups supplied to `tree_cut_y`: with a dendrogram (`tree_y = TRUE`)
   the rows are clustered within each k-means cluster, and `tree_split_y`
@@ -563,8 +590,9 @@ heat_map(
 
 - tree_label_col_y:
 
-  vector of colours to use for y axis tree cluster labels, set to
-  "grey85" (light grey) by default.
+  vector of colours to use for y axis tree cluster labels from top to
+  bottom, set to "grey85" (light grey) by default - or, with one colour
+  per cluster in `tree_col_y`, to the colours of the branches.
 
 - tree_label_col_alpha_y:
 
@@ -631,9 +659,14 @@ heat_map(
 - cell_col_palette:
 
   a vector of colours from which colours are selected for columns
-  containing non-numeric data. Alternatively, the name of a palette
-  listed in [`hcl.pals`](https://rdrr.io/r/grDevices/palettes.html)
-  (e.g. `"Dark 3"`) or a function that returns `n` colours.
+  containing non-numeric data, one for each distinct value (interpolated
+  between the colours when there are more values). Alternatively, the
+  name of a palette listed in
+  [`hcl.pals`](https://rdrr.io/r/grDevices/palettes.html) (e.g.
+  `"Dark 3"`) or a function that returns `n` colours. With the default
+  colours, values beyond the six take distinct colours of several
+  lightnesses, each the furthest from the colours before it (as Glasbey
+  et al. 2007 choose them), so that dozens of values can be told apart.
 
 - cell_col_scale:
 
@@ -675,6 +708,23 @@ heat_map(
   along `cell_col_scale` whatever the widths of the bins, and values
   beyond the outer breaks take the colours of the outer bins. The breaks
   set the limits of the colour scale and label the colour legend.
+
+- cell_col_blocks_x, cell_col_blocks_y:
+
+  blocks of columns (or rows), each with its own colour scale and colour
+  legend: a vector or factor with one value per column (row) of `x` in
+  its original order, naming the block of each - e.g. `"RNA"` for the
+  columns of genes and `"ADT"` for those of proteins, whose values
+  aren't comparable. Each block's colours span its own values (or its
+  own `cell_col_scale_limits`) and its legend is titled by its name.
+  `cell_col_scale`, `cell_col_scale_limits` and `cell_col_scale_center`
+  then take one setting for every block or a list with one per block (in
+  the order of the blocks, or named by them). Blocks are separate from
+  clusters: give the same vector to `tree_cut_x` to split and label the
+  blocks (as
+  [`heat_map_align`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
+  does). Can't be combined with `cell_col_scale_breaks` or
+  `cell_uncertainty`. Set to `NULL` by default for one colour scale.
 
 - cell_size_scale_limits:
 
@@ -738,17 +788,31 @@ heat_map(
   value for each cell, such as the treated condition when `x` holds the
   control. Each cell is split along its diagonal: the value in `x` fills
   the upper left half and the value in `cell_split` the lower right
-  half, on the same colour scale (its limits cover both). Requires
-  full-size rectangular cells (no `cell_size` or other `cell_shape`) and
-  can't be combined with `cell_uncertainty`; cells of non-numeric
-  columns are not split. With `scale`, each column (or row) of `x` is
-  scaled together with the same column (or row) of `cell_split`, so that
-  the halves stay comparable.
+  half, on the same colour scale (its limits cover both). Circles
+  (`cell_shape = "circle"`) are split down the middle instead: `x` fills
+  the left half and `cell_split` the right half, and each half can have
+  its own size (`cell_size` and `cell_split_size`), as in the split dots
+  of
+  [`heat_map_dot`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md).
+  Other cells must be full-size rectangles (no `cell_size` or other
+  `cell_shape`). Can't be combined with `cell_uncertainty`; cells of
+  non-numeric columns are not split. With `scale`, each column (or row)
+  of `x` is scaled together with the same column (or row) of
+  `cell_split`, so that the halves stay comparable.
 
 - cell_split_labels:
 
   two labels for the halves of the cells in the legend - the values in
   `x` and in `cell_split`, set to `c("x", "cell_split")` by default.
+
+- cell_split_size:
+
+  a numeric matrix with the same dimensions as `x` giving the size of
+  the right half of each split circle, on the same size scale as the
+  matrix given to `cell_size` (which sizes the left halves; the limits
+  of the scale cover both). Set to `NULL` by default, for halves of the
+  same size - or, with `cell_size = TRUE`, right halves sized by
+  `cell_split`. Halves with a missing size are not drawn.
 
 - cell_col_empty:
 
@@ -1010,11 +1074,12 @@ heat_map(
 - axis_text_x:
 
   vector of text to use for x axis labels supplied in the order matching
-  the constructed heatmap (from left to right), set to NULL by default
-  to use the column names of `x`. Missing values (`NA`) are drawn as
-  empty labels without a tick mark, so `NA` removes the x axis text. An
-  `expression` can be supplied for mathematical annotation (see
-  [`?plotmath`](https://rdrr.io/r/grDevices/plotmath.html)).
+  the constructed heatmap (from left to right), or named by the column
+  names of `x` to label each column by name wherever it is drawn, set to
+  NULL by default to use the column names of `x`. Missing values (`NA`)
+  are drawn as empty labels without a tick mark, so `NA` removes the x
+  axis text. An `expression` can be supplied for mathematical annotation
+  (see [`?plotmath`](https://rdrr.io/r/grDevices/plotmath.html)).
 
 - axis_text_side_x:
 
@@ -1090,11 +1155,12 @@ heat_map(
 - axis_text_y:
 
   vector of text to use for y axis labels supplied in the order matching
-  the constructed heatmap (from top to bottom), set to NULL by default
-  to use the row names of `x`, or the row indices when `x` has no row
-  names. Missing values (`NA`) are drawn as empty labels without a tick
-  mark, so `NA` removes the y axis text. An `expression` can be supplied
-  for mathematical annotation (see
+  the constructed heatmap (from top to bottom), or named by the row
+  names of `x` to label each row by name, set to NULL by default to use
+  the row names of `x`, or the row indices when `x` has no row names.
+  Missing values (`NA`) are drawn as empty labels without a tick mark,
+  so `NA` removes the y axis text. An `expression` can be supplied for
+  mathematical annotation (see
   [`?plotmath`](https://rdrr.io/r/grDevices/plotmath.html)). Axis text
   settings with one value per row (e.g. `axis_text_col_y`) are also
   given from the top.
@@ -1240,12 +1306,12 @@ heat_map(
 - legend:
 
   logical indicating whether to include a legend in the heatmap, set to
-  TRUE by default to include colour and size legends. Alternatively, a
-  character vector containing any of `"colour"`, `"size"`, `"both"`
-  (colour and size) or `"levels"` to indicate the type(s) of legends to
-  include in the heatmap. The `"levels"` legend shows the colours
-  assigned to values in non-numeric columns, e.g.
-  `legend = c("both", "levels")`. Set to `FALSE`, `NA` or `"none"` to
+  TRUE by default to include the colour, size and levels legends that
+  apply. Alternatively, a character vector containing any of `"colour"`,
+  `"size"`, `"both"` (colour and size) or `"levels"` to indicate the
+  type(s) of legends to include in the heatmap. The `"levels"` legend
+  shows the colours assigned to values in non-numeric columns, e.g.
+  `legend = "both"` leaves it out. Set to `FALSE`, `NA` or `"none"` to
   remove the legend.
 
 - legend_side:
@@ -1378,10 +1444,13 @@ heat_map(
 - zoom_size_x, zoom_size_y:
 
   size of the zoom panel relative to the heatmap - its height for
-  `zoom_x` and its width for `zoom_y` - between 0.2 and 5, set to 1 by
-  default. Along the band the panel is as long as the heatmap, or
-  shorter when that would make the enlarged cells larger than 0.3
-  inches.
+  `zoom_x` and its width for `zoom_y` - between 0.2 and 5. Along the
+  band the panel is as long as the heatmap, or shorter when that would
+  make the enlarged cells larger than 0.3 inches. Set to `NULL` by
+  default for panels as large as the heatmap when they are as long as
+  it, and smaller for shorter panels (down to 0.3 for a band of a few
+  rows), so that enlarging a few rows or columns (e.g. one cell of
+  single-cell data) doesn't halve the heatmap.
 
 - zoom_side_x, zoom_side_y:
 
@@ -1491,8 +1560,14 @@ heat_map(
   data.frame or `flowFrame` (left out of the features), or a vector with
   the group of each cell. The cells are grouped as by `tree_cut_y`, in
   the order of the groups' factor levels (sorted for other vectors), and
-  the groups are labelled (`tree_label_y`). Cells without a group (`NA`)
-  are left out with a message.
+  the groups are labelled (`tree_label_y`). Several column names (or a
+  data.frame or list of several variables, with one value per cell)
+  group the cells by their combinations, e.g.
+  `c("cell_type", "condition")` for each cell type in each condition:
+  ordered by the first variable, then the next within it, labelled
+  `"CD4 T / control"`, and without empty combinations. Cells without a
+  group (`NA`, or a missing value of any of the variables) are left out
+  with a message.
 
 - group_max:
 
@@ -1501,9 +1576,9 @@ heat_map(
   [`heat_map_downsample`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_downsample.md),
   so that small groups stay visible next to large ones. Arguments with
   one value per cell (`bar_values_y`, a logical `mark_y`, and matrices
-  given to `cell_size`, `cell_text`, `cell_split`, `cell_uncertainty`,
-  `cell_values` and `cell_border_mask`) are kept for the cells shown.
-  Set to `NULL` by default to show every cell.
+  given to `cell_size`, `cell_text`, `cell_split`, `cell_split_size`,
+  `cell_uncertainty`, `cell_values` and `cell_border_mask`) are kept for
+  the cells shown. Set to `NULL` by default to show every cell.
 
 - annotation_by:
 
@@ -1624,6 +1699,11 @@ using the bootstrap. *Evolution*, 39(4), 783-791.
 
 Garnier, S. et al. viridisLite: colorblind-friendly color maps (lite
 version). <https://CRAN.R-project.org/package=viridisLite>
+
+Glasbey, C., van der Heijden, G., Toh, V. F. K. and Gray, A. (2007).
+Colour displays for categorical images. *Color Research and
+Application*, 32(4), 304-309.
+[doi:10.1002/col.20327](https://doi.org/10.1002/col.20327)
 
 Grunau, C., Ozudogru, A. A., Rozhon, V. and Tetek, J. (2023). A nearly
 tight analysis of greedy k-means++. *Proceedings of the 2023 ACM-SIAM

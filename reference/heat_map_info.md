@@ -58,8 +58,11 @@ a list containing:
   heatmap.
 
 - `split_colours`, `split_data`: the fill colour and value (after
-  scaling) of the lower right half of each cell (`cell_split`) in the
-  orientation of the original data, or `NULL`.
+  scaling) of the lower right (or right) half of each cell
+  (`cell_split`) in the orientation of the original data, or `NULL`.
+
+- `split_sizes`: the relative size of the right half of each split
+  circle (`cell_split_size`), or `NULL`.
 
 - `annotations`: lists `x` and `y` with the colour of each row/column
   for every annotation, in the original order.

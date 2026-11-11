@@ -87,6 +87,7 @@ a dendrogram of the groups (<code>tree_y = TRUE</code>) or annotations.</p>
 <span>  <span class="va">x</span>,</span>
 <span>  features <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  group_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  split_by <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  assay <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  scale <span class="op">=</span> <span class="st">"zscore"</span>,</span>
 <span>  scale_limits <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -94,6 +95,10 @@ a dendrogram of the groups (<code>tree_y = TRUE</code>) or annotations.</p>
 <span>  dot_min <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  swap_axes <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  bimodal <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  transform <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cofactor <span class="op">=</span> <span class="fl">5</span>,</span>
+<span>  marker_colour <span class="op">=</span> <span class="st">"logfc"</span>,</span>
+<span>  marker_size <span class="op">=</span> <span class="st">"p_adj"</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -104,7 +109,8 @@ a dendrogram of the groups (<code>tree_y = TRUE</code>) or annotations.</p>
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>single-cell data, a matrix or a data.frame (see
-<code><a href="heat_map.html">heat_map</a></code>).</p></dd>
+<code><a href="heat_map.html">heat_map</a></code>), or the markers returned by
+<code><a href="heat_map_markers.html">heat_map_markers</a></code> for a dot plot of markers.</p></dd>
 
 
 <dt id="arg-features">features<a class="anchor" aria-label="anchor" href="#arg-features"></a></dt>
@@ -116,7 +122,24 @@ scanpy's <code>var_group_positions</code> brackets do).</p></dd>
 
 <dt id="arg-group-by">group_by<a class="anchor" aria-label="anchor" href="#arg-group-by"></a></dt>
 <dd><p>the group of each cell, the name of a column of its
-metadata or a vector (see <code><a href="heat_map.html">heat_map</a></code>). Each group is one row.</p></dd>
+metadata or a vector (see <code><a href="heat_map.html">heat_map</a></code>). Each group is one row.
+Several column names give one row per combination, e.g.
+<code>c("cell_type", "condition")</code> for each cell type in each
+condition: the rows are grouped by the first variable (in labelled
+strips) and each row is labelled by the others.</p></dd>
+
+
+<dt id="arg-split-by">split_by<a class="anchor" aria-label="anchor" href="#arg-split-by"></a></dt>
+<dd><p>a variable with two values (e.g. two conditions, or two
+samples) by which to split each dot down the middle: the name of a
+column of the cells' metadata or a vector with one value per cell, as
+<code>group_by</code>. The left half of each dot shows the cells of the group
+with the first value (the first factor level, or first in sorted order)
+and the right half those with the second, each half with its own colour
+and size, on the same scales: the means are scaled within each feature
+across the groups and both values. Cells without a value are left out,
+and the halves of groups without cells are not drawn. Set to
+<code>NULL</code> by default for whole dots.</p></dd>
 
 
 <dt id="arg-assay">assay<a class="anchor" aria-label="anchor" href="#arg-assay"></a></dt>
@@ -141,7 +164,7 @@ themselves.</p></dd>
 
 <dt id="arg-threshold">threshold<a class="anchor" aria-label="anchor" href="#arg-threshold"></a></dt>
 <dd><p>values above <code>threshold</code> are counted as detected, set
-to 0 by default.</p></dd>
+to 0 by default - after <code>transform</code>.</p></dd>
 
 
 <dt id="arg-dot-min">dot_min<a class="anchor" aria-label="anchor" href="#arg-dot-min"></a></dt>
@@ -161,7 +184,40 @@ is detected in (e.g. a cluster combining two smaller ones), from the dip
 (Hartigan and Hartigan 1985) of each feature in each group; or the smallest
 dip to outline. Set to <code>FALSE</code> by default. See
 <code><a href="heat_map_summarise.html">heat_map_summarise</a></code> for how the
-dips are found and <code><a href="heat_map.html">heat_map</a></code> for when a dot is outlined.</p></dd>
+dips are found and <code><a href="heat_map.html">heat_map</a></code> for when a dot is outlined.
+Can't be combined with <code>split_by</code>.</p></dd>
+
+
+<dt id="arg-transform">transform<a class="anchor" aria-label="anchor" href="#arg-transform"></a></dt>
+<dd><p><code>"asinh"</code> to transform the values of the cells with
+the inverse hyperbolic sine of each value divided by <code>cofactor</code>
+before their means are taken (the usual transform of cytometry
+intensities), or <code>NULL</code> (default) to use the values as they are, as
+in <code><a href="heat_map_summarise.html">heat_map_summarise</a></code>. The zeros of sparse data stay zeros,
+so they are transformed without a dense copy.</p></dd>
+
+
+<dt id="arg-cofactor">cofactor<a class="anchor" aria-label="anchor" href="#arg-cofactor"></a></dt>
+<dd><p>the cofactor of <code>transform = "asinh"</code>: one number (5
+by default, as for mass cytometry; about 150 is common for flow
+cytometry) or one per feature, named by feature.</p></dd>
+
+
+<dt id="arg-marker-colour-marker-size">marker_colour, marker_size<a class="anchor" aria-label="anchor" href="#arg-marker-colour-marker-size"></a></dt>
+<dd><p>for a dot plot of markers (<code>x</code> from
+<code><a href="heat_map_markers.html">heat_map_markers</a></code>), the columns of the markers that colour
+and size the dots: <code>"logfc"</code> (the default colour, on a diverging
+scale centred at 0), <code>"auc"</code> (centred at 0.5, and sized from 0.5),
+<code>"p_adj"</code> (the default size) or <code>"p_value"</code> (as
+-log10(p)), <code>"mean_in"</code>, <code>"mean_out"</code>, <code>"detected_in"</code>
+or <code>"detected_out"</code>. Each column of the plot is a feature, as
+<code>features</code> chooses them (by default the top markers of each group,
+grouped by the group they mark), and each row a group; a feature has a dot
+in each group where it passed the filters of
+<code><a href="heat_map_markers.html">heat_map_markers</a></code> (all of them with <code>min_detected = 0</code>
+and <code>min_logfc = -Inf</code>). The colours are not scaled unless
+<code>scale</code> is given, and <code>dot_min</code> leaves out the dots of groups
+in which fewer cells are detected (<code>detected_in</code>).</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -175,7 +231,8 @@ cells in each group as bars.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>an object of class <code>heat_map</code>, as returned by
-<code><a href="heat_map.html">heat_map</a></code>, whose data are the scaled means. The means, the
+<code><a href="heat_map.html">heat_map</a></code>, whose data are the scaled means (of the first
+value of <code>split_by</code>, whose second is in <code>cell_split</code>). The means, the
 proportions detected and the cells in each group are returned by
 <code><a href="heat_map_summarise.html">heat_map_summarise</a></code>.</p>
     </div>
@@ -222,12 +279,25 @@ single-cell gene expression data analysis. <em>Genome Biology</em>, 19, 15.
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="heat_map_dot-2.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Markers of each cluster, coloured by log fold change and sized by</span></span></span>
+<span class="r-in"><span><span class="co"># -log10 of the adjusted p-value</span></span></span>
+<span class="r-in"><span><span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="heat_map_markers.html">heat_map_markers</a></span><span class="op">(</span><span class="va">cells</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>, n <span class="op">=</span> <span class="fl">2</span>,</span></span>
+<span class="r-in"><span>                            min_detected <span class="op">=</span> <span class="fl">0</span>, min_logfc <span class="op">=</span> <span class="op">-</span><span class="cn">Inf</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">heat_map_dot</span><span class="op">(</span><span class="va">markers</span>, popup <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="heat_map_dot-3.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Each dot split by condition - control on the left, treated on the right</span></span></span>
+<span class="r-in"><span><span class="va">cells</span><span class="op">$</span><span class="va">condition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"control"</span>, <span class="st">"treated"</span><span class="op">)</span>, <span class="fl">130</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">heat_map_dot</span><span class="op">(</span><span class="va">cells</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>, split_by <span class="op">=</span> <span class="st">"condition"</span>,</span></span>
+<span class="r-in"><span>             popup <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="heat_map_dot-4.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Blood cells, with the dots of groups whose cells look like two</span></span></span>
 <span class="r-in"><span><span class="co"># populations outlined</span></span></span>
 <span class="r-in"><span><span class="va">blood</span> <span class="op">&lt;-</span> <span class="fu"><a href="heat_map_example.html">heat_map_example</a></span><span class="op">(</span><span class="st">"rna"</span>, n <span class="op">=</span> <span class="fl">1500</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">heat_map_dot</span><span class="op">(</span><span class="va">blood</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">blood</span>, <span class="st">"markers"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>             group_by <span class="op">=</span> <span class="st">"cell_type"</span>, bimodal <span class="op">=</span> <span class="cn">TRUE</span>, popup <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="heat_map_dot-3.png" alt="" width="700" height="433"></span>
+<span class="r-plt img"><img src="heat_map_dot-5.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

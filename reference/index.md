@@ -8,6 +8,9 @@
   : Correlation heatmaps with ellipses, numbers and dendrograms
 - [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
   : Dot plots of the features of groups of cells
+- [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
+  : Heatmaps of the same rows side by side, each with its own colour
+  scale
 - [`plot(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   [`print(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   : Draw a heat_map object
@@ -44,6 +47,8 @@ Scale, summarise and cluster data before (or while) drawing a heatmap.
   : Summarise groups of rows or columns for a heatmap
 - [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
   : Find the marker features of groups of cells
+- [`heat_map_score()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_score.md)
+  : Scores of gene sets in each cell
 - [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
   : Smooth features along pseudotime for a heatmap
 - [`heat_map_downsample()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_downsample.md)

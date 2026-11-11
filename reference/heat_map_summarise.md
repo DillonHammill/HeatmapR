@@ -44,7 +44,9 @@ heat_map_summarise(
   message. Single-cell data are summarised with one row per group of
   cells and one column per feature. The mean, sum, number, proportion
   detected and median of sparse data are found from the non-zero values,
-  without a dense copy, and equal those of the dense data.
+  without a dense copy, and equal those of the dense data. Assays held
+  on disk (`DelayedArray`, HDF5Array and BPCells matrices) are
+  summarised a block of features at a time, with the same results.
 
 - group_x:
 
@@ -96,9 +98,10 @@ heat_map_summarise(
   the cells' metadata, or a vector with the group of each cell (as
   `group_y`); see
   [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md).
-  Each group becomes one row of the result. Several column names group
-  the cells by their combinations, e.g. `c("cluster", "sample")` for the
-  medians of each cluster in each sample, in rows named
+  Each group becomes one row of the result. Several column names (or a
+  data.frame or list of several variables, with one value per cell)
+  group the cells by their combinations, e.g. `c("cluster", "sample")`
+  for the medians of each cluster in each sample, in rows named
   `"cluster / sample"` and ordered by cluster, then sample.
 
 - transform:

@@ -102,9 +102,11 @@ each column and row in the original order, in the heatmap's plot
 co-ordinates (one unit per cell, plus any gaps between clusters), for
 drawing on top of a heatmap.</p></li>
 <li><p><code>split_colours</code>, <code>split_data</code>: the fill colour and
-value (after scaling) of the lower right half of each cell
+value (after scaling) of the lower right (or right) half of each cell
 (<code>cell_split</code>) in the orientation of the original data, or
 <code>NULL</code>.</p></li>
+<li><p><code>split_sizes</code>: the relative size of the right half of each
+split circle (<code>cell_split_size</code>), or <code>NULL</code>.</p></li>
 <li><p><code>annotations</code>: lists <code>x</code> and <code>y</code> with the colour of
 each row/column for every annotation, in the original order.</p></li>
 <li><p><code>layout</code>: a data.frame with the bounding box (<code>xmin</code>,

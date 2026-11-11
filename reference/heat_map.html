@@ -64,6 +64,7 @@
 <span>  tree <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tree_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_size_x <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  tree_col_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_scale_x <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tree_order_x <span class="op">=</span> <span class="st">"default"</span>,</span>
 <span>  tree_support_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -81,6 +82,7 @@
 <span>  tree_label_text_col_alpha_x <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tree_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_size_y <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  tree_col_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  tree_scale_y <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  tree_order_y <span class="op">=</span> <span class="st">"default"</span>,</span>
 <span>  tree_support_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -104,6 +106,8 @@
 <span>  cell_col_scale_limits <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cell_col_scale_center <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cell_col_scale_breaks <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_col_blocks_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cell_col_blocks_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cell_size_scale_limits <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cell_size_scale_method <span class="op">=</span> <span class="st">"linear"</span>,</span>
 <span>  cell_size_scale_range <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span>,</span>
@@ -113,6 +117,7 @@
 <span>  cell_uncertainty_title <span class="op">=</span> <span class="st">"Uncertainty"</span>,</span>
 <span>  cell_split <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cell_split_labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="st">"cell_split"</span><span class="op">)</span>,</span>
+<span>  cell_split_size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cell_col_empty <span class="op">=</span> <span class="st">"white"</span>,</span>
 <span>  cell_border_line_type <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  cell_border_line_width <span class="op">=</span> <span class="fl">1</span>,</span>
@@ -221,8 +226,8 @@
 <span>  mark_line_col <span class="op">=</span> <span class="st">"grey40"</span>,</span>
 <span>  zoom_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  zoom_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  zoom_size_x <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  zoom_size_y <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  zoom_size_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  zoom_size_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  zoom_side_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  zoom_side_y <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cell_raster <span class="op">=</span> <span class="st">"auto"</span>,</span>
@@ -257,7 +262,10 @@
 or single-cell data: a <code>SingleCellExperiment</code> or
 <code>SummarizedExperiment</code>, a <code>Seurat</code> object, a <code>flowFrame</code>
 or <code>flowSet</code>, or a sparse matrix (e.g. a <code>dgCMatrix</code>, one cell
-per row). Single-cell data are drawn with one row per cell and one
+per row). Assays can be held on disk: <code>DelayedArray</code> objects (e.g.
+the <code>HDF5Matrix</code> and <code>TENxMatrix</code> of HDF5Array) and BPCells
+matrices (e.g. in <code>Seurat</code> layers) are read a block of features
+at a time. Single-cell data are drawn with one row per cell and one
 column per feature (see <code>features</code>, <code>assay</code>,
 <code>group_by</code>, <code>group_max</code>, <code>annotation_by</code> and
 <code>swap_axes</code>).</p></dd>
@@ -343,6 +351,16 @@ heatmap. Clusters stored in the <code>hclust</code> object are kept unless
 <dt id="arg-tree-size-x">tree_size_x<a class="anchor" aria-label="anchor" href="#arg-tree-size-x"></a></dt>
 <dd><p>numeric to control the height of the dendrogram for the x
 axis, set to 1 by default (0.6 inches).</p></dd>
+
+
+<dt id="arg-tree-col-x">tree_col_x<a class="anchor" aria-label="anchor" href="#arg-tree-col-x"></a></dt>
+<dd><p>colours for the branches of the x axis dendrogram: one
+colour for the whole tree or, with clusters (<code>tree_cut_x</code> or
+<code>tree_kmeans_x</code>), one colour for each cluster from left to right,
+which colours the branches within the cluster (the branches joining
+clusters stay black), or <code>TRUE</code> for distinct colours. Set to
+<code>NULL</code> by default for black branches. The cluster labels take the
+same colours unless <code>tree_label_col_x</code> is given.</p></dd>
 
 
 <dt id="arg-tree-scale-x">tree_scale_x<a class="anchor" aria-label="anchor" href="#arg-tree-scale-x"></a></dt>
@@ -459,7 +477,10 @@ x <code>tree_label_size_x</code> tall.</p></dd>
 
 <dt id="arg-tree-label-col-x">tree_label_col_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-col-x"></a></dt>
 <dd><p>vector of colours to use for x axis tree cluster
-labels, set to "grey85" (light grey) by default.</p></dd>
+labels from left to right, set to "grey85" (light grey) by default - or,
+with one colour per cluster in <code>tree_col_x</code>, to the colours of the
+branches. The settings of the cluster labels take one value, or one for
+each cluster; other lengths are recycled with a warning.</p></dd>
 
 
 <dt id="arg-tree-label-col-alpha-x">tree_label_col_alpha_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-col-alpha-x"></a></dt>
@@ -511,6 +532,12 @@ heatmap. Clusters stored in the <code>hclust</code> object are kept unless
 <dt id="arg-tree-size-y">tree_size_y<a class="anchor" aria-label="anchor" href="#arg-tree-size-y"></a></dt>
 <dd><p>numeric to control the width of the dendrogram for the y
 axis, set to 1 by default (0.6 inches).</p></dd>
+
+
+<dt id="arg-tree-col-y">tree_col_y<a class="anchor" aria-label="anchor" href="#arg-tree-col-y"></a></dt>
+<dd><p>colours for the branches of the y axis dendrogram, as
+<code>tree_col_x</code>, with one colour for each cluster from top to
+bottom.</p></dd>
 
 
 <dt id="arg-tree-scale-y">tree_scale_y<a class="anchor" aria-label="anchor" href="#arg-tree-scale-y"></a></dt>
@@ -580,12 +607,12 @@ differ from the supplied indices when the dendrogram order is kept.</p></dd>
 rows (e.g. <code>tree_kmeans_y = 4</code>). The rows are clustered on the
 numeric columns of <code>x</code> after scaling, by the Hartigan-Wong
 algorithm (in compiled code), from the centres of equal slices of the
-rows along their first principal component and from three k-means++
+rows along their first principal component and from nine k-means++
 starts (Arthur and Vassilvitskii 2007, greedy as in Grunau et al. 2023),
 fitted on separate threads, keeping the clusters with the smallest
 within-cluster sum of squares (for more than 20,000 rows, the starts are
-compared on a sample of 20,000 and every row is then fitted from the
-best).
+compared on a sample of 20,000, the best few fits of the sample are
+compared on every row, and every row is then fitted from the best).
 The starts use fixed seeds, so the clusters don't depend on the random
 seed. The clusters are ordered so
 that similar clusters are neighbours (optimal leaf order of their
@@ -618,7 +645,9 @@ x <code>tree_label_size_y</code> wide.</p></dd>
 
 <dt id="arg-tree-label-col-y">tree_label_col_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-col-y"></a></dt>
 <dd><p>vector of colours to use for y axis tree cluster
-labels, set to "grey85" (light grey) by default.</p></dd>
+labels from top to bottom, set to "grey85" (light grey) by default - or,
+with one colour per cluster in <code>tree_col_y</code>, to the colours of the
+branches.</p></dd>
 
 
 <dt id="arg-tree-label-col-alpha-y">tree_label_col_alpha_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-col-alpha-y"></a></dt>
@@ -686,9 +715,14 @@ the size of each cell should be scaled.</p></dd>
 
 <dt id="arg-cell-col-palette">cell_col_palette<a class="anchor" aria-label="anchor" href="#arg-cell-col-palette"></a></dt>
 <dd><p>a vector of colours from which colours are selected
-for columns containing non-numeric data. Alternatively, the name of a
-palette listed in <code><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.pals</a></code> (e.g. <code>"Dark 3"</code>)
-or a function that returns <code>n</code> colours.</p></dd>
+for columns containing non-numeric data, one for each distinct value
+(interpolated between the colours when there are more values).
+Alternatively, the name of a palette listed in
+<code><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.pals</a></code> (e.g. <code>"Dark 3"</code>) or a function
+that returns <code>n</code> colours. With the default colours, values beyond
+the six take distinct colours of several lightnesses, each the furthest
+from the colours before it (as Glasbey et al. 2007 choose them), so that
+dozens of values can be told apart.</p></dd>
 
 
 <dt id="arg-cell-col-scale">cell_col_scale<a class="anchor" aria-label="anchor" href="#arg-cell-col-scale"></a></dt>
@@ -731,6 +765,24 @@ evenly spaced along <code>cell_col_scale</code> whatever the widths of the bins,
 and values beyond the outer breaks take the colours of the outer bins.
 The breaks set the limits of the colour scale and label the colour
 legend.</p></dd>
+
+
+<dt id="arg-cell-col-blocks-x-cell-col-blocks-y">cell_col_blocks_x, cell_col_blocks_y<a class="anchor" aria-label="anchor" href="#arg-cell-col-blocks-x-cell-col-blocks-y"></a></dt>
+<dd><p>blocks of columns (or rows),
+each with its own colour scale and colour legend: a vector or factor
+with one value per column (row) of <code>x</code> in its original order,
+naming the block of each - e.g. <code>"RNA"</code> for the columns of genes
+and <code>"ADT"</code> for those of proteins, whose values aren't comparable.
+Each block's colours span its own values (or its own
+<code>cell_col_scale_limits</code>) and its legend is titled by its name.
+<code>cell_col_scale</code>, <code>cell_col_scale_limits</code> and
+<code>cell_col_scale_center</code> then take one setting for every block or a
+list with one per block (in the order of the blocks, or named by them).
+Blocks are separate from clusters: give the same vector to
+<code>tree_cut_x</code> to split and label the blocks (as
+<code><a href="heat_map_align.html">heat_map_align</a></code> does). Can't be combined with
+<code>cell_col_scale_breaks</code> or <code>cell_uncertainty</code>. Set to
+<code>NULL</code> by default for one colour scale.</p></dd>
 
 
 <dt id="arg-cell-size-scale-limits">cell_size_scale_limits<a class="anchor" aria-label="anchor" href="#arg-cell-size-scale-limits"></a></dt>
@@ -794,8 +846,12 @@ holding a second value for each cell, such as the treated condition when
 <code>x</code> holds the control. Each cell is split along its diagonal: the
 value in <code>x</code> fills the upper left half and the value in
 <code>cell_split</code> the lower right half, on the same colour scale (its
-limits cover both). Requires full-size rectangular cells (no
-<code>cell_size</code> or other <code>cell_shape</code>) and can't be combined with
+limits cover both). Circles (<code>cell_shape = "circle"</code>) are split down
+the middle instead: <code>x</code> fills the left half and <code>cell_split</code>
+the right half, and each half can have its own size (<code>cell_size</code> and
+<code>cell_split_size</code>), as in the split dots of
+<code><a href="heat_map_dot.html">heat_map_dot</a></code>. Other cells must be full-size rectangles (no
+<code>cell_size</code> or other <code>cell_shape</code>). Can't be combined with
 <code>cell_uncertainty</code>; cells of non-numeric columns are not split. With
 <code>scale</code>, each column (or row) of <code>x</code> is scaled together with
 the same column (or row) of <code>cell_split</code>, so that the halves stay
@@ -806,6 +862,16 @@ comparable.</p></dd>
 <dd><p>two labels for the halves of the cells in the
 legend - the values in <code>x</code> and in <code>cell_split</code>, set to
 <code>c("x", "cell_split")</code> by default.</p></dd>
+
+
+<dt id="arg-cell-split-size">cell_split_size<a class="anchor" aria-label="anchor" href="#arg-cell-split-size"></a></dt>
+<dd><p>a numeric matrix with the same dimensions as
+<code>x</code> giving the size of the right half of each split circle, on the
+same size scale as the matrix given to <code>cell_size</code> (which sizes the
+left halves; the limits of the scale cover both). Set to <code>NULL</code> by
+default, for halves of the same size - or, with <code>cell_size = TRUE</code>,
+right halves sized by <code>cell_split</code>. Halves with a missing size are
+not drawn.</p></dd>
 
 
 <dt id="arg-cell-col-empty">cell_col_empty<a class="anchor" aria-label="anchor" href="#arg-cell-col-empty"></a></dt>
@@ -1075,8 +1141,9 @@ transparency of bar borders in y axis bar plot, set to 1 by default.</p></dd>
 
 <dt id="arg-axis-text-x">axis_text_x<a class="anchor" aria-label="anchor" href="#arg-axis-text-x"></a></dt>
 <dd><p>vector of text to use for x axis labels supplied in the
-order matching the constructed heatmap (from left to right), set to NULL
-by default to use the
+order matching the constructed heatmap (from left to right), or named by
+the column names of <code>x</code> to label each column by name wherever it is
+drawn, set to NULL by default to use the
 column names of <code>x</code>. Missing values (<code>NA</code>) are drawn as empty
 labels without a tick mark, so <code>NA</code> removes the x axis text. An <code>expression</code> can be supplied for mathematical
 annotation (see <code><a href="https://rdrr.io/r/grDevices/plotmath.html" class="external-link">?plotmath</a></code>).</p></dd>
@@ -1160,7 +1227,8 @@ set to 1 by default.</p></dd>
 
 <dt id="arg-axis-text-y">axis_text_y<a class="anchor" aria-label="anchor" href="#arg-axis-text-y"></a></dt>
 <dd><p>vector of text to use for y axis labels supplied in the
-order matching the constructed heatmap (from top to bottom), set to NULL
+order matching the constructed heatmap (from top to bottom), or named by
+the row names of <code>x</code> to label each row by name, set to NULL
 by default to use the row names of <code>x</code>, or the row indices when
 <code>x</code> has no row names. Missing values (<code>NA</code>) are drawn as empty
 labels without a tick mark, so <code>NA</code> removes the y axis text. An
@@ -1315,13 +1383,13 @@ for the annotations, set to TRUE by default.</p></dd>
 
 <dt id="arg-legend">legend<a class="anchor" aria-label="anchor" href="#arg-legend"></a></dt>
 <dd><p>logical indicating whether to include a legend in the heatmap,
-set to TRUE by default to include colour and size legends.
-Alternatively, a character vector containing any of <code>"colour"</code>,
-<code>"size"</code>, <code>"both"</code> (colour and size) or <code>"levels"</code> to
-indicate the type(s) of legends to include in the heatmap. The
-<code>"levels"</code> legend shows the colours assigned to values in
-non-numeric columns, e.g. <code>legend = c("both", "levels")</code>. Set to
-<code>FALSE</code>, <code>NA</code> or <code>"none"</code> to remove the legend.</p></dd>
+set to TRUE by default to include the colour, size and levels legends
+that apply. Alternatively, a character vector containing any of
+<code>"colour"</code>, <code>"size"</code>, <code>"both"</code> (colour and size) or
+<code>"levels"</code> to indicate the type(s) of legends to include in the
+heatmap. The <code>"levels"</code> legend shows the colours assigned to values
+in non-numeric columns, e.g. <code>legend = "both"</code> leaves it out. Set
+to <code>FALSE</code>, <code>NA</code> or <code>"none"</code> to remove the legend.</p></dd>
 
 
 <dt id="arg-legend-side">legend_side<a class="anchor" aria-label="anchor" href="#arg-legend-side"></a></dt>
@@ -1457,9 +1525,12 @@ that they don't overlap and enlarge their rows by the same amount.</p></dd>
 <dt id="arg-zoom-size-x-zoom-size-y">zoom_size_x, zoom_size_y<a class="anchor" aria-label="anchor" href="#arg-zoom-size-x-zoom-size-y"></a></dt>
 <dd><p>size of the zoom panel relative to the
 heatmap - its height for <code>zoom_x</code> and its width for <code>zoom_y</code> -
-between 0.2 and 5, set to 1 by default. Along the band the panel is as long
-as the heatmap, or shorter when that would make the enlarged cells larger
-than 0.3 inches.</p></dd>
+between 0.2 and 5. Along the band the panel is as long as the heatmap, or
+shorter when that would make the enlarged cells larger than 0.3 inches.
+Set to <code>NULL</code> by default for panels as large as the heatmap when
+they are as long as it, and smaller for shorter panels (down to 0.3 for a
+band of a few rows), so that enlarging a few rows or columns (e.g. one
+cell of single-cell data) doesn't halve the heatmap.</p></dd>
 
 
 <dt id="arg-zoom-side-x-zoom-side-y">zoom_side_x, zoom_side_y<a class="anchor" aria-label="anchor" href="#arg-zoom-side-x-zoom-side-y"></a></dt>
@@ -1574,8 +1645,13 @@ object, <code>"sample"</code> or a <code>pData()</code> column of a
 <code>flowFrame</code> (left out of the features), or a vector with the group
 of each cell. The cells are grouped as by <code>tree_cut_y</code>, in the order
 of the groups' factor levels (sorted for other vectors), and the groups
-are labelled (<code>tree_label_y</code>). Cells without a group (<code>NA</code>)
-are left out with a message.</p></dd>
+are labelled (<code>tree_label_y</code>). Several column names (or a
+data.frame or list of several variables, with one value per cell) group
+the cells by their combinations, e.g. <code>c("cell_type",
+  "condition")</code> for each cell type in each condition: ordered by the first
+variable, then the next within it, labelled <code>"CD4 T / control"</code>,
+and without empty combinations. Cells without a group (<code>NA</code>, or a
+missing value of any of the variables) are left out with a message.</p></dd>
 
 
 <dt id="arg-group-max">group_max<a class="anchor" aria-label="anchor" href="#arg-group-max"></a></dt>
@@ -1585,7 +1661,7 @@ seed by <code><a href="heat_map_downsample.html">heat_map_downsample</a></code>,
 visible next to large ones. Arguments with one value per cell
 (<code>bar_values_y</code>, a logical <code>mark_y</code>, and matrices given to
 <code>cell_size</code>, <code>cell_text</code>, <code>cell_split</code>,
-<code>cell_uncertainty</code>, <code>cell_values</code> and
+<code>cell_split_size</code>, <code>cell_uncertainty</code>, <code>cell_values</code> and
 <code>cell_border_mask</code>) are kept for the cells shown. Set to
 <code>NULL</code> by default to show every cell.</p></dd>
 
@@ -1691,6 +1767,9 @@ using the bootstrap. <em>Evolution</em>, 39(4), 783-791.
 <a href="https://doi.org/10.1111/j.1558-5646.1985.tb00420.x" class="external-link">doi:10.1111/j.1558-5646.1985.tb00420.x</a></p>
 <p>Garnier, S. et al. viridisLite: colorblind-friendly color maps (lite
 version). <a href="https://CRAN.R-project.org/package=viridisLite" class="external-link">https://CRAN.R-project.org/package=viridisLite</a></p>
+<p>Glasbey, C., van der Heijden, G., Toh, V. F. K. and Gray, A. (2007).
+Colour displays for categorical images. <em>Color Research and
+Application</em>, 32(4), 304-309. <a href="https://doi.org/10.1002/col.20327" class="external-link">doi:10.1002/col.20327</a></p>
 <p>Grunau, C., Ozudogru, A. A., Rozhon, V. and Tetek, J. (2023). A nearly
 tight analysis of greedy k-means++. <em>Proceedings of the 2023
 ACM-SIAM Symposium on Discrete Algorithms (SODA 2023)</em>, 1012-1070.
