@@ -232,11 +232,15 @@
 #'   \code{x} into, an alternative to \code{tree_cut_y} that is quick for many
 #'   rows (e.g. \code{tree_kmeans_y = 4}). The rows are clustered on the
 #'   numeric columns of \code{x} after scaling, by the Hartigan-Wong
-#'   algorithm (in compiled code), from a greedy k-means++ start (Arthur and
-#'   Vassilvitskii 2007; Grunau et al. 2023), which spreads the starting
-#'   centres over the data so that small clusters get one of their own. The
-#'   start is drawn with HeatmapR's own random numbers from a fixed seed, so
-#'   the clusters don't depend on the random seed. The clusters are ordered so
+#'   algorithm (in compiled code), from the centres of equal slices of the
+#'   rows along their first principal component and from three k-means++
+#'   starts (Arthur and Vassilvitskii 2007, greedy as in Grunau et al. 2023),
+#'   fitted on separate threads, keeping the clusters with the smallest
+#'   within-cluster sum of squares (for more than 20,000 rows, the starts are
+#'   compared on a sample of 20,000 and every row is then fitted from the
+#'   best).
+#'   The starts use fixed seeds, so the clusters don't depend on the random
+#'   seed. The clusters are ordered so
 #'   that similar clusters are neighbours (optimal leaf order of their
 #'   centres) and then act like groups supplied to \code{tree_cut_y}: with a
 #'   dendrogram (\code{tree_y = TRUE}) the rows are clustered within each

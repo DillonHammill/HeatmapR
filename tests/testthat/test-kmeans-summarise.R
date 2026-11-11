@@ -308,25 +308,83 @@ test_that("k-means++ starts don't depend on the number of threads", {
   expect_identical(.kmeans_groups(x, 12), cl)
 })
 
-test_that("k-means from k-means++ finds small clusters that slices along the first principal component miss", {
+test_that("the best of several k-means starts is found on separate threads", {
+  x <- unequal_clusters()$x
+  starts <- lapply(1:4, function(seed) x[kmeanspp_cpp(x, 8L, seed, 1L), ])
+  fits <- lapply(starts, function(cen) kmeans_hw_cpp(x, cen, 100L, 1L))
+  w <- vapply(fits, function(f) sum((x - f$centers[f$cluster, ])^2), 0)
+  first <- 1
+  for (s in 2:4) if (w[s] < w[first] * (1 - 1e-10)) first <- s
+  b <- kmeans_hw_best_cpp(x, starts, 100L, 1L)
+  expect_identical(b$start, as.integer(first))
+  expect_equal(b$wss, w[first])
+  expect_identical(b$cluster, fits[[first]]$cluster)
+  expect_identical(b$centers, fits[[first]]$centers)
+  expect_identical(b$iter, fits[[first]]$iter)
+  expect_identical(kmeans_hw_best_cpp(x, starts, 100L, 2L), b)
+  expect_identical(kmeans_hw_best_cpp(x, starts, 100L, 4L), b)
+  # Starts that fail (an empty cluster) are skipped; none working gives NULL
+  bad <- x[c(1, 1, 2:7), ]
+  expect_identical(kmeans_hw_best_cpp(x, c(list(bad), starts), 100L, 2L)$start, b$start + 1L)
+  expect_null(kmeans_hw_best_cpp(x, list(bad), 100L, 2L))
+  expect_error(kmeans_hw_best_cpp(x, list(x[1:8, 1:3]), 100L, 1L), "columns of the data")
+})
+
+test_that("k-means keeps the start with the smallest within-cluster sum of squares", {
   u <- unequal_clusters()
   x <- u$x
   wss <- function(cl) sum(vapply(split(seq_len(nrow(x)), cl), function(i) {
     sum(sweep(x[i, , drop = FALSE], 2, colMeans(x[i, , drop = FALSE]))^2)
   }, 0))
-  # THE SLICES ALONG THE FIRST PRINCIPAL COMPONENT
+  # THE SLICES ALONG THE FIRST PRINCIPAL COMPONENT ALONE
   pc <- .first_pc(x)
   s <- integer(nrow(x))
   s[order(pc)] <- ceiling(seq_len(nrow(x)) * 8 / nrow(x))
   slices <- .try_kmeans(x, rowsum(x, s) / tabulate(s, 8))$cluster
   g <- .kmeans_groups(x, 8)
   expect_lt(wss(g), 0.9 * wss(slices))
-  # The clusters of k-means from the start, numbered by .kmeans_groups()
-  f <- .try_kmeans(x, x[kmeanspp_cpp(x, 8L, 1, 1L), ])
-  expect_equal(sum(table(g, f$cluster) > 0), 8)
+  # Every k-means++ start does no better than the clusters kept
+  for (seed in seq_len(.KMEANS_STARTS)) {
+    f <- .try_kmeans(x, x[kmeanspp_cpp(x, 8L, seed, 1L), ])
+    expect_gte(wss(f$cluster), wss(g) * (1 - 1e-9))
+  }
   # The same clusters whatever the random seed, and R's random numbers kept
   set.seed(3)
   before <- .Random.seed
   expect_identical(.kmeans_groups(x, 8), g)
   expect_identical(.Random.seed, before)
+  # Data that the slices suit keep the slices' clusters
+  m <- kmeans_blocks()
+  pcb <- .first_pc(m)
+  sb <- integer(60)
+  sb[order(pcb)] <- ceiling(seq_len(60) * 3 / 60)
+  fb <- .try_kmeans(m, rowsum(m, sb) / tabulate(sb, 3))
+  gb <- .kmeans_groups(m, 3)
+  expect_equal(sum(table(gb, fb$cluster) > 0), 3)
+})
+
+test_that("for many rows the k-means starts are compared on a sample", {
+  set.seed(12)
+  n <- .KMEANS_SAMPLE + 5000
+  sizes <- round(n * c(.6, .2, .1, .05, .03, .02))
+  sizes[1] <- n - sum(sizes[-1])
+  mu <- matrix(rnorm(6 * 6, sd = 3), 6)
+  g <- rep(1:6, sizes)
+  x <- mu[g, ] + matrix(rnorm(n * 6), n)
+  cl <- .kmeans_groups(x, 6)
+  expect_length(cl, n)
+  expect_setequal(cl, 1:6)
+  # A local optimum of every row: the result of k-means from its own centres
+  cen <- rowsum(x, cl) / tabulate(cl, 6)
+  again <- .try_kmeans(x, cen)
+  expect_equal(sum(table(again$cluster, cl) > 0), 6)
+  expect_identical(.kmeans_groups(x, 6), cl)
+  # Too few distinct rows in the sample - a start from all the rows
+  sampled <- .with_seed(2357, sort(sample.int(n, .KMEANS_SAMPLE)))
+  out <- setdiff(seq_len(n), sampled)[1:2]
+  d <- matrix(0, n, 2)
+  d[out, ] <- c(1, 2)
+  expected <- rep(1, n)
+  expected[out] <- 2:3
+  expect_equal(.kmeans_groups(d, 3), expected)
 })

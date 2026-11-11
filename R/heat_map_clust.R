@@ -1164,13 +1164,19 @@ heat_map_clust <- function(x,
 
 #' Deterministic k-means clusters of the rows of a matrix
 #'
-#' k-means (Hartigan-Wong) is run from a greedy k-means++ start (Arthur and
-#' Vassilvitskii 2007), drawn with HeatmapR's own random numbers from a fixed
-#' seed, so the clusters don't depend on R's random seed. k-means++ spreads
-#' the starting centres over the data, so that small clusters get a centre of
-#' their own. The clusters are numbered so that similar clusters are
-#' neighbours: in the optimal leaf order of their centres, starting from the
-#' end with the lowest scores on the first principal component.
+#' k-means (Hartigan-Wong) is run from four starts - the centres of k equal
+#' slices of the rows along their first principal component, and three
+#' greedy k-means++ starts (Arthur and Vassilvitskii 2007) drawn with
+#' HeatmapR's own random numbers from fixed seeds - and the clusters with the
+#' smallest total within-cluster sum of squares are kept, so the clusters
+#' don't depend on R's random seed. Slices along the first principal
+#' component suit clusters strung out along it; k-means++ suits clusters of
+#' very different sizes, whose small clusters slices can miss. For more than
+#' \code{.KMEANS_SAMPLE} rows the starts are compared on a sample of rows
+#' (fixed seed), and every row is then fitted once, from the centres of the
+#' best. The clusters are numbered so that similar clusters are neighbours:
+#' in the optimal leaf order of their centres, starting from the end with the
+#' lowest scores on the first principal component.
 #'
 #' @param m numeric matrix - its rows are clustered.
 #' @param k number of clusters.
@@ -1208,34 +1214,47 @@ heat_map_clust <- function(x,
     miss <- which(is.na(m), arr.ind = TRUE)
     m[miss] <- mu[miss[, 2]]
   }
-  # STARTING CENTRES - k DISTINCT ROWS, GREEDY k-MEANS++
-  rows <- kmeanspp_cpp(m, as.integer(k), 1, .threads())
-  if(is.null(rows)) {
-    # (ROWS WITH THE SAME NUMBERS - NOT duplicated(), WHICH COMPARES THEIR
-    # 15-DIGIT STRINGS AND IS SLOW FOR LARGE DATA)
-    stop(
-      "'", arg, "' asks for ", k, " clusters but there are only ",
-      sum(distinct_rows_cpp(m)), " distinct ", what, ".",
-      call. = FALSE
-    )
-  }
-  fit <- .try_kmeans(m, m[rows, , drop = FALSE])
-  if(is.null(fit)) {
-    # (E.G. ONE ROW PER CLUSTER - k-MEANS NEEDS MORE ROWS THAN CLUSTERS) EACH
-    # ROW IN THE CLUSTER OF ITS CLOSEST STARTING CENTRE - ITSELF FOR THE
-    # STARTING ROWS
-    tm <- t(m)
-    d <- vapply(
-      seq_len(k),
-      function(z) colSums((tm - m[rows[z], ])^2),
-      numeric(nrow(m))
-    )
-    cl <- max.col(-d, ties.method = "first")
-    centres <- rowsum(m, cl) / tabulate(cl, k)
+  # THE STARTS COMPARED ON (A SAMPLE OF) THE ROWS
+  n <- nrow(m)
+  sampled <- n > .KMEANS_SAMPLE
+  fit <- if(sampled) {
+    s <- .with_seed(2357, sort(sample.int(n, .KMEANS_SAMPLE)))
+    best <- .kmeans_best(m[s, , drop = FALSE], k)
+    # EVERY ROW FITTED FROM THE CENTRES OF THE BEST
+    if(!is.null(best)) .try_kmeans(m, best$centers)
   } else {
-    cl <- fit$cluster
-    centres <- fit$centers
+    .kmeans_best(m, k)
   }
+  # (NO START WORKED, E.G. FEWER THAN k DISTINCT ROWS IN THE SAMPLE) A
+  # k-MEANS++ START FROM ALL THE ROWS
+  if(is.null(fit)) {
+    rows <- kmeanspp_cpp(m, as.integer(k), 1, .threads())
+    if(is.null(rows)) {
+      # (ROWS WITH THE SAME NUMBERS - NOT duplicated(), WHICH COMPARES THEIR
+      # 15-DIGIT STRINGS AND IS SLOW FOR LARGE DATA)
+      stop(
+        "'", arg, "' asks for ", k, " clusters but there are only ",
+        sum(distinct_rows_cpp(m)), " distinct ", what, ".",
+        call. = FALSE
+      )
+    }
+    fit <- .try_kmeans(m, m[rows, , drop = FALSE])
+    if(is.null(fit)) {
+      # (E.G. ONE ROW PER CLUSTER - k-MEANS NEEDS MORE ROWS THAN CLUSTERS)
+      # EACH ROW IN THE CLUSTER OF ITS CLOSEST STARTING CENTRE - ITSELF FOR
+      # THE STARTING ROWS
+      tm <- t(m)
+      d <- vapply(
+        seq_len(k),
+        function(z) colSums((tm - m[rows[z], ])^2),
+        numeric(n)
+      )
+      cl <- max.col(-d, ties.method = "first")
+      fit <- list(cluster = cl, centers = rowsum(m, cl) / tabulate(cl, k))
+    }
+  }
+  cl <- fit$cluster
+  centres <- fit$centers
   pc <- .first_pc(m)
   # NUMBER THE CLUSTERS SO THAT SIMILAR CLUSTERS ARE NEIGHBOURS
   pc_mean <- vapply(seq_len(k), function(z) mean(pc[cl == z]), numeric(1))
@@ -1248,5 +1267,55 @@ heat_map_clust <- function(x,
     }
   }
   match(cl, ord)
+}
+
+# k-means++ starts compared with the slices along the first principal
+# component, and the number of rows on which the starts are compared
+.KMEANS_STARTS <- 3L
+.KMEANS_SAMPLE <- 20000L
+
+#' k-means of the rows of a matrix from the best of several starts
+#'
+#' Hartigan-Wong from the centres of k equal slices of the rows along their
+#' first principal component (when those are distinct) and from
+#' \code{.KMEANS_STARTS} greedy k-means++ starts (seeds 1, 2, ...), the
+#' starts fitted on separate threads (kmeans_hw_best_cpp); the fit with the
+#' smallest total within-cluster sum of squares is kept, the first when the
+#' sums are equal (to a relative 1e-10, so rounding doesn't decide).
+#'
+#' @return list(cluster, centers) of the best fit, or NULL when no start
+#'   worked (e.g. fewer than k distinct rows).
+#'
+#' @noRd
+.kmeans_best <- function(m,
+                         k) {
+  n <- nrow(m)
+  starts <- list()
+  if(k < n) {
+    pc <- .first_pc(m)
+    s <- integer(n)
+    s[order(pc)] <- ceiling(seq_len(n) * k / n)
+    centres <- rowsum(m, s, reorder = TRUE) / tabulate(s, k)
+    # (COINCIDING CENTRES - E.G. MANY IDENTICAL ROWS)
+    if(!anyDuplicated(centres)) {
+      starts <- list(unname(centres))
+    }
+  }
+  for(seed in seq_len(.KMEANS_STARTS)) {
+    rows <- kmeanspp_cpp(m, as.integer(k), seed, .threads())
+    # (FEWER THAN k DISTINCT ROWS)
+    if(is.null(rows)) {
+      break
+    }
+    starts <- c(starts, list(m[rows, , drop = FALSE]))
+  }
+  if(length(starts) == 0) {
+    return(NULL)
+  }
+  fit <- kmeans_hw_best_cpp(m, starts, 100L, .threads())
+  if(is.null(fit)) {
+    return(NULL)
+  }
+  list(cluster = fit$cluster, centers = fit$centers)
 }
 
