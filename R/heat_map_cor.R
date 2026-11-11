@@ -172,11 +172,15 @@ heat_map_cor <- function(x,
     args$axis_text_x <- NA
     args$axis_text_y <- NA
   }
-  # CIRCLES AND DIAMONDS SIZED BY THE ABSOLUTE CORRELATION (THEIR AREA)
+  # CIRCLES AND DIAMONDS SIZED BY THE ABSOLUTE CORRELATION (THEIR AREA);
+  # NO SHAPE FOR A MISSING CORRELATION (E.G. OF A CONSTANT VARIABLE), ITS CELL
+  # STILL IN THE GRID
   sized <- shapes %in% c("circle", "diamond")
-  if(any(sized)) {
+  blank <- is.na(r) & !shapes %in% c("rect", "number", "none")
+  if(any(sized) || any(blank)) {
     size <- matrix(1, nrow = n, ncol = n)
     size[sized] <- abs(r[sized])
+    size[blank] <- NA
     args$cell_size <- size
     args$cell_size_scale_limits <- c(0, 1)
     args$cell_size_scale_method <- "area"

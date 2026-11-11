@@ -10,3 +10,6 @@ tests/testthat/Rplots*.pdf
 src/*.o
 src/*.so
 src/*.dll
+
+# pkgdown builds the site in CI and deploys it to the gh-pages branch
+docs/

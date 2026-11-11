@@ -60,6 +60,10 @@ kmeans_hw_best_cpp <- function(x, starts, iter_max, threads) {
   .Call(`_HeatmapR_kmeans_hw_best_cpp`, x, starts, iter_max, threads)
 }
 
+kmeans_cost_cpp <- function(x, centres, threads) {
+  .Call(`_HeatmapR_kmeans_cost_cpp`, x, centres, threads)
+}
+
 distinct_rows_cpp <- function(x) {
   .Call(`_HeatmapR_distinct_rows_cpp`, x)
 }

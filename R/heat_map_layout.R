@@ -878,17 +878,35 @@
   far_y <- zoom_on(zy, other_side(p$side_y))
   # WEDGE AND DEPTH OF THE PANELS ON EACH SIDE WITH PANELS - EACH PANEL A
   # SHARE OF THE SPACE LEFT FOR THE HEATMAP (INCHES)
-  zoom_depth <- function(z, free) {
+  zoom_depth <- function(z, free, frac = 1) {
     if(is.null(z)) {
       return(c(wedge = 0, depth = 0, sides = 0))
     }
     k <- length(unique(vapply(z$bands, `[[`, numeric(1), "side")))
     wedge <- min(.ZOOM$wedge, 0.15 * free)
+    size <- z$size * frac
     c(
       wedge = wedge,
-      depth = z$size * (free - k * wedge) / (1 + k * z$size),
+      depth = size * (free - k * wedge) / (1 + k * size),
       sides = k
     )
+  }
+  # THE AUTOMATIC SIZE OF THE PANELS OF AN AXIS (A MULTIPLE OF z$size): THE
+  # SHARE OF THE HEATMAP THAT THE LONGEST SIDE OF PANELS COVERS ALONG IT, AT
+  # LEAST .ZOOM_SIZE_MIN - SHORT PANELS NEED LESS ROOM BESIDE THE HEATMAP
+  zoom_frac <- function(z, cell_in, heat_in, upi_along) {
+    if(is.null(z) || !isTRUE(z$auto) || heat_in <= 0) {
+      return(1)
+    }
+    long <- 0
+    for(s in unique(vapply(z$bands, `[[`, numeric(1), "side"))) {
+      b <- .zoom_on(z$bands, s)
+      ext <- vapply(b, zoom_extent, numeric(2))
+      long <- max(long, sum(ext["rows", ]) * cell_in +
+                    sum(ext["gaps", ]) / upi_along +
+                    (length(b) - 1) * zoom_gap(heat_in, length(b)))
+    }
+    min(1, max(.ZOOM_SIZE_MIN, long / heat_in))
   }
   zoom_used <- function(zin) {
     zin[["sides"]] * (zin[["wedge"]] + zin[["depth"]])
@@ -1056,6 +1074,8 @@
     )
   }
   band_in <- 0
+  frac_x <- 1
+  frac_y <- 1
   legend <- legend_measure(shape_in)
   # SMALLEST DISTANCES BETWEEN CELL CENTRES (PLOT UNITS)
   spacing_x <- .min_spacing(p$x_centers)
@@ -1206,7 +1226,7 @@
       0.5 * ph
     )
     free_x <- ph - sum(tracks_y) - far_in_x
-    zoom_x_in <- zoom_depth(zx, free_x)
+    zoom_x_in <- zoom_depth(zx, free_x, frac_x)
     upi_y <- hh / (free_x - zoom_used(zoom_x_in))
 
     # TRACKS ALONG X (ROW TRACKS & LEGEND) - AT MOST 60% OF THE PLOT WIDTH
@@ -1224,10 +1244,12 @@
     )
     legend_in <- min(legend_in, 0.6 * pw - sum(tracks_x))
     free_y <- pw - sum(tracks_x) - legend_in - far_in_y
-    zoom_y_in <- zoom_depth(zy, free_y)
+    zoom_y_in <- zoom_depth(zy, free_y, frac_y)
     upi_x <- wx / (free_y - zoom_used(zoom_y_in))
     cell_x_in <- zoom_cell(zx, wx / upi_x, upi_x)
     cell_y_in <- zoom_cell(zy, hh / upi_y, upi_y)
+    new_frac_x <- zoom_frac(zx, cell_x_in, wx / upi_x, upi_x)
+    new_frac_y <- zoom_frac(zy, cell_y_in, hh / upi_y, upi_y)
     # SPACE FOR EACH AXIS LABEL (INCHES) - THE ENLARGED CELLS OF THE ZOOM
     # PANELS ON THE AXIS TEXT SIDE
     space_x <- if(length(zoom_on(zx, p$side_x)) == 0) {
@@ -1441,8 +1463,12 @@
       abs(new_annot_extra_y - annot_extra_y) < 1e-4 &&
       abs(min(fit_x$scale, shrink_x) - sc_x) < 1e-6 &&
       abs(min(fit_y$scale, shrink_y) - sc_y) < 1e-6 &&
-      all(abs(new_annot_sc - annot_sc) < 1e-6)
+      all(abs(new_annot_sc - annot_sc) < 1e-6) &&
+      abs(new_frac_x - frac_x) < 1e-6 &&
+      abs(new_frac_y - frac_y) < 1e-6
     annot_sc_used <- annot_sc
+    frac_x <- new_frac_x
+    frac_y <- new_frac_y
     annot_sc <- new_annot_sc
     spill <- new_spill
     gap_x_in <- new_gap_x

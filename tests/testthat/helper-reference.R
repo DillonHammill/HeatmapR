@@ -222,7 +222,7 @@ ref.tree_segments <- function(x) {
     node_x[k] <- mean(child_x[k, ])
   }
   # TWO VERTICAL DROPS AND A HORIZONTAL BAR PER MERGE
-  # (HORIZONTAL BAR DRAWN AS TWO HALVES MEETING AT THE NODE, AS IN GGDENDRO)
+  # (HORIZONTAL BAR DRAWN AS TWO HALVES MEETING AT THE NODE)
   data.frame(
     x = c(child_x[, 1], node_x, child_x[, 1], child_x[, 2]),
     y = c(height, height, height, height),

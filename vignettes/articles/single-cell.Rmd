@@ -294,13 +294,11 @@ heat_map(
 )
 ```
 
-A dot plot split by condition compares the conditions in each dot: with `split_by = "condition"`, the left half of each dot shows the control events of the cluster and the right half the stimulated, each half coloured by its mean (z-scored within each marker across the clusters and both conditions) and sized by the proportion of its events above `threshold`, here asinh 2 as positive:
+A dot plot split by condition compares the conditions in each dot: with `split_by = "condition"`, the left half of each dot shows the control events of the cluster and the right half the stimulated, each half coloured by its mean of the asinh-transformed intensities (`transform = "asinh"`, z-scored within each marker across the clusters and both conditions) and sized by the proportion of its events above `threshold`, here asinh 2 as positive:
 
 ```{r cytometry-split, fig.width = 8, fig.height = 5, fig.alt = "Dot plot of 12 markers in eight clusters with each dot split down the middle, the control events of the cluster in the left half and the stimulated in the right. The halves match except for HLA-DR in clusters C5 and C6, whose right halves are larger and darker red."}
-positive <- events
-positive[markers] <- asinh(events[markers] / 5)
-heat_map_dot(positive, features = markers, group_by = "cluster",
-             split_by = "condition", threshold = 2,
+heat_map_dot(events, features = markers, group_by = "cluster",
+             split_by = "condition", transform = "asinh", threshold = 2,
              title = "Control (left) and stimulated (right)")
 ```
 

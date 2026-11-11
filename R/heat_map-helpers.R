@@ -28,6 +28,8 @@
 #'   heatmaps require a pdf file or \code{multiple = TRUE}.
 #' @param ... additional arguments for the appropriate \code{png()},
 #'   \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.
+#'   TIFF files are compressed without loss (\code{compression = "lzw"})
+#'   unless another \code{compression} is given.
 #'
 #' @return No return value, called for side effects.
 #'
@@ -134,15 +136,25 @@ heat_map_save <- function(save_as,
       res = res,
       ...
     )
-    # TIFF DEVICE
+    # TIFF DEVICE - LOSSLESS LZW COMPRESSION UNLESS ANOTHER IS GIVEN (tiff()
+    # WRITES UNCOMPRESSED FILES BY DEFAULT, 3 BYTES PER PIXEL)
   } else if (format == "tiff") {
-    tiff(
-      filename = save_as,
-      width = width,
-      height = height,
-      units = units,
-      res = res,
-      ...
+    dots <- list(...)
+    if(is.null(dots$compression)) {
+      dots$compression <- "lzw"
+    }
+    do.call(
+      tiff,
+      c(
+        list(
+          filename = save_as,
+          width = width,
+          height = height,
+          units = units,
+          res = res
+        ),
+        dots
+      )
     )
     # JPEG DEVICE
   } else if (format == "jpeg") {

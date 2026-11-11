@@ -183,7 +183,10 @@
     return(NULL)
   }
   list(
-    size = size,
+    # (NULL SIZE: AS DEEP AS THE HEATMAP FOR PANELS AS LONG AS IT, LESS DEEP
+    # FOR SHORTER PANELS)
+    size = if(is.null(size)) 1 else size,
+    auto = is.null(size),
     # (THE ANGLE OF THE LABELS BESIDE THE PANELS - THE AXIS TEXT'S, EVEN WHEN
     # MARK LABELS REPLACE THE AXIS TEXT)
     las = las,
@@ -217,19 +220,27 @@
   if(isTRUE(attr(zoom, "list"))) ind else ind[[1]]
 }
 
-#' Check the size of a zoom panel
+#' Check the size of a zoom panel - NULL for the automatic size
 #' @noRd
 .check_zoom_size <- function(size,
                              arg) {
+  if(is.null(size)) {
+    return(size)
+  }
   if(!is.numeric(size) || length(size) != 1 || !is.finite(size) ||
      size < 0.2 || size > 5) {
     stop(
-      "'", arg, "' must be a number between 0.2 and 5.",
+      "'", arg, "' must be a number between 0.2 and 5, or NULL.",
       call. = FALSE
     )
   }
   size
 }
+
+#' The smallest automatic size of a zoom panel (relative to the heatmap), for
+#' a band whose panel is short along the heatmap
+#' @noRd
+.ZOOM_SIZE_MIN <- 0.3
 
 #' Positions of the enlarged rows/columns in cell units
 #'

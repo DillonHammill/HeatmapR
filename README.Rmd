@@ -194,7 +194,7 @@ knitr::include_graphics('man/figures/README-HeatmapR-1.png')
 ```
 
 ## Acknowledgements
-**HeatmapR** computes distances and hierarchical clustering in compiled code that follows the methods of the `stats` package (`stats::dist()` and `stats::hclust()`), which it still uses for the methods the compiled code doesn't cover. The dendrogram line segments follow the layout used by the [ggdendro](https://github.com/andrie/ggdendro) package, which earlier versions of **HeatmapR** used modified code from. 
+**HeatmapR** computes distances and hierarchical clustering in compiled code that follows the methods of the `stats` package (`stats::dist()` and `stats::hclust()`), which it still uses for the methods the compiled code doesn't cover. Dendrograms are drawn by **HeatmapR**'s own code. Versions up to 1.1.0 drew them with modified functions of the [ggdendro](https://github.com/andrie/ggdendro) package, which were removed in 2.0.0. 
 
 ## Code of Conduct
 

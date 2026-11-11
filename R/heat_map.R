@@ -133,8 +133,8 @@
 #'   \code{tree_kmeans_x}), one colour for each cluster from left to right,
 #'   which colours the branches within the cluster (the branches joining
 #'   clusters stay black), or \code{TRUE} for distinct colours. Set to
-#'   \code{NULL} by default for black branches. The colours of
-#'   \code{tree_label_col_x} match the branches to the cluster labels.
+#'   \code{NULL} by default for black branches. The cluster labels take the
+#'   same colours unless \code{tree_label_col_x} is given.
 #' @param tree_kmeans_x number of k-means clusters (Hartigan and Wong 1979) to
 #'   split the columns of \code{x} into, an alternative to \code{tree_cut_x}
 #'   (e.g. \code{tree_kmeans_x = 3}). See \code{tree_kmeans_y}.
@@ -149,7 +149,10 @@
 #'   text are made tall enough for the text; the strip is at least 0.8 inches
 #'   x \code{tree_label_size_x} tall.
 #' @param tree_label_col_x vector of colours to use for x axis tree cluster
-#'   labels, set to "grey85" (light grey) by default.
+#'   labels from left to right, set to "grey85" (light grey) by default - or,
+#'   with one colour per cluster in \code{tree_col_x}, to the colours of the
+#'   branches. The settings of the cluster labels take one value, or one for
+#'   each cluster; other lengths are recycled with a warning.
 #' @param tree_label_col_alpha_x numeric to control the transparency of the x
 #'   axis tree cluster labels, set to 1 by default to use solid colours.
 #' @param tree_label_text_x a vector of text to include in the x axis tree
@@ -243,12 +246,12 @@
 #'   rows (e.g. \code{tree_kmeans_y = 4}). The rows are clustered on the
 #'   numeric columns of \code{x} after scaling, by the Hartigan-Wong
 #'   algorithm (in compiled code), from the centres of equal slices of the
-#'   rows along their first principal component and from three k-means++
+#'   rows along their first principal component and from nine k-means++
 #'   starts (Arthur and Vassilvitskii 2007, greedy as in Grunau et al. 2023),
 #'   fitted on separate threads, keeping the clusters with the smallest
 #'   within-cluster sum of squares (for more than 20,000 rows, the starts are
-#'   compared on a sample of 20,000 and every row is then fitted from the
-#'   best).
+#'   compared on a sample of 20,000, the best few fits of the sample are
+#'   compared on every row, and every row is then fitted from the best).
 #'   The starts use fixed seeds, so the clusters don't depend on the random
 #'   seed. The clusters are ordered so
 #'   that similar clusters are neighbours (optimal leaf order of their
@@ -269,7 +272,9 @@
 #'   text are made wide enough for the text; the strip is at least 0.8 inches
 #'   x \code{tree_label_size_y} wide.
 #' @param tree_label_col_y vector of colours to use for y axis tree cluster
-#'   labels, set to "grey85" (light grey) by default.
+#'   labels from top to bottom, set to "grey85" (light grey) by default - or,
+#'   with one colour per cluster in \code{tree_col_y}, to the colours of the
+#'   branches.
 #' @param tree_label_col_alpha_y numeric to control the transparency of the y
 #'   axis tree cluster labels, set to 1 by default to use solid colours.
 #' @param tree_label_text_y a vector of text to include in the y axis tree
@@ -708,9 +713,12 @@
 #'   combined with panels on the axis text side of the same axis.
 #' @param zoom_size_x,zoom_size_y size of the zoom panel relative to the
 #'   heatmap - its height for \code{zoom_x} and its width for \code{zoom_y} -
-#'   between 0.2 and 5, set to 1 by default. Along the band the panel is as long
-#'   as the heatmap, or shorter when that would make the enlarged cells larger
-#'   than 0.3 inches.
+#'   between 0.2 and 5. Along the band the panel is as long as the heatmap, or
+#'   shorter when that would make the enlarged cells larger than 0.3 inches.
+#'   Set to \code{NULL} by default for panels as large as the heatmap when
+#'   they are as long as it, and smaller for shorter panels (down to 0.3 for a
+#'   band of a few rows), so that enlarging a few rows or columns (e.g. one
+#'   cell of single-cell data) doesn't halve the heatmap.
 #' @param cell_raster whether to draw the cells as raster images, which is much
 #'   faster and gives smaller files for large heatmaps. Set to \code{"auto"} by
 #'   default to use raster images for heatmaps with more than 50,000 cells.
@@ -1224,8 +1232,8 @@ heat_map <- function(x,
                      mark_line_col = "grey40",
                      zoom_x = NULL,
                      zoom_y = NULL,
-                     zoom_size_x = 1,
-                     zoom_size_y = 1,
+                     zoom_size_x = NULL,
+                     zoom_size_y = NULL,
                      zoom_side_x = NULL,
                      zoom_side_y = NULL,
                      cell_raster = "auto",
@@ -1250,6 +1258,10 @@ heat_map <- function(x,
                      ...) {
 
   # ARGUMENTS ------------------------------------------------------------------
+
+  # (CLUSTER LABELS TAKE THE BRANCH COLOURS UNLESS THEIR COLOURS ARE GIVEN)
+  label_col_given <- c(x = !missing(tree_label_col_x),
+                       y = !missing(tree_label_col_y))
 
   # CLOSE heat_map_save() DEVICE IF CONSTRUCTION FAILS - REGISTERED BEFORE ANY
   # ARGUMENTS ARE EVALUATED SO THAT ERRORS IN THE ARGUMENTS ARE ALSO CAUGHT
@@ -1463,6 +1475,14 @@ heat_map <- function(x,
   }
   if(length(title) > 1) {
     stop("'title' must be a single string.", call. = FALSE)
+  }
+  if(length(margins) != 4 || !(is.numeric(margins) || .all_na(margins)) ||
+     any(!is.na(margins) & (!is.finite(margins) | margins < 0))) {
+    stop(
+      "'margins' must be four numbers of lines (bottom, left, top, right), ",
+      "NA to fit a margin to its contents.",
+      call. = FALSE
+    )
   }
   if(!is.numeric(cell_col_alpha) ||
      any(cell_col_alpha < 0 | cell_col_alpha > 1, na.rm = TRUE)) {
@@ -1984,6 +2004,15 @@ heat_map <- function(x,
         call. = FALSE
       )
     }
+    # THE OTHER SETTINGS OF THE LABELS - ONE, OR ONE FOR EACH CLUSTER (OTHER
+    # LENGTHS RECYCLED FROM THE LEFT, OR FROM THE TOP, WITH A WARNING)
+    if(!is.null(cut)) {
+      for(nm in paste0("tree_label_", c("col", "col_alpha", "text_font",
+                                        "text_size", "text_col",
+                                        "text_col_alpha"), "_", ax)) {
+        assign(nm, .recycle_clusters(get(nm), max(cut), nm))
+      }
+    }
   }
 
   # SETTINGS FOR EACH ROW CLUSTER ARE GIVEN FROM THE TOP - DRAWN FROM THE
@@ -2002,6 +2031,15 @@ heat_map <- function(x,
     tree_label_text_size_y <- flip_y(tree_label_text_size_y)
     tree_label_text_col_y <- flip_y(tree_label_text_col_y)
     tree_label_text_col_alpha_y <- flip_y(tree_label_text_col_alpha_y)
+  }
+
+  # CLUSTER LABELS IN THE COLOURS OF THEIR BRANCHES (tree_col_x, tree_col_y
+  # WITH ONE COLOUR PER CLUSTER) UNLESS THEIR COLOURS ARE GIVEN
+  if(!label_col_given[["x"]] && length(tree_col_x) > 1) {
+    tree_label_col_x <- tree_col_x
+  }
+  if(!label_col_given[["y"]] && length(tree_col_y) > 1) {
+    tree_label_col_y <- tree_col_y
   }
 
   # NUMERIC & CHARACTER DATA ---------------------------------------------------
@@ -3051,7 +3089,7 @@ heat_map <- function(x,
       axis_label_x = axis_label_x,
       axis_label_y = axis_label_y,
       title = title,
-      margins = rep(c(margins, rep(NA, 4)), length.out = 4),
+      margins = as.numeric(margins),
       levels_margin = levels_margin,
       bar_x = !is.null(bar_values_x),
       bar_y = !is.null(bar_values_y),

@@ -175,8 +175,8 @@ heat_map(
   mark_line_col = "grey40",
   zoom_x = NULL,
   zoom_y = NULL,
-  zoom_size_x = 1,
-  zoom_size_y = 1,
+  zoom_size_x = NULL,
+  zoom_size_y = NULL,
   zoom_side_x = NULL,
   zoom_side_y = NULL,
   cell_raster = "auto",
@@ -280,8 +280,8 @@ colour for the whole tree or, with clusters (\code{tree_cut_x} or
 \code{tree_kmeans_x}), one colour for each cluster from left to right,
 which colours the branches within the cluster (the branches joining
 clusters stay black), or \code{TRUE} for distinct colours. Set to
-\code{NULL} by default for black branches. The colours of
-\code{tree_label_col_x} match the branches to the cluster labels.}
+\code{NULL} by default for black branches. The cluster labels take the
+same colours unless \code{tree_label_col_x} is given.}
 
 \item{tree_scale_x}{logical indicating whether the branch heights of the x
 axis dendrogram should be scaled for better visualisation, set to FALSE by
@@ -380,7 +380,10 @@ text are made tall enough for the text; the strip is at least 0.8 inches
 x \code{tree_label_size_x} tall.}
 
 \item{tree_label_col_x}{vector of colours to use for x axis tree cluster
-labels, set to "grey85" (light grey) by default.}
+labels from left to right, set to "grey85" (light grey) by default - or,
+with one colour per cluster in \code{tree_col_x}, to the colours of the
+branches. The settings of the cluster labels take one value, or one for
+each cluster; other lengths are recycled with a warning.}
 
 \item{tree_label_col_alpha_x}{numeric to control the transparency of the x
 axis tree cluster labels, set to 1 by default to use solid colours.}
@@ -477,12 +480,12 @@ differ from the supplied indices when the dendrogram order is kept.}
 rows (e.g. \code{tree_kmeans_y = 4}). The rows are clustered on the
 numeric columns of \code{x} after scaling, by the Hartigan-Wong
 algorithm (in compiled code), from the centres of equal slices of the
-rows along their first principal component and from three k-means++
+rows along their first principal component and from nine k-means++
 starts (Arthur and Vassilvitskii 2007, greedy as in Grunau et al. 2023),
 fitted on separate threads, keeping the clusters with the smallest
 within-cluster sum of squares (for more than 20,000 rows, the starts are
-compared on a sample of 20,000 and every row is then fitted from the
-best).
+compared on a sample of 20,000, the best few fits of the sample are
+compared on every row, and every row is then fitted from the best).
 The starts use fixed seeds, so the clusters don't depend on the random
 seed. The clusters are ordered so
 that similar clusters are neighbours (optimal leaf order of their
@@ -507,7 +510,9 @@ text are made wide enough for the text; the strip is at least 0.8 inches
 x \code{tree_label_size_y} wide.}
 
 \item{tree_label_col_y}{vector of colours to use for y axis tree cluster
-labels, set to "grey85" (light grey) by default.}
+labels from top to bottom, set to "grey85" (light grey) by default - or,
+with one colour per cluster in \code{tree_col_y}, to the colours of the
+branches.}
 
 \item{tree_label_col_alpha_y}{numeric to control the transparency of the y
 axis tree cluster labels, set to 1 by default to use solid colours.}
@@ -1115,9 +1120,12 @@ that they don't overlap and enlarge their rows by the same amount.}
 
 \item{zoom_size_x, zoom_size_y}{size of the zoom panel relative to the
 heatmap - its height for \code{zoom_x} and its width for \code{zoom_y} -
-between 0.2 and 5, set to 1 by default. Along the band the panel is as long
-as the heatmap, or shorter when that would make the enlarged cells larger
-than 0.3 inches.}
+between 0.2 and 5. Along the band the panel is as long as the heatmap, or
+shorter when that would make the enlarged cells larger than 0.3 inches.
+Set to \code{NULL} by default for panels as large as the heatmap when
+they are as long as it, and smaller for shorter panels (down to 0.3 for a
+band of a few rows), so that enlarging a few rows or columns (e.g. one
+cell of single-cell data) doesn't halve the heatmap.}
 
 \item{zoom_side_x, zoom_side_y}{the side of the heatmap each zoom panel is
 drawn on: \code{"bottom"} or \code{"top"} for \code{zoom_x},
