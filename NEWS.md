@@ -160,7 +160,7 @@ HeatmapR 2.0.0 is a major release: a new layout that sizes every part of a heatm
 * Cell borders are left out when cells are smaller than three line widths (e.g. more than about 200 rows on a 7 inch device with the default borders), instead of turning the heatmap black. Borders requested with `cell_border_mask` are always drawn.
 * Missing (`NA`) axis labels no longer get a tick mark, so `axis_text_y = NA` removes the y axis text of a large heatmap instead of leaving a solid bar of ticks.
 * Levels and annotation legends are stacked with space in proportion to their contents.
-* Removed unused and commented-out code, including the modified `ggdendro` functions and unused internal helpers.
+* Removed unused and commented-out code, including the modified `ggdendro` functions of 1.1.0 (dendrograms are drawn by HeatmapR's own code) and unused internal helpers.
 * The test suite now checks the output of each feature (through `heat_map_info()` and the recorded drawing calls) rather than only that no error occurs, and covers over 99% of the code.
 * Documentation now matches the function defaults and the README describes CRAN installation.
 * Methods are referenced where they are used: the help pages of `heat_map()`, `heat_map_clust()`, `heat_map_scale()`, `heat_map_summarise()`, `heat_map_markers()`, `heat_map_dot()`, `heat_map_cor()`, `heat_map_smooth()` and `heat_map_example()`, the vignette and the articles cite the papers behind them. The DOI of Murtagh and Contreras (2012) in the Description is corrected.

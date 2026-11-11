@@ -352,7 +352,7 @@ heat_map(
 knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-split.png')
 ```
 
-Split cells need full-size rectangles, so `cell_size` and other `cell_shape`s can't be used with them.
+Split cells need full-size rectangles or circles: circles (`cell_shape = "circle"`) are split down the middle instead, `x` on the left and `cell_split` on the right, and each half can have its own size (`cell_size` and `cell_split_size`), as in the split dots of `heat_map_dot(split_by = )`.
 
 ### 2.4 Cell Borders
 

@@ -131,7 +131,8 @@ cpp11::integers mean_order_cpp(cpp11::integers merge, cpp11::doubles w) {
 }
 
 // Segments of a dendrogram: per merge, the horizontal bar in two halves
-// meeting at the node and the two vertical drops (as in ggdendro)
+// meeting at the node (each half styled as the branch below it) and the two
+// vertical drops
 [[cpp11::register]]
 cpp11::doubles_matrix<> tree_segments_cpp(cpp11::integers merge,
                                           cpp11::doubles height,
