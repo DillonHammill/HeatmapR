@@ -28,7 +28,8 @@
 #'   heatmaps require a pdf file or \code{multiple = TRUE}.
 #' @param ... additional arguments for the appropriate \code{png()},
 #'   \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.
-#'   TIFF files are compressed without loss (\code{compression = "lzw"})
+#'   TIFF files are compressed without loss (\code{compression = "lzw"},
+#'   drawn with cairo on macOS, whose quartz bitmaps can't be compressed)
 #'   unless another \code{compression} is given.
 #'
 #' @return No return value, called for side effects.
@@ -141,7 +142,15 @@ heat_map_save <- function(save_as,
   } else if (format == "tiff") {
     dots <- list(...)
     if(is.null(dots$compression)) {
-      dots$compression <- "lzw"
+      # (macOS DRAWS BITMAPS WITH QUARTZ, WHICH CAN'T COMPRESS - CAIRO CAN)
+      type <- if(is.null(dots$type)) getOption("bitmapType") else dots$type
+      if(identical(type, "quartz") && is.null(dots$type) &&
+         isTRUE(capabilities("cairo"))) {
+        dots$type <- type <- "cairo"
+      }
+      if(!identical(type, "quartz")) {
+        dots$compression <- "lzw"
+      }
     }
     do.call(
       tiff,
