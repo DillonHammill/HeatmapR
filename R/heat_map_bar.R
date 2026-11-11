@@ -771,7 +771,11 @@ heat_map_bar <- function(x,
     parts <- paste("Part", seq_len(k))
   }
   if(!supplied) {
-    fill <- hcl.colors(max(k, 2), "Dark 3")[seq_len(k)]
+    fill <- if(k <= .QUALITATIVE_MAX) {
+      hcl.colors(max(k, 2), "Dark 3")[seq_len(k)]
+    } else {
+      .qualitative_colours(k, "Dark 3")
+    }
   } else if(!is.null(names(fill)) && all(parts %in% names(fill))) {
     fill <- unname(fill[parts])
   } else {

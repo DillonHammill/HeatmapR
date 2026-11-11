@@ -15,6 +15,7 @@ heat_map(
   tree = FALSE,
   tree_x = NULL,
   tree_size_x = 1,
+  tree_col_x = NULL,
   tree_scale_x = FALSE,
   tree_order_x = "default",
   tree_support_x = NULL,
@@ -32,6 +33,7 @@ heat_map(
   tree_label_text_col_alpha_x = 1,
   tree_y = NULL,
   tree_size_y = 1,
+  tree_col_y = NULL,
   tree_scale_y = FALSE,
   tree_order_y = "default",
   tree_support_y = NULL,
@@ -273,6 +275,14 @@ heatmap. Clusters stored in the \code{hclust} object are kept unless
 \item{tree_size_x}{numeric to control the height of the dendrogram for the x
 axis, set to 1 by default (0.6 inches).}
 
+\item{tree_col_x}{colours for the branches of the x axis dendrogram: one
+colour for the whole tree or, with clusters (\code{tree_cut_x} or
+\code{tree_kmeans_x}), one colour for each cluster from left to right,
+which colours the branches within the cluster (the branches joining
+clusters stay black), or \code{TRUE} for distinct colours. Set to
+\code{NULL} by default for black branches. The colours of
+\code{tree_label_col_x} match the branches to the cluster labels.}
+
 \item{tree_scale_x}{logical indicating whether the branch heights of the x
 axis dendrogram should be scaled for better visualisation, set to FALSE by
 default.}
@@ -406,6 +416,10 @@ heatmap. Clusters stored in the \code{hclust} object are kept unless
 
 \item{tree_size_y}{numeric to control the width of the dendrogram for the y
 axis, set to 1 by default (0.6 inches).}
+
+\item{tree_col_y}{colours for the branches of the y axis dendrogram, as
+\code{tree_col_x}, with one colour for each cluster from top to
+bottom.}
 
 \item{tree_scale_y}{logical indicating whether the branch heights of the y
 axis dendrogram should be scaled for better visualisation, set to FALSE by
@@ -543,9 +557,14 @@ a matrix of the same dimensions as \code{x} containing the values by which
 the size of each cell should be scaled.}
 
 \item{cell_col_palette}{a vector of colours from which colours are selected
-for columns containing non-numeric data. Alternatively, the name of a
-palette listed in \code{\link[grDevices]{hcl.pals}} (e.g. \code{"Dark 3"})
-or a function that returns \code{n} colours.}
+for columns containing non-numeric data, one for each distinct value
+(interpolated between the colours when there are more values).
+Alternatively, the name of a palette listed in
+\code{\link[grDevices]{hcl.pals}} (e.g. \code{"Dark 3"}) or a function
+that returns \code{n} colours. With the default colours, values beyond
+the six take distinct colours of several lightnesses, each the furthest
+from the colours before it (as Glasbey et al. 2007 choose them), so that
+dozens of values can be told apart.}
 
 \item{cell_col_scale}{a vector of colours to use for the colour scale of
 numeric values. By default the scale runs through the colour-blind friendly
@@ -994,13 +1013,13 @@ tracks on the side of the axis text.}
 for the annotations, set to TRUE by default.}
 
 \item{legend}{logical indicating whether to include a legend in the heatmap,
-set to TRUE by default to include colour and size legends.
-Alternatively, a character vector containing any of \code{"colour"},
-\code{"size"}, \code{"both"} (colour and size) or \code{"levels"} to
-indicate the type(s) of legends to include in the heatmap. The
-\code{"levels"} legend shows the colours assigned to values in
-non-numeric columns, e.g. \code{legend = c("both", "levels")}. Set to
-\code{FALSE}, \code{NA} or \code{"none"} to remove the legend.}
+set to TRUE by default to include the colour, size and levels legends
+that apply. Alternatively, a character vector containing any of
+\code{"colour"}, \code{"size"}, \code{"both"} (colour and size) or
+\code{"levels"} to indicate the type(s) of legends to include in the
+heatmap. The \code{"levels"} legend shows the colours assigned to values
+in non-numeric columns, e.g. \code{legend = "both"} leaves it out. Set
+to \code{FALSE}, \code{NA} or \code{"none"} to remove the legend.}
 
 \item{legend_side}{where to draw the legend, either \code{"auto"} (the
 default) beside the heatmap, opposite the y axis text, or
@@ -1363,6 +1382,10 @@ using the bootstrap. \emph{Evolution}, 39(4), 783-791.
 
 Garnier, S. et al. viridisLite: colorblind-friendly color maps (lite
 version). \url{https://CRAN.R-project.org/package=viridisLite}
+
+Glasbey, C., van der Heijden, G., Toh, V. F. K. and Gray, A. (2007).
+Colour displays for categorical images. \emph{Color Research and
+Application}, 32(4), 304-309. \doi{10.1002/col.20327}
 
 Grunau, C., Ozudogru, A. A., Rozhon, V. and Tetek, J. (2023). A nearly
 tight analysis of greedy k-means++. \emph{Proceedings of the 2023

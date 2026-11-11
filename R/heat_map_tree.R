@@ -13,7 +13,8 @@ heat_map_tree <- function(x,
                           centers_x = NULL,
                           centers_y = NULL,
                           support = NULL,
-                          support_labels = TRUE) {
+                          support_labels = TRUE,
+                          col = NULL) {
 
   # NOTHING TO DRAW
   if(is.null(centers_x) && is.null(centers_y)) {
@@ -60,22 +61,29 @@ heat_map_tree <- function(x,
     }
   }
 
-  # TREE - BRANCHES STYLED BY THEIR SUPPORT
+  # TREE - BRANCHES COLOURED BY CLUSTER (col, NA FOR THE DEFAULT) AND STYLED
+  # BY THEIR SUPPORT
   if(is.null(support)) {
-    segments(
-      x0 = x_segments$x,
-      y0 = x_segments$y,
-      x1 = x_segments$xend,
-      y1 = x_segments$yend
-    )
-  } else {
-    st <- .support_style(support)
+    seg_col <- if(is.null(col)) "black" else ifelse(is.na(col), "black", col)
     segments(
       x0 = x_segments$x,
       y0 = x_segments$y,
       x1 = x_segments$xend,
       y1 = x_segments$yend,
-      col = rep(st$col, 4),
+      col = seg_col
+    )
+  } else {
+    st <- .support_style(support)
+    seg_col <- rep(st$col, 4)
+    if(!is.null(col)) {
+      seg_col <- ifelse(is.na(col), seg_col, col)
+    }
+    segments(
+      x0 = x_segments$x,
+      y0 = x_segments$y,
+      x1 = x_segments$xend,
+      y1 = x_segments$yend,
+      col = seg_col,
       lwd = rep(st$lwd, 4),
       lty = rep(st$lty, 4)
     )
@@ -93,6 +101,78 @@ heat_map_tree <- function(x,
 
   invisible(NULL)
 
+}
+
+#' Check the colours of the branches of a dendrogram
+#'
+#' @param col \code{NULL} or \code{FALSE} (black), \code{TRUE} (distinct
+#'   colours for the clusters), one colour or one per cluster.
+#' @param k the number of clusters (0 without clusters).
+#'
+#' @return \code{NULL}, one colour, or one per cluster in the order given.
+#'
+#' @importFrom grDevices col2rgb
+#' @noRd
+.check_tree_col <- function(col,
+                            k,
+                            arg) {
+  if(is.null(col) || isFALSE(col)) {
+    return(NULL)
+  }
+  if(isTRUE(col)) {
+    return(if(k > 0) .qualitative_colours(k, "Dark 3"))
+  }
+  ok <- (is.character(col) || is.numeric(col)) && length(col) > 0 &&
+    !anyNA(col) &&
+    !inherits(tryCatch(col2rgb(col), error = function(e) e), "error")
+  if(!ok || !(length(col) == 1 || length(col) == k)) {
+    stop(
+      "'", arg, "' must be TRUE, one colour",
+      if(k > 0) paste0(", or one colour for each of the ", k, " clusters"),
+      ".",
+      call. = FALSE
+    )
+  }
+  col
+}
+
+#' The colour of each segment of a dendrogram (in the order of
+#' \code{.tree_segments()}) - the colour of the cluster below it when every
+#' leaf below it is in one cluster, NA (the default) for the branches that
+#' join clusters
+#'
+#' @param tree the hclust object as drawn.
+#' @param cut the cluster of each leaf in the order of the tree's leaves
+#'   (\code{tree$order}), or \code{NULL}.
+#' @param col one colour for the whole tree, or one per cluster.
+#'
+#' @noRd
+.branch_colours <- function(tree,
+                            cut,
+                            col) {
+  k <- nrow(tree$merge)
+  if(is.null(col) || k == 0) {
+    return(NULL)
+  }
+  if(length(col) == 1 || is.null(cut)) {
+    return(rep(col[1], 4 * k))
+  }
+  # THE CLUSTER OF EACH LEAF (BY ITS INDEX) AND OF EACH MERGE (NA FOR MIXED)
+  n <- length(tree$order)
+  leaf <- integer(n)
+  leaf[tree$order] <- as.integer(cut[seq_len(n)])
+  node <- integer(k)
+  child <- matrix(NA_integer_, k, 2)
+  for(z in seq_len(k)) {
+    for(j in 1:2) {
+      m <- tree$merge[z, j]
+      child[z, j] <- if(m < 0) leaf[-m] else node[m]
+    }
+    node[z] <- if(!is.na(child[z, 1]) && !is.na(child[z, 2]) &&
+                  child[z, 1] == child[z, 2]) child[z, 1] else NA_integer_
+  }
+  # LEFT HALF, RIGHT HALF, LEFT DROP, RIGHT DROP OF EACH MERGE
+  c(col[child[, 1]], col[child[, 2]], col[child[, 1]], col[child[, 2]])
 }
 
 #' Map dendrogram leaf positions (1, 2, ...) to cell centers

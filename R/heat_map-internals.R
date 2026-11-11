@@ -467,9 +467,9 @@
      all(is.na(legend))) {
     return(character(0))
   }
-  # DEFAULT - COLOUR & SIZE
+  # DEFAULT - COLOUR, SIZE & LEVELS (EACH DRAWN WHEN IT APPLIES)
   if(isTRUE(legend)) {
-    return(c("colour", "size"))
+    return(c("colour", "size", "levels"))
   }
   if(!is.character(legend)) {
     stop(
@@ -667,11 +667,29 @@
 }
 
 #' Resolve the colour palette for non-numeric values into a function of n
+#'
+#' @param distinct TRUE for the default palette: more values than colours
+#'   take distinct colours (\code{.distinct_colours()}) rather than colours
+#'   interpolated between them.
+#'
 #' @importFrom grDevices colorRampPalette hcl.colors
 #' @noRd
-.col_palette <- function(x) {
+.col_palette <- function(x,
+                         distinct = FALSE) {
   if(is.function(x)) {
     return(x)
+  }
+  if(distinct && !.is_hcl_palette(x)) {
+    base <- x
+    return(
+      function(n) {
+        if(n <= length(base)) {
+          colorRampPalette(base)(n)
+        } else {
+          .distinct_colours(n, base)
+        }
+      }
+    )
   }
   if(.is_hcl_palette(x)) {
     pal <- x
@@ -683,6 +701,68 @@
   }
   colorRampPalette(x)
 }
+
+#' Distinct colours for many categories
+#'
+#' Each colour after the \code{seed} colours is the one furthest (in CIELAB)
+#' from the colours before it and from white, among colours of several
+#' lightnesses and chromas around the hue circle (as Glasbey et al. 2007
+#' choose them), so that neighbouring categories differ in lightness as well
+#' as hue and dozens stay apart. The same colours each time.
+#'
+#' @param n the number of colours.
+#' @param seed the first colours.
+#'
+#' @importFrom grDevices col2rgb convertColor hcl rgb
+#' @noRd
+.distinct_colours <- function(n,
+                              seed = character(0)) {
+  seed <- seed[seq_len(min(length(seed), n))]
+  if(n <= length(seed)) {
+    return(seed)
+  }
+  lab <- function(col) {
+    convertColor(t(col2rgb(col) / 255), from = "sRGB", to = "Lab")
+  }
+  # CANDIDATES - IN THE sRGB GAMUT, NEITHER GREY NOR NEAR WHITE
+  grid <- expand.grid(h = seq(0, 355, by = 5), c = c(35, 55, 75, 95),
+                      l = c(30, 42, 54, 66, 78))
+  cand <- hcl(grid$h, grid$c, grid$l, fixup = FALSE)
+  cand <- unique(cand[!is.na(cand)])
+  cand_lab <- lab(cand)
+  # DISTANCE OF EACH CANDIDATE TO THE NEAREST COLOUR CHOSEN (OR WHITE)
+  nearest <- function(ref) {
+    d <- rep(Inf, nrow(cand_lab))
+    for(i in seq_len(nrow(ref))) {
+      d <- pmin(d, sqrt(colSums((t(cand_lab) - ref[i, ])^2)))
+    }
+    d
+  }
+  d <- nearest(lab(c("white", seed)))
+  out <- c(seed, character(n - length(seed)))
+  for(k in (length(seed) + 1):n) {
+    i <- which.max(d)
+    out[k] <- cand[i]
+    d <- pmin(d, sqrt(colSums((t(cand_lab) - cand_lab[i, ])^2)))
+  }
+  out
+}
+
+#' Colours of a qualitative hcl palette for n categories - beyond a dozen,
+#' whose neighbouring hues blur, the first eight then distinct colours
+#' @importFrom grDevices hcl.colors
+#' @noRd
+.qualitative_colours <- function(n,
+                                 palette) {
+  if(n <= .QUALITATIVE_MAX) {
+    return(hcl.colors(max(n, 1), palette)[seq_len(n)])
+  }
+  .distinct_colours(n, hcl.colors(8, palette))
+}
+
+#' The most categories coloured from the hue circle of one palette
+#' @noRd
+.QUALITATIVE_MAX <- 12
 
 #' Resolve the cell size scaling method
 #' @noRd
@@ -2008,10 +2088,10 @@ print.heat_map <- function(x, ...) {
       }
       v <- as.character(v)
       pal <- if(is.null(spec)) {
-        hcl.colors(
-          max(length(lev), 1),
+        .qualitative_colours(
+          length(lev),
           discrete_pals[(k - 1) %% length(discrete_pals) + 1]
-        )[seq_along(lev)]
+        )
       } else if(is.function(spec)) {
         spec(length(lev))
       } else if(.is_hcl_palette(spec)) {
