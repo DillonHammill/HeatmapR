@@ -427,7 +427,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "The unscaled mtcars heatmap, titled Border Masking Example, with each value written in its cell and red borders drawn only around the cells whose values are above the median of the whole data set."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-6b.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/5e4d48d96aca19e35b24c83694d69bcb595c2318/vignettes/HeatmapR/HeatmapR-6b.png')
 ```
 
 ### 2.5 Cell Text
