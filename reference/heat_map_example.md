@@ -64,9 +64,10 @@ data.frame, or in `metadata()$markers` of the `SingleCellExperiment`.
   CD14, CD11c, HLA-DR, CD45RA and CCR7) in eight clusters (C1 to C8),
   from eight samples (S1 to S8) in two conditions (S1 to S4 `"control"`,
   S5 to S8 `"stimulated"`). The intensities are raw, as from a mass
-  cytometer: `asinh(x / 5)` recovers the simulated levels. Cluster C3 is
-  twice as common in the stimulated samples, and HLA-DR rises in
-  clusters C5 and C6 under stimulation.
+  cytometer: `asinh(x / 5)` (the usual transform, Bendall et al. 2011)
+  recovers the simulated levels. Cluster C3 is twice as common in the
+  stimulated samples, and HLA-DR rises in clusters C5 and C6 under
+  stimulation.
 
 - `"trajectory"`:
 
@@ -74,10 +75,22 @@ data.frame, or in `metadata()$markers` of the `SingleCellExperiment`.
   counts, [`log1p()`](https://rdrr.io/r/base/Log.html)), in a random
   order (the genes are the first 30 columns of the data.frame). Every
   cell has a `pseudotime` from 0 to 1, and `lineage1` and `lineage2`
-  give the pseudotime of each lineage, as slingshot gives them (missing
-  for cells outside the lineage). The lineages share their start and
-  branch at a pseudotime of 0.4; each gene peaks at its own point, and
-  some genes peaking after the branch are expressed in one lineage only.
+  give the pseudotime of each lineage, as slingshot (Street et al. 2018)
+  gives them (missing for cells outside the lineage). The lineages share
+  their start and branch at a pseudotime of 0.4; each gene peaks at its
+  own point, and some genes peaking after the branch are expressed in
+  one lineage only.
+
+## References
+
+Bendall, S. C. et al. (2011). Single-cell mass cytometry of differential
+immune and drug responses across a human hematopoietic continuum.
+*Science*, 332(6030), 687-696.
+[doi:10.1126/science.1198704](https://doi.org/10.1126/science.1198704)
+
+Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
+inference for single-cell transcriptomics. *BMC Genomics*, 19, 477.
+[doi:10.1186/s12864-018-4772-0](https://doi.org/10.1186/s12864-018-4772-0)
 
 ## See also
 

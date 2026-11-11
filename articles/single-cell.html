@@ -313,21 +313,22 @@ dense data exactly.</p>
 <p><code><a href="../reference/heat_map_markers.html">heat_map_markers()</a></code> scores every feature in every group
 by its AUC against all the other cells: the chance that a cell of the
 group has the larger value, ties counting half (the Wilcoxon rank-sum
-statistic over the product of the numbers of cells, as presto’s
-<code>wilcoxauc()</code> scores markers). Features are kept for a group
-when they are detected in at least <code>min_detected</code> (0.1) of
-its cells and their mean is at least <code>min_logfc</code> (0.25) above
-the other cells’; each feature marks the group where its AUC is highest,
-and the top <code>n</code> of each group are flagged in the
-<code>top</code> column. Only features that pass the filters are ranked,
-and the zeros of sparse data share one rank, so only the non-zero values
-are sorted. Each AUC comes with the p-value of the Wilcoxon rank-sum
-test (<code>p_value</code>, as <code>wilcox.test(exact = FALSE)</code>
-finds it) and its false discovery rate within the group
-(<code>p_adj</code>, adjusted over every gene scored). With thousands of
-cells nearly every marker has a tiny p-value, so the AUC and the
-difference of the means say more about how well a gene marks a
-group.</p>
+statistic, Wilcoxon 1945 and Mann and Whitney 1947, over the product of
+the numbers of cells, as presto’s <code>wilcoxauc()</code> scores
+markers; Korsunsky et al. 2019). Features are kept for a group when they
+are detected in at least <code>min_detected</code> (0.1) of its cells
+and their mean is at least <code>min_logfc</code> (0.25) above the other
+cells’; each feature marks the group where its AUC is highest, and the
+top <code>n</code> of each group are flagged in the <code>top</code>
+column. Only features that pass the filters are ranked, and the zeros of
+sparse data share one rank, so only the non-zero values are sorted. Each
+AUC comes with the p-value of the Wilcoxon rank-sum test
+(<code>p_value</code>, as <code>wilcox.test(exact = FALSE)</code> finds
+it) and its false discovery rate within the group (<code>p_adj</code>,
+by the method of Benjamini and Hochberg 1995, adjusted over every gene
+scored). With thousands of cells nearly every marker has a tiny p-value,
+so the AUC and the difference of the means say more about how well a
+gene marks a group.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_markers.html">heat_map_markers</a></span><span class="op">(</span><span class="va">sce</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>, n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">m</span><span class="op">[</span><span class="va">m</span><span class="op">$</span><span class="va">top</span>, <span class="op">]</span>, <span class="fl">8</span><span class="op">)</span></span>
@@ -388,9 +389,10 @@ brackets do). Edit <code>top</code> to choose other markers.</p>
 <p><code><a href="../reference/heat_map_dot.html">heat_map_dot()</a></code> draws one row per group and one column
 per feature: the colour of each dot is the group’s mean scaled within
 the feature (z-scores clipped at ±2.5, as Seurat’s
-<code>DotPlot()</code>, by default; <code>scale = "range"</code> for
-scanpy’s 0 to 1), and its area the proportion of the group’s cells in
-which the feature is detected, with a size legend in percent.</p>
+<code>DotPlot()</code> (Hao et al. 2024), by default;
+<code>scale = "range"</code> for scanpy’s 0 to 1 (Wolf, Angerer and
+Theis 2018)), and its area the proportion of the group’s cells in which
+the feature is detected, with a size legend in percent.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_dot.html">heat_map_dot</a></span><span class="op">(</span><span class="va">sce</span>, features <span class="op">=</span> <span class="va">m</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>, title <span class="op">=</span> <span class="st">"Top markers"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="single-cell_files/figure-html/dot-1.png" class="r-plt" alt="Dot plot of the three top markers of each of six cell types: one row per cell type and one column per gene, grouped and labelled by the cell type each gene marks. Large dark red dots on the diagonal show each type's markers expressed in most of its cells; elsewhere the dots are small and blue." width="100%" style="display: block; margin: auto;"></p>
@@ -417,10 +419,10 @@ and a flowSet’s samples and phenotype data as metadata:</p>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">fs</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3"</span>, <span class="st">"CD4"</span>, <span class="st">"CD8"</span><span class="op">)</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span>
 <span>         group_max <span class="op">=</span> <span class="fl">500</span>, annotation_by <span class="op">=</span> <span class="st">"sample"</span><span class="op">)</span></span></code></pre></div>
 <p>Mass cytometry intensities are usually transformed with asinh(x / 5)
-(a cofactor of about 150 for flow cytometry) and each marker then scaled
-from 0 to 1 between its 1st and 99th percentiles, so that a few bright
-events don’t compress the colours of all the others.
-<code><a href="../reference/heat_map_summarise.html">heat_map_summarise()</a></code> does both:
+(Bendall et al. 2011) (a cofactor of about 150 for flow cytometry) and
+each marker then scaled from 0 to 1 between its 1st and 99th
+percentiles, so that a few bright events don’t compress the colours of
+all the others. <code><a href="../reference/heat_map_summarise.html">heat_map_summarise()</a></code> does both:
 <code>transform = "asinh"</code> with <code>cofactor</code>, and
 <code>scale = "quantile"</code> with <code>q</code>, applied to the
 medians of the clusters (<code>scale_when = "last"</code>, the default)
@@ -597,9 +599,11 @@ detected in only some of the cells falls away steadily from zero, as
 dropout does. They are found across features instead, from the dip of
 the cells’ scores on the first principal component of the correlations
 of the features shown within the cluster, when that component carries
-real co-variation (so that features with two peaks of their own don’t
-add up to a split), and the features that drive it are outlined. Here
-the CD4 and CD8 T cells of the blood cells are one cluster:</p>
+real co-variation (an eigenvalue above the upper edge of the
+Marchenko-Pastur law for independent features; Marchenko and Pastur
+1967), so that features with two peaks of their own don’t add up to a
+split, and the features that drive it are outlined. Here the CD4 and CD8
+T cells of the blood cells are one cluster:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">cells</span><span class="op">$</span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">cells</span><span class="op">$</span><span class="va">cell_type</span><span class="op">)</span></span>
@@ -646,10 +650,10 @@ row per bin and keeps the position of each bin, which
 genes by where they are highest.</p>
 <p>Below, <code>heat_map_example("trajectory")</code>: 4,000 simulated
 cells of a branching trajectory, with a pseudotime for each of two
-lineages as slingshot gives them (missing for cells outside the
-lineage). Both lineages share their start and branch at a pseudotime of
-0.4, and 30 genes, in a random order, each peak at their own point, some
-in one lineage only.</p>
+lineages as slingshot (Street et al. 2018) gives them (missing for cells
+outside the lineage). Both lineages share their start and branch at a
+pseudotime of 0.4, and 30 genes, in a random order, each peak at their
+own point, some in one lineage only.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">traj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_example.html">heat_map_example</a></span><span class="op">(</span><span class="st">"trajectory"</span>, class <span class="op">=</span> <span class="st">"SingleCellExperiment"</span><span class="op">)</span></span>
 <span><span class="va">traj</span></span>
@@ -960,6 +964,39 @@ seconds:</p>
 <code>single-cell-run.R</code> runs them all and writes
 <code>vignettes/articles/single-cell-benchmarks.csv</code>, which this
 page reads.</p>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Bendall, S. C. et al. (2011). Single-cell mass cytometry of
+differential immune and drug responses across a human hematopoietic
+continuum. <em>Science</em>, 332(6030), 687-696. <a href="https://doi.org/10.1126/science.1198704" class="external-link">doi:10.1126/science.1198704</a></p>
+<p>Benjamini, Y. and Hochberg, Y. (1995). Controlling the false
+discovery rate: a practical and powerful approach to multiple testing.
+<em>Journal of the Royal Statistical Society: Series B</em>, 57(1),
+289-300. <a href="https://doi.org/10.1111/j.2517-6161.1995.tb02031.x" class="external-link">doi:10.1111/j.2517-6161.1995.tb02031.x</a></p>
+<p>Hao, Y. et al. (2024). Dictionary learning for integrative,
+multimodal and scalable single-cell analysis. <em>Nature
+Biotechnology</em>, 42(2), 293-304. <a href="https://doi.org/10.1038/s41587-023-01767-y" class="external-link">doi:10.1038/s41587-023-01767-y</a></p>
+<p>Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of
+unimodality. <em>The Annals of Statistics</em>, 13(1), 70-84. <a href="https://doi.org/10.1214/aos/1176346577" class="external-link">doi:10.1214/aos/1176346577</a></p>
+<p>Korsunsky, I., Nathan, A., Millard, N. and Raychaudhuri, S. (2019).
+Presto scales Wilcoxon and auROC analyses to millions of observations.
+<em>bioRxiv</em>. <a href="https://doi.org/10.1101/653253" class="external-link">doi:10.1101/653253</a></p>
+<p>Mann, H. B. and Whitney, D. R. (1947). On a test of whether one of
+two random variables is stochastically larger than the other. <em>The
+Annals of Mathematical Statistics</em>, 18(1), 50-60. <a href="https://doi.org/10.1214/aoms/1177730491" class="external-link">doi:10.1214/aoms/1177730491</a></p>
+<p>Marchenko, V. A. and Pastur, L. A. (1967). Distribution of
+eigenvalues for some sets of random matrices. <em>Mathematics of the
+USSR-Sbornik</em>, 1(4), 457-483. <a href="https://doi.org/10.1070/SM1967v001n04ABEH001994" class="external-link">doi:10.1070/SM1967v001n04ABEH001994</a></p>
+<p>Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
+inference for single-cell transcriptomics. <em>BMC Genomics</em>, 19,
+477. <a href="https://doi.org/10.1186/s12864-018-4772-0" class="external-link">doi:10.1186/s12864-018-4772-0</a></p>
+<p>Wilcoxon, F. (1945). Individual comparisons by ranking methods.
+<em>Biometrics Bulletin</em>, 1(6), 80-83. <a href="https://doi.org/10.2307/3001968" class="external-link">doi:10.2307/3001968</a></p>
+<p>Wolf, F. A., Angerer, P. and Theis, F. J. (2018). SCANPY: large-scale
+single-cell gene expression data analysis. <em>Genome Biology</em>, 19,
+15. <a href="https://doi.org/10.1186/s13059-017-1382-0" class="external-link">doi:10.1186/s13059-017-1382-0</a></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

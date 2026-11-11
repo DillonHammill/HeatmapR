@@ -12,6 +12,21 @@ conventions and defaults have changed; they are listed first.
 
 ### Breaking changes
 
+- HeatmapR is now released under the MIT licence (previously GPL-2). The
+  compiled code that followed GPL-licensed code - centroid and median
+  linkage and the Lance-Williams updates (from R’s
+  [`hclust()`](https://rdrr.io/r/stats/hclust.html)), Hartigan-Wong
+  k-means (from [`kmeans()`](https://rdrr.io/r/stats/kmeans.html)), the
+  dip (from the `diptest` package), and distances, correlations,
+  quantiles, means and colour ramps written to match R’s arithmetic -
+  has been rewritten from the published algorithms and R’s documented
+  behaviour, and checked against R’s functions run as black boxes.
+  Results are the same, up to rounding in the last digits, except where
+  distances are exactly tied: centroid and median linkage now take tied
+  pairs in the order of the clusters’ first leaves, which
+  [`hclust()`](https://rdrr.io/r/stats/hclust.html) follows in most but
+  not all cases, so the trees of tied data can differ from earlier
+  versions (both are valid).
 - [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   has a new layout. Dendrograms, bar graphs, annotation tracks, cluster
   label strips, the legend and the margins are sized in inches from
@@ -284,13 +299,13 @@ conventions and defaults have changed; they are listed first.
 - k-means splits: `tree_kmeans_y = 4` (or `tree_kmeans_x`) splits the
   rows (columns) into k-means clusters, a quick alternative to cutting a
   dendrogram of thousands of rows (as ComplexHeatmap’s `row_km`). The
-  clusters are computed on the scaled data from a deterministic start
-  (equal slices along the first principal component), so they don’t
-  depend on the random seed, and are ordered so that similar clusters
-  are neighbours. They then act like groups supplied to `tree_cut_y`:
-  separated by splits, labelled by `tree_label_y`, and with
-  `tree_y = TRUE` clustered within each cluster.
-  `heat_map_info()$row_clusters` returns them.
+  clusters are computed on the scaled data from deterministic starts
+  (equal slices along the first principal component, and k-means++
+  starts from fixed seeds), so they don’t depend on the random seed, and
+  are ordered so that similar clusters are neighbours. They then act
+  like groups supplied to `tree_cut_y`: separated by splits, labelled by
+  `tree_label_y`, and with `tree_y = TRUE` clustered within each
+  cluster. `heat_map_info()$row_clusters` returns them.
 - New
   [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
   reduces groups of rows (`group_y`) or columns (`group_x`) to one
@@ -646,32 +661,40 @@ conventions and defaults have changed; they are listed first.
   with [`cor()`](https://rdrr.io/r/stats/cor.html) (Knight’s O(n log n)
   algorithm per pair, or cross-products of sign vectors), Spearman
   distances with missing values 1.2 seconds for 3,000 rows instead of
-  two minutes (computed pair by pair exactly as
-  [`cor()`](https://rdrr.io/r/stats/cor.html) computes them), binary
+  two minutes (computed pair by pair, giving
+  [`cor()`](https://rdrr.io/r/stats/cor.html)’s results), binary
   distances (as bit vectors) 12 times faster and Canberra distances 3
-  times faster, centroid and median linkage of 5,000 rows take 0.33
-  seconds instead of 1.7 with
+  times faster, centroid and median linkage of 5,000 rows take 0.3
+  seconds instead of 1.0 with
   [`stats::hclust()`](https://rdrr.io/r/stats/hclust.html), single
   linkage needs no matrix of distances (5,000 rows in 0.1 seconds
   instead of 0.27), and cutting a dendrogram of a million leaves into
   clusters takes 0.1 seconds instead of five minutes with
   [`stats::cutree()`](https://rdrr.io/r/stats/cutree.html), whose time
   grows with the square of the number of leaves.
-- k-means splits (`tree_kmeans_x`, `tree_kmeans_y`) use a compiled port
-  of [`stats::kmeans()`](https://rdrr.io/r/stats/kmeans.html)’s
-  Hartigan-Wong algorithm, which gives the same clusters without
-  [`kmeans()`](https://rdrr.io/r/stats/kmeans.html)’s copies of the
-  data, and the first principal component that starts them is computed
-  from the covariance matrix in one pass. The distances from a row to
-  the centres are summed for several centres at once (one per SIMD lane,
-  each summed in [`kmeans()`](https://rdrr.io/r/stats/kmeans.html)’s
-  order, so the clusters stay the same), the starting centres are
-  computed in compiled code, and rows are compared by their numbers
-  rather than by
+- k-means splits (`tree_kmeans_x`, `tree_kmeans_y`) use a compiled
+  Hartigan-Wong algorithm (Hartigan and Wong 1979), which gives
+  [`stats::kmeans()`](https://rdrr.io/r/stats/kmeans.html)’s clusters
+  without its copies of the data. It runs from the centres of equal
+  slices of the rows along their first principal component (computed
+  from the covariance matrix in one pass) and from three greedy
+  k-means++ starts (Arthur and Vassilvitskii 2007; Grunau et al. 2023;
+  HeatmapR’s own random numbers from fixed seeds), fitted on separate
+  threads, and keeps the clusters with the smallest within-cluster sum
+  of squares; for more than 20,000 rows the starts are compared on a
+  sample of 20,000 and every row is then fitted once, from the centres
+  of the best. On clusters of very different sizes, which slices split
+  badly, the within-cluster sum of squares was 19-31% smaller on three
+  simulated examples, and nothing changes where the slices do best.
+  Distances to the centres are computed four points or centres at a time
+  (AVX2), bounds on each point’s distances skip most of the checks of
+  the quick-transfer stage, the k-means++ starts are drawn in blocks of
+  rows on several threads (the same starts whatever the number of
+  threads), and rows are compared by their numbers rather than by
   [`duplicated()`](https://rdrr.io/r/base/duplicated.html)’s 15-digit
-  strings when distinct starting rows are needed: 1,000,000 rows of 30
-  values take 1.0 seconds instead of 6.6 for 10 clusters, and 200,000
-  rows 0.5 seconds instead of 2.2 for 30 clusters.
+  strings when a message needs the number of distinct rows: on two
+  cores, 1,000,000 rows of 30 values take 2.5 seconds for 10 clusters,
+  and 200,000 rows 0.9 seconds for 30 clusters.
   [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)
   scales in compiled code (1,000,000 x 30 in 0.7 seconds instead of 5.5,
   with identical results).
@@ -921,6 +944,19 @@ conventions and defaults have changed; they are listed first.
   and covers over 99% of the code.
 - Documentation now matches the function defaults and the README
   describes CRAN installation.
+- Methods are referenced where they are used: the help pages of
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
+  [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md),
+  [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md),
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md),
+  [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md),
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md),
+  [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md),
+  [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
+  and
+  [`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md),
+  the vignette and the articles cite the papers behind them. The DOI of
+  Murtagh and Contreras (2012) in the Description is corrected.
 
 ## HeatmapR 1.1.0
 

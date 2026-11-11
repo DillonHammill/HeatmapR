@@ -243,20 +243,21 @@ dendrograms.](single-cell_files/figure-html/summarise-1.png)
 [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
 scores every feature in every group by its AUC against all the other
 cells: the chance that a cell of the group has the larger value, ties
-counting half (the Wilcoxon rank-sum statistic over the product of the
-numbers of cells, as presto’s `wilcoxauc()` scores markers). Features
-are kept for a group when they are detected in at least `min_detected`
-(0.1) of its cells and their mean is at least `min_logfc` (0.25) above
-the other cells’; each feature marks the group where its AUC is highest,
-and the top `n` of each group are flagged in the `top` column. Only
-features that pass the filters are ranked, and the zeros of sparse data
-share one rank, so only the non-zero values are sorted. Each AUC comes
-with the p-value of the Wilcoxon rank-sum test (`p_value`, as
+counting half (the Wilcoxon rank-sum statistic, Wilcoxon 1945 and Mann
+and Whitney 1947, over the product of the numbers of cells, as presto’s
+`wilcoxauc()` scores markers; Korsunsky et al. 2019). Features are kept
+for a group when they are detected in at least `min_detected` (0.1) of
+its cells and their mean is at least `min_logfc` (0.25) above the other
+cells’; each feature marks the group where its AUC is highest, and the
+top `n` of each group are flagged in the `top` column. Only features
+that pass the filters are ranked, and the zeros of sparse data share one
+rank, so only the non-zero values are sorted. Each AUC comes with the
+p-value of the Wilcoxon rank-sum test (`p_value`, as
 `wilcox.test(exact = FALSE)` finds it) and its false discovery rate
-within the group (`p_adj`, adjusted over every gene scored). With
-thousands of cells nearly every marker has a tiny p-value, so the AUC
-and the difference of the means say more about how well a gene marks a
-group.
+within the group (`p_adj`, by the method of Benjamini and Hochberg 1995,
+adjusted over every gene scored). With thousands of cells nearly every
+marker has a tiny p-value, so the AUC and the difference of the means
+say more about how well a gene marks a group.
 
 ``` r
 
@@ -328,9 +329,10 @@ values.](single-cell_files/figure-html/markers-heatmap-1.png)
 [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
 draws one row per group and one column per feature: the colour of each
 dot is the group’s mean scaled within the feature (z-scores clipped at
-±2.5, as Seurat’s `DotPlot()`, by default; `scale = "range"` for
-scanpy’s 0 to 1), and its area the proportion of the group’s cells in
-which the feature is detected, with a size legend in percent.
+±2.5, as Seurat’s `DotPlot()` (Hao et al. 2024), by default;
+`scale = "range"` for scanpy’s 0 to 1 (Wolf, Angerer and Theis 2018)),
+and its area the proportion of the group’s cells in which the feature is
+detected, with a size legend in percent.
 
 ``` r
 
@@ -376,10 +378,11 @@ heat_map(fs, features = c("CD3", "CD4", "CD8"), group_by = "cluster",
          group_max = 500, annotation_by = "sample")
 ```
 
-Mass cytometry intensities are usually transformed with asinh(x / 5) (a
-cofactor of about 150 for flow cytometry) and each marker then scaled
-from 0 to 1 between its 1st and 99th percentiles, so that a few bright
-events don’t compress the colours of all the others.
+Mass cytometry intensities are usually transformed with asinh(x / 5)
+(Bendall et al. 2011) (a cofactor of about 150 for flow cytometry) and
+each marker then scaled from 0 to 1 between its 1st and 99th
+percentiles, so that a few bright events don’t compress the colours of
+all the others.
 [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
 does both: `transform = "asinh"` with `cofactor`, and
 `scale = "quantile"` with `q`, applied to the medians of the clusters
@@ -601,9 +604,11 @@ detected in only some of the cells falls away steadily from zero, as
 dropout does. They are found across features instead, from the dip of
 the cells’ scores on the first principal component of the correlations
 of the features shown within the cluster, when that component carries
-real co-variation (so that features with two peaks of their own don’t
-add up to a split), and the features that drive it are outlined. Here
-the CD4 and CD8 T cells of the blood cells are one cluster:
+real co-variation (an eigenvalue above the upper edge of the
+Marchenko-Pastur law for independent features; Marchenko and Pastur
+1967), so that features with two peaks of their own don’t add up to a
+split, and the features that drive it are outlined. Here the CD4 and CD8
+T cells of the blood cells are one cluster:
 
 ``` r
 
@@ -661,10 +666,10 @@ the genes as rows) orders the genes by where they are highest.
 
 Below, `heat_map_example("trajectory")`: 4,000 simulated cells of a
 branching trajectory, with a pseudotime for each of two lineages as
-slingshot gives them (missing for cells outside the lineage). Both
-lineages share their start and branch at a pseudotime of 0.4, and 30
-genes, in a random order, each peak at their own point, some in one
-lineage only.
+slingshot (Street et al. 2018) gives them (missing for cells outside the
+lineage). Both lineages share their start and branch at a pseudotime of
+0.4, and 30 genes, in a random order, each peak at their own point, some
+in one lineage only.
 
 ``` r
 
@@ -862,3 +867,50 @@ The scripts are in
 `single-cell-case.R` runs one case and `single-cell-run.R` runs them all
 and writes `vignettes/articles/single-cell-benchmarks.csv`, which this
 page reads.
+
+## References
+
+Bendall, S. C. et al. (2011). Single-cell mass cytometry of differential
+immune and drug responses across a human hematopoietic continuum.
+*Science*, 332(6030), 687-696.
+[doi:10.1126/science.1198704](https://doi.org/10.1126/science.1198704)
+
+Benjamini, Y. and Hochberg, Y. (1995). Controlling the false discovery
+rate: a practical and powerful approach to multiple testing. *Journal of
+the Royal Statistical Society: Series B*, 57(1), 289-300.
+[doi:10.1111/j.2517-6161.1995.tb02031.x](https://doi.org/10.1111/j.2517-6161.1995.tb02031.x)
+
+Hao, Y. et al. (2024). Dictionary learning for integrative, multimodal
+and scalable single-cell analysis. *Nature Biotechnology*, 42(2),
+293-304.
+[doi:10.1038/s41587-023-01767-y](https://doi.org/10.1038/s41587-023-01767-y)
+
+Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+*The Annals of Statistics*, 13(1), 70-84.
+[doi:10.1214/aos/1176346577](https://doi.org/10.1214/aos/1176346577)
+
+Korsunsky, I., Nathan, A., Millard, N. and Raychaudhuri, S. (2019).
+Presto scales Wilcoxon and auROC analyses to millions of observations.
+*bioRxiv*. [doi:10.1101/653253](https://doi.org/10.1101/653253)
+
+Mann, H. B. and Whitney, D. R. (1947). On a test of whether one of two
+random variables is stochastically larger than the other. *The Annals of
+Mathematical Statistics*, 18(1), 50-60.
+[doi:10.1214/aoms/1177730491](https://doi.org/10.1214/aoms/1177730491)
+
+Marchenko, V. A. and Pastur, L. A. (1967). Distribution of eigenvalues
+for some sets of random matrices. *Mathematics of the USSR-Sbornik*,
+1(4), 457-483.
+[doi:10.1070/SM1967v001n04ABEH001994](https://doi.org/10.1070/SM1967v001n04ABEH001994)
+
+Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
+inference for single-cell transcriptomics. *BMC Genomics*, 19, 477.
+[doi:10.1186/s12864-018-4772-0](https://doi.org/10.1186/s12864-018-4772-0)
+
+Wilcoxon, F. (1945). Individual comparisons by ranking methods.
+*Biometrics Bulletin*, 1(6), 80-83.
+[doi:10.2307/3001968](https://doi.org/10.2307/3001968)
+
+Wolf, F. A., Angerer, P. and Theis, F. J. (2018). SCANPY: large-scale
+single-cell gene expression data analysis. *Genome Biology*, 19, 15.
+[doi:10.1186/s13059-017-1382-0](https://doi.org/10.1186/s13059-017-1382-0)

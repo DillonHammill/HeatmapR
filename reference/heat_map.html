@@ -354,38 +354,40 @@ default.</p></dd>
 <dt id="arg-tree-order-x">tree_order_x<a class="anchor" aria-label="anchor" href="#arg-tree-order-x"></a></dt>
 <dd><p>how the branches of the x axis dendrogram are ordered,
 either <code>"default"</code> (the order from <code>hclust</code>), <code>"olo"</code>
-(optimal leaf ordering, which flips branches so that neighbouring columns
-are as similar as possible), <code>"mean"</code> (branches ordered by their
-mean values - <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code> orders them by the sum of
-their columns' means instead, which favours small branches) or
-<code>"spectral"</code>. Optimal leaf ordering is exact for up to 4000
-columns, which takes well under a second; larger dendrograms are ordered
-in blocks (see <code><a href="heat_map_clust.html">heat_map_clust</a></code>). A spectral order needs no
-dendrogram: the columns are ordered by recursive spectral bisection of
-the graph joining each column to its 6 nearest neighbours (by
-<code>dist_method</code>), which lays gradients and trajectories out along
-their length, cycles around their loop and clusters one after another,
-and runs of up to 12 columns are then reversed where that brings
-similar columns together. With a dendrogram, its branches are ordered by
-the mean spectral position of their columns. Up to <code>clust_max</code>
-columns are ordered exactly; more are ordered from a sample of
-<code>clust_max</code> landmarks, each other column placed beside its nearest
-landmark (200,000 take about 4 seconds). <code>"peak"</code> orders the
-columns by where they are highest along the rows, in the order of the
-rows in the data (ties by where they are lowest), so that features
-peaking early along a trajectory come first and cascades run diagonally
-(see <code><a href="heat_map_smooth.html">heat_map_smooth</a></code>); it needs no dendrogram either, and
-with one orders its branches by the mean peak position of their columns.
-The rows of a trajectory from <code><a href="heat_map_smooth.html">heat_map_smooth()</a></code> are placed by
-their position along it (e.g. pseudotime), so the peaks of its lineages
-are compared by when they occur; other rows split into groups by a
-factor or character <code>tree_cut_y</code> (or <code>group_by</code>) are placed
-by their position within their group.</p></dd>
+(optimal leaf ordering, Bar-Joseph et al. 2001, which flips branches so
+that neighbouring columns are as similar as possible), <code>"mean"</code>
+(branches ordered by their mean values - <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code>
+orders them by the sum of their columns' means instead, which favours small
+branches) or <code>"spectral"</code>. Optimal leaf ordering is exact for up to
+4000 columns, which takes well under a second; larger dendrograms are
+ordered in blocks (see <code><a href="heat_map_clust.html">heat_map_clust</a></code>). A spectral order
+needs no dendrogram: the columns are ordered by recursive spectral
+bisection (Shi and Malik 2000; Atkins et al. 1998) of the graph joining
+each column to its 6 nearest neighbours (by <code>dist_method</code>, weighted as
+in UMAP, McInnes et al. 2018), which lays gradients and trajectories out
+along their length, cycles around their loop and clusters one after
+another, and runs of up to 12 columns are then reversed where that brings
+similar columns together (windowed 2-opt, Croes 1958). With a dendrogram,
+its branches are ordered by the mean spectral position of their columns. Up
+to <code>clust_max</code> columns are ordered exactly; more are ordered from a
+sample of <code>clust_max</code> landmarks, each other column placed beside its
+nearest landmark (200,000 take about 4 seconds). <code>"peak"</code> orders the
+columns by where they are highest along the rows, in the order of the rows
+in the data (ties by where they are lowest), so that features peaking early
+along a trajectory come first and cascades run diagonally (see
+<code><a href="heat_map_smooth.html">heat_map_smooth</a></code>); it needs no dendrogram either, and with one
+orders its branches by the mean peak position of their columns. The rows of
+a trajectory from <code><a href="heat_map_smooth.html">heat_map_smooth()</a></code> are placed by their position
+along it (e.g. pseudotime), so the peaks of its lineages are compared by
+when they occur; other rows split into groups by a factor or character
+<code>tree_cut_y</code> (or <code>group_by</code>) are placed by their position within
+their group.</p></dd>
 
 
 <dt id="arg-tree-support-x">tree_support_x<a class="anchor" aria-label="anchor" href="#arg-tree-support-x"></a></dt>
 <dd><p><code>TRUE</code> or a number of resamples (at least 10)
-to draw each branch of the x axis dendrogram by its bootstrap support:
+to draw each branch of the x axis dendrogram by its bootstrap support
+(Felsenstein 1985):
 the rows are resampled with replacement and the columns clustered again
 (with <code>dist_method</code> and <code>clust_method</code>, within each group for
 a dendrogram split by groups), and each branch scores the proportion of
@@ -431,9 +433,9 @@ order from left to right.</p></dd>
 
 
 <dt id="arg-tree-kmeans-x">tree_kmeans_x<a class="anchor" aria-label="anchor" href="#arg-tree-kmeans-x"></a></dt>
-<dd><p>number of k-means clusters to split the columns of
-<code>x</code> into, an alternative to <code>tree_cut_x</code> (e.g.
-<code>tree_kmeans_x = 3</code>). See <code>tree_kmeans_y</code>.</p></dd>
+<dd><p>number of k-means clusters (Hartigan and Wong 1979) to
+split the columns of <code>x</code> into, an alternative to <code>tree_cut_x</code>
+(e.g. <code>tree_kmeans_x = 3</code>). See <code>tree_kmeans_y</code>.</p></dd>
 
 
 <dt id="arg-tree-split-x">tree_split_x<a class="anchor" aria-label="anchor" href="#arg-tree-split-x"></a></dt>
@@ -485,7 +487,8 @@ text in the x axis cluster labels, set to 1 by default.</p></dd>
 <dd><p>a vector of colours to control the colour of
 text in x axis cluster labels, set to <code>"auto"</code> by default to
 use white text on dark labels and black text on light ones, whichever
-contrasts more with the colour of each label.</p></dd>
+contrasts more with the colour of each label (by the contrast ratio of
+the Web Content Accessibility Guidelines).</p></dd>
 
 
 <dt id="arg-tree-label-text-col-alpha-x">tree_label_text_col_alpha_x<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-col-alpha-x"></a></dt>
@@ -575,11 +578,16 @@ differ from the supplied indices when the dendrogram order is kept.</p></dd>
 <dd><p>number of k-means clusters to split the rows of
 <code>x</code> into, an alternative to <code>tree_cut_y</code> that is quick for many
 rows (e.g. <code>tree_kmeans_y = 4</code>). The rows are clustered on the
-numeric columns of <code>x</code> after scaling (by the Hartigan-Wong
-algorithm, giving the clusters <code><a href="https://rdrr.io/r/stats/kmeans.html" class="external-link">stats::kmeans()</a></code> gives, in compiled
-code), starting from the centres of
-equal slices of the rows along their first principal component, so the
-clusters don't depend on the random seed. The clusters are ordered so
+numeric columns of <code>x</code> after scaling, by the Hartigan-Wong
+algorithm (in compiled code), from the centres of equal slices of the
+rows along their first principal component and from three k-means++
+starts (Arthur and Vassilvitskii 2007, greedy as in Grunau et al. 2023),
+fitted on separate threads, keeping the clusters with the smallest
+within-cluster sum of squares (for more than 20,000 rows, the starts are
+compared on a sample of 20,000 and every row is then fitted from the
+best).
+The starts use fixed seeds, so the clusters don't depend on the random
+seed. The clusters are ordered so
 that similar clusters are neighbours (optimal leaf order of their
 centres) and then act like groups supplied to <code>tree_cut_y</code>: with a
 dendrogram (<code>tree_y = TRUE</code>) the rows are clustered within each
@@ -640,7 +648,8 @@ text in the y axis cluster labels, set to 1 by default.</p></dd>
 <dd><p>a vector of colours to control the colour of
 text in y axis cluster labels, set to <code>"auto"</code> by default to
 use white text on dark labels and black text on light ones, whichever
-contrasts more with the colour of each label.</p></dd>
+contrasts more with the colour of each label (by the contrast ratio of
+the Web Content Accessibility Guidelines).</p></dd>
 
 
 <dt id="arg-tree-label-text-col-alpha-y">tree_label_text_col_alpha_y<a class="anchor" aria-label="anchor" href="#arg-tree-label-text-col-alpha-y"></a></dt>
@@ -653,19 +662,19 @@ solid colours.</p></dd>
 <dd><p>indicates the shape to use for the cells in the heatmap,
 options include <code>"rect"</code>, <code>"circle"</code>, <code>"diamond"</code>,
 <code>"ellipse"</code>, <code>"number"</code> or <code>"none"</code>. Circles, diamonds and
-ellipses stay round on cells that aren't square, sized by the shorter
-side of the cells. Ellipses show values between -1 and 1, such as
-correlations, by their shape - the outline of a bivariate normal
+ellipses stay round on cells that aren't square, sized by the shorter side
+of the cells. Ellipses show values between -1 and 1, such as correlations,
+by their shape (Murdoch and Chow 1996) - the outline of a bivariate normal
 distribution with that correlation, rising to the right for positive
 values, falling for negative values, and narrower the closer the value is
 to -1 or 1 (a circle at 0); values beyond -1 and 1 are drawn as -1 or 1
 with a warning. <code>"number"</code> writes the value of each cell (or its
-<code>cell_text</code>) in the colour of the cell instead of filling it,
-darkened where the colour is too light to read, and <code>"none"</code> leaves
-the cell empty apart from its <code>cell_text</code>. Alternatively, a matrix of
-the same dimensions as <code>x</code> containing the shape to use for each
-cell, e.g. ellipses below the diagonal of a correlation matrix and numbers
-above it (see <code><a href="heat_map_cor.html">heat_map_cor</a></code>).</p></dd>
+<code>cell_text</code>) in the colour of the cell instead of filling it, darkened
+where the colour is too light to read, and <code>"none"</code> leaves the cell
+empty apart from its <code>cell_text</code>. Alternatively, a matrix of the same
+dimensions as <code>x</code> containing the shape to use for each cell, e.g.
+ellipses below the diagonal of a correlation matrix and numbers above it
+(see <code><a href="heat_map_cor.html">heat_map_cor</a></code>).</p></dd>
 
 
 <dt id="arg-cell-size">cell_size<a class="anchor" aria-label="anchor" href="#arg-cell-size"></a></dt>
@@ -684,12 +693,12 @@ or a function that returns <code>n</code> colours.</p></dd>
 
 <dt id="arg-cell-col-scale">cell_col_scale<a class="anchor" aria-label="anchor" href="#arg-cell-col-scale"></a></dt>
 <dd><p>a vector of colours to use for the colour scale of
-numeric values. By default the scale runs through the colour-blind
-friendly viridis colours from dark purple to yellow, then on through
-orange and red to dark red. Alternatively, the name of a palette listed in
-<code><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.pals</a></code> (e.g. <code>"viridis"</code> or
-<code>"Blue-Red 3"</code>), a palette function that takes the number of
-colours as its first argument <code>n</code> (e.g. one created by
+numeric values. By default the scale runs through the colour-blind friendly
+viridis colours (as in <span class="pkg">viridisLite</span>) from dark purple to yellow, then
+on through orange and red to dark red. Alternatively, the name of a palette
+listed in <code><a href="https://rdrr.io/r/grDevices/palettes.html" class="external-link">hcl.pals</a></code> (e.g. <code>"viridis"</code> or
+<code>"Blue-Red 3"</code>), a palette function that takes the number of colours
+as its first argument <code>n</code> (e.g. one created by
 <code><a href="https://rdrr.io/r/grDevices/colorRamp.html" class="external-link">colorRampPalette</a></code>), or a function created by
 <code><a href="https://rdrr.io/r/grDevices/colorRamp.html" class="external-link">colorRamp</a></code>.</p></dd>
 
@@ -756,15 +765,15 @@ cells share the same transparency.</p></dd>
 
 
 <dt id="arg-cell-uncertainty">cell_uncertainty<a class="anchor" aria-label="anchor" href="#arg-cell-uncertainty"></a></dt>
-<dd><p>a numeric matrix with the same dimensions as
-<code>x</code> holding the uncertainty of each value, such as a standard error,
-a confidence interval width or a p-value. Cells are coloured with a
-value-suppressing palette: the more uncertain a value, the fewer colours
-its part of the scale has and the closer they are to grey, so an
-uncertain value can't look like a strong one. The most certain level
-uses 8 colours across the scale (with the default 4 levels), the next 4,
-then 2, and the most uncertain level a single, nearly grey colour.
-Missing uncertainties are treated as the most uncertain. The colour
+<dd><p>a numeric matrix with the same dimensions as <code>x</code>
+holding the uncertainty of each value, such as a standard error, a
+confidence interval width or a p-value. Cells are coloured with a
+value-suppressing palette (Correll et al. 2018): the more uncertain a
+value, the fewer colours its part of the scale has and the closer they are
+to grey, so an uncertain value can't look like a strong one. The most
+certain level uses 8 colours across the scale (with the default 4 levels),
+the next 4, then 2, and the most uncertain level a single, nearly grey
+colour. Missing uncertainties are treated as the most uncertain. The colour
 legend becomes a key with one row per uncertainty level.</p></dd>
 
 
@@ -840,9 +849,9 @@ the cells are too small.</p></dd>
 
 <dt id="arg-cell-border-mask">cell_border_mask<a class="anchor" aria-label="anchor" href="#arg-cell-border-mask"></a></dt>
 <dd><p>a matrix of the same dimensions as <code>x</code> containing
-TRUE/FALSE values indicating whether each cell should have a colored border
+TRUE/FALSE values indicating whether each cell should have a coloured border
 (TRUE) or a transparent border (FALSE), set to NULL by default to apply
-border color to all cells. Missing values are treated as FALSE.</p></dd>
+border colour to all cells. Missing values are treated as FALSE.</p></dd>
 
 
 <dt id="arg-cell-text">cell_text<a class="anchor" aria-label="anchor" href="#arg-cell-text"></a></dt>
@@ -896,18 +905,17 @@ stacked bars their numbers in each part of <code>stack_by</code>.</p></dd>
 
 <dt id="arg-bar-type-x">bar_type_x<a class="anchor" aria-label="anchor" href="#arg-bar-type-x"></a></dt>
 <dd><p>the type of plot drawn for <code>bar_values_x</code>:
-<code>"bar"</code> (one value per column), <code>"box"</code> (box plots of the
-values of each column, with the median, quartiles, whiskers to the most
-extreme values within 1.5 times the interquartile range and points beyond
-them) or <code>"violin"</code> (densities of the values of each column, with a
-line at the median), <code>"stack"</code> (stacked bars of the parts of each
-column, e.g. the number of cells of each condition in each cluster) or
-<code>"fill"</code> (stacked bars of the proportions of the parts). Set to
-<code>NULL</code> by default to draw bars for a vector and box plots for
+<code>"bar"</code> (one value per column), <code>"box"</code> (box plots of the values
+of each column, with the median, quartiles, whiskers to the most extreme
+values within 1.5 times the interquartile range and points beyond them) or
+<code>"violin"</code> (Hintze and Nelson 1998: densities of the values of each
+column, with a line at the median), <code>"stack"</code> (stacked bars of the
+parts of each column, e.g. the number of cells of each condition in each
+cluster) or <code>"fill"</code> (stacked bars of the proportions of the parts).
+Set to <code>NULL</code> by default to draw bars for a vector and box plots for
 distributions. <code>bar_fill_x</code> and the <code>bar_line_*_x</code> arguments
-style the boxes and violins; for stacked bars <code>bar_fill_x</code> gives
-one colour per part (named by part or in order), and the parts get a
-legend.</p></dd>
+style the boxes and violins; for stacked bars <code>bar_fill_x</code> gives one
+colour per part (named by part or in order), and the parts get a legend.</p></dd>
 
 
 <dt id="arg-bar-axis-label-x">bar_axis_label_x<a class="anchor" aria-label="anchor" href="#arg-bar-axis-label-x"></a></dt>
@@ -1599,9 +1607,9 @@ other arguments refer to the heatmap as drawn.</p></dd>
 
 <dt id="arg-transform">transform<a class="anchor" aria-label="anchor" href="#arg-transform"></a></dt>
 <dd><p><code>"asinh"</code> to transform the values with the inverse
-hyperbolic sine of each value divided by <code>cofactor</code> before any
-scaling (the usual transform of cytometry intensities), or <code>NULL</code>
-(default) to draw the values as they are.</p></dd>
+hyperbolic sine of each value divided by <code>cofactor</code> before any scaling
+(the usual transform of cytometry intensities, Bendall et al. 2011), or
+<code>NULL</code> (default) to draw the values as they are.</p></dd>
 
 
 <dt id="arg-cofactor">cofactor<a class="anchor" aria-label="anchor" href="#arg-cofactor"></a></dt>
@@ -1619,24 +1627,24 @@ cytometry) or one per column, named by column.</p></dd>
 <dd><p><code>TRUE</code> to outline, with a thick border, the cells of a
 summary of groups of cells in which a feature looks like two populations
 (e.g. a cluster that combines two smaller ones differing in one or two
-markers), so that they can be looked into; or the smallest dip to
-outline. Set to <code>FALSE</code> by default. Needs the dips of a summary from
-<code>heat_map_summarise(bimodal = TRUE)</code> (see there for how they are
-found) or of <code>heat_map_dot(bimodal = TRUE)</code>. A cell is outlined when
-its dip is at least <code>bimodal</code> (0.01 for <code>TRUE</code>) and above the
-dip that one population of the same number of cells exceeds 1\<!-- % of the -->
-time (0.059 for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so that
-small groups aren't outlined by chance. Groups whose cells split across
-several of the features at once - most often whether the features are
-detected at all, as in a cluster combining CD4 and CD8 T cells, which no
-single feature shows as two peaks - are outlined in the features that
+markers), so that they can be looked into; or the smallest dip (Hartigan
+and Hartigan 1985) to outline. Set to <code>FALSE</code> by default. Needs the
+dips of a summary from <code>heat_map_summarise(bimodal = TRUE)</code> (see there
+for how they are found) or of <code>heat_map_dot(bimodal = TRUE)</code>. A cell
+is outlined when its dip is at least <code>bimodal</code> (0.01 for <code>TRUE</code>)
+and above the dip that one population of the same number of cells exceeds
+1\<!-- % of the time (0.059 for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so -->
+that small groups aren't outlined by chance. Groups whose cells split
+across several of the features at once - most often whether the features
+are detected at all, as in a cluster combining CD4 and CD8 T cells, which
+no single feature shows as two peaks - are outlined in the features that
 drive the split, from the dip across features (see
 <code><a href="heat_map_summarise.html">heat_map_summarise</a></code>). The legend gains a key, and
-<code>bar_values_y = "dip"</code> (or <code>bar_values_x</code>) draws the largest
-dip of each row (column) as bars. <code>heat_map_info()$bimodal</code> returns
-the dips, the numbers of values they were found from and the cells
-outlined, and <code><a href="heat_map_describe.html">heat_map_describe()</a></code> names them. The distributions
-behind each cell (<code>cell_values</code>) show what the dip has found.</p></dd>
+<code>bar_values_y = "dip"</code> (or <code>bar_values_x</code>) draws the largest dip
+of each row (column) as bars. <code>heat_map_info()$bimodal</code> returns the
+dips, the numbers of values they were found from and the cells outlined,
+and <code><a href="heat_map_describe.html">heat_map_describe()</a></code> names them. The distributions behind each
+cell (<code>cell_values</code>) show what the dip has found.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
@@ -1657,6 +1665,64 @@ is the <code>recordedplot</code> of the heatmap (so it can still be used with
 <code><a href="heat_map_save.html">heat_map_save</a></code>. The data used to construct the heatmap,
 including row and column orders, cluster assignments, dendrograms and
 cell colours, can be extracted with <code><a href="heat_map_info.html">heat_map_info</a></code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Arthur, D. and Vassilvitskii, S. (2007). k-means++: the
+advantages of careful seeding. <em>Proceedings of the 18th Annual
+ACM-SIAM Symposium on Discrete Algorithms (SODA '07)</em>, 1027-1035.</p>
+<p>Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A
+spectral algorithm for seriation and the consecutive ones problem.
+<em>SIAM Journal on Computing</em>, 28(1), 297-310.
+<a href="https://doi.org/10.1137/S0097539795285771" class="external-link">doi:10.1137/S0097539795285771</a></p>
+<p>Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast optimal
+leaf ordering for hierarchical clustering. <em>Bioinformatics</em>,
+17(suppl 1), S22-S29. <a href="https://doi.org/10.1093/bioinformatics/17.suppl_1.S22" class="external-link">doi:10.1093/bioinformatics/17.suppl_1.S22</a></p>
+<p>Bendall, S. C. et al. (2011). Single-cell mass cytometry of differential
+immune and drug responses across a human hematopoietic continuum.
+<em>Science</em>, 332(6030), 687-696. <a href="https://doi.org/10.1126/science.1198704" class="external-link">doi:10.1126/science.1198704</a></p>
+<p>Correll, M., Moritz, D. and Heer, J. (2018). Value-suppressing
+uncertainty palettes. <em>Proceedings of the 2018 CHI Conference on
+Human Factors in Computing Systems</em>. <a href="https://doi.org/10.1145/3173574.3174216" class="external-link">doi:10.1145/3173574.3174216</a></p>
+<p>Croes, G. A. (1958). A method for solving traveling-salesman problems.
+<em>Operations Research</em>, 6(6), 791-812. <a href="https://doi.org/10.1287/opre.6.6.791" class="external-link">doi:10.1287/opre.6.6.791</a></p>
+<p>Felsenstein, J. (1985). Confidence limits on phylogenies: an approach
+using the bootstrap. <em>Evolution</em>, 39(4), 783-791.
+<a href="https://doi.org/10.1111/j.1558-5646.1985.tb00420.x" class="external-link">doi:10.1111/j.1558-5646.1985.tb00420.x</a></p>
+<p>Garnier, S. et al. viridisLite: colorblind-friendly color maps (lite
+version). <a href="https://CRAN.R-project.org/package=viridisLite" class="external-link">https://CRAN.R-project.org/package=viridisLite</a></p>
+<p>Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+<em>The Annals of Statistics</em>, 13(1), 70-84.
+<a href="https://doi.org/10.1214/aos/1176346577" class="external-link">doi:10.1214/aos/1176346577</a></p>
+<p>Grunau, C., Ozudogru, A. A., Rozhon, V. and Tetek, J. (2023). A nearly
+tight analysis of greedy k-means++. <em>Proceedings of the 2023
+ACM-SIAM Symposium on Discrete Algorithms (SODA 2023)</em>, 1012-1070.
+<a href="https://doi.org/10.48550/arXiv.2207.07949" class="external-link">doi:10.48550/arXiv.2207.07949</a></p>
+<p>Hartigan, J. A. and Wong, M. A. (1979). Algorithm AS 136: a k-means
+clustering algorithm. <em>Applied Statistics</em>, 28(1), 100-108.
+<a href="https://doi.org/10.2307/2346830" class="external-link">doi:10.2307/2346830</a></p>
+<p>Hintze, J. L. and Nelson, R. D. (1998). Violin plots: a box plot-density
+trace synergism. <em>The American Statistician</em>, 52(2), 181-184.
+<a href="https://doi.org/10.1080/00031305.1998.10480559" class="external-link">doi:10.1080/00031305.1998.10480559</a></p>
+<p>Hyndman, R. J. and Fan, Y. (1996). Sample quantiles in statistical
+packages. <em>The American Statistician</em>, 50(4), 361-365.
+<a href="https://doi.org/10.1080/00031305.1996.10473566" class="external-link">doi:10.1080/00031305.1996.10473566</a></p>
+<p>Kaufman, L. and Rousseeuw, P. J. (1990). <em>Finding Groups in Data: An
+Introduction to Cluster Analysis</em>. Wiley. <a href="https://doi.org/10.1002/9780470316801" class="external-link">doi:10.1002/9780470316801</a></p>
+<p>McInnes, L., Healy, J. and Melville, J. (2018). UMAP: uniform manifold
+approximation and projection for dimension reduction.
+<em>arXiv</em>:1802.03426. <a href="https://doi.org/10.48550/arXiv.1802.03426" class="external-link">doi:10.48550/arXiv.1802.03426</a></p>
+<p>Murdoch, D. J. and Chow, E. D. (1996). A graphical display of large
+correlation matrices. <em>The American Statistician</em>, 50(2), 178-180.</p>
+<p>Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the
+interpretation and validation of cluster analysis. <em>Journal of
+Computational and Applied Mathematics</em>, 20, 53-65.
+<a href="https://doi.org/10.1016/0377-0427%2887%2990125-7" class="external-link">doi:10.1016/0377-0427(87)90125-7</a></p>
+<p>Shi, J. and Malik, J. (2000). Normalized cuts and image segmentation.
+<em>IEEE Transactions on Pattern Analysis and Machine Intelligence</em>,
+22(8), 888-905. <a href="https://doi.org/10.1109/34.868688" class="external-link">doi:10.1109/34.868688</a></p>
+<p>W3C (2018). Web Content Accessibility Guidelines (WCAG) 2.1.
+<a href="https://www.w3.org/TR/WCAG21/" class="external-link">https://www.w3.org/TR/WCAG21/</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

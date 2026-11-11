@@ -226,7 +226,10 @@ discrete values such as counts spread evenly over the gaps between them
 (so that the comb of 1, 2, 3, ... counts isn't read as several peaks)
 and, for continuous values, the piles at the lowest and highest values
 (clipping, saturated detectors) left out. Groups with fewer than 20
-such values have no dip. The dips are computed in compiled code.</p>
+such values have no dip. The dips are computed in compiled code, from
+the greatest convex minorant and least concave majorant of the
+distribution of the values (Hartigan and Hartigan 1985), and equal those
+of the <span class="pkg">diptest</span> package.</p>
 <p>Populations that differ in several features at once (most often whether
 the features are detected at all, as in a cluster combining CD4 and CD8 T
 cells: on the count scale, a feature detected in only some cells falls
@@ -237,7 +240,8 @@ that vary and are detected in at least 5\<!-- % of the cells, at least 3 of -->
 them; at most 50,000 cells of a group, drawn with a fixed seed). It is
 only found when that component carries co-variation - an eigenvalue of
 at least 2, and above the largest eigenvalue of as many independent
-features - so that features that each have two peaks of their own (e.g.
+features (the upper edge of the Marchenko-Pastur law, Marchenko and
+Pastur 1967) - so that features that each have two peaks of their own (e.g.
 from the asinh transform) don't add up to a split, and it is kept as the
 <code>"dip_pc"</code> attribute (and <code>"dip_pc_n"</code>, the cells used) in
 the features that drive the component (more than an equal share of it),
@@ -269,6 +273,9 @@ attributes (see <code>bimodal</code>).</p>
     <p>Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of
 unimodality. <em>The Annals of Statistics</em>, 13(1), 70-84.
 <a href="https://doi.org/10.1214/aos/1176346577" class="external-link">doi:10.1214/aos/1176346577</a></p>
+<p>Marchenko, V. A. and Pastur, L. A. (1967). Distribution of eigenvalues
+for some sets of random matrices. <em>Mathematics of the USSR-Sbornik</em>,
+1(4), 457-483. <a href="https://doi.org/10.1070/SM1967v001n04ABEH001994" class="external-link">doi:10.1070/SM1967v001n04ABEH001994</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

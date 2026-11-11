@@ -3,18 +3,20 @@
 group of cells (e.g. per cluster) and one column per feature: the colour of
 each dot is the mean of the feature in the group, scaled within each
 feature, and its area the proportion of the group's cells in which the
-feature is detected, as Seurat's DotPlot() and scanpy's
-dotplot() draw them. The means and proportions are found in one pass
-over the data, from the non-zero values of sparse data (see
+feature is detected, as Seurat's DotPlot() (Hao et al. 2024) and
+scanpy's dotplot() (Wolf et al. 2018) draw them. The means and
+proportions are found in one pass over the data, from the non-zero values of
+sparse data (see
 heat_map_summarise). The plot is a heatmap of circles, so
 every option of heat_map can be added through ..., e.g.
 a dendrogram of the groups (tree_y = TRUE) or annotations."><meta property="og:description" content="heat_map_dot() draws a dot plot of single-cell data, with one row per
 group of cells (e.g. per cluster) and one column per feature: the colour of
 each dot is the mean of the feature in the group, scaled within each
 feature, and its area the proportion of the group's cells in which the
-feature is detected, as Seurat's DotPlot() and scanpy's
-dotplot() draw them. The means and proportions are found in one pass
-over the data, from the non-zero values of sparse data (see
+feature is detected, as Seurat's DotPlot() (Hao et al. 2024) and
+scanpy's dotplot() (Wolf et al. 2018) draw them. The means and
+proportions are found in one pass over the data, from the non-zero values of
+sparse data (see
 heat_map_summarise). The plot is a heatmap of circles, so
 every option of heat_map can be added through ..., e.g.
 a dendrogram of the groups (tree_y = TRUE) or annotations."><meta property="og:image" content="https://dillonhammill.github.io/HeatmapR/logo.png"></head><body>
@@ -70,9 +72,10 @@ a dendrogram of the groups (tree_y = TRUE) or annotations."><meta property="og:i
 group of cells (e.g. per cluster) and one column per feature: the colour of
 each dot is the mean of the feature in the group, scaled within each
 feature, and its area the proportion of the group's cells in which the
-feature is detected, as Seurat's <code>DotPlot()</code> and scanpy's
-<code>dotplot()</code> draw them. The means and proportions are found in one pass
-over the data, from the non-zero values of sparse data (see
+feature is detected, as Seurat's <code>DotPlot()</code> (Hao et al. 2024) and
+scanpy's <code>dotplot()</code> (Wolf et al. 2018) draw them. The means and
+proportions are found in one pass over the data, from the non-zero values of
+sparse data (see
 <code><a href="heat_map_summarise.html">heat_map_summarise</a></code>). The plot is a heatmap of circles, so
 every option of <code><a href="heat_map.html">heat_map</a></code> can be added through <code>...</code>, e.g.
 a dendrogram of the groups (<code>tree_y = TRUE</code>) or annotations.</p>
@@ -155,8 +158,9 @@ as rows and the groups as columns, set to <code>FALSE</code> by default.</p></dd
 <dd><p><code>TRUE</code> to outline, with a thick border, the dots of
 groups in which a feature looks like two populations among the cells it
 is detected in (e.g. a cluster combining two smaller ones), from the dip
-of each feature in each group; or the smallest dip to outline. Set to
-<code>FALSE</code> by default. See <code><a href="heat_map_summarise.html">heat_map_summarise</a></code> for how the
+(Hartigan and Hartigan 1985) of each feature in each group; or the smallest
+dip to outline. Set to <code>FALSE</code> by default. See
+<code><a href="heat_map_summarise.html">heat_map_summarise</a></code> for how the
 dips are found and <code><a href="heat_map.html">heat_map</a></code> for when a dot is outlined.</p></dd>
 
 
@@ -172,6 +176,18 @@ settings of the dot plot of the same name.</p></dd>
 <code><a href="heat_map.html">heat_map</a></code>, whose data are the scaled means. The means, the
 proportions detected and the cells in each group are returned by
 <code><a href="heat_map_summarise.html">heat_map_summarise</a></code>.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Hao, Y. et al. (2024). Dictionary learning for integrative,
+multimodal and scalable single-cell analysis. <em>Nature Biotechnology</em>,
+42(2), 293-304. <a href="https://doi.org/10.1038/s41587-023-01767-y" class="external-link">doi:10.1038/s41587-023-01767-y</a></p>
+<p>Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+<em>The Annals of Statistics</em>, 13(1), 70-84.
+<a href="https://doi.org/10.1214/aos/1176346577" class="external-link">doi:10.1214/aos/1176346577</a></p>
+<p>Wolf, F. A., Angerer, P. and Theis, F. J. (2018). SCANPY: large-scale
+single-cell gene expression data analysis. <em>Genome Biology</em>, 19, 15.
+<a href="https://doi.org/10.1186/s13059-017-1382-0" class="external-link">doi:10.1186/s13059-017-1382-0</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

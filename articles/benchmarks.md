@@ -274,3 +274,10 @@ on an otherwise idle machine:
 ``` bash
 Rscript data-raw/benchmarks/run.R
 ```
+
+## References
+
+Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast optimal
+leaf ordering for hierarchical clustering. *Bioinformatics*, 17(suppl
+1), S22-S29.
+[doi:10.1093/bioinformatics/17.suppl_1.S22](https://doi.org/10.1093/bioinformatics/17.suppl_1.S22)

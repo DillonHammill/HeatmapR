@@ -88,11 +88,14 @@ from each value and then divides the result by the standard deviation.
 Rows or columns with no variation are mapped to 0.5 for range scaling
 and 0 for mean and z-score scaling, rather than <code>NaN</code>. Quantile
 scaling maps the <code>q</code> and <code>1 - q</code> quantiles of each column
-(row) to 0 and 1 and clips the values beyond them, so that a few extreme
-values don't compress the colours of the rest; when the two quantiles are equal, values above them
-are 1 and the others 0. The <code>"asinh"</code> transform takes the inverse
+(row; type 7 of Hyndman and Fan 1996, as <code><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile()</a></code> finds them)
+to 0 and 1 and clips the values beyond them, so that a few extreme
+values don't compress the colours of the rest; when the two quantiles are
+equal, values above them are 1 and the others 0. The <code>"asinh"</code>
+transform takes the inverse
 hyperbolic sine of each value divided by <code>cofactor</code>, the usual
-transform of cytometry intensities (it ignores <code>scale</code>).</p></dd>
+transform of cytometry intensities (Bendall et al. 2011; it ignores
+<code>scale</code>).</p></dd>
 
 
 <dt id="arg-cofactor">cofactor<a class="anchor" aria-label="anchor" href="#arg-cofactor"></a></dt>
@@ -108,6 +111,16 @@ cytometry), or one per numeric column (in order, or named by column).</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>a matrix or data.frame containing the scaled data.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Bendall, S. C. et al. (2011). Single-cell mass cytometry of
+differential immune and drug responses across a human hematopoietic
+continuum. <em>Science</em>, 332(6030), 687-696.
+<a href="https://doi.org/10.1126/science.1198704" class="external-link">doi:10.1126/science.1198704</a></p>
+<p>Hyndman, R. J. and Fan, Y. (1996). Sample quantiles in statistical
+packages. <em>The American Statistician</em>, 50(4), 361-365.
+<a href="https://doi.org/10.1080/00031305.1996.10473566" class="external-link">doi:10.1080/00031305.1996.10473566</a></p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>

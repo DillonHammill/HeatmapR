@@ -101,10 +101,16 @@ The means are found in compiled code, without a dense copy of sparse
 data.
 
 Branching trajectories are smoothed one lineage at a time, from several
-`along` columns (one per lineage, e.g. slingshot's pseudotimes, which
-are missing for cells outside a lineage) or from `group_by`; the
-lineages are stacked in the result, and `heat_map(group_by = "lineage")`
-draws them side by side.
+`along` columns (one per lineage, e.g. slingshot's pseudotimes, Street
+et al. 2018, which are missing for cells outside a lineage) or from
+`group_by`; the lineages are stacked in the result, and
+`heat_map(group_by = "lineage")` draws them side by side.
+
+## References
+
+Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
+inference for single-cell transcriptomics. *BMC Genomics*, 19, 477.
+[doi:10.1186/s12864-018-4772-0](https://doi.org/10.1186/s12864-018-4772-0)
 
 ## See also
 

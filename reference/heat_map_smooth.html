@@ -157,10 +157,17 @@ of the cells in the <code>span</code> bins around it (the bin itself and
 weighted by the cells in each bin. The means are found in compiled code,
 without a dense copy of sparse data.</p>
 <p>Branching trajectories are smoothed one lineage at a time, from several
-<code>along</code> columns (one per lineage, e.g. slingshot's pseudotimes, which
+<code>along</code> columns (one per lineage, e.g. slingshot's pseudotimes, Street
+et al. 2018, which
 are missing for cells outside a lineage) or from <code>group_by</code>; the
 lineages are stacked in the result, and <code>heat_map(group_by =
 "lineage")</code> draws them side by side.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
+inference for single-cell transcriptomics. <em>BMC Genomics</em>, 19, 477.
+<a href="https://doi.org/10.1186/s12864-018-4772-0" class="external-link">doi:10.1186/s12864-018-4772-0</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -210,15 +210,16 @@ A dendrogram can only flip whole branches, so data that change gradually
 rather than falling into groups always come out in pieces. The spectral
 order (`"spectral"`) doesn’t need a dendrogram. It joins each row to its
 6 nearest neighbours in a graph (by `dist_method`), with weights that
-fall with distance from the nearest neighbour, as UMAP weights its
-graph, and then:
+fall with distance from the nearest neighbour, as UMAP weights its graph
+(McInnes, Healy and Melville 2018), and then:
 
-1.  splits the graph recursively where it is thinnest, sorting each part
-    by its Fiedler vector (the second eigenvector of its graph
-    Laplacian), with the two halves of every split turned to meet where
-    they are closest;
+1.  splits the graph recursively where it is thinnest (Shi and Malik
+    2000), sorting each part by its Fiedler vector (the second
+    eigenvector of its graph Laplacian; Fiedler 1973, Atkins, Boman and
+    Hendrickson 1998), with the two halves of every split turned to meet
+    where they are closest;
 2.  reverses runs of up to 12 rows wherever that shortens the path (a
-    windowed 2-opt).
+    windowed 2-opt, Croes 1958).
 
 Trajectories and gradients are laid out along their length, clusters one
 after another, and cycles around their loop, which no dendrogram can do:
@@ -303,3 +304,32 @@ tree <- heat_map_clust(data$trajectory, order = "olo")
 head(tree$order)
 #> [1] 352 163   5 121 109 274
 ```
+
+## References
+
+Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A spectral
+algorithm for seriation and the consecutive ones problem. *SIAM Journal
+on Computing*, 28(1), 297-310.
+[doi:10.1137/S0097539795285771](https://doi.org/10.1137/S0097539795285771)
+
+Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast optimal
+leaf ordering for hierarchical clustering. *Bioinformatics*, 17(suppl
+1), S22-S29.
+[doi:10.1093/bioinformatics/17.suppl_1.S22](https://doi.org/10.1093/bioinformatics/17.suppl_1.S22)
+
+Croes, G. A. (1958). A method for solving traveling-salesman problems.
+*Operations Research*, 6(6), 791-812.
+[doi:10.1287/opre.6.6.791](https://doi.org/10.1287/opre.6.6.791)
+
+Fiedler, M. (1973). Algebraic connectivity of graphs. *Czechoslovak
+Mathematical Journal*, 23(2), 298-305.
+[doi:10.21136/CMJ.1973.101168](https://doi.org/10.21136/CMJ.1973.101168)
+
+McInnes, L., Healy, J. and Melville, J. (2018). UMAP: uniform manifold
+approximation and projection for dimension reduction.
+*arXiv*:1802.03426.
+[doi:10.48550/arXiv.1802.03426](https://doi.org/10.48550/arXiv.1802.03426)
+
+Shi, J. and Malik, J. (2000). Normalized cuts and image segmentation.
+*IEEE Transactions on Pattern Analysis and Machine Intelligence*, 22(8),
+888-905. [doi:10.1109/34.868688](https://doi.org/10.1109/34.868688)

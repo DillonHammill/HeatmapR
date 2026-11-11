@@ -51,7 +51,7 @@ patterns.](large-data_files/figure-html/big-1.png)
 ``` r
 
 time[["elapsed"]]
-#> [1] 1.475
+#> [1] 1.234
 ```
 
 Two things make this fast: the cells are drawn as an image, and the rows
@@ -84,8 +84,8 @@ save_pdf <- function(raster) {
 }
 rbind(raster = save_pdf(TRUE), rectangles = save_pdf(FALSE))
 #>            megabytes seconds
-#> raster          0.67    0.10
-#> rectangles      1.94    1.01
+#> raster          0.67    0.08
+#> rectangles      1.94    0.82
 ```
 
 A dendrogram adds a line for every branch, so the PDF of the clustered
@@ -153,11 +153,16 @@ A dendrogram of 100,000 rows is more than anyone can read. Often what
 you want is a handful of groups, and k-means finds them quickly:
 `tree_kmeans_y = 5` splits the rows into 5 clusters (the Hartigan-Wong
 algorithm of [`stats::kmeans()`](https://rdrr.io/r/stats/kmeans.html),
-in compiled code). The clusters start from equal slices of the rows
-along their first principal component, so they don’t depend on the
-random seed, and are ordered so that similar clusters are neighbours.
-They then act like groups supplied to `tree_cut_y`: separated by gaps,
-labelled, and with `tree_y = TRUE`, clustered within each cluster.
+Hartigan and Wong 1979, in compiled code). k-means runs from the centres
+of equal slices of the rows along their first principal component and
+from three k-means++ starts (Arthur and Vassilvitskii 2007), and keeps
+the clusters with the smallest within-cluster sum of squares; for more
+than 20,000 rows the starts are compared on a sample of 20,000 and the
+best is fitted to every row. The starts use fixed seeds, so the clusters
+don’t depend on the random seed, and they are ordered so that similar
+clusters are neighbours. They then act like groups supplied to
+`tree_cut_y`: separated by gaps, labelled, and with `tree_y = TRUE`,
+clustered within each cluster.
 
 ``` r
 
@@ -183,27 +188,27 @@ kmeans_table <- table(cluster = heat_map_info(hm)$row_clusters, population)
 kmeans_table
 #>        population
 #> cluster     1     2     3     4     5
-#>       1 20060     0     0     0     0
-#>       2 20018     0     0     0     2
-#>       3     0     0 19917     0     0
-#>       4     0     0     0 10041  5024
-#>       5     0 24934     0     0     4
+#>       1 40078     0     0     0     0
+#>       2     0     0 19917     0     0
+#>       3     0     0     0 10041     0
+#>       4     0     0     0     0  5030
+#>       5     0 24934     0     0     0
 ```
 
-k-means favours clusters of similar size, so it doesn’t always find the
-populations: here it splits the largest population in two and puts
-populations 4 and 5, whose centres are close, together. Compare a few
-numbers of clusters, or cut a dendrogram instead (below), when the
-groups differ a lot in size.
+Here each cluster is one of the five populations. k-means favours
+clusters of similar size, though, so when the groups differ a lot in
+size it can still split a large one in two or merge small ones: compare
+a few numbers of clusters, or cut a dendrogram instead (below).
 
 ## Choosing the number of clusters
 
 `tree_cut_y = "auto"` cuts the dendrogram into 2 to 20 clusters and
-keeps the cut with the largest mean silhouette width, unless none
-reaches 0.25 (when the data have no substantial structure and the
-dendrogram isn’t cut). The silhouettes of all the cuts are computed
-together in compiled code, and dendrograms with more than `clust_max`
-leaves are scored on a sample of them.
+keeps the cut with the largest mean silhouette width (Rousseeuw 1987),
+unless none reaches 0.25 (when the data have no substantial structure on
+the scale of Kaufman and Rousseeuw 1990 and the dendrogram isn’t cut).
+The silhouettes of all the cuts are computed together in compiled code,
+and dendrograms with more than `clust_max` leaves are scored on a sample
+of them.
 
 ``` r
 
@@ -289,7 +294,7 @@ heat_map_threads(old)
 all <- system.time(heat_map_clust(cells[1:10000, ], max = Inf))[["elapsed"]]
 c(threads_1 = one, threads_all = all)
 #>   threads_1 threads_all 
-#>       1.520       0.959
+#>       1.168       0.914
 ```
 
 ## Memory and redraws
@@ -305,7 +310,7 @@ data and of the k-means heatmap of them:
 
 round(c(data = object.size(cells), heatmap = object.size(hm)) / 1e6, 1)
 #>    data heatmap 
-#>    24.0    74.3
+#>    24.0    72.5
 ```
 
 Redrawing a heatmap ([`print()`](https://rdrr.io/r/base/print.html),
@@ -324,7 +329,7 @@ first <- system.time(
 again <- system.time(plot(hm, title = "Redrawn"))[["elapsed"]]
 c(first = first, redraw = again)
 #>  first redraw 
-#>  1.244  0.844
+#>  1.049  0.635
 ```
 
 ## Summaries of groups
@@ -351,3 +356,22 @@ heat_map(
 ![Heatmap of the median of each of 30 markers in each of the five
 populations, scaled within each marker, with the populations and markers
 clustered by dendrograms.](large-data_files/figure-html/summary-1.png)
+
+## References
+
+Arthur, D. and Vassilvitskii, S. (2007). k-means++: the advantages of
+careful seeding. *Proceedings of the 18th Annual ACM-SIAM Symposium on
+Discrete Algorithms (SODA ’07)*, 1027-1035.
+
+Hartigan, J. A. and Wong, M. A. (1979). Algorithm AS 136: a k-means
+clustering algorithm. *Applied Statistics*, 28(1), 100-108.
+[doi:10.2307/2346830](https://doi.org/10.2307/2346830)
+
+Kaufman, L. and Rousseeuw, P. J. (1990). *Finding Groups in Data: An
+Introduction to Cluster Analysis*. Wiley.
+[doi:10.1002/9780470316801](https://doi.org/10.1002/9780470316801)
+
+Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the
+interpretation and validation of cluster analysis. *Journal of
+Computational and Applied Mathematics*, 20, 53-65.
+[doi:10.1016/0377-0427(87)90125-7](https://doi.org/10.1016/0377-0427(87)90125-7)

@@ -2,7 +2,7 @@
 
 ## Authors
 
-- **Dillon Hammill**. Author, maintainer.
+- **Dillon Hammill**. Author, maintainer, copyright holder.
   [](https://orcid.org/0000-0002-1407-7223)
 
 ## Citation

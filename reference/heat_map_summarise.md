@@ -163,7 +163,10 @@ heat_map_summarise(
   of 1, 2, 3, ... counts isn't read as several peaks) and, for
   continuous values, the piles at the lowest and highest values
   (clipping, saturated detectors) left out. Groups with fewer than 20
-  such values have no dip. The dips are computed in compiled code.
+  such values have no dip. The dips are computed in compiled code, from
+  the greatest convex minorant and least concave majorant of the
+  distribution of the values (Hartigan and Hartigan 1985), and equal
+  those of the diptest package.
 
   Populations that differ in several features at once (most often
   whether the features are detected at all, as in a cluster combining
@@ -175,7 +178,8 @@ heat_map_summarise(
   most 50,000 cells of a group, drawn with a fixed seed). It is only
   found when that component carries co-variation - an eigenvalue of at
   least 2, and above the largest eigenvalue of as many independent
-  features - so that features that each have two peaks of their own
+  features (the upper edge of the Marchenko-Pastur law, Marchenko and
+  Pastur 1967) - so that features that each have two peaks of their own
   (e.g. from the asinh transform) don't add up to a split, and it is
   kept as the `"dip_pc"` attribute (and `"dip_pc_n"`, the cells used) in
   the features that drive the component (more than an equal share of
@@ -205,6 +209,11 @@ rows. With `bimodal = TRUE` the result also keeps the `"dip"`,
 Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
 *The Annals of Statistics*, 13(1), 70-84.
 [doi:10.1214/aos/1176346577](https://doi.org/10.1214/aos/1176346577)
+
+Marchenko, V. A. and Pastur, L. A. (1967). Distribution of eigenvalues
+for some sets of random matrices. *Mathematics of the USSR-Sbornik*,
+1(4), 457-483.
+[doi:10.1070/SM1967v001n04ABEH001994](https://doi.org/10.1070/SM1967v001n04ABEH001994)
 
 ## See also
 

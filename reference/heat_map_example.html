@@ -126,23 +126,35 @@ log-normalised to 10,000 counts per cell
 CD19, CD20, CD56, CD16, CD14, CD11c, HLA-DR, CD45RA and CCR7) in eight
 clusters (C1 to C8), from eight samples (S1 to S8) in two conditions (S1
 to S4 <code>"control"</code>, S5 to S8 <code>"stimulated"</code>). The intensities
-are raw, as from a mass cytometer: <code>asinh(x / 5)</code> recovers the
-simulated levels. Cluster C3 is twice as common in the stimulated
-samples, and HLA-DR rises in clusters C5 and C6 under stimulation.</p></dd>
+are raw, as from a mass cytometer: <code>asinh(x / 5)</code> (the usual
+transform, Bendall et al. 2011) recovers the simulated levels. Cluster C3
+is twice as common in the stimulated samples, and HLA-DR rises in clusters
+C5 and C6 under stimulation.</p></dd>
 
 <dt><code>"trajectory"</code></dt>
 <dd><p>4,000 cells of a branching trajectory with 30
 genes (log-transformed counts, <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p()</a></code>), in a random order (the
 genes are the first 30 columns of the data.frame). Every
 cell has a <code>pseudotime</code> from 0 to 1, and <code>lineage1</code> and
-<code>lineage2</code> give the pseudotime of each lineage, as slingshot gives
-them (missing for cells outside the lineage). The lineages share their
-start and branch at a pseudotime of 0.4; each gene peaks at its own
+<code>lineage2</code> give the pseudotime of each lineage, as slingshot (Street
+et al. 2018) gives them (missing for cells outside the lineage). The
+lineages share their start and branch at a pseudotime of 0.4; each gene
+peaks at its own
 point, and some genes peaking after the branch are expressed in one
 lineage only.</p></dd>
 
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Bendall, S. C. et al. (2011). Single-cell mass cytometry of
+differential immune and drug responses across a human hematopoietic
+continuum. <em>Science</em>, 332(6030), 687-696.
+<a href="https://doi.org/10.1126/science.1198704" class="external-link">doi:10.1126/science.1198704</a></p>
+<p>Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
+inference for single-cell transcriptomics. <em>BMC Genomics</em>, 19, 477.
+<a href="https://doi.org/10.1186/s12864-018-4772-0" class="external-link">doi:10.1186/s12864-018-4772-0</a></p>
+    </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="heat_map.html">heat_map</a></code>, <code><a href="heat_map_dot.html">heat_map_dot</a></code>,

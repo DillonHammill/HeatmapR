@@ -28,8 +28,8 @@ functions in `HeatmapR` as summarised below:
   is used inside
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   to apply column- or row-wise mean, z-score, range or quantile scaling,
-  or the asinh transform of cytometry data, to the dataset prior to
-  constructing the heatmap.
+  or the asinh transform of cytometry data (Bendall et al. 2011), to the
+  dataset prior to constructing the heatmap.
 - [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
   reduces groups of rows or columns to one summary each (e.g. the mean
   expression of each cell type, or the median of each marker in each
@@ -250,12 +250,12 @@ Estimates such as fold changes come with uncertainty, and a noisy
 estimate shouldn’t look as strong as a precise one. `cell_uncertainty`
 takes a matrix of uncertainties (standard errors, confidence interval
 widths or p-values) and colours the cells with a value-suppressing
-palette: the more uncertain a value, the fewer colours its part of the
-scale has and the closer they are to grey. Precise values use eight
-colours across the scale, then four, two, and the most uncertain values
-a single, nearly grey colour. `cell_uncertainty_breaks` sets the
-thresholds between the levels, and the colour legend becomes a key with
-one row per level.
+palette (Correll, Moritz and Heer 2018): the more uncertain a value, the
+fewer colours its part of the scale has and the closer they are to grey.
+Precise values use eight colours across the scale, then four, two, and
+the most uncertain values a single, nearly grey colour.
+`cell_uncertainty_breaks` sets the thresholds between the levels, and
+the colour legend becomes a key with one row per level.
 
 ``` r
 
@@ -358,7 +358,7 @@ border.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5
 
 #### 2.4.1 Border Masking
 
-The `cell_border_mask` argument allows you to selectively apply colored
+The `cell_border_mask` argument allows you to selectively apply coloured
 borders to specific cells by supplying a logical matrix of the same
 dimensions as the input data. Cells with `TRUE` values will display
 colored borders, while cells with `FALSE` values will have transparent
@@ -624,10 +624,10 @@ can show the correlations differently. By default, the variables are
 clustered on one minus their correlations, the lower triangle shows
 ellipses, the upper triangle the correlation coefficients written in
 their colours, and the diagonal the names of the variables. Each ellipse
-is the outline of a bivariate normal distribution with that correlation:
-a circle for uncorrelated variables, rising to the right for positive
-correlations, falling for negative ones, and narrower the stronger the
-correlation.
+is the outline of a bivariate normal distribution with that correlation
+(Murdoch and Chow 1996): a circle for uncorrelated variables, rising to
+the right for positive correlations, falling for negative ones, and
+narrower the stronger the correlation.
 
 ``` r
 
@@ -821,13 +821,13 @@ dendrogram.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc
 
 The bar plots can also show the distribution of several values for each
 column or row, as box plots (`bar_type_x = "box"`) or violins
-(`bar_type_x = "violin"`). Supply a list with a numeric vector for each
-column (or row), a matrix or data.frame with one column per column of
-the heatmap (one row per row for `bar_values_y`), or `TRUE` to show the
-values of each column or row of the heatmap itself. Box plots are drawn
-by default when distributions are supplied. In the example below, the
-heatmap shows the median intensity of each marker in each cluster of
-simulated cytometry events (computed with
+(`bar_type_x = "violin"`, Hintze and Nelson 1998). Supply a list with a
+numeric vector for each column (or row), a matrix or data.frame with one
+column per column of the heatmap (one row per row for `bar_values_y`),
+or `TRUE` to show the values of each column or row of the heatmap
+itself. Box plots are drawn by default when distributions are supplied.
+In the example below, the heatmap shows the median intensity of each
+marker in each cluster of simulated cytometry events (computed with
 [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md),
 see section 5.3), the violins show the distribution of each marker
 across all events, and the bars show the size of each cluster:
@@ -886,8 +886,8 @@ cluster.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa
 also supports hierarchical clustering to construct dendrograms, and
 [`stats::cutree()`](https://rdrr.io/r/stats/cutree.html) to partition
 the dendrograms into distinct clusters. Distances and linkage are
-computed in compiled code using the nearest-neighbour chain algorithm,
-which builds the same trees as
+computed in compiled code using the nearest-neighbour chain algorithm
+(Murtagh 1983; Müllner 2011), which builds the same trees as
 [`stats::hclust()`](https://rdrr.io/r/stats/hclust.html) (when distances
 are tied, as they often are for integer data, the tree can make a
 different but equally valid choice between the tied merges). The
@@ -943,7 +943,7 @@ supports cosine distance for hierarchical clustering. Cosine distance
 (1 - cosine similarity) measures the angle between vectors and is
 particularly useful for high-dimensional data where the magnitude of the
 vectors is less important than their direction. This is especially
-valuable when analyzing gene expression data or other normalized
+valuable when analysing gene expression data or other normalized
 datasets.
 
 ``` r
@@ -993,9 +993,10 @@ which groups rows that rise and fall together whatever their level
 (common for gene expression), or a function that takes the matrix being
 clustered and returns a `dist` object. A dendrogram can be drawn in many
 orders, as every branch can be flipped; `tree_order_x` and
-`tree_order_y` choose the order. `"olo"` (optimal leaf ordering) flips
-branches so that neighbouring rows are as similar as possible, giving
-smoother gradients, and `"mean"` orders branches by their mean values as
+`tree_order_y` choose the order. `"olo"` (optimal leaf ordering,
+Bar-Joseph, Gifford and Jaakkola 2001) flips branches so that
+neighbouring rows are as similar as possible, giving smoother gradients,
+and `"mean"` orders branches by their mean values as
 [`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) does.
 
 ``` r
@@ -1039,17 +1040,18 @@ differentiation trajectory or samples along a time course, come out in
 pieces. `tree_order_y = "spectral"` (and `tree_order_x`) orders the rows
 along the main path through the data instead, and needs no dendrogram.
 Each row is joined to its 6 nearest neighbours (by `dist_method`) in a
-graph, the graph is split recursively where it is thinnest, each part is
-sorted by its Fiedler vector (the second eigenvector of the graph) with
-the halves turned to meet where they are closest, and runs of up to 12
-rows are then reversed wherever that brings similar rows together.
-Gradients and trajectories are laid out along their length, cycles
-around their loop and clusters one after another. In the example below,
-400 cells are sampled at random times along a trajectory in which 12
-genes peak in turn, and the cells and genes are shuffled: the spectral
-order recovers the times of the cells (a rank correlation of 0.998 with
-their order) and the order of the genes, and the cascade of peaks runs
-down the diagonal.
+graph, the graph is split recursively where it is thinnest (Shi and
+Malik 2000), each part is sorted by its Fiedler vector (the second
+eigenvector of the graph; Fiedler 1973, Atkins, Boman and Hendrickson
+1998) with the halves turned to meet where they are closest, and runs of
+up to 12 rows are then reversed wherever that brings similar rows
+together (a windowed 2-opt, Croes 1958). Gradients and trajectories are
+laid out along their length, cycles around their loop and clusters one
+after another. In the example below, 400 cells are sampled at random
+times along a trajectory in which 12 genes peak in turn, and the cells
+and genes are shuffled: the spectral order recovers the times of the
+cells (a rank correlation of 0.998 with their order) and the order of
+the genes, and the cascade of peaks runs down the diagonal.
 
 ``` r
 
@@ -1093,14 +1095,14 @@ A dendrogram always has branches, whether or not the data support them.
 `tree_support_y` (and `tree_support_x`) shows how stable each branch is:
 the columns are resampled with replacement, the rows are clustered again
 in the same way, and each branch scores the proportion of resamples in
-which its exact set of rows is a branch again (its bootstrap support).
-Branches with 90% support or more are drawn as thick black lines, 70-89%
-as grey lines and anything less as dashed lines, and the larger branches
-are labelled with their support. In `mtcars` only small groups, such as
-the Mazda RX4 pair, are stable; most of the larger splits come back less
-than half the time, which is worth knowing before cutting clusters from
-the dendrogram. `TRUE` uses 100 resamples, and the support is the same
-each time the heatmap is drawn.
+which its exact set of rows is a branch again (its bootstrap support,
+Felsenstein 1985). Branches with 90% support or more are drawn as thick
+black lines, 70-89% as grey lines and anything less as dashed lines, and
+the larger branches are labelled with their support. In `mtcars` only
+small groups, such as the Mazda RX4 pair, are stable; most of the larger
+splits come back less than half the time, which is worth knowing before
+cutting clusters from the dendrogram. `TRUE` uses 100 resamples, and the
+support is the same each time the heatmap is drawn.
 
 ``` r
 
@@ -1201,17 +1203,17 @@ rows.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/3c32131eb1d1fb6f
 
 `tree_cut_y = "auto"` (or `tree_cut_x`) chooses the number of clusters
 from the data. The dendrogram is cut into 2 to 20 clusters, and the cut
-with the largest mean silhouette width is kept: each row’s silhouette
-compares its mean distance to the other rows of its cluster with its
-mean distance to the rows of the nearest other cluster, from 1 (well
-inside its cluster) through 0 (between two clusters) to -1 (closer to
-another cluster). Kaufman and Rousseeuw read a mean width above 0.7 as
-strong structure, above 0.5 as reasonable structure and above 0.25 as
-weak structure; when no cut reaches 0.25 the dendrogram isn’t cut. The
-widths of every cut are computed together, so trying 19 cuts takes
-little longer than one, and dendrograms with more than `clust_max` rows
-are scored on a sample of `clust_max` of them. The widths are returned
-with the dendrogram, and
+with the largest mean silhouette width (Rousseeuw 1987) is kept: each
+row’s silhouette compares its mean distance to the other rows of its
+cluster with its mean distance to the rows of the nearest other cluster,
+from 1 (well inside its cluster) through 0 (between two clusters) to -1
+(closer to another cluster). Kaufman and Rousseeuw (1990) read a mean
+width above 0.7 as strong structure, above 0.5 as reasonable structure
+and above 0.25 as weak structure; when no cut reaches 0.25 the
+dendrogram isn’t cut. The widths of every cut are computed together, so
+trying 19 cuts takes little longer than one, and dendrograms with more
+than `clust_max` rows are scored on a sample of `clust_max` of them. The
+widths are returned with the dendrogram, and
 [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
 reports the choice.
 
@@ -1370,15 +1372,19 @@ rownames(mtcars)[info$row_order]
 #### 5.2.3 k-means Clusters
 
 For thousands of rows, `tree_kmeans_y` (or `tree_kmeans_x` for columns)
-splits the rows into k-means clusters instead of cutting a dendrogram.
-The rows are clustered on the scaled data, starting from slices of the
-rows along their first principal component, so the same clusters are
-found every time whatever the random seed, and similar clusters are
-placed next to each other. The k-means clusters then work like clusters
-supplied to `tree_cut_y`: they are separated by splits and can be
-labelled, and with `tree_y = TRUE` the rows are clustered within each
-k-means cluster. `heat_map_info()$row_clusters` returns the cluster of
-each row.
+splits the rows into k-means clusters (Hartigan and Wong 1979) instead
+of cutting a dendrogram. The rows are clustered on the scaled data from
+several starts: the centres of equal slices of the rows along their
+first principal component, which suit clusters strung out along it, and
+three k-means++ starts (Arthur and Vassilvitskii 2007), which spread the
+starting centres over the data so that small clusters get one of their
+own. The clusters with the smallest within-cluster sum of squares are
+kept. The starts use fixed seeds, so the same clusters are found every
+time whatever the random seed, and similar clusters are placed next to
+each other. The k-means clusters then work like clusters supplied to
+`tree_cut_y`: they are separated by splits and can be labelled, and with
+`tree_y = TRUE` the rows are clustered within each k-means cluster.
+`heat_map_info()$row_clusters` returns the cluster of each row.
 
 ``` r
 
@@ -1409,7 +1415,7 @@ heat_map(
 by k-means into four clusters separated by gaps and clustered by a
 dendrogram within each, in which three clusters are high in samples S9
 to S12, S1 to S4 and S5 to S8 respectively and one shows no
-pattern.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-kmeans.png)
+pattern.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/175cde17305a4b00524495d238953733d926d18a/vignettes/HeatmapR/HeatmapR-kmeans.png)
 
 ### 5.3 Group Summaries
 
@@ -1679,7 +1685,7 @@ complete, a call is made to
 to reset all
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 associated settings. The `layout` argument can be either a vector
-indicating the desired number of rows and columns or a mtrix defining a
+indicating the desired number of rows and columns or a matrix defining a
 more complex layout. For example, if we want to split different car
 brands into separate heatmaps and arrange them:
 
@@ -1933,3 +1939,73 @@ clusters are described one by one.
 `HeatmapR` is a lightweight R package built on base graphics that allows
 for the creation of high resolution complex heatmaps that can be
 arranged in sophisticated layouts with other plot objects.
+
+## References
+
+Arthur, D. and Vassilvitskii, S. (2007). k-means++: the advantages of
+careful seeding. *Proceedings of the 18th Annual ACM-SIAM Symposium on
+Discrete Algorithms (SODA ’07)*, 1027-1035.
+
+Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A spectral
+algorithm for seriation and the consecutive ones problem. *SIAM Journal
+on Computing*, 28(1), 297-310.
+[doi:10.1137/S0097539795285771](https://doi.org/10.1137/S0097539795285771)
+
+Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast optimal
+leaf ordering for hierarchical clustering. *Bioinformatics*, 17(suppl
+1), S22-S29.
+[doi:10.1093/bioinformatics/17.suppl_1.S22](https://doi.org/10.1093/bioinformatics/17.suppl_1.S22)
+
+Bendall, S. C. et al. (2011). Single-cell mass cytometry of differential
+immune and drug responses across a human hematopoietic continuum.
+*Science*, 332(6030), 687-696.
+[doi:10.1126/science.1198704](https://doi.org/10.1126/science.1198704)
+
+Correll, M., Moritz, D. and Heer, J. (2018). Value-suppressing
+uncertainty palettes. *Proceedings of the 2018 CHI Conference on Human
+Factors in Computing Systems*.
+[doi:10.1145/3173574.3174216](https://doi.org/10.1145/3173574.3174216)
+
+Croes, G. A. (1958). A method for solving traveling-salesman problems.
+*Operations Research*, 6(6), 791-812.
+[doi:10.1287/opre.6.6.791](https://doi.org/10.1287/opre.6.6.791)
+
+Felsenstein, J. (1985). Confidence limits on phylogenies: an approach
+using the bootstrap. *Evolution*, 39(4), 783-791.
+[doi:10.1111/j.1558-5646.1985.tb00420.x](https://doi.org/10.1111/j.1558-5646.1985.tb00420.x)
+
+Fiedler, M. (1973). Algebraic connectivity of graphs. *Czechoslovak
+Mathematical Journal*, 23(2), 298-305.
+[doi:10.21136/CMJ.1973.101168](https://doi.org/10.21136/CMJ.1973.101168)
+
+Hartigan, J. A. and Wong, M. A. (1979). Algorithm AS 136: a k-means
+clustering algorithm. *Applied Statistics*, 28(1), 100-108.
+[doi:10.2307/2346830](https://doi.org/10.2307/2346830)
+
+Hintze, J. L. and Nelson, R. D. (1998). Violin plots: a box plot-density
+trace synergism. *The American Statistician*, 52(2), 181-184.
+[doi:10.1080/00031305.1998.10480559](https://doi.org/10.1080/00031305.1998.10480559)
+
+Kaufman, L. and Rousseeuw, P. J. (1990). *Finding Groups in Data: An
+Introduction to Cluster Analysis*. Wiley.
+[doi:10.1002/9780470316801](https://doi.org/10.1002/9780470316801)
+
+Müllner, D. (2011). Modern hierarchical, agglomerative clustering
+algorithms. *arXiv*:1109.2378.
+[doi:10.48550/arXiv.1109.2378](https://doi.org/10.48550/arXiv.1109.2378)
+
+Murdoch, D. J. and Chow, E. D. (1996). A graphical display of large
+correlation matrices. *The American Statistician*, 50(2), 178-180.
+
+Murtagh, F. (1983). A survey of recent advances in hierarchical
+clustering algorithms. *The Computer Journal*, 26(4), 354-359.
+[doi:10.1093/comjnl/26.4.354](https://doi.org/10.1093/comjnl/26.4.354)
+
+Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the
+interpretation and validation of cluster analysis. *Journal of
+Computational and Applied Mathematics*, 20, 53-65.
+[doi:10.1016/0377-0427(87)90125-7](https://doi.org/10.1016/0377-0427(87)90125-7)
+
+Shi, J. and Malik, J. (2000). Normalized cuts and image segmentation.
+*IEEE Transactions on Pattern Analysis and Machine Intelligence*, 22(8),
+888-905. [doi:10.1109/34.868688](https://doi.org/10.1109/34.868688)

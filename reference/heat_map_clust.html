@@ -131,14 +131,16 @@ a second.</p></dd>
 <dd><p>how the branches of the dendrogram are ordered:
 <code>"default"</code> keeps the order from <code>hclust</code>, <code>"olo"</code> flips
 branches to minimise the distances between neighbouring leaves (optimal
-leaf ordering) and <code>"mean"</code> orders branches by their mean values
-(<code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code> orders them by the sum of their leaves'
-means instead, which favours small branches). <code>"spectral"</code> orders
+leaf ordering, Bar-Joseph et al. 2001) and <code>"mean"</code> orders branches
+by their mean values (<code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">heatmap</a></code> orders them by the sum
+of their leaves' means instead, which favours small branches).
+<code>"spectral"</code> orders
 branches by the mean position of their leaves in a spectral order
 (recursive spectral bisection of the graph joining each leaf to its 6
-nearest neighbours), so that gradients and trajectories run in one
-direction across the dendrogram. <code>"peak"</code> orders branches by the
-mean position of their leaves' maxima along the columns (ties by the
+nearest neighbours; Shi and Malik 2000, Atkins et al. 1998), so that
+gradients and trajectories run in one direction across the dendrogram.
+<code>"peak"</code> orders branches by the mean position of their leaves' maxima
+along the columns (ties by the
 position of their minima), so that features peaking early come first,
 e.g. along pseudotime (see <code><a href="heat_map_smooth.html">heat_map_smooth</a></code>). A numeric
 vector with one value per row orders branches by the mean value of their
@@ -191,17 +193,66 @@ left out of each pair of rows: sums over the remaining values are scaled
 up to all the columns (as <code>dist</code> scales them) and correlations use
 the values both rows have (as <code>cor(use =
 "pairwise.complete.obs")</code>; Spearman's ranks the values of each pair);
-rows that share no values can't be clustered. Single linkage is computed
-from a minimum spanning tree (Prim's algorithm, which needs no matrix of
-distances) and centroid and median linkage by <code>hclust</code>'s own
-algorithm, both giving the tree <code>hclust</code> gives. Complete, average,
-McQuitty and Ward linkage are computed by the nearest-neighbour chain
-algorithm, which builds the same tree as <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code>
+rows that share no values can't be clustered. Kendall's tau is computed
+by Knight's (1966) algorithm. Single linkage is computed from a minimum
+spanning tree (Prim's algorithm, Prim 1957, which needs no matrix of
+distances; Gower and Ross 1969) and centroid and median linkage by the
+generic algorithm of Mullner (2011), which merges the closest pair of
+clusters at every step, both giving the tree <code>hclust</code> gives when
+the distances are distinct. Complete, average, McQuitty and Ward linkage are
+computed by the nearest-neighbour chain algorithm (Murtagh 1983; Mullner
+2011), which builds the same tree as <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust</a></code>
 when the distances are distinct. When distances are tied (common for
 integer, binary or rounded data), more than one tree is correct and the
 two can choose differently between tied merges, so the tree - and the
 branches above the tied merges - can differ from the one <code>hclust</code>
-returns while being equally valid.</p>
+returns while being equally valid. Distances to merged clusters are
+updated by the formula of Lance and Williams (1967); Murtagh and
+Contreras (2012) give an overview of these algorithms.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A
+spectral algorithm for seriation and the consecutive ones problem.
+<em>SIAM Journal on Computing</em>, 28(1), 297-310.
+<a href="https://doi.org/10.1137/S0097539795285771" class="external-link">doi:10.1137/S0097539795285771</a></p>
+<p>Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast optimal
+leaf ordering for hierarchical clustering. <em>Bioinformatics</em>,
+17(suppl 1), S22-S29. <a href="https://doi.org/10.1093/bioinformatics/17.suppl_1.S22" class="external-link">doi:10.1093/bioinformatics/17.suppl_1.S22</a></p>
+<p>Croes, G. A. (1958). A method for solving traveling-salesman problems.
+<em>Operations Research</em>, 6(6), 791-812. <a href="https://doi.org/10.1287/opre.6.6.791" class="external-link">doi:10.1287/opre.6.6.791</a></p>
+<p>Gower, J. C. and Ross, G. J. S. (1969). Minimum spanning trees and single
+linkage cluster analysis. <em>Applied Statistics</em>, 18(1), 54-64.
+<a href="https://doi.org/10.2307/2346439" class="external-link">doi:10.2307/2346439</a></p>
+<p>Kaufman, L. and Rousseeuw, P. J. (1990). <em>Finding Groups in Data: An
+Introduction to Cluster Analysis</em>. Wiley. <a href="https://doi.org/10.1002/9780470316801" class="external-link">doi:10.1002/9780470316801</a></p>
+<p>Knight, W. R. (1966). A computer method for calculating Kendall's tau
+with ungrouped data. <em>Journal of the American Statistical
+Association</em>, 61(314), 436-439. <a href="https://doi.org/10.1080/01621459.1966.10480879" class="external-link">doi:10.1080/01621459.1966.10480879</a></p>
+<p>Lance, G. N. and Williams, W. T. (1967). A general theory of
+classificatory sorting strategies: 1. Hierarchical systems. <em>The
+Computer Journal</em>, 9(4), 373-380. <a href="https://doi.org/10.1093/comjnl/9.4.373" class="external-link">doi:10.1093/comjnl/9.4.373</a></p>
+<p>McInnes, L., Healy, J. and Melville, J. (2018). UMAP: uniform manifold
+approximation and projection for dimension reduction.
+<em>arXiv</em>:1802.03426. <a href="https://doi.org/10.48550/arXiv.1802.03426" class="external-link">doi:10.48550/arXiv.1802.03426</a></p>
+<p>Mullner, D. (2011). Modern hierarchical, agglomerative clustering
+algorithms. <em>arXiv</em>:1109.2378. <a href="https://doi.org/10.48550/arXiv.1109.2378" class="external-link">doi:10.48550/arXiv.1109.2378</a></p>
+<p>Murtagh, F. (1983). A survey of recent advances in hierarchical
+clustering algorithms. <em>The Computer Journal</em>, 26(4), 354-359.
+<a href="https://doi.org/10.1093/comjnl/26.4.354" class="external-link">doi:10.1093/comjnl/26.4.354</a></p>
+<p>Murtagh, F. and Contreras, P. (2012). Algorithms for hierarchical
+clustering: an overview. <em>WIREs Data Mining and Knowledge
+Discovery</em>, 2(1), 86-97. <a href="https://doi.org/10.1002/widm.53" class="external-link">doi:10.1002/widm.53</a></p>
+<p>Prim, R. C. (1957). Shortest connection networks and some
+generalizations. <em>Bell System Technical Journal</em>, 36(6), 1389-1401.
+<a href="https://doi.org/10.1002/j.1538-7305.1957.tb01515.x" class="external-link">doi:10.1002/j.1538-7305.1957.tb01515.x</a></p>
+<p>Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the
+interpretation and validation of cluster analysis. <em>Journal of
+Computational and Applied Mathematics</em>, 20, 53-65.
+<a href="https://doi.org/10.1016/0377-0427%2887%2990125-7" class="external-link">doi:10.1016/0377-0427(87)90125-7</a></p>
+<p>Shi, J. and Malik, J. (2000). Normalized cuts and image segmentation.
+<em>IEEE Transactions on Pattern Analysis and Machine Intelligence</em>,
+22(8), 888-905. <a href="https://doi.org/10.1109/34.868688" class="external-link">doi:10.1109/34.868688</a></p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>

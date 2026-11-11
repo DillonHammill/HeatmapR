@@ -288,14 +288,16 @@ gradually rather than falling into groups always come out in pieces. The
 spectral order (<code>"spectral"</code>) doesn’t need a dendrogram. It
 joins each row to its 6 nearest neighbours in a graph (by
 <code>dist_method</code>), with weights that fall with distance from the
-nearest neighbour, as UMAP weights its graph, and then:</p>
+nearest neighbour, as UMAP weights its graph (McInnes, Healy and
+Melville 2018), and then:</p>
 <ol style="list-style-type: decimal">
-<li>splits the graph recursively where it is thinnest, sorting each part
-by its Fiedler vector (the second eigenvector of its graph Laplacian),
-with the two halves of every split turned to meet where they are
+<li>splits the graph recursively where it is thinnest (Shi and Malik
+2000), sorting each part by its Fiedler vector (the second eigenvector
+of its graph Laplacian; Fiedler 1973, Atkins, Boman and Hendrickson
+1998), with the two halves of every split turned to meet where they are
 closest;</li>
 <li>reverses runs of up to 12 rows wherever that shortens the path (a
-windowed 2-opt).</li>
+windowed 2-opt, Croes 1958).</li>
 </ol>
 <p>Trajectories and gradients are laid out along their length, clusters
 one after another, and cycles around their loop, which no dendrogram can
@@ -367,6 +369,26 @@ outside a heatmap:</p>
 <code class="sourceCode R"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_clust.html">heat_map_clust</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">trajectory</span>, order <span class="op">=</span> <span class="st">"olo"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">tree</span><span class="op">$</span><span class="va">order</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 352 163   5 121 109 274</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A spectral
+algorithm for seriation and the consecutive ones problem. <em>SIAM
+Journal on Computing</em>, 28(1), 297-310. <a href="https://doi.org/10.1137/S0097539795285771" class="external-link">doi:10.1137/S0097539795285771</a></p>
+<p>Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast
+optimal leaf ordering for hierarchical clustering.
+<em>Bioinformatics</em>, 17(suppl 1), S22-S29. <a href="https://doi.org/10.1093/bioinformatics/17.suppl_1.S22" class="external-link">doi:10.1093/bioinformatics/17.suppl_1.S22</a></p>
+<p>Croes, G. A. (1958). A method for solving traveling-salesman
+problems. <em>Operations Research</em>, 6(6), 791-812. <a href="https://doi.org/10.1287/opre.6.6.791" class="external-link">doi:10.1287/opre.6.6.791</a></p>
+<p>Fiedler, M. (1973). Algebraic connectivity of graphs.
+<em>Czechoslovak Mathematical Journal</em>, 23(2), 298-305. <a href="https://doi.org/10.21136/CMJ.1973.101168" class="external-link">doi:10.21136/CMJ.1973.101168</a></p>
+<p>McInnes, L., Healy, J. and Melville, J. (2018). UMAP: uniform
+manifold approximation and projection for dimension reduction.
+<em>arXiv</em>:1802.03426. <a href="https://doi.org/10.48550/arXiv.1802.03426" class="external-link">doi:10.48550/arXiv.1802.03426</a></p>
+<p>Shi, J. and Malik, J. (2000). Normalized cuts and image segmentation.
+<em>IEEE Transactions on Pattern Analysis and Machine Intelligence</em>,
+22(8), 888-905. <a href="https://doi.org/10.1109/34.868688" class="external-link">doi:10.1109/34.868688</a></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -4,9 +4,10 @@
 group of cells (e.g. per cluster) and one column per feature: the colour
 of each dot is the mean of the feature in the group, scaled within each
 feature, and its area the proportion of the group's cells in which the
-feature is detected, as Seurat's `DotPlot()` and scanpy's `dotplot()`
-draw them. The means and proportions are found in one pass over the
-data, from the non-zero values of sparse data (see
+feature is detected, as Seurat's `DotPlot()` (Hao et al. 2024) and
+scanpy's `dotplot()` (Wolf et al. 2018) draw them. The means and
+proportions are found in one pass over the data, from the non-zero
+values of sparse data (see
 [`heat_map_summarise`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)).
 The plot is a heatmap of circles, so every option of
 [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
@@ -91,9 +92,9 @@ heat_map_dot(
 
   `TRUE` to outline, with a thick border, the dots of groups in which a
   feature looks like two populations among the cells it is detected in
-  (e.g. a cluster combining two smaller ones), from the dip of each
-  feature in each group; or the smallest dip to outline. Set to `FALSE`
-  by default. See
+  (e.g. a cluster combining two smaller ones), from the dip (Hartigan
+  and Hartigan 1985) of each feature in each group; or the smallest dip
+  to outline. Set to `FALSE` by default. See
   [`heat_map_summarise`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
   for how the dips are found and
   [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
@@ -113,6 +114,21 @@ an object of class `heat_map`, as returned by
 whose data are the scaled means. The means, the proportions detected and
 the cells in each group are returned by
 [`heat_map_summarise`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md).
+
+## References
+
+Hao, Y. et al. (2024). Dictionary learning for integrative, multimodal
+and scalable single-cell analysis. *Nature Biotechnology*, 42(2),
+293-304.
+[doi:10.1038/s41587-023-01767-y](https://doi.org/10.1038/s41587-023-01767-y)
+
+Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+*The Annals of Statistics*, 13(1), 70-84.
+[doi:10.1214/aos/1176346577](https://doi.org/10.1214/aos/1176346577)
+
+Wolf, F. A., Angerer, P. and Theis, F. J. (2018). SCANPY: large-scale
+single-cell gene expression data analysis. *Genome Biology*, 19, 15.
+[doi:10.1186/s13059-017-1382-0](https://doi.org/10.1186/s13059-017-1382-0)
 
 ## See also
 

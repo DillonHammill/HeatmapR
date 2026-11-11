@@ -4,16 +4,18 @@ they mark each group of cells (e.g. each cluster), for heatmaps and dot
 plots of the top markers of each group. Each feature is scored in each
 group by its AUC against all the other cells: the chance that a cell of
 the group has a larger value than a cell outside it, ties counting half
-(the Wilcoxon rank-sum statistic over the product of the numbers of cells,
-as presto's wilcoxauc() scores markers). 0.5 is no better than
-chance and 1 a perfect marker."><meta property="og:description" content="heat_map_markers() ranks the features of single-cell data by how well
+(the Wilcoxon rank-sum statistic, Wilcoxon 1945 and Mann and Whitney
+1947, over the product of the numbers of cells, as presto's
+wilcoxauc() scores markers; Korsunsky et al. 2019). 0.5 is no better
+than chance and 1 a perfect marker."><meta property="og:description" content="heat_map_markers() ranks the features of single-cell data by how well
 they mark each group of cells (e.g. each cluster), for heatmaps and dot
 plots of the top markers of each group. Each feature is scored in each
 group by its AUC against all the other cells: the chance that a cell of
 the group has a larger value than a cell outside it, ties counting half
-(the Wilcoxon rank-sum statistic over the product of the numbers of cells,
-as presto's wilcoxauc() scores markers). 0.5 is no better than
-chance and 1 a perfect marker."><meta property="og:image" content="https://dillonhammill.github.io/HeatmapR/logo.png"></head><body>
+(the Wilcoxon rank-sum statistic, Wilcoxon 1945 and Mann and Whitney
+1947, over the product of the numbers of cells, as presto's
+wilcoxauc() scores markers; Korsunsky et al. 2019). 0.5 is no better
+than chance and 1 a perfect marker."><meta property="og:image" content="https://dillonhammill.github.io/HeatmapR/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -67,9 +69,10 @@ they mark each group of cells (e.g. each cluster), for heatmaps and dot
 plots of the top markers of each group. Each feature is scored in each
 group by its AUC against all the other cells: the chance that a cell of
 the group has a larger value than a cell outside it, ties counting half
-(the Wilcoxon rank-sum statistic over the product of the numbers of cells,
-as presto's <code>wilcoxauc()</code> scores markers). 0.5 is no better than
-chance and 1 a perfect marker.</p>
+(the Wilcoxon rank-sum statistic, Wilcoxon 1945 and Mann and Whitney
+1947, over the product of the numbers of cells, as presto's
+<code>wilcoxauc()</code> scores markers; Korsunsky et al. 2019). 0.5 is no better
+than chance and 1 a perfect marker.</p>
     </div>
 
     <div class="section level2">
@@ -160,7 +163,7 @@ markers.</p>
 against the other cells (two-sided, from the normal approximation with
 corrections for ties and continuity, as <code>wilcox.test(exact = FALSE)</code>
 finds it), and the p-values of each group are adjusted for the false
-discovery rate by Benjamini and Hochberg's method over every feature
+discovery rate by Benjamini and Hochberg's (1995) method over every feature
 scored, not only those kept. With thousands of cells nearly every marker
 has a tiny p-value, so the AUC and the difference of the means are the
 better guides to how well a feature marks a group.</p>
@@ -168,6 +171,22 @@ better guides to how well a feature marks a group.</p>
 sparse data share one rank, so only the non-zero values are sorted; the
 features are shared between threads (see <code><a href="heat_map_threads.html">heat_map_threads</a></code>),
 and only features that pass the filters in some group are ranked.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
+    <p>Benjamini, Y. and Hochberg, Y. (1995). Controlling the false
+discovery rate: a practical and powerful approach to multiple testing.
+<em>Journal of the Royal Statistical Society: Series B</em>, 57(1), 289-300.
+<a href="https://doi.org/10.1111/j.2517-6161.1995.tb02031.x" class="external-link">doi:10.1111/j.2517-6161.1995.tb02031.x</a></p>
+<p>Korsunsky, I., Nathan, A., Millard, N. and Raychaudhuri, S. (2019).
+Presto scales Wilcoxon and auROC analyses to millions of observations.
+<em>bioRxiv</em>. <a href="https://doi.org/10.1101/653253" class="external-link">doi:10.1101/653253</a></p>
+<p>Mann, H. B. and Whitney, D. R. (1947). On a test of whether one of two
+random variables is stochastically larger than the other. <em>The
+Annals of Mathematical Statistics</em>, 18(1), 50-60.
+<a href="https://doi.org/10.1214/aoms/1177730491" class="external-link">doi:10.1214/aoms/1177730491</a></p>
+<p>Wilcoxon, F. (1945). Individual comparisons by ranking methods.
+<em>Biometrics Bulletin</em>, 1(6), 80-83. <a href="https://doi.org/10.2307/3001968" class="external-link">doi:10.2307/3001968</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -117,7 +117,7 @@ populations of different sizes.</p>
 <p><img src="large-data_files/figure-html/big-1.png" class="r-plt" alt="Heatmap of 100,000 simulated cells by 30 markers with dendrograms on both axes, drawn as a raster image; the cells fall into five blocks of different heights with distinct marker patterns." width="100%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">time</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="co">#&gt; [1] 1.475</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 1.234</span></span></code></pre></div>
 <p>Two things make this fast: the cells are drawn as an image, and the
 rows are clustered in two stages.</p>
 <div class="section level3">
@@ -145,8 +145,8 @@ cells (300,000 cells of the heatmap) to a PDF each way:</p>
 <span><span class="op">}</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>raster <span class="op">=</span> <span class="fu">save_pdf</span><span class="op">(</span><span class="cn">TRUE</span><span class="op">)</span>, rectangles <span class="op">=</span> <span class="fu">save_pdf</span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            megabytes seconds</span></span>
-<span><span class="co">#&gt; raster          0.67    0.10</span></span>
-<span><span class="co">#&gt; rectangles      1.94    1.01</span></span></code></pre></div>
+<span><span class="co">#&gt; raster          0.67    0.08</span></span>
+<span><span class="co">#&gt; rectangles      1.94    0.82</span></span></code></pre></div>
 <p>A dendrogram adds a line for every branch, so the PDF of the
 clustered 100,000-row heatmap above is larger than the image of its
 cells.</p>
@@ -209,12 +209,17 @@ perfectly (an adjusted Rand index of 1 is perfect agreement):</p>
 <p>A dendrogram of 100,000 rows is more than anyone can read. Often what
 you want is a handful of groups, and k-means finds them quickly:
 <code>tree_kmeans_y = 5</code> splits the rows into 5 clusters (the
-Hartigan-Wong algorithm of <code><a href="https://rdrr.io/r/stats/kmeans.html" class="external-link">stats::kmeans()</a></code>, in compiled
-code). The clusters start from equal slices of the rows along their
-first principal component, so they don’t depend on the random seed, and
-are ordered so that similar clusters are neighbours. They then act like
-groups supplied to <code>tree_cut_y</code>: separated by gaps, labelled,
-and with <code>tree_y = TRUE</code>, clustered within each cluster.</p>
+Hartigan-Wong algorithm of <code><a href="https://rdrr.io/r/stats/kmeans.html" class="external-link">stats::kmeans()</a></code>, Hartigan and
+Wong 1979, in compiled code). k-means runs from the centres of equal
+slices of the rows along their first principal component and from three
+k-means++ starts (Arthur and Vassilvitskii 2007), and keeps the clusters
+with the smallest within-cluster sum of squares; for more than 20,000
+rows the starts are compared on a sample of 20,000 and the best is
+fitted to every row. The starts use fixed seeds, so the clusters don’t
+depend on the random seed, and they are ordered so that similar clusters
+are neighbours. They then act like groups supplied to
+<code>tree_cut_y</code>: separated by gaps, labelled, and with
+<code>tree_y = TRUE</code>, clustered within each cluster.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">cells</span>,</span>
@@ -231,25 +236,25 @@ and with <code>tree_y = TRUE</code>, clustered within each cluster.</p>
 <span><span class="va">kmeans_table</span></span>
 <span><span class="co">#&gt;        population</span></span>
 <span><span class="co">#&gt; cluster     1     2     3     4     5</span></span>
-<span><span class="co">#&gt;       1 20060     0     0     0     0</span></span>
-<span><span class="co">#&gt;       2 20018     0     0     0     2</span></span>
-<span><span class="co">#&gt;       3     0     0 19917     0     0</span></span>
-<span><span class="co">#&gt;       4     0     0     0 10041  5024</span></span>
-<span><span class="co">#&gt;       5     0 24934     0     0     4</span></span></code></pre></div>
-<p>k-means favours clusters of similar size, so it doesn’t always find
-the populations: here it splits the largest population in two and puts
-populations 4 and 5, whose centres are close, together. Compare a few
-numbers of clusters, or cut a dendrogram instead (below), when the
-groups differ a lot in size.</p>
+<span><span class="co">#&gt;       1 40078     0     0     0     0</span></span>
+<span><span class="co">#&gt;       2     0     0 19917     0     0</span></span>
+<span><span class="co">#&gt;       3     0     0     0 10041     0</span></span>
+<span><span class="co">#&gt;       4     0     0     0     0  5030</span></span>
+<span><span class="co">#&gt;       5     0 24934     0     0     0</span></span></code></pre></div>
+<p>Here each cluster is one of the five populations. k-means favours
+clusters of similar size, though, so when the groups differ a lot in
+size it can still split a large one in two or merge small ones: compare
+a few numbers of clusters, or cut a dendrogram instead (below).</p>
 </div>
 <div class="section level2">
 <h2 id="choosing-the-number-of-clusters">Choosing the number of clusters<a class="anchor" aria-label="anchor" href="#choosing-the-number-of-clusters"></a>
 </h2>
 <p><code>tree_cut_y = "auto"</code> cuts the dendrogram into 2 to 20
-clusters and keeps the cut with the largest mean silhouette width,
-unless none reaches 0.25 (when the data have no substantial structure
-and the dendrogram isn’t cut). The silhouettes of all the cuts are
-computed together in compiled code, and dendrograms with more than
+clusters and keeps the cut with the largest mean silhouette width
+(Rousseeuw 1987), unless none reaches 0.25 (when the data have no
+substantial structure on the scale of Kaufman and Rousseeuw 1990 and the
+dendrogram isn’t cut). The silhouettes of all the cuts are computed
+together in compiled code, and dendrograms with more than
 <code>clust_max</code> leaves are scored on a sample of them.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tree</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_clust.html">heat_map_clust</a></span><span class="op">(</span><span class="va">cells</span>, cut <span class="op">=</span> <span class="st">"auto"</span><span class="op">)</span></span>
@@ -323,7 +328,7 @@ when heatmaps are drawn in parallel processes.</p>
 <span><span class="va">all</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="../reference/heat_map_clust.html">heat_map_clust</a></span><span class="op">(</span><span class="va">cells</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10000</span>, <span class="op">]</span>, max <span class="op">=</span> <span class="cn">Inf</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>threads_1 <span class="op">=</span> <span class="va">one</span>, threads_all <span class="op">=</span> <span class="va">all</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   threads_1 threads_all </span></span>
-<span><span class="co">#&gt;       1.520       0.959</span></span></code></pre></div>
+<span><span class="co">#&gt;       1.168       0.914</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="memory-and-redraws">Memory and redraws<a class="anchor" aria-label="anchor" href="#memory-and-redraws"></a>
@@ -337,7 +342,7 @@ k-means heatmap of them:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">cells</span><span class="op">)</span>, heatmap <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">object.size</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span><span class="op">)</span> <span class="op">/</span> <span class="fl">1e6</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    data heatmap </span></span>
-<span><span class="co">#&gt;    24.0    74.3</span></span></code></pre></div>
+<span><span class="co">#&gt;    24.0    72.5</span></span></code></pre></div>
 <p>Redrawing a heatmap (<code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code>,
 <code>heat_map_save(x = )</code> or <code><a href="../reference/heat_map_grob.html">heat_map_grob()</a></code>) reuses
 its dendrograms, k-means clusters and branch support when the data and
@@ -350,7 +355,7 @@ draws:</p>
 <span><span class="va">again</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hm</span>, title <span class="op">=</span> <span class="st">"Redrawn"</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>first <span class="op">=</span> <span class="va">first</span>, redraw <span class="op">=</span> <span class="va">again</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  first redraw </span></span>
-<span><span class="co">#&gt;  1.244  0.844</span></span></code></pre></div>
+<span><span class="co">#&gt;  1.049  0.635</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="summaries-of-groups">Summaries of groups<a class="anchor" aria-label="anchor" href="#summaries-of-groups"></a>
@@ -369,6 +374,20 @@ values so their distributions can be drawn inside the cells (see <a href="cells.
 <span>  title <span class="op">=</span> <span class="st">"Median of each population"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="large-data_files/figure-html/summary-1.png" class="r-plt" alt="Heatmap of the median of each of 30 markers in each of the five populations, scaled within each marker, with the populations and markers clustered by dendrograms." width="100%" style="display: block; margin: auto;"></p>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<p>Arthur, D. and Vassilvitskii, S. (2007). k-means++: the advantages of
+careful seeding. <em>Proceedings of the 18th Annual ACM-SIAM Symposium
+on Discrete Algorithms (SODA ’07)</em>, 1027-1035.</p>
+<p>Hartigan, J. A. and Wong, M. A. (1979). Algorithm AS 136: a k-means
+clustering algorithm. <em>Applied Statistics</em>, 28(1), 100-108. <a href="https://doi.org/10.2307/2346830" class="external-link">doi:10.2307/2346830</a></p>
+<p>Kaufman, L. and Rousseeuw, P. J. (1990). <em>Finding Groups in Data:
+An Introduction to Cluster Analysis</em>. Wiley. <a href="https://doi.org/10.1002/9780470316801" class="external-link">doi:10.1002/9780470316801</a></p>
+<p>Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the
+interpretation and validation of cluster analysis. <em>Journal of
+Computational and Applied Mathematics</em>, 20, 53-65. <a href="https://doi.org/10.1016/0377-0427(87)90125-7" class="external-link">doi:10.1016/0377-0427(87)90125-7</a></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
