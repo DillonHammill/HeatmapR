@@ -51,6 +51,24 @@ heat_map_save(file, x = hm, width = 6, height = 7)
 file.exists(file)
 ```
 
+## Styles
+
+`heat_map_style()` keeps settings of `heat_map()` - colour scales, text sizes, borders, legend options - to reuse across heatmaps, so the figures of a report or paper look alike without repeating a dozen arguments. A style given to `style` fills in the arguments that aren't given, and `options(HeatmapR.style = )` gives every heatmap of the session the style, including dot plots, correlation and aligned heatmaps. Styles build on styles, and redrawn heatmaps keep the style they were drawn with:
+
+```{r style, fig.width = 7, fig.height = 6, fig.alt = "The z-scored mtcars heatmap drawn with a style: a blue to red colour scale, white cell borders, smaller axis text and the legend below the heatmap."}
+paper <- heat_map_style(
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_center = 0,
+  cell_border_line_col = "white",
+  axis_text_size_x = 0.8,
+  axis_text_size_y = 0.8,
+  legend_side = "bottom"
+)
+paper
+heat_map(mtcars, scale = "zscore", tree = "both", style = paper,
+         title = "mtcars, styled")
+```
+
 ## Orders, clusters and colours
 
 `heat_map_info()` returns what the heatmap is made of: the data as displayed (after scaling), the order of the rows and columns, the cluster of each row and column, the dendrograms, the colour, size and shape of every cell, and the bounding box of every component in inches.

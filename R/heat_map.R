@@ -911,6 +911,11 @@
 #'   dips, the numbers of values they were found from and the cells outlined,
 #'   and \code{heat_map_describe()} names them. The distributions behind each
 #'   cell (\code{cell_values}) show what the dip has found.
+#' @param style a style from \code{\link{heat_map_style}}: settings used for
+#'   the arguments that aren't given, e.g. text sizes, colours and legend
+#'   options set once for every heatmap of a report. By default the style
+#'   set with \code{options(HeatmapR.style = )}, if any; \code{FALSE} for
+#'   none.
 #' @param ... additional arguments passed to \code{\link{heat_map_clust}} (and
 #'   on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other
 #'   arguments are ignored with a warning, which catches misspelled argument
@@ -1276,7 +1281,22 @@ heat_map <- function(x,
                      cofactor = 5,
                      scale_q = 0.01,
                      bimodal = FALSE,
+                     style = NULL,
                      ...) {
+
+  # A STYLE - ITS SETTINGS FOR THE ARGUMENTS NOT GIVEN (DRAWN AGAIN WITH THEM,
+  # SO THAT REDRAWS KEEP THEM)
+  if(!isFALSE(style)) {
+    settings <- .style_settings(style)
+    if(length(settings) > 0) {
+      given <- .capture_args(
+        environment(),
+        setdiff(names(formals(sys.function())), c("...", "style"))
+      )
+      settings <- settings[setdiff(names(settings), names(given))]
+      return(do.call(heat_map, c(given, settings, list(style = FALSE))))
+    }
+  }
 
   # ARGUMENTS ------------------------------------------------------------------
 
