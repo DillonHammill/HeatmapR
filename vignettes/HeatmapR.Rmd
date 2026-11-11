@@ -221,7 +221,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Heatmap of 25 randomly sampled rows of the iris data with each value written in its cell, the four measurements coloured on a yellow to black scale, the Species column coloured by species with a legend of the species, and the missing values shown as empty grey cells."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-2.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/a476410d3cb8d1d7bbb9e527c91adcb60b70bd8a/vignettes/HeatmapR/HeatmapR-2.png')
 ```
 
 #### 2.3.1 Uncertainty in Colour
@@ -1473,7 +1473,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '85%', fig.align="center", fig.alt = "The column-scaled mtcars heatmap, titled Branch Colours, with a row dendrogram cut into 5 groups of cars: the branches of each group drawn in its own colour, matching the coloured label bar beside its rows, and the branches joining the groups in black."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/PENDING/vignettes/HeatmapR/HeatmapR-branch-colours.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/a476410d3cb8d1d7bbb9e527c91adcb60b70bd8a/vignettes/HeatmapR/HeatmapR-branch-colours.png')
 ```
 
 #### 5.2.1 Choosing the Number of Clusters
