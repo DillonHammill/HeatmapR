@@ -63,7 +63,9 @@ dips are found and \code{\link{heat_map}} for when a dot is outlined.}
 
 \item{...}{other arguments passed to \code{\link{heat_map}}, e.g.
 \code{cell_col_scale}, \code{tree_y} or \code{popup}. They replace the
-settings of the dot plot of the same name.}
+settings of the dot plot of the same name. \code{bar_values_y = "n"}
+(\code{bar_values_x} with \code{swap_axes = TRUE}) draws the number of
+cells in each group as bars.}
 }
 \value{
 an object of class \code{heat_map}, as returned by

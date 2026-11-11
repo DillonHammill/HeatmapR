@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "dip.h"
+#include "alloc.h"
 #include "parallel.h"
 
 namespace {
@@ -52,8 +53,16 @@ struct Csc {
     for (int j = 0; j < ncol; ++j) {
       if (p[j + 1] < p[j]) cpp11::stop("not a compressed sparse column matrix");
     }
-    for (R_xlen_t k = 0; k < nnz; ++k) {
-      if (i[k] < 0 || i[k] >= nrow) cpp11::stop("row index out of range");
+    // (ROWS IN RANGE AND INCREASING WITHIN EACH COLUMN, AS A VALID dgCMatrix
+    // HOLDS THEM: THE SEARCHES BELOW STOP AT THE FIRST ROW PAST THEIR RANGE)
+    for (int j = 0; j < ncol; ++j) {
+      int prev = -1;
+      for (int k = p[j]; k < p[j + 1]; ++k) {
+        int r = i[k];
+        if (r < 0 || r >= nrow) cpp11::stop("row index out of range");
+        if (r <= prev) cpp11::stop("row indices must increase within each column");
+        prev = r;
+      }
     }
   }
 };
@@ -216,7 +225,7 @@ cpp11::doubles_matrix<> sparse_dense_cpp(cpp11::integers i, cpp11::integers p, c
     if (c == NA_INTEGER || c < 1 || c > ncells) cpp11::stop("cell out of range");
     cell[r] = c - 1;
   }
-  cpp11::writable::doubles_matrix<> out(static_cast<int>(nc), nf);
+  cpp11::writable::doubles_matrix<> out = alloc::doubles(nc, nf);
   double* o = REAL(out.data());
   std::fill(o, o + static_cast<size_t>(nc) * nf, 0.0);
   double work = static_cast<double>(nc) * nf + static_cast<double>(m.nnz);

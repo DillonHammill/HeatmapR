@@ -12,6 +12,7 @@
 
 #include "distance.h"
 #include "metric.h"
+#include "alloc.h"
 #include "parallel.h"
 
 namespace metric {
@@ -968,7 +969,7 @@ cpp11::doubles_matrix<> dist_cross_cpp(cpp11::doubles_matrix<> x,
                                       nullptr, 0, code, q, true, threads);
   metric::Data db = metric::make_data(REAL(x.data()), n, x.ncol(), INTEGER(b), nb,
                                       nullptr, 0, code, q, true, threads);
-  cpp11::writable::doubles_matrix<> out(na, nb);
+  cpp11::writable::doubles_matrix<> out = alloc::doubles(na, nb);
   double* ov = REAL(out.data());
   double work = static_cast<double>(na) * nb * std::max(1, da.p);
   par::parallel_for(static_cast<size_t>(nb), work < 1048576.0 ? 1 : threads, [&](size_t j) {
@@ -987,7 +988,7 @@ cpp11::doubles_matrix<> unit_rows_cpp(cpp11::doubles_matrix<> x, int code, int t
   int n = x.nrow(), p = x.ncol();
   metric::Data d = metric::make_data(REAL(x.data()), n, p, nullptr, n, nullptr, 0,
                                      code, 2, false, threads);
-  cpp11::writable::doubles_matrix<> out(n, p);
+  cpp11::writable::doubles_matrix<> out = alloc::doubles(n, p);
   double* ov = REAL(out.data());
   for (int i = 0; i < n; ++i) {
     const double* r = d.row(i);

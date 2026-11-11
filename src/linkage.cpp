@@ -1090,8 +1090,8 @@ cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members,
       cpp11::stop("hclust_cpp() needs finite distances");
     }
   }
-  if (!Rf_isNull(members) && Rf_xlength(members) != n) {
-    cpp11::stop("hclust_cpp() needs one member count per leaf");
+  if (!Rf_isNull(members) && (TYPEOF(members) != REALSXP || Rf_xlength(members) != n)) {
+    cpp11::stop("hclust_cpp() needs one member count (a double) per leaf");
   }
   const double* m = Rf_isNull(members) ? nullptr : REAL(members);
   Tree tree = cluster_dist(dv, n, method, m, threads);

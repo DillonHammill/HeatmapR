@@ -17,7 +17,7 @@ heat_map_scale(x, scale = "column", method = "range", cofactor = 5, q = 0.01)
 \item{method}{type of scaling to perform, one of \code{"range"},
 \code{"mean"}, \code{"zscore"}, \code{"quantile"} or \code{"asinh"}
 (unique abbreviations such as \code{"z"} are accepted). Range scaling
-normalizes the data to have limits between 0 and 1. Mean scaling
+normalises the data to have limits between 0 and 1. Mean scaling
 subtracts the mean (calculated excluding missing values) from each value
 and divides the result by the range. Z-score scaling subtracts the mean
 from each value and then divides the result by the standard deviation.

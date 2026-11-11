@@ -557,11 +557,25 @@ heat_map_bar <- function(x,
         call. = FALSE
       )
     }
+    if(!any(found) && length(values) == n) {
+      warning(
+        "The names of '", arg, "' match no ", what, " names of 'x', so its ",
+        "values are taken in order.",
+        call. = FALSE
+      )
+    }
   }
   if(!is.list(values) && length(values) != n &&
      (is.null(names(values)) || is.null(labels))) {
     stop(
       "'", arg, "' must have one value for each ", what, " of 'x' (", n, ").",
+      call. = FALSE
+    )
+  }
+  if(!is.list(values) && !is.numeric(values) && !is.logical(values)) {
+    stop(
+      "'", arg, "' must hold numbers (or \"n\" for the number of cells in ",
+      "each group of a summary).",
       call. = FALSE
     )
   }

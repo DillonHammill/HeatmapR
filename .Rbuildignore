@@ -21,3 +21,4 @@ man/figures/HeatmapR/
 ^data-raw$
 ^vignettes/articles$
 ^LICENSE\.md$
+^tests/testthat/Rplots.*\.pdf$

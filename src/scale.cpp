@@ -9,6 +9,7 @@
 #include <cmath>
 #include <vector>
 
+#include "alloc.h"
 #include "parallel.h"
 
 namespace {
@@ -32,6 +33,10 @@ inline double product(double a, double b) {
 // next as the smallest of those after it.
 double quantile7(std::vector<double>& fin, double p) {
   const size_t n = fin.size();
+  // (A PROBABILITY: OUTSIDE [0, 1] OR NaN IS CLAMPED, SO THE POSITION BELOW
+  // STAYS AMONG THE VALUES)
+  if (!(p >= 0)) p = 0;
+  if (p > 1) p = 1;
   // THE POSITION AMONG THE VALUES IN ORDER (1-BASED)
   double h = 1 + product(static_cast<double>(n) - 1, p);
   double j = std::floor(h);
@@ -161,7 +166,7 @@ cpp11::doubles_matrix<> scale_cpp(cpp11::doubles_matrix<> x, int margin, int met
   const size_t n = x.nrow();
   const size_t p = x.ncol();
   const double* xv = REAL(x.data());
-  cpp11::writable::doubles_matrix<> out(static_cast<int>(n), static_cast<int>(p));
+  cpp11::writable::doubles_matrix<> out = alloc::doubles(static_cast<R_xlen_t>(n), static_cast<R_xlen_t>(p));
   double* ov = REAL(out.data());
   std::copy(xv, xv + n * p, ov);
   double work = static_cast<double>(n) * p;

@@ -300,7 +300,7 @@ test_that("heat_map_dot() draws scaled means as colour and detection as area", {
   detected <- plain(heat_map_summarise(cells, features = feats,
                                        group_by = "cluster", fun = "detected"))
   z <- suppressMessages(heat_map_scale(means, "column", "zscore"))
-  expect_identical(args$x, pmin(pmax(z, -2.5), 2.5))
+  expect_identical(plain(args$x), pmin(pmax(z, -2.5), 2.5))
   expect_identical(args$cell_size, detected)
   expect_identical(args$cell_shape, "circle")
   expect_identical(args$cell_size_scale_method, "area")
@@ -312,13 +312,13 @@ test_that("heat_map_dot() draws scaled means as colour and detection as area", {
   hm <- heat_map_dot(cells, features = feats, group_by = "cluster", scale = "range",
                      popup = FALSE)
   expect_identical(
-    attr(hm, "heat_map_args")$x,
+    plain(attr(hm, "heat_map_args")$x),
     suppressMessages(heat_map_scale(means, "column", "range"))
   )
   expect_null(attr(hm, "heat_map_args")$cell_col_scale_center)
   hm <- heat_map_dot(cells, features = feats, group_by = "cluster", scale = FALSE,
                      scale_limits = c(0, 1), popup = FALSE)
-  expect_identical(attr(hm, "heat_map_args")$x, pmin(pmax(means, 0), 1))
+  expect_identical(plain(attr(hm, "heat_map_args")$x), pmin(pmax(means, 0), 1))
   # Dots below dot_min are left out
   hm <- heat_map_dot(cells, features = feats, group_by = "cluster", dot_min = 0.3,
                      popup = FALSE)
@@ -335,6 +335,23 @@ test_that("heat_map_dot() draws scaled means as colour and detection as area", {
   expect_null(args$tree_cut_x)
   expect_identical(args$cell_col_scale, "Purples 3")
   expect_identical(args$title, "Markers")
+})
+
+test_that("heat_map_dot() can draw the number of cells in each group as bars", {
+  cells <- marker_cells()
+  feats <- c("CD3E", "MS4A1", "NKG7")
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  n <- attr(heat_map_summarise(cells, features = feats, group_by = "cluster"), "n")
+  hm <- heat_map_dot(cells, features = feats, group_by = "cluster",
+                     bar_values_y = "n", popup = FALSE)
+  expect_identical(attr(attr(hm, "heat_map_args")$x, "n"), n)
+  expect_true("Cells" %in% drawn_text(hm))
+  # Groups along the x axis
+  hm <- heat_map_dot(cells, features = feats, group_by = "cluster",
+                     bar_values_x = "n", swap_axes = TRUE, popup = FALSE)
+  expect_identical(attr(attr(hm, "heat_map_args")$x, "n"), n)
+  expect_true("Cells" %in% drawn_text(hm))
 })
 
 test_that("heat_map_dot() checks its arguments", {

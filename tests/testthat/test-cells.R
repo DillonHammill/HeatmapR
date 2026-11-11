@@ -49,7 +49,11 @@ test_that("cell_size_scale_range is validated", {
   m <- test_matrix(2, 3)
   expect_error(
     draw(m, cell_size = TRUE, cell_size_scale_range = c(-1, 1)),
-    "two non-negative numbers"
+    "two proportions of the cell width"
+  )
+  expect_error(
+    draw(m, cell_size = TRUE, cell_size_scale_range = c(0, 2)),
+    "two proportions of the cell width"
   )
 })
 

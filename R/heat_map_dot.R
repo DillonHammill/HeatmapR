@@ -48,7 +48,9 @@
 #'   dips are found and \code{\link{heat_map}} for when a dot is outlined.
 #' @param ... other arguments passed to \code{\link{heat_map}}, e.g.
 #'   \code{cell_col_scale}, \code{tree_y} or \code{popup}. They replace the
-#'   settings of the dot plot of the same name.
+#'   settings of the dot plot of the same name. \code{bar_values_y = "n"}
+#'   (\code{bar_values_x} with \code{swap_axes = TRUE}) draws the number of
+#'   cells in each group as bars.
 #'
 #' @return an object of class \code{heat_map}, as returned by
 #'   \code{\link{heat_map}}, whose data are the scaled means. The means, the
@@ -197,6 +199,10 @@ heat_map_dot <- function(x,
     args$tree_cut_x <- droplevels(feat$groups)
     args$tree_label_x <- TRUE
   }
+  # THE NUMBER OF CELLS IN EACH GROUP, FOR bar_values_y = "n"
+  group_n <- tabulate(s$codes, length(s$labels))
+  names(group_n) <- s$labels
+  attr(args$x, "n") <- group_n
   if(!is.null(dips)) {
     attr(args$x, "dip") <- dips$dip
     attr(args$x, "dip_n") <- dips$n
@@ -208,6 +214,9 @@ heat_map_dot <- function(x,
     for(nm in c("x", "cell_size", "cell_shape")) {
       if(is.matrix(args[[nm]])) {
         args[[nm]] <- t(args[[nm]])
+        if(nm == "x") {
+          attr(args$x, "n") <- group_n
+        }
         # (THE DIPS STAY GROUPS BY FEATURES - heat_map() LINES THEM UP)
         if(nm == "x" && !is.null(dips)) {
           attr(args$x, "dip") <- dips$dip

@@ -21,7 +21,7 @@ stable](https://img.shields.io/badge/lifecycle-stable-brightgreen.svg)](https://
 
 **HeatmapR** is a lightweight R package that makes it easy to generate
 high quality, complex heatmaps with minimal data preprocessing or manual
-customization. Visit the **HeatmapR** website to get started
+customisation. Visit the **HeatmapR** website to get started
 <https://dillonhammill.github.io/HeatmapR/>.
 
 ## Overview
@@ -29,13 +29,13 @@ customization. Visit the **HeatmapR** website to get started
 As the dimensionality of datasets continues to increase there is a need
 for visualisation tools such as heatmaps to present data in an easily
 interpretable way. The construction of complex heatmaps poses a number
-of challenges as they are composed multiple graphical elements, such as
-a coloured matrix, dendrograms, cluster sub-divisions, axes, titles and
-legends. The first base graphics implementation of heatmaps included
+of challenges as they are composed of multiple graphical elements, such
+as a coloured matrix, dendrograms, cluster sub-divisions, axes, titles
+and legends. The first base graphics implementation of heatmaps included
 `heatmap()` in the `stats` package and `heatmap.2()` in the
-[gplots](https://CRAN.R-project.org/package=gplots). The packages
-attempt to solve these graphical challenges by treating each graphical
-component as a separate plot element and arranging them using
+[gplots](https://CRAN.R-project.org/package=gplots) package. The
+packages attempt to solve these graphical challenges by treating each
+graphical component as a separate plot element and arranging them using
 `layout()`. This approach can generate complex heatmaps but it rendered
 users unable to arrange the heatmap with additional plot elements.
 **HeatmapR** aims to address these layout issues using solely a base
@@ -49,14 +49,14 @@ graphics approach.
   familiarity with `ggplot2` or `plotly`.
 - **HeatmapR** is extremely lightweight and therefore there are no
   external dependencies that need to be installed.
-- **HeatmapR** is designed under ROpenSci naming guidelines for a
+- **HeatmapR** is designed under rOpenSci naming guidelines for a
   consistent and intuitive user experience.
 - Unlike other heatmap packages that use base graphics, **HeatmapR**
   actually returns the plot object instead of an image. This makes it
   easy to arrange multiple plots in complex layouts without sacrificing
   resolution, and `heat_map_info()` returns the row/column order and
   cluster assignments for use in downstream analyses.
-- **HeatmapR** is fully customizable and comes with useful saving API
+- **HeatmapR** is fully customisable and comes with a saving API
   (`heat_map_save()`) to export high resolution images.
 - **HeatmapR** handles datasets that contain non-numeric or missing
   data, which means you don’t have to spend ages formatting and
@@ -77,7 +77,7 @@ graphics approach.
   in inches from their contents, so they look the same whatever the
   shape of the data.
 - **HeatmapR** generates publication ready images with minimal manual
-  customization, making it ideal for users that have limited coding
+  customisation, making it ideal for users that have limited coding
   experience.
 
 ## Features

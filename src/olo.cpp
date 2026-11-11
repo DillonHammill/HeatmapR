@@ -18,6 +18,23 @@
 cpp11::integers olo_order_cpp(cpp11::integers merge, cpp11::doubles d, bool full,
                               int threads) {
   int k = Rf_nrows(merge);
+  // (A TREE: EVERY LEAF AND EVERY EARLIER MERGE JOINED EXACTLY ONCE)
+  if (k < 1 || Rf_ncols(merge) != 2) cpp11::stop("'merge' must have two columns");
+  {
+    const int* mm = INTEGER(merge);
+    std::vector<unsigned char> leaf(static_cast<size_t>(k) + 2, 0), node(static_cast<size_t>(k) + 1, 0);
+    for (int z = 0; z < k; ++z) {
+      for (int j = 0; j < 2; ++j) {
+        int v = mm[z + j * k];
+        if (v == NA_INTEGER || v == 0 || v < -(k + 1) || v > z) {
+          cpp11::stop("'merge' is not the merge matrix of a tree");
+        }
+        unsigned char& used = v < 0 ? leaf[-v] : node[v];
+        if (used) cpp11::stop("'merge' is not the merge matrix of a tree");
+        used = 1;
+      }
+    }
+  }
   int n = k + 1;
   size_t need = full ? static_cast<size_t>(n) * n : static_cast<size_t>(n) * (n - 1) / 2;
   if (static_cast<size_t>(d.size()) != need) {

@@ -16,7 +16,7 @@ heat_map_data(x, what = c("cells", "rows", "columns", "tree_x", "tree_y"))
 \value{
 a data.frame:
 \itemize{
-\item{\code{"cells"}: one row per cell, from the top left of the heatmap
+\item \code{"cells"}: one row per cell, from the top left of the heatmap
 along each row, with the \code{row} and \code{column} names, their
 \code{row_index} and \code{col_index} in the original data,
 \code{display_row}, \code{display_col}, \code{x} and \code{y}, the
@@ -25,18 +25,18 @@ non-numeric columns, the fill \code{colour}, relative \code{size} and
 \code{shape} (see \code{cell_shape} in \code{\link{heat_map}}),
 \code{split_value} and \code{split_colour} for split cells
 (\code{cell_split}), and the \code{row_cluster} and \code{col_cluster}
-when rows or columns are split into clusters.}
-\item{\code{"rows"}, \code{"columns"}: one row per row (from the top) or
+when rows or columns are split into clusters.
+\item \code{"rows"}, \code{"columns"}: one row per row (from the top) or
 column (from the left), with its name, index in the original data,
 display position, centre (\code{y} or \code{x}), axis text
 (\code{label}), \code{cluster} when there are clusters, and the values
-of any annotations (\code{annotation_y} or \code{annotation_x}).}
-\item{\code{"tree_x"}, \code{"tree_y"}: one row per dendrogram segment,
+of any annotations (\code{annotation_y} or \code{annotation_x}).
+\item \code{"tree_x"}, \code{"tree_y"}: one row per dendrogram segment,
 from (\code{x}, \code{y}) to (\code{xend}, \code{yend}). Along the
 heatmap the segments are in plot co-ordinates; across it they are the
 branch heights, from 0 at the leaves. Branch support is added as
 \code{support} (see \code{tree_support_x}). \code{NULL} when the heatmap
-has no such dendrogram.}
+has no such dendrogram.
 }
 }
 \description{

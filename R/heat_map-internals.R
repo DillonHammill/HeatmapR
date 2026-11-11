@@ -1933,7 +1933,16 @@ print.heat_map <- function(x, ...) {
       if(length(missing) > 5) ", ...", ".",
       call. = FALSE
     )
-  } else if(nrow(annotation) != n) {
+  } else if(nrow(annotation) == n) {
+    if(named && !is.null(labels)) {
+      warning(
+        "The row names of '", arg, "' match no ",
+        if(arg == "annotation_x") "columns" else "rows", " of 'x', so its ",
+        "rows are taken in order.",
+        call. = FALSE
+      )
+    }
+  } else {
     stop(
       paste0(
         "'", arg, "' must have one row per ",
@@ -2340,22 +2349,31 @@ print.heat_map <- function(x, ...) {
           ky <- max(1, min(ky - 1, floor(max_px / (n * kx))))
         }
       }
-      # THE BLOCK'S ROWS AND COLUMNS ARE RUNS (ry INCREASING)
-      block <- structure(
-        raster_block_cpp(img, n_img, ry[1], ry[length(ry)], rx[1], rx[length(rx)],
-                         ky, kx),
-        dim = c(length(ry) * ky, length(rx) * kx),
-        class = "nativeRaster",
-        channels = 4L
-      )
-      rasterImage(
-        block,
-        xleft = min(xs[rx]) - 0.5,
-        ybottom = min(ys[ry]) - 0.5,
-        xright = max(xs[rx]) + 0.5,
-        ytop = max(ys[ry]) + 0.5,
-        interpolate = FALSE
-      )
+      # THE BLOCK'S ROWS AND COLUMNS ARE RUNS (ry INCREASING), DRAWN IN
+      # PIECES OF AT MOST 32,000 PIXELS EACH WAY: CAIRO DEVICES (png(), svg()
+      # ON LINUX) DRAW NOTHING FOR AN IMAGE OF 32,767 OR MORE, AND NOTHING
+      # AFTER IT ON THE PAGE
+      pieces_y <- split(ry, ceiling(seq_along(ry) / max(1, floor(32000 / ky))))
+      pieces_x <- split(rx, ceiling(seq_along(rx) / max(1, floor(32000 / kx))))
+      for(px in pieces_x) {
+        for(py in pieces_y) {
+          block <- structure(
+            raster_block_cpp(img, n_img, py[1], py[length(py)], px[1],
+                             px[length(px)], ky, kx),
+            dim = c(length(py) * ky, length(px) * kx),
+            class = "nativeRaster",
+            channels = 4L
+          )
+          rasterImage(
+            block,
+            xleft = min(xs[px]) - 0.5,
+            ybottom = min(ys[py]) - 0.5,
+            xright = max(xs[px]) + 0.5,
+            ytop = max(ys[py]) + 0.5,
+            interpolate = FALSE
+          )
+        }
+      }
     }
   }
 
