@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 |---|---|
 | `features` | the genes, proteins or markers to show, by name (or a named list of groups of them) |
 | `assay` | which values: an assay of a `SingleCellExperiment`, an assay or layer of a `Seurat` object |
-| `group_by` | a metadata column (or vector) grouping the cells, e.g. clusters or cell types |
+| `group_by` | a metadata column (or vector) grouping the cells, e.g. clusters or cell types; several columns for their combinations, e.g. cell type and condition |
 | `group_max` | the most cells to show from each group, so small groups stay visible |
 | `annotation_by` | metadata columns drawn as annotation tracks |
 
@@ -176,6 +176,24 @@ Every `heat_map()` setting can be added, e.g. a dendrogram of the groups and sca
 ```{r dot-range, fig.width = 8, fig.height = 4.5, fig.alt = "Dot plot of the same markers with the means scaled from 0 to 1 within each gene and a dendrogram of the cell types on the left, which places related types such as CD4 and CD8 T cells next to each other."}
 heat_map_dot(sce, features = m, group_by = "cell_type", scale = "range",
              tree_y = TRUE, dot_min = 0.05, title = "Scaled 0 to 1")
+```
+
+### Groups within groups
+
+Several columns in `group_by` group the cells by their combinations, ordered by the first column and then the next within it. A dot plot then has one row per combination, grouped by the first column in labelled strips and labelled by the others, so conditions can be compared within each cell type:
+
+```{r dot-condition, fig.width = 8, fig.height = 6.5, fig.alt = "Dot plot of the three top markers of each cell type with two rows per cell type, control and treated, grouped in labelled strips by cell type. The markers of each type are large dark red dots in both of its rows."}
+heat_map_dot(sce, features = m, group_by = c("cell_type", "condition"),
+             title = "Markers in each condition")
+```
+
+`heat_map()` splits and labels the cells of each combination (`group_max` then takes that many cells from each), and `heat_map_summarise()` gives one row per combination, e.g. a pseudobulk of the counts of each cell type in each donor:
+
+```{r pseudobulk}
+pseudobulk <- heat_map_summarise(sce, features = unlist(markers), assay = "counts",
+                                 group_by = c("cell_type", "sample"), fun = "sum")
+dim(pseudobulk)
+head(rownames(pseudobulk))
 ```
 
 ## Cytometry

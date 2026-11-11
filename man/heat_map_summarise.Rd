@@ -69,7 +69,8 @@ default for every feature.}
 \item{group_by}{the group of each cell of single-cell data: the name of a
 column of the cells' metadata, or a vector with the group of each cell
 (as \code{group_y}); see \code{\link{heat_map}}. Each group becomes
-one row of the result. Several column names group the cells by their
+one row of the result. Several column names (or a data.frame or list of
+several variables, with one value per cell) group the cells by their
 combinations, e.g. \code{c("cluster", "sample")} for the medians of each
 cluster in each sample, in rows named \code{"cluster / sample"} and
 ordered by cluster, then sample.}

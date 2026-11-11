@@ -521,8 +521,9 @@
 #' @param bar_line_col_alpha_y numeric ranging from 0 to 1 to control the
 #'   transparency of bar borders in y axis bar plot, set to 1 by default.
 #' @param axis_text_x vector of text to use for x axis labels supplied in the
-#'   order matching the constructed heatmap (from left to right), set to NULL
-#'   by default to use the
+#'   order matching the constructed heatmap (from left to right), or named by
+#'   the column names of \code{x} to label each column by name wherever it is
+#'   drawn, set to NULL by default to use the
 #'   column names of \code{x}. Missing values (\code{NA}) are drawn as empty
 #'   labels without a tick mark, so \code{NA} removes the x axis text. An \code{expression} can be supplied for mathematical
 #'   annotation (see \code{?plotmath}).
@@ -564,7 +565,8 @@
 #' @param axis_ticks_length_x numeric to control the length of the x axis ticks,
 #'   set to 1 by default.
 #' @param axis_text_y vector of text to use for y axis labels supplied in the
-#'   order matching the constructed heatmap (from top to bottom), set to NULL
+#'   order matching the constructed heatmap (from top to bottom), or named by
+#'   the row names of \code{x} to label each row by name, set to NULL
 #'   by default to use the row names of \code{x}, or the row indices when
 #'   \code{x} has no row names. Missing values (\code{NA}) are drawn as empty
 #'   labels without a tick mark, so \code{NA} removes the y axis text. An
@@ -801,8 +803,13 @@
 #'   \code{flowFrame} (left out of the features), or a vector with the group
 #'   of each cell. The cells are grouped as by \code{tree_cut_y}, in the order
 #'   of the groups' factor levels (sorted for other vectors), and the groups
-#'   are labelled (\code{tree_label_y}). Cells without a group (\code{NA})
-#'   are left out with a message.
+#'   are labelled (\code{tree_label_y}). Several column names (or a
+#'   data.frame or list of several variables, with one value per cell) group
+#'   the cells by their combinations, e.g. \code{c("cell_type",
+#'   "condition")} for each cell type in each condition: ordered by the first
+#'   variable, then the next within it, labelled \code{"CD4 T / control"},
+#'   and without empty combinations. Cells without a group (\code{NA}, or a
+#'   missing value of any of the variables) are left out with a message.
 #' @param group_max the largest number of cells to show from each group of
 #'   \code{group_by} (or in all when there are no groups), drawn with a fixed
 #'   seed by \code{\link{heat_map_downsample}}, so that small groups stay
@@ -2624,6 +2631,20 @@ heat_map <- function(x,
 
   # HEATMAP YLIM
   heatmap_ylim <- c(min(y_centers) - 0.5, max(y_centers) + 0.5)
+
+  # AXIS TEXT NAMED BY THE COLUMNS (ROWS) OF x IS MATCHED BY NAME, SO THAT IT
+  # FOLLOWS THEM WHEREVER CLUSTERING PUTS THEM
+  by_name <- function(text, names_x, shown) {
+    if(is.null(text) || is.expression(text) || is.null(names(text)) ||
+       is.null(names_x) || anyDuplicated(names(text)) ||
+       !all(names_x %in% names(text))) {
+      return(text)
+    }
+    unname(text[names_x[shown]])
+  }
+  axis_text_x <- by_name(axis_text_x, colnames(x), col_ind)
+  # (FROM THE TOP, AS AXIS TEXT IS GIVEN)
+  axis_text_y <- by_name(axis_text_y, rownames(x), rev(row_ind))
 
   # Y AXIS TEXT AND ITS SETTINGS ARE GIVEN FROM THE TOP - DRAWN FROM THE BOTTOM
   flip_rows <- function(v) {

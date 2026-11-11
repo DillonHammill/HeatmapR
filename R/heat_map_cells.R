@@ -545,6 +545,80 @@ heat_map_downsample <- function(groups,
   }
 }
 
+#' Groups of the cells from one or several variables
+#'
+#' \code{group_by} names one column of the cells' metadata or gives the group
+#' of each cell, or names several columns (fewer names than cells) or gives a
+#' data.frame (or list) of several variables with one value per cell. Several
+#' variables group the cells by their combinations, ordered by the first
+#' variable, then the second within it, and so on (\code{interaction()} with
+#' \code{lex.order = TRUE}), named \code{"a / b"} and without empty
+#' combinations; a cell missing any of them has no group.
+#'
+#' @return \code{NULL}, or a list with \code{values} (the group of each
+#'   cell), \code{parts} (a data.frame of the variables when there are
+#'   several, else \code{NULL}) and \code{cols} (the columns of the values
+#'   used as metadata).
+#'
+#' @noRd
+.cell_groups <- function(by,
+                         src,
+                         arg = "group_by") {
+  if(is.null(by)) {
+    return(NULL)
+  }
+  # A LIST OF VARIABLES, ONE VALUE PER CELL
+  if(is.list(by) && !is.data.frame(by)) {
+    if(length(by) == 0 ||
+       !all(vapply(by, function(v) is.atomic(v) && length(v) == src$n, NA))) {
+      stop(
+        "A list given to '", arg, "' must hold variables with one value for ",
+        "each of the ", src$n, " cells of 'x'.",
+        call. = FALSE
+      )
+    }
+    if(is.null(names(by))) {
+      names(by) <- paste0(arg, seq_along(by))
+    }
+    by <- as.data.frame(by, stringsAsFactors = FALSE, optional = TRUE)
+  }
+  several <- !is.null(dim(by)) ||
+    (is.character(by) && length(by) > 1 && length(by) < src$n)
+  out <- .cell_by(by, src, arg, multiple = several)
+  if(several) {
+    if(ncol(out$values) == 1) {
+      out$values <- out$values[[1]]
+    } else {
+      out$parts <- out$values
+      out$values <- .combine_groups(out$parts)
+    }
+  }
+  out
+}
+
+#' The combinations of several grouping variables as one factor: levels
+#' "a / b", ordered by the first variable, then the next, without empty
+#' combinations; NA where any variable is missing
+#' @noRd
+.combine_groups <- function(parts) {
+  f <- lapply(parts, function(v) if(is.factor(v)) v else factor(v))
+  interaction(f, sep = " / ", lex.order = TRUE, drop = TRUE)
+}
+
+#' The value of each grouping variable for each group (one row per level of
+#' the combined groups, from its first cell)
+#' @noRd
+.group_parts <- function(groups,
+                         parts,
+                         labels) {
+  first <- match(labels, as.character(groups))
+  out <- lapply(parts, function(v) v[first])
+  out <- as.data.frame(out, stringsAsFactors = FALSE, optional = TRUE)
+  names(out) <- names(parts)
+  rownames(out) <- labels
+  out
+}
+
 #' Groups or annotations of the cells, by metadata column name or per cell
 #'
 #' @return \code{NULL}, or a list with \code{values} (a vector with one value
@@ -796,7 +870,7 @@ heat_map_downsample <- function(groups,
   # CELLS, GROUPS, ANNOTATIONS AND FEATURES
   src <- .cell_source(args$x, arg("assay"))
   n <- src$n
-  groups <- .cell_by(group_by, src, "group_by")
+  groups <- .cell_groups(group_by, src)
   annots <- .cell_by(annotation_by, src, "annotation_by", multiple = TRUE)
   feat <- .cell_features(
     arg("features"),
