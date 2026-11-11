@@ -48,7 +48,6 @@ RoxygenNote: 7.3.3
 Language: en-GB
 Suggests: 
     covr,
-    diptest,
     ggplot2,
     gridGraphics,
     knitr,

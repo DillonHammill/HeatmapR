@@ -8,7 +8,7 @@
 // It is found from the greatest convex minorant and the least concave
 // majorant of the empirical distribution, narrowing the modal interval until
 // the dip no longer grows - algorithm AS 217 (Hartigan 1985), as corrected in
-// the diptest package by Martin Maechler, whose results these match.
+// the diptest package by Martin Maechler, whose dips these equal.
 //
 // Before the dip, the values of a group of cells are prepared so that the
 // measurement, not the transformation of the data, decides the dip:
@@ -228,7 +228,8 @@ double group_dip(std::vector<double>& v, double threshold, std::size_t min_n,
 
 // The dip of x after the preparation of group_dip(): values above
 // threshold, discrete values spread, piles at the ends of continuous data
-// left out (spread = FALSE: the dip of all of x, as diptest::dip() gives it).
+// left out (spread = FALSE: the dip of all of x, as Hartigan's algorithm gives
+// it).
 // A list of the dip and the number of values used.
 [[cpp11::register]]
 cpp11::list dip_cpp(cpp11::doubles x, double threshold, bool spread, int min_n) {

@@ -12,29 +12,45 @@ flagged <- function(x, threshold = 0) {
   !is.na(r$dip) && r$dip >= max(0.01, .dip_cutoff(r$n))
 }
 
-test_that("the dip is that of diptest::dip()", {
-  skip_if_not_installed("diptest")
-  set.seed(42)
-  gens <- list(
-    function(n) rnorm(n),
-    function(n) runif(n),
-    function(n) c(rnorm(n %/% 2), rnorm(n - n %/% 2, 3)),
-    function(n) sample(c(-4, 0, 5), n, TRUE) + rnorm(n, sd = 0.5),
-    function(n) rlnorm(n),
-    function(n) round(rnorm(n), 1),
-    function(n) as.double(rpois(n, 3)),
-    function(n) as.double(sample(1:3, n, TRUE)),
-    function(n) rcauchy(n)
+test_that("the dip is that of Hartigan and Hartigan (1985)", {
+  # REFERENCE DIPS FROM THE DIPTEST PACKAGE (AS 217 AS CORRECTED BY MARTIN
+  # MAECHLER), FOR INPUTS THAT DON'T DEPEND ON THE RANDOM NUMBER GENERATOR
+  ref <- list(
+    list(qnorm(ppoints(50)), 0.01),
+    list(qunif(ppoints(37)), 0.013513513513513561),
+    list(c(qnorm(ppoints(40)), qnorm(ppoints(40)) + 3), 0.026943947414773285),
+    list(c(qnorm(ppoints(30), sd = 0.5) - 4, qnorm(ppoints(30), sd = 0.5),
+           qnorm(ppoints(30), sd = 0.5) + 5), 0.10072710132383982),
+    list(qlnorm(ppoints(60)), 0.0083333333333333332),
+    list(round(qnorm(ppoints(100)), 1), 0.020000000000000004),
+    list(qpois(ppoints(80), 3), 0.1125),
+    list(as.double(rep(1:3, c(10, 3, 12))), 0.2),
+    list(qcauchy(ppoints(45)), 0.011111111111111112),
+    list(5, 0.5),
+    list(c(0, 10), 0.25),
+    list(c(5, 5, 5), 1 / 6),
+    list(c(1, 1, 2), 1 / 6),
+    list(c(1, 2, 10, 11), 0.22222222222222221),
+    list(as.double(1:6), 1 / 12),
+    list(c(qnorm(ppoints(700)), qnorm(ppoints(300), 4)), 0.019489962312754842),
+    list(qexp(ppoints(1000)), 0.0005)
   )
-  for(g in gens) {
-    for(n in c(1:12, 20, 37, 100, 1000)) {
-      x <- g(n)
-      expect_equal(dip_cpp(x, 0, FALSE, 1L)$dip, diptest::dip(x),
-                   tolerance = 1e-12)
-    }
+  for(r in ref) {
+    expect_equal(dip_cpp(r[[1]], 0, FALSE, 1L)$dip, r[[2]], tolerance = 1e-12)
   }
-  expect_equal(dip_cpp(5, 0, FALSE, 1L)$dip, 0.5)
-  expect_equal(dip_cpp(c(2, 2, 2), 0, FALSE, 1L)$dip, 1 / 6)
+  set.seed(42)
+  x <- c(rnorm(250), rnorm(150, 2.5, 0.7))
+  expect_equal(dip_cpp(x, 0, FALSE, 1L)$dip, 0.026087214321613972,
+               tolerance = 1e-12)
+  # The same dip in any order, shifted, scaled or reflected
+  set.seed(1)
+  for(i in 1:50) {
+    x <- c(rnorm(sample(5:300, 1)), rnorm(sample(5:300, 1), runif(1, 0, 5)))
+    d <- dip_cpp(x, 0, FALSE, 1L)$dip
+    expect_equal(dip_cpp(sample(x), 0, FALSE, 1L)$dip, d, tolerance = 1e-12)
+    expect_equal(dip_cpp(3 * x + 7, 0, FALSE, 1L)$dip, d, tolerance = 1e-12)
+    expect_equal(dip_cpp(-x, 0, FALSE, 1L)$dip, d, tolerance = 1e-12)
+  }
   expect_error(dip_cpp(c(1, NA), 0, FALSE, 1L), "missing")
 })
 

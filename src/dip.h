@@ -9,7 +9,7 @@
 
 namespace dip {
 
-// The dip of sorted values x[0..n-1], as diptest::dip() finds it
+// The dip of sorted values x[0..n-1] (Hartigan and Hartigan 1985)
 double dip_sorted(const double* x, std::size_t n);
 
 // Values ready for the dip: those above threshold (NaN left out), sorted,
