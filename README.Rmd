@@ -50,7 +50,7 @@ Beyond clustering, scaling and customisable colours, shapes, sizes, text, legend
 * **Annotate rows and columns** - metadata tracks (`annotation_x`, `annotation_y`), bar graphs, box plots and violins beside the heatmap, labels for chosen rows of a large heatmap (`mark_y`) and a zoom lens that enlarges a band of rows beside the whole (`zoom_y`).
 * **Cluster with confidence** - correlation and cosine distances, optimal leaf ordering, clustering within your own groups, k-means splits, and bootstrap support drawn on the dendrogram branches (`tree_support_y`).
 * **Handle large data** - raster images for heatmaps with millions of cells, `heat_map_summarise()` for pseudobulk heatmaps and dot plots of groups of cells, and robust, stepped or centred colour scales with the distribution of the values traced over the legend.
-* **Explain the figure** - `heat_map_info()` returns the order, clusters and layout of a heatmap, and `heat_map_describe()` writes alternative text for screen readers.
+* **Explain the figure** - `heat_map_info()` returns the order, clusters and layout of a heatmap, and `heat_map_describe()` writes alternative text for screen readers, and `heat_map_check_colours()` finds colours that colour-blind readers can't tell apart.
 * **Work with ggplot2** - `heat_map_grob()` places heatmaps beside `ggplot2` plots in `patchwork` and `cowplot` layouts, and `heat_map_data()` returns the cells, rows, columns and dendrograms as tidy data for rebuilding or restyling them.
 
 <table>

@@ -176,3 +176,16 @@ hm <- heat_map(mtcars, scale = "zscore", tree = "both", tree_cut_y = 3,
 ```{r alt-show, fig.alt = as.character(heat_map_describe(hm))}
 hm
 ```
+
+## Colour-blind readers
+
+About one man in twelve of northern European descent has a red-green colour-vision deficiency. `heat_map_check_colours()` simulates how a heatmap's colours look with deuteranopia, protanopia and tritanopia (as Machado et al. 2009 model them) and lists the annotation levels, values of non-numeric cells, stacked bar parts and branch colours that become hard to tell apart, and colour scales whose distant values end up looking alike. Here matplotlib's red and green, which most readers tell apart easily, are close for readers with deuteranopia:
+
+```{r colour-check, fig.show = "hide"}
+cylinders <- data.frame(cylinders = factor(mtcars$cyl), row.names = rownames(mtcars))
+hm <- heat_map(mtcars, scale = "column", annotation_y = cylinders,
+               annotation_colours = list(cylinders = c("#D62728", "#2CA02C", "#1F77B4")))
+heat_map_check_colours(hm)
+```
+
+`options(HeatmapR.check_colours = TRUE)` checks every heatmap as it is drawn, with a message when colours are hard to tell apart. The first eight colours of `palette.colors(palette = "Okabe-Ito")` stay apart for each deficiency, and the default colour scale changes in lightness from end to end, so its values stay readable.
