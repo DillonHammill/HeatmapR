@@ -174,17 +174,17 @@ heat_map_summarise(
   some cells falls away steadily from zero, as dropout does, and has one
   peak) are found across features: the dip of the scores of each group's
   cells on the first principal component of the correlations of its
-  features (those that vary and are detected in at least 5\\ them; at
-  most 50,000 cells of a group, drawn with a fixed seed). It is only
-  found when that component carries co-variation - an eigenvalue of at
-  least 2, and above the largest eigenvalue of as many independent
-  features (the upper edge of the Marchenko-Pastur law, Marchenko and
-  Pastur 1967) - so that features that each have two peaks of their own
-  (e.g. from the asinh transform) don't add up to a split, and it is
-  kept as the `"dip_pc"` attribute (and `"dip_pc_n"`, the cells used) in
-  the features that drive the component (more than an equal share of
-  it), `NA` elsewhere. Needs groups of rows from `group_by` or
-  `group_y`.
+  features (those that vary and are detected in at least 5% of the
+  cells, at least 3 of them; at most 50,000 cells of a group, drawn with
+  a fixed seed). It is only found when that component carries
+  co-variation - an eigenvalue of at least 2, and above the largest
+  eigenvalue of as many independent features (the upper edge of the
+  Marchenko-Pastur law, Marchenko and Pastur 1967) - so that features
+  that each have two peaks of their own (e.g. from the asinh transform)
+  don't add up to a split, and it is kept as the `"dip_pc"` attribute
+  (and `"dip_pc_n"`, the cells used) in the features that drive the
+  component (more than an equal share of it), `NA` elsewhere. Needs
+  groups of rows from `group_by` or `group_y`.
 
 ## Value
 

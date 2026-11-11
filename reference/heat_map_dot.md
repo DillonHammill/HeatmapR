@@ -105,7 +105,9 @@ heat_map_dot(
   other arguments passed to
   [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
   e.g. `cell_col_scale`, `tree_y` or `popup`. They replace the settings
-  of the dot plot of the same name.
+  of the dot plot of the same name. `bar_values_y = "n"` (`bar_values_x`
+  with `swap_axes = TRUE`) draws the number of cells in each group as
+  bars.
 
 ## Value
 

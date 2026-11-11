@@ -5,15 +5,16 @@ heatmap after its colours: patterns are only visible when similar rows
 sit next to each other. A dendrogram fixes which rows belong together,
 but not their order: each of its n - 1 branches can be flipped, so a
 dendrogram of 100 rows can be drawn in 2^99 orders. **HeatmapR** offers
-four ways to order the rows (`tree_order_y`) and columns
+five ways to order the rows (`tree_order_y`) and columns
 (`tree_order_x`):
 
 | Order | What it does | Needs a dendrogram |
 |----|----|----|
 | `"default"` | the order [`stats::hclust()`](https://rdrr.io/r/stats/hclust.html) returns | yes |
 | `"olo"` | flips branches so that neighbouring rows are as similar as possible (optimal leaf ordering) | yes |
-| `"mean"` | orders branches by their mean values, as [`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) does | yes |
+| `"mean"` | orders branches by their mean values ([`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) uses the sum of their leaves’ means) | yes |
 | `"spectral"` | lays the rows out along the main path through the data | no |
+| `"peak"` | orders features by where they are highest along the rows, so that cascades run diagonally | no |
 
 This article compares them on three kinds of data, measures how good
 each order is, and explains how the optimal leaf and spectral orders are
@@ -117,12 +118,13 @@ Every order beats a random one by far. Optimal leaf ordering and the
 spectral order both shorten the dendrogram’s own path by about an eighth
 on all three datasets: optimal leaf ordering by choosing the
 dendrogram’s flips well, the spectral order without a dendrogram at all.
-Where they differ is in the order at large, which a sum of neighbouring
-distances barely sees: optimal leaf ordering joins neighbouring rows
-well, but the pieces of a trajectory can still come in any order, as a
-dendrogram allows. Along the trajectory the spectral order recovers the
-times of the rows almost exactly (a rank correlation of 1 is a perfect
-match):
+The order at large, which a sum of neighbouring distances barely sees,
+shows in how well each order recovers the times of the trajectory’s rows
+(a rank correlation of 1 is a perfect match). Here optimal leaf ordering
+and the spectral order both recover them almost exactly, and the
+dendrogram’s own order doesn’t. Optimal leaf ordering can only join the
+trajectory’s pieces in an order the dendrogram allows; the spectral
+order needs no dendrogram:
 
 ``` r
 
@@ -138,9 +140,10 @@ sapply(orders[-1], function(f) {
 The three heatmaps below show the same trajectory: in the dendrogram’s
 own order, after optimal leaf ordering, and in spectral order. The
 dendrogram cuts the trajectory into pieces that are flipped at random;
-optimal leaf ordering joins most of them up; the spectral order lays out
-the whole trajectory, so the genes peak one after another down the
-diagonal. The columns are ordered in the same way.
+optimal leaf ordering joins them up, and the spectral order lays out the
+whole trajectory without a dendrogram, so in both the genes peak one
+after another along the diagonal. The columns are ordered in the same
+way.
 
 ``` r
 
@@ -157,9 +160,9 @@ heat_map(data$trajectory, tree_order_x = "spectral",
 
 ![Three heatmaps of the same 400 simulated cells by 12 genes along a
 trajectory. In the dendrogram order the cascade of gene peaks is broken
-into blocks in a jumbled order; with optimal leaf ordering the blocks
-mostly join into a diagonal; in spectral order, without dendrograms, the
-peaks run in one clean diagonal band from the top left to the bottom
+into blocks in a jumbled order; with optimal leaf ordering, and in
+spectral order without dendrograms, the peaks run in one diagonal band
+from the bottom left to the top
 right.](ordering_files/figure-html/trajectory-1.png)
 
 ``` r
@@ -287,9 +290,11 @@ group.](ordering_files/figure-html/groups-1.png)
 - **Gradients, trajectories, time courses and cycles**: `"spectral"`,
   without a dendrogram. With a dendrogram, `"olo"` or `"spectral"`
   (which orders its branches along the gradient).
-- **Matching
+- **Close to
   [`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html)**: `"mean"`
-  orders branches by their means.
+  orders branches by their means
+  ([`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) uses the
+  sum of their leaves’ means, which favours small branches).
 - **Your own order**: supply an `hclust` object (e.g. reordered with the
   **dendsort** or **seriation** packages) to `tree_y`, or reorder the
   rows of the data and leave the order alone.

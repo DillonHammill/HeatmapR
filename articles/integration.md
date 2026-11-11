@@ -20,7 +20,6 @@ hm <- heat_map(
   legend_title = "z-score",
   title = "mtcars"
 )
-#> Applying zscore scaling to each column...
 ```
 
 ![The mtcars heatmap with each column converted to z-scores, the cars
@@ -50,7 +49,7 @@ three groups of cars labelled A, B and
 C.](integration_files/figure-html/redraw-1.png)
 
 [`heat_map_save()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md)
-writes a heatmap to a file (PNG, JPEG, TIFF, PDF, SVG or EPS, from the
+writes a heatmap to a file (PNG, JPEG, TIFF, PDF or SVG, from the
 extension), at the size and resolution you choose: either the object
 itself (`x = hm`) or every heatmap drawn after the call until
 [`heat_map_complete()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_complete.md).
@@ -186,7 +185,6 @@ is marked with a star:
 ``` r
 
 hm <- heat_map(mtcars, scale = "zscore", tree = "both", legend_title = "z-score")
-#> Applying zscore scaling to each column...
 cells <- heat_map_data(hm)
 top <- cells[ave(cells$value, cells$column, FUN = max) == cells$value, ]
 points(top$x, top$y, pch = 8, col = "white", cex = 1.5)
@@ -232,13 +230,10 @@ to finish it.
 heat_map_custom(popup = FALSE, layout = c(1, 3))
 heat_map(mtcars[grepl("Merc", rownames(mtcars)), ], scale = "column",
          legend = FALSE, title = "Mercedes")
-#> Applying range scaling to each column...
 heat_map(mtcars[grepl("Mazda|Toyota", rownames(mtcars)), ], scale = "column",
          legend = FALSE, title = "Mazda | Toyota")
-#> Applying range scaling to each column...
 heat_map(mtcars[grepl("Hornet|Datsun|Volvo", rownames(mtcars)), ],
          scale = "column", legend = FALSE, title = "Hornet | Datsun | Volvo")
-#> Applying range scaling to each column...
 ```
 
 ![Three heatmaps side by side, one each for the Mercedes cars, the Mazda
@@ -265,7 +260,6 @@ annotations, bars and zoom panels when the heatmap has them.
 
 hm <- heat_map(mtcars, scale = "zscore", tree = "both", tree_cut_y = 3,
                legend_title = "z-score", title = "mtcars")
-#> Applying zscore scaling to each column...
 heat_map_describe(hm)
 #> Heatmap titled "mtcars" of 32 rows by 11 columns, converted to z-scores within
 #> each column. Colours show z-score, from dark purple (-1.87) through yellow

@@ -97,9 +97,8 @@ conventions and defaults have changed; they are listed first.
   features). Set `clust_max = Inf` (or `max = Inf`) to cluster exactly,
   as earlier versions did.
 - Linkage is computed in compiled code. Single linkage (from a minimum
-  spanning tree) and centroid and median linkage (by
-  [`stats::hclust()`](https://rdrr.io/r/stats/hclust.html)’s own
-  algorithm) give the tree
+  spanning tree) and centroid and median linkage (by the generic
+  algorithm of Müllner 2011) give the tree
   [`stats::hclust()`](https://rdrr.io/r/stats/hclust.html) gives.
   Complete, average, McQuitty and Ward linkage use the nearest-neighbour
   chain algorithm, which gives the same tree as
@@ -113,9 +112,8 @@ conventions and defaults have changed; they are listed first.
   [`stats::dist()`](https://rdrr.io/r/stats/dist.html) and
   `cor(use = "pairwise.complete.obs")` for every distance: Pearson and
   cosine distances compare the values each pair of rows shares (Pearson
-  correlations are now computed as
-  [`cor()`](https://rdrr.io/r/stats/cor.html) computes them, which can
-  differ in the last digits from earlier development versions).
+  correlations are computed as
+  [`cor()`](https://rdrr.io/r/stats/cor.html) computes them).
 - Gaps between clusters (`tree_split_x`, `tree_split_y`) are 0.08 inches
   per unit, so they stay visible on large heatmaps; they were half a row
   or column, which vanished with thousands of rows.
@@ -236,11 +234,11 @@ conventions and defaults have changed; they are listed first.
   is split into groups of about 200 rows; every row joins the group with
   the nearest medoid, and each group is clustered on its own beneath the
   sample’s dendrogram. Memory no longer grows with the square of the
-  number of rows: 100,000 rows are clustered in about 2 seconds and
-  200,000 in about 4 (exact clustering of 10,000 rows takes 3 seconds
-  and 400 MB). On data with clear clusters, cutting the two-stage
-  dendrogram gives the same clusters as the exact one. The dendrogram
-  has a `two_stage` element and
+  number of rows: on two cores, 100,000 rows of 30 values are clustered
+  in about 0.7 seconds and a million in about 16 (exact clustering of
+  10,000 rows takes 1.5 seconds and 380 MB). On data with clear
+  clusters, cutting the two-stage dendrogram gives the same clusters as
+  the exact one. The dendrogram has a `two_stage` element and
   [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
   says when it was used. Branch support is skipped, with a warning,
   above `clust_max`.
@@ -407,10 +405,10 @@ conventions and defaults have changed; they are listed first.
   `mark_line_col` the line colour.
 - Large heatmaps are drawn as raster images (`cell_raster`, `"auto"` by
   default: heatmaps with more than 50,000 cells of full-size
-  rectangles). A 1000 x 1000 heatmap draws about 2.7 times faster (0.8 s
-  instead of 2.2 s) and its PDF is a quarter of the size, with the same
-  colours as the vector cells; cell borders are drawn as grid lines.
-  `heat_map_info()$raster` reports whether raster images were used.
+  rectangles). A 1000 x 1000 heatmap draws in about 0.15 seconds and its
+  PDF is a fraction of the size, with the same colours as vector cells;
+  cell borders are drawn as grid lines. `heat_map_info()$raster` reports
+  whether raster images were used.
 - `heat_map_info()$layout` gives the bounding box of every component of
   the heatmap (axis text, dendrograms, bars, legends, titles) in inches,
   so layouts can be checked programmatically.
@@ -481,7 +479,8 @@ conventions and defaults have changed; they are listed first.
   with a size legend in percent. `dot_min` leaves out dots below a
   proportion, `swap_axes = TRUE` draws features as rows, and every
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-  option (e.g. `tree_y = TRUE` for a dendrogram of the groups) can be
+  option (e.g. `tree_y = TRUE` for a dendrogram of the groups, or
+  `bar_values_y = "n"` for the number of cells in each group) can be
   added.
 - [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
   ranks the marker features of each group by their AUC against all other
@@ -625,9 +624,9 @@ conventions and defaults have changed; they are listed first.
   distances, with missing values), every linkage, cutting dendrograms,
   two-stage clustering, k-means, optimal leaf ordering, branch support
   and the dendrogram computations; only a distance function supplied by
-  the user runs in R. Clustering 5,000 rows takes 0.2 seconds on two
+  the user runs in R. Clustering 5,000 rows takes 0.3 seconds on two
   cores instead of 2.0 in HeatmapR 1.1.0, and two-stage clustering of
-  100,000 rows about half a second (HeatmapR 1.1.0 would need the 40 GB
+  100,000 rows about 0.7 seconds (HeatmapR 1.1.0 would need the 40 GB
   distance matrix of every pair of rows).
 - Optimal leaf ordering computes its min-plus products as BLAS computes
   matrix products, in panels that stay in the cache with small tiles of
@@ -650,8 +649,8 @@ conventions and defaults have changed; they are listed first.
   distances, and the dendrograms built from them, are exactly those of
   the scalar code, and in blocks of rows that stay in the cache. Exact
   clustering of wide data is 2 to 3 times faster: 3000 rows x 1000
-  columns take 0.6 seconds instead of 1.5 and 2000 x 5000 1.8 seconds
-  instead of 5.8 (one thread).
+  columns take 0.6 seconds instead of 1.5 with scalar code and 2000 x
+  5000 1.8 seconds instead of 5.8 (one thread).
 - Compiled distances, linkage and cuts replace
   [`stats::dist()`](https://rdrr.io/r/stats/dist.html),
   [`cor()`](https://rdrr.io/r/stats/cor.html),
@@ -702,9 +701,8 @@ conventions and defaults have changed; they are listed first.
   nearest medoid four distances at a time, and the groups’ dendrograms
   are joined below the sample’s in compiled code. Rows with missing
   values are clustered by the compiled code like the other rows (200,000
-  rows with missing values: 0.9 seconds instead of 3.1). Two-stage
-  clustering of a million rows takes 6 to 10 seconds instead of 11 to
-  16.
+  rows with missing values take 0.9 seconds). Two-stage clustering of a
+  million rows of 30 values takes about 16 seconds on two cores.
 - Multithreading: the compiled code shares its larger jobs between
   threads - the distances between rows, the linkage’s scans for the
   nearest cluster (from about 1500 rows), the groups and the
@@ -736,9 +734,10 @@ conventions and defaults have changed; they are listed first.
   passed to the device as packed colours (a `nativeRaster`), with cell
   borders as grid lines. A 2000 x 50 heatmap draws in 0.07 seconds
   instead of 19 in HeatmapR 1.1.0 (0.13 instead of 27 with a row
-  dendrogram), a 1000 x 1000 heatmap in 0.6 seconds instead of 174 and a
-  50,000 x 30 heatmap in 0.9 seconds (HeatmapR 1.1.0 takes several
-  minutes); the PDF of a raster heatmap is a fraction of the size.
+  dendrogram), a 1000 x 1000 heatmap in 0.15 seconds instead of 174 and
+  a 50,000 x 30 heatmap in under 0.1 seconds (HeatmapR 1.1.0 takes
+  several minutes); the PDF of a raster heatmap is a fraction of the
+  size.
 - Redrawing a heatmap - [`print()`](https://rdrr.io/r/base/print.html),
   [`plot()`](https://rdrr.io/r/graphics/plot.default.html),
   [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
@@ -760,7 +759,7 @@ conventions and defaults have changed; they are listed first.
   is called), and constant cell sizes and shapes as one value
   ([`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
   returns them as before), and no second copy of the data: a 50,000 x 30
-  heatmap saves to 18 MB instead of 28.4.
+  heatmap saves to 18 MB.
 - Large heatmaps are drawn without a vector for every cell property: the
   colours of the cells come from one compiled pass over the data (its
   position on the colour scale and the ramp, with missing values left
@@ -769,19 +768,21 @@ conventions and defaults have changed; they are listed first.
   borders, shapes, sizes, text, numbers) are made only when they are
   drawn. The raster images are built in compiled code, and the layout
   measures the spacing of the cells once. A 200,000 x 30 heatmap draws
-  in 0.22 seconds instead of 3.2 (0.7 instead of 3.9 with k-means
-  splits), a 3000 x 3000 heatmap in 0.3 seconds instead of 4.8, a 50,000
-  x 30 heatmap in 0.07 seconds instead of 0.8 and a 1000 x 1000 heatmap
-  in 0.1 seconds instead of 0.5, and drawing needs a quarter of the
-  memory: 390 MB at most for 200,000 x 30 instead of 1.6 GB, so a
-  1,000,000 x 30 heatmap draws in 2 seconds (1.5 GB) where it ran out of
-  memory. Zoom panels take only the cells of their band (a 200,000-row
-  heatmap with a zoom lens: 0.2 seconds instead of 3.7), and dendrograms
-  are checked and placed on the cell centres in compiled code. The
-  heatmaps are the same, pixel for pixel.
+  in 0.22 seconds (0.7 with k-means splits), a 3000 x 3000 heatmap in
+  0.6 seconds and a 50,000 x 30 heatmap in 0.07 seconds, and drawing a
+  200,000 x 30 heatmap needs at most 390 MB, so a 1,000,000 x 30 heatmap
+  draws in 2 seconds (1.5 GB). Zoom panels take only the cells of their
+  band (a 200,000-row heatmap with a zoom lens draws in 0.2 seconds),
+  and dendrograms are checked and placed on the cell centres in compiled
+  code. The heatmaps are the same, pixel for pixel.
 
 ### Bug fixes
 
+- Values shared by several non-numeric columns took neighbouring colours
+  of a palette as long as the values of every column together, so that,
+  for example, “low”, “mid” and “high” in six columns were three shades
+  of red. Each distinct value now takes its own colour from
+  `cell_col_palette`.
 - Cells drawn without borders (small cells, whose borders are left out,
   `cell_border_line_col = NA` or cells outside a `cell_border_mask`) and
   annotation tracks no longer show faint lines between neighbouring rows

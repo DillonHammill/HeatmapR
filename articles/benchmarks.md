@@ -101,7 +101,7 @@ number of rows, which is what the time of clustering depends on:
 
 ![Line chart of the seconds taken to cluster and draw tall heatmaps
 against the number of rows, on log scales, for each package. HeatmapR's
-lines stay below one second up to 100,000 rows, its exact clustering
+lines stay near one second up to 100,000 rows, its exact clustering
 reaches 7 seconds at 20,000 rows, while the other packages rise from a
 few seconds to two minutes at 20,000 rows and fail, marked by crosses,
 at 100,000.](benchmarks_files/figure-html/clust-plot-1.png)
@@ -150,7 +150,7 @@ seconds:
 
 ![Line chart of the seconds taken to draw heatmaps without clustering
 against the number of cells, on log scales, for each package. HeatmapR
-stays between a tenth and half a second up to 9 million cells;
+stays between a tenth and six tenths of a second up to 9 million cells;
 ComplexHeatmap, pheatmap, ggplot2 and stats::heatmap grow with the
 number of cells to between 4 and 26 seconds; heatmap.2 takes minutes or
 fails from 500,000 cells.](benchmarks_files/figure-html/draw-plot-1.png)
@@ -219,10 +219,9 @@ keeps them in one matrix without the copies that
 [`hclust()`](https://rdrr.io/r/stats/hclust.html) makes, and merges
 clusters by the nearest-neighbour chain algorithm, which needs O(n^2)
 time for complete, average, McQuitty and Ward linkage (single linkage is
-built from a minimum spanning tree, centroid and median linkage by
-[`hclust()`](https://rdrr.io/r/stats/hclust.html)’s own algorithm). When
-distances are distinct the tree is the one
-[`hclust()`](https://rdrr.io/r/stats/hclust.html) returns.
+built from a minimum spanning tree, centroid and median linkage by the
+generic algorithm of Müllner 2011). When distances are distinct the tree
+is the one [`hclust()`](https://rdrr.io/r/stats/hclust.html) returns.
 
 ## Optimal leaf ordering
 

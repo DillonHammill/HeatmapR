@@ -87,7 +87,7 @@ heatmap after its colours: patterns are only visible when similar rows
 sit next to each other. A dendrogram fixes which rows belong together,
 but not their order: each of its n - 1 branches can be flipped, so a
 dendrogram of 100 rows can be drawn in 2^99 orders.
-<strong>HeatmapR</strong> offers four ways to order the rows
+<strong>HeatmapR</strong> offers five ways to order the rows
 (<code>tree_order_y</code>) and columns (<code>tree_order_x</code>):</p>
 <table class="table">
 <colgroup>
@@ -114,13 +114,19 @@ dendrogram of 100 rows can be drawn in 2^99 orders.
 </tr>
 <tr class="odd">
 <td><code>"mean"</code></td>
-<td>orders branches by their mean values, as
-<code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">stats::heatmap()</a></code> does</td>
+<td>orders branches by their mean values (<code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">stats::heatmap()</a></code>
+uses the sum of their leaves’ means)</td>
 <td>yes</td>
 </tr>
 <tr class="even">
 <td><code>"spectral"</code></td>
 <td>lays the rows out along the main path through the data</td>
+<td>no</td>
+</tr>
+<tr class="odd">
+<td><code>"peak"</code></td>
+<td>orders features by where they are highest along the rows, so that
+cascades run diagonally</td>
 <td>no</td>
 </tr>
 </tbody>
@@ -214,12 +220,13 @@ its rows.</p>
 spectral order both shorten the dendrogram’s own path by about an eighth
 on all three datasets: optimal leaf ordering by choosing the
 dendrogram’s flips well, the spectral order without a dendrogram at all.
-Where they differ is in the order at large, which a sum of neighbouring
-distances barely sees: optimal leaf ordering joins neighbouring rows
-well, but the pieces of a trajectory can still come in any order, as a
-dendrogram allows. Along the trajectory the spectral order recovers the
-times of the rows almost exactly (a rank correlation of 1 is a perfect
-match):</p>
+The order at large, which a sum of neighbouring distances barely sees,
+shows in how well each order recovers the times of the trajectory’s rows
+(a rank correlation of 1 is a perfect match). Here optimal leaf ordering
+and the spectral order both recover them almost exactly, and the
+dendrogram’s own order doesn’t. Optimal leaf ordering can only join the
+trajectory’s pieces in an order the dendrogram allows; the spectral
+order needs no dendrogram:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">orders</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span>, <span class="kw">function</span><span class="op">(</span><span class="va">f</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">time</span><span class="op">[</span><span class="fu">f</span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">trajectory</span><span class="op">)</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span>, method <span class="op">=</span> <span class="st">"spearman"</span><span class="op">)</span><span class="op">)</span></span>
@@ -233,9 +240,10 @@ match):</p>
 <p>The three heatmaps below show the same trajectory: in the
 dendrogram’s own order, after optimal leaf ordering, and in spectral
 order. The dendrogram cuts the trajectory into pieces that are flipped
-at random; optimal leaf ordering joins most of them up; the spectral
-order lays out the whole trajectory, so the genes peak one after another
-down the diagonal. The columns are ordered in the same way.</p>
+at random; optimal leaf ordering joins them up, and the spectral order
+lays out the whole trajectory without a dendrogram, so in both the genes
+peak one after another along the diagonal. The columns are ordered in
+the same way.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_custom.html">heat_map_custom</a></span><span class="op">(</span>popup <span class="op">=</span> <span class="cn">FALSE</span>, layout <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">trajectory</span>, tree <span class="op">=</span> <span class="st">"both"</span>, axis_text_y <span class="op">=</span> <span class="cn">NA</span>,</span>
@@ -246,7 +254,7 @@ down the diagonal. The columns are ordered in the same way.</p>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">trajectory</span>, tree_order_x <span class="op">=</span> <span class="st">"spectral"</span>,</span>
 <span>         tree_order_y <span class="op">=</span> <span class="st">"spectral"</span>, axis_text_y <span class="op">=</span> <span class="cn">NA</span>, legend <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>         title <span class="op">=</span> <span class="st">"Spectral order"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="ordering_files/figure-html/trajectory-1.png" class="r-plt" alt="Three heatmaps of the same 400 simulated cells by 12 genes along a trajectory. In the dendrogram order the cascade of gene peaks is broken into blocks in a jumbled order; with optimal leaf ordering the blocks mostly join into a diagonal; in spectral order, without dendrograms, the peaks run in one clean diagonal band from the top left to the bottom right." width="100%" style="display: block; margin: auto;"></p>
+<p><img src="ordering_files/figure-html/trajectory-1.png" class="r-plt" alt="Three heatmaps of the same 400 simulated cells by 12 genes along a trajectory. In the dendrogram order the cascade of gene peaks is broken into blocks in a jumbled order; with optimal leaf ordering, and in spectral order without dendrograms, the peaks run in one diagonal band from the bottom left to the top right." width="100%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -355,8 +363,10 @@ worth its small cost.</li>
 <code>"olo"</code> or <code>"spectral"</code> (which orders its branches
 along the gradient).</li>
 <li>
-<strong>Matching <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">stats::heatmap()</a></code></strong>:
-<code>"mean"</code> orders branches by their means.</li>
+<strong>Close to <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">stats::heatmap()</a></code></strong>:
+<code>"mean"</code> orders branches by their means
+(<code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">stats::heatmap()</a></code> uses the sum of their leaves’ means,
+which favours small branches).</li>
 <li>
 <strong>Your own order</strong>: supply an <code>hclust</code>
 object (e.g. reordered with the <strong>dendsort</strong> or

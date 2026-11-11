@@ -174,7 +174,7 @@ comparison</a> with other heatmap packages.</p>
 <div class="section level2">
 <h2 id="construct-a-basic-heatmap">1. Construct a Basic Heatmap<a class="anchor" aria-label="anchor" href="#construct-a-basic-heatmap"></a>
 </h2>
-<p>Constructing a heatmap is as simple loading the
+<p>Constructing a heatmap is as simple as loading the
 <strong>HeatmapR</strong> package and supplying your dataset to the
 <code><a href="../reference/heat_map.html">heat_map()</a></code> function. The constructed heatmap will be in the
 same orientation as the input data, the first row at the top and the
@@ -256,12 +256,11 @@ will be assigned colours from the discrete colour palette supplied to
 <code>NA</code> are also supported and the colour of cells containing
 missing values can be controlled through the <code>cell_col_empty</code>
 argument. The <code>cell_col_alpha</code> argument accepts values
-ranging from zero (transparent) to one (solid) to for fine control over
-the transparency of the colour in each cell of the heatmap. In the
-example below, we will demonstrate the handling of different data types
-within <code><a href="../reference/heat_map.html">heat_map()</a></code> using a modified subset of the
-<code>iris</code> dataset where additional missing values have been
-introduced:</p>
+ranging from zero (transparent) to one (solid) for fine control over the
+transparency of the colour in each cell of the heatmap. In the example
+below, we will demonstrate the handling of different data types within
+<code><a href="../reference/heat_map.html">heat_map()</a></code> using a modified subset of the <code>iris</code>
+dataset where additional missing values have been introduced:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Modified subset of iris dataset with missing values</span></span>
 <span><span class="va">iris_sub</span> <span class="op">&lt;-</span> <span class="va">iris</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">iris</span><span class="op">)</span>, <span class="fl">25</span><span class="op">)</span>, <span class="op">]</span></span>
@@ -403,13 +402,13 @@ heatmap.</p>
 <span>  cell_text <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"Border Masking Example"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-6b.png" class="r-plt" alt="The unscaled mtcars heatmap, titled Border Masking Example, with each value written in its cell and red borders drawn only around the cells whose values are above the median of the whole data set." width="95%" style="display: block; margin: auto;"></p>
+<p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/5e4d48d96aca19e35b24c83694d69bcb595c2318/vignettes/HeatmapR/HeatmapR-6b.png" class="r-plt" alt="The unscaled mtcars heatmap, titled Border Masking Example, with each value written in its cell and red borders drawn only around the cells whose values are above the median of the whole data set." width="95%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level3">
 <h3 id="cell-text">2.5 Cell Text<a class="anchor" aria-label="anchor" href="#cell-text"></a>
 </h3>
-<p>The values of every cells within the constructed heatmap can be
+<p>The values of every cell within the constructed heatmap can be
 displayed by setting <code>cell_text = TRUE</code>. By default, numeric
 values are rounded to two decimal places but this can be changed through
 the <code>round</code> argument. The text displayed in each cell can
@@ -434,10 +433,10 @@ easily be customised using the <code>cell_text_size</code>,
 </h3>
 <p>Heatmaps with more than 50,000 cells, such as single-cell data with
 thousands of cells and tens of markers, are drawn as raster images
-rather than one rectangle per cell. Raster images draw a 1000 x 1000
-heatmap about three times faster and give PDFs about a quarter of the
-size, and look the same as the rectangles. Raster images are only used
-when every cell is a full-size rectangle;
+rather than one rectangle per cell. Raster images draw large heatmaps
+many times faster (a 1000 x 1000 heatmap in about 0.15 seconds) and give
+PDFs a fraction of the size, and look the same as the rectangles. Raster
+images are only used when every cell is a full-size rectangle;
 <code>cell_raster = TRUE</code> uses them for smaller heatmaps too and
 <code>cell_raster = FALSE</code> turns them off. Cell borders are left
 out when the cells are smaller than three line widths, as they would
@@ -466,7 +465,7 @@ otherwise hide the cells.</p>
 <p><img src="https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc5b7688dab3f3050b3f157315f49f95/vignettes/HeatmapR/HeatmapR-raster.png" class="r-plt" alt="Heatmap of 5,000 simulated cells by 20 markers drawn as a raster image, with the markers clustered by a dendrogram and the cells cut into three clusters labelled A, B and C: A is high in markers 12 to 20, B in markers 1 to 8 and C in neither." width="95%" style="display: block; margin: auto;"></p>
 <p>Clustering is the slow part of a large heatmap. It needs the distance
 between every pair of rows, so exact clustering of 10,000 rows takes
-about 1.2 seconds on two cores and 400 MB of memory, and four times as
+about 1.5 seconds on two cores and 400 MB of memory, and four times as
 much for twice the rows. Rows (or columns) beyond
 <code>clust_max</code>, 5000 by default, are clustered in two stages
 instead. A sample of 5000 rows is clustered exactly and its dendrogram
@@ -648,10 +647,12 @@ to visualise differences in columns with very small values. In order to
 represent each column on the same scale, we can apply a form of data
 scaling through the <code>scale_method</code> argument either to each
 row or column as specified by the <code>scale</code> argument.
-Currently, <code><a href="../reference/heat_map.html">heat_map()</a></code> has internal support for
-<code>"mean"</code>, <code>"range"</code> and <code>"zscore"</code>
-scaling methods that can be applied to either the rows or columns of the
-input matrix.</p>
+<code><a href="../reference/heat_map.html">heat_map()</a></code> has internal support for <code>"mean"</code>,
+<code>"range"</code>, <code>"zscore"</code> and <code>"quantile"</code>
+scaling methods (see <code><a href="../reference/heat_map_scale.html">heat_map_scale()</a></code>), which can be
+applied to either the rows or columns of the input matrix, and
+<code>transform = "asinh"</code> transforms cytometry values before
+scaling.</p>
 <div class="section level3">
 <h3 id="scaling-columns">3.1 Scaling Columns<a class="anchor" aria-label="anchor" href="#scaling-columns"></a>
 </h3>
@@ -828,10 +829,10 @@ size of each cluster:</p>
 <h2 id="hierarchical-clustering">5. Hierarchical Clustering<a class="anchor" aria-label="anchor" href="#hierarchical-clustering"></a>
 </h2>
 <p><code><a href="../reference/heat_map.html">heat_map()</a></code> also supports hierarchical clustering to
-construct dendrograms, and <code><a href="https://rdrr.io/r/stats/cutree.html" class="external-link">stats::cutree()</a></code> to partition the
-dendrograms into distinct clusters. Distances and linkage are computed
-in compiled code using the nearest-neighbour chain algorithm (Murtagh
-1983; Müllner 2011), which builds the same trees as
+construct dendrograms, and cuts the dendrograms into distinct clusters
+(giving the clusters of <code><a href="https://rdrr.io/r/stats/cutree.html" class="external-link">stats::cutree()</a></code>). Distances and
+linkage are computed in compiled code using the nearest-neighbour chain
+algorithm (Murtagh 1983; Müllner 2011), which builds the same trees as
 <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">stats::hclust()</a></code> (when distances are tied, as they often are
 for integer data, the tree can make a different but equally valid choice
 between the tied merges). The <code>dist_method</code> and
@@ -883,7 +884,7 @@ cosine distance for hierarchical clustering. Cosine distance (1 - cosine
 similarity) measures the angle between vectors and is particularly
 useful for high-dimensional data where the magnitude of the vectors is
 less important than their direction. This is especially valuable when
-analysing gene expression data or other normalized datasets.</p>
+analysing gene expression data or other normalised datasets.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">mtcars</span>,</span>
@@ -926,8 +927,8 @@ dendrogram can be drawn in many orders, as every branch can be flipped;
 order. <code>"olo"</code> (optimal leaf ordering, Bar-Joseph, Gifford
 and Jaakkola 2001) flips branches so that neighbouring rows are as
 similar as possible, giving smoother gradients, and <code>"mean"</code>
-orders branches by their mean values as <code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">stats::heatmap()</a></code>
-does.</p>
+orders branches by their mean values (<code><a href="https://rdrr.io/r/stats/heatmap.html" class="external-link">stats::heatmap()</a></code> uses
+the sum of their leaves’ means, which favours small branches).</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">5</span><span class="op">)</span></span>
 <span><span class="va">mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span></span>
@@ -1381,7 +1382,7 @@ the colours of non-numeric columns. The legend is sized from its
 contents: <code>legend_size</code> scales the legend keys (colour bars,
 swatches and size legend shapes) and <code>legend_col_scale_size</code>
 controls the width of the colour scale. The titles and text displayed in
-the legend(s) are also fully customisable using the the
+the legend(s) are also fully customisable using the
 <code>legend_title_</code> and <code>legend_text_</code> family of
 arguments.</p>
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
@@ -1556,6 +1557,9 @@ with a scatterplot and a boxplot.</p>
 <span>  legend_size <span class="op">=</span> <span class="fl">1.5</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"mtcars"</span></span>
 <span><span class="op">)</span></span>
+<span><span class="co"># heat_map() keeps its margins so that base graphics can be added to the</span></span>
+<span><span class="co"># heatmap - set them again for the next plots</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5.1</span>, <span class="fl">4.1</span>, <span class="fl">4.1</span>, <span class="fl">2.1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span></span>
 <span>  <span class="va">mtcars</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"disp"</span>, <span class="st">"hp"</span><span class="op">)</span><span class="op">]</span>,</span>
 <span>  xlab <span class="op">=</span> <span class="st">"Displacement"</span>,</span>

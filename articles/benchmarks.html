@@ -315,7 +315,7 @@ HeatmapR clusters up to 5,000 rows exactly by default, so “HeatmapR
 </table>
 <p>The chart shows the tall matrices (30 to 100 columns) against their
 number of rows, which is what the time of clustering depends on:</p>
-<p><img src="benchmarks_files/figure-html/clust-plot-1.png" class="r-plt" alt="Line chart of the seconds taken to cluster and draw tall heatmaps against the number of rows, on log scales, for each package. HeatmapR's lines stay below one second up to 100,000 rows, its exact clustering reaches 7 seconds at 20,000 rows, while the other packages rise from a few seconds to two minutes at 20,000 rows and fail, marked by crosses, at 100,000." width="100%" style="display: block; margin: auto;"></p>
+<p><img src="benchmarks_files/figure-html/clust-plot-1.png" class="r-plt" alt="Line chart of the seconds taken to cluster and draw tall heatmaps against the number of rows, on log scales, for each package. HeatmapR's lines stay near one second up to 100,000 rows, its exact clustering reaches 7 seconds at 20,000 rows, while the other packages rise from a few seconds to two minutes at 20,000 rows and fail, marked by crosses, at 100,000." width="100%" style="display: block; margin: auto;"></p>
 <p>The time of the other packages is dominated by clustering: R’s
 <code><a href="https://rdrr.io/r/stats/dist.html" class="external-link">dist()</a></code> and <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust()</a></code> compute and store every
 distance between rows, so their time grows with the square of the number
@@ -515,7 +515,7 @@ in seconds:</p>
 </tr>
 </tbody>
 </table>
-<p><img src="benchmarks_files/figure-html/draw-plot-1.png" class="r-plt" alt="Line chart of the seconds taken to draw heatmaps without clustering against the number of cells, on log scales, for each package. HeatmapR stays between a tenth and half a second up to 9 million cells; ComplexHeatmap, pheatmap, ggplot2 and stats::heatmap grow with the number of cells to between 4 and 26 seconds; heatmap.2 takes minutes or fails from 500,000 cells." width="100%" style="display: block; margin: auto;"></p>
+<p><img src="benchmarks_files/figure-html/draw-plot-1.png" class="r-plt" alt="Line chart of the seconds taken to draw heatmaps without clustering against the number of cells, on log scales, for each package. HeatmapR stays between a tenth and six tenths of a second up to 9 million cells; ComplexHeatmap, pheatmap, ggplot2 and stats::heatmap grow with the number of cells to between 4 and 26 seconds; heatmap.2 takes minutes or fails from 500,000 cells." width="100%" style="display: block; margin: auto;"></p>
 <p>HeatmapR draws heatmaps of more than 50,000 cells as one raster image
 whose colours are worked out in compiled code, and only the text,
 dendrograms and legend as vector graphics. pheatmap draws one rectangle
@@ -772,9 +772,9 @@ cores, keeps them in one matrix without the copies that
 <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust()</a></code> makes, and merges clusters by the
 nearest-neighbour chain algorithm, which needs O(n^2) time for complete,
 average, McQuitty and Ward linkage (single linkage is built from a
-minimum spanning tree, centroid and median linkage by
-<code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust()</a></code>’s own algorithm). When distances are distinct the
-tree is the one <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust()</a></code> returns.</p>
+minimum spanning tree, centroid and median linkage by the generic
+algorithm of Müllner 2011). When distances are distinct the tree is the
+one <code><a href="https://rdrr.io/r/stats/hclust.html" class="external-link">hclust()</a></code> returns.</p>
 </div>
 <div class="section level2">
 <h2 id="optimal-leaf-ordering">Optimal leaf ordering<a class="anchor" aria-label="anchor" href="#optimal-leaf-ordering"></a>

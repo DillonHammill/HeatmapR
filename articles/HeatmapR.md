@@ -96,8 +96,8 @@ with other heatmap packages.
 
 ## 1. Construct a Basic Heatmap
 
-Constructing a heatmap is as simple loading the **HeatmapR** package and
-supplying your dataset to the
+Constructing a heatmap is as simple as loading the **HeatmapR** package
+and supplying your dataset to the
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 function. The constructed heatmap will be in the same orientation as the
 input data, the first row at the top and the first column at the left as
@@ -204,8 +204,8 @@ the discrete colour palette supplied to `cell_col_palette`. Missing
 values of the form `NA` are also supported and the colour of cells
 containing missing values can be controlled through the `cell_col_empty`
 argument. The `cell_col_alpha` argument accepts values ranging from zero
-(transparent) to one (solid) to for fine control over the transparency
-of the colour in each cell of the heatmap. In the example below, we will
+(transparent) to one (solid) for fine control over the transparency of
+the colour in each cell of the heatmap. In the example below, we will
 demonstrate the handling of different data types within
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
 using a modified subset of the `iris` dataset where additional missing
@@ -383,16 +383,16 @@ heat_map(
 ![The unscaled mtcars heatmap, titled Border Masking Example, with each
 value written in its cell and red borders drawn only around the cells
 whose values are above the median of the whole data
-set.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-6b.png)
+set.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/5e4d48d96aca19e35b24c83694d69bcb595c2318/vignettes/HeatmapR/HeatmapR-6b.png)
 
 ### 2.5 Cell Text
 
-The values of every cells within the constructed heatmap can be
-displayed by setting `cell_text = TRUE`. By default, numeric values are
-rounded to two decimal places but this can be changed through the
-`round` argument. The text displayed in each cell can easily be
-customised using the `cell_text_size`, `cell_text_font`, `cell_text_col`
-and `cell_text_col_alpha` arguments.
+The values of every cell within the constructed heatmap can be displayed
+by setting `cell_text = TRUE`. By default, numeric values are rounded to
+two decimal places but this can be changed through the `round` argument.
+The text displayed in each cell can easily be customised using the
+`cell_text_size`, `cell_text_font`, `cell_text_col` and
+`cell_text_col_alpha` arguments.
 
 ``` r
 
@@ -416,13 +416,14 @@ cell.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3
 
 Heatmaps with more than 50,000 cells, such as single-cell data with
 thousands of cells and tens of markers, are drawn as raster images
-rather than one rectangle per cell. Raster images draw a 1000 x 1000
-heatmap about three times faster and give PDFs about a quarter of the
-size, and look the same as the rectangles. Raster images are only used
-when every cell is a full-size rectangle; `cell_raster = TRUE` uses them
-for smaller heatmaps too and `cell_raster = FALSE` turns them off. Cell
-borders are left out when the cells are smaller than three line widths,
-as they would otherwise hide the cells.
+rather than one rectangle per cell. Raster images draw large heatmaps
+many times faster (a 1000 x 1000 heatmap in about 0.15 seconds) and give
+PDFs a fraction of the size, and look the same as the rectangles. Raster
+images are only used when every cell is a full-size rectangle;
+`cell_raster = TRUE` uses them for smaller heatmaps too and
+`cell_raster = FALSE` turns them off. Cell borders are left out when the
+cells are smaller than three line widths, as they would otherwise hide
+the cells.
 
 ``` r
 
@@ -456,7 +457,7 @@ neither.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/609f1b43bc5b7
 
 Clustering is the slow part of a large heatmap. It needs the distance
 between every pair of rows, so exact clustering of 10,000 rows takes
-about 1.2 seconds on two cores and 400 MB of memory, and four times as
+about 1.5 seconds on two cores and 400 MB of memory, and four times as
 much for twice the rows. Rows (or columns) beyond `clust_max`, 5000 by
 default, are clustered in two stages instead. A sample of 5000 rows is
 clustered exactly and its dendrogram is split into groups of about 200
@@ -674,11 +675,13 @@ input matrix are on completely different scales, making it difficult to
 visualise differences in columns with very small values. In order to
 represent each column on the same scale, we can apply a form of data
 scaling through the `scale_method` argument either to each row or column
-as specified by the `scale` argument. Currently,
+as specified by the `scale` argument.
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-has internal support for `"mean"`, `"range"` and `"zscore"` scaling
-methods that can be applied to either the rows or columns of the input
-matrix.
+has internal support for `"mean"`, `"range"`, `"zscore"` and
+`"quantile"` scaling methods (see
+[`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)),
+which can be applied to either the rows or columns of the input matrix,
+and `transform = "asinh"` transforms cytometry values before scaling.
 
 ### 3.1 Scaling Columns
 
@@ -883,11 +886,11 @@ cluster.](https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa
 ## 5. Hierarchical Clustering
 
 [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-also supports hierarchical clustering to construct dendrograms, and
-[`stats::cutree()`](https://rdrr.io/r/stats/cutree.html) to partition
-the dendrograms into distinct clusters. Distances and linkage are
-computed in compiled code using the nearest-neighbour chain algorithm
-(Murtagh 1983; Müllner 2011), which builds the same trees as
+also supports hierarchical clustering to construct dendrograms, and cuts
+the dendrograms into distinct clusters (giving the clusters of
+[`stats::cutree()`](https://rdrr.io/r/stats/cutree.html)). Distances and
+linkage are computed in compiled code using the nearest-neighbour chain
+algorithm (Murtagh 1983; Müllner 2011), which builds the same trees as
 [`stats::hclust()`](https://rdrr.io/r/stats/hclust.html) (when distances
 are tied, as they often are for integer data, the tree can make a
 different but equally valid choice between the tied merges). The
@@ -943,7 +946,7 @@ supports cosine distance for hierarchical clustering. Cosine distance
 (1 - cosine similarity) measures the angle between vectors and is
 particularly useful for high-dimensional data where the magnitude of the
 vectors is less important than their direction. This is especially
-valuable when analysing gene expression data or other normalized
+valuable when analysing gene expression data or other normalised
 datasets.
 
 ``` r
@@ -996,8 +999,9 @@ orders, as every branch can be flipped; `tree_order_x` and
 `tree_order_y` choose the order. `"olo"` (optimal leaf ordering,
 Bar-Joseph, Gifford and Jaakkola 2001) flips branches so that
 neighbouring rows are as similar as possible, giving smoother gradients,
-and `"mean"` orders branches by their mean values as
-[`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) does.
+and `"mean"` orders branches by their mean values
+([`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) uses the sum
+of their leaves’ means, which favours small branches).
 
 ``` r
 
@@ -1528,7 +1532,7 @@ a legend for the colours of non-numeric columns. The legend is sized
 from its contents: `legend_size` scales the legend keys (colour bars,
 swatches and size legend shapes) and `legend_col_scale_size` controls
 the width of the colour scale. The titles and text displayed in the
-legend(s) are also fully customisable using the the `legend_title_` and
+legend(s) are also fully customisable using the `legend_title_` and
 `legend_text_` family of arguments.
 
 ``` r
@@ -1745,6 +1749,9 @@ heat_map(
   legend_size = 1.5,
   title = "mtcars"
 )
+# heat_map() keeps its margins so that base graphics can be added to the
+# heatmap - set them again for the next plots
+par(mar = c(5.1, 4.1, 4.1, 2.1))
 plot(
   mtcars[, c("disp", "hp")],
   xlab = "Displacement",

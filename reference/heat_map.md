@@ -243,16 +243,16 @@ heat_map(
 
 - clust_method:
 
-  indicates the type of agglomeration method to use when constructing
-  performing hierarchical clustering, set to `"complete"` by default.
-  See [`?hclust`](https://rdrr.io/r/stats/hclust.html) for alternatives.
+  indicates the type of agglomeration method to use when performing
+  hierarchical clustering, set to `"complete"` by default. See
+  [`?hclust`](https://rdrr.io/r/stats/hclust.html) for alternatives.
 
 - clust_max:
 
   the largest number of rows (or columns) clustered exactly, set to 5000
   by default. Exact clustering needs the distances between every pair of
   rows, so its memory and time grow with the square of their number
-  (about 400 MB and 1.2 seconds on two cores for 10,000 rows). Larger
+  (about 400 MB and 1.5 seconds on two cores for 10,000 rows). Larger
   margins are clustered in two stages: a sample of `clust_max` rows is
   clustered exactly, its dendrogram is split into groups, every row
   joins the group of its nearest group medoid and each group is
@@ -1548,7 +1548,8 @@ heat_map(
   (see there for how they are found) or of
   `heat_map_dot(bimodal = TRUE)`. A cell is outlined when its dip is at
   least `bimodal` (0.01 for `TRUE`) and above the dip that one
-  population of the same number of cells exceeds 1\\ that small groups
+  population of the same number of cells exceeds 1% of the time (0.059
+  for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so that small groups
   aren't outlined by chance. Groups whose cells split across several of
   the features at once - most often whether the features are detected at
   all, as in a cluster combining CD4 and CD8 T cells, which no single
@@ -1624,14 +1625,14 @@ using the bootstrap. *Evolution*, 39(4), 783-791.
 Garnier, S. et al. viridisLite: colorblind-friendly color maps (lite
 version). <https://CRAN.R-project.org/package=viridisLite>
 
-Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
-*The Annals of Statistics*, 13(1), 70-84.
-[doi:10.1214/aos/1176346577](https://doi.org/10.1214/aos/1176346577)
-
 Grunau, C., Ozudogru, A. A., Rozhon, V. and Tetek, J. (2023). A nearly
 tight analysis of greedy k-means++. *Proceedings of the 2023 ACM-SIAM
 Symposium on Discrete Algorithms (SODA 2023)*, 1012-1070.
 [doi:10.48550/arXiv.2207.07949](https://doi.org/10.48550/arXiv.2207.07949)
+
+Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+*The Annals of Statistics*, 13(1), 70-84.
+[doi:10.1214/aos/1176346577](https://doi.org/10.1214/aos/1176346577)
 
 Hartigan, J. A. and Wong, M. A. (1979). Algorithm AS 136: a k-means
 clustering algorithm. *Applied Statistics*, 28(1), 100-108.
