@@ -362,9 +362,10 @@ test_that("heat_map_dot() checks its arguments", {
   expect_error(heat_map_dot(cells, group_by = "cluster", dot_min = 2), "proportion")
   expect_error(heat_map_dot(cells, group_by = "cluster", swap_axes = NA), "TRUE or FALSE")
   expect_error(
-    heat_map_dot(cells, features = NULL, group_by = "cluster", assay = NULL,
-                 scale = "zscore", scale_limits = NULL, threshold = 0,
-                 dot_min = 0, swap_axes = FALSE, bimodal = FALSE, "a"),
+    heat_map_dot(cells, features = NULL, group_by = "cluster", split_by = NULL,
+                 assay = NULL, scale = "zscore", scale_limits = NULL,
+                 threshold = 0, dot_min = 0, swap_axes = FALSE, bimodal = FALSE,
+                 marker_colour = "logfc", marker_size = "p_adj", "a"),
     "must be named"
   )
 })

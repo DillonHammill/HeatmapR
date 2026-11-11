@@ -1648,9 +1648,11 @@
 #'   co-ordinates (one unit per cell, plus any gaps between clusters), for
 #'   drawing on top of a heatmap.}
 #'   \item{\code{split_colours}, \code{split_data}: the fill colour and
-#'   value (after scaling) of the lower right half of each cell
+#'   value (after scaling) of the lower right (or right) half of each cell
 #'   (\code{cell_split}) in the orientation of the original data, or
 #'   \code{NULL}.}
+#'   \item{\code{split_sizes}: the relative size of the right half of each
+#'   split circle (\code{cell_split_size}), or \code{NULL}.}
 #'   \item{\code{annotations}: lists \code{x} and \code{y} with the colour of
 #'   each row/column for every annotation, in the original order.}
 #'   \item{\code{layout}: a data.frame with the bounding box (\code{xmin},

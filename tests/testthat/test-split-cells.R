@@ -136,10 +136,13 @@ test_that("missing values, other columns, transparency and the zoom panel", {
   expect_length(halves, 2)
 })
 
-test_that("split cells need full-size rectangles and no uncertainty", {
+test_that("split cells need circles or full-size rectangles and no uncertainty", {
   d <- split_data()
   expect_error(draw(d$ctrl, cell_split = d$trt, cell_size = TRUE), "full-size rectangular")
-  expect_error(draw(d$ctrl, cell_split = d$trt, cell_shape = "circle"), "full-size rectangular")
+  expect_error(draw(d$ctrl, cell_split = d$trt, cell_shape = "diamond"), "requires circles")
+  shapes <- matrix(c("circle", "rect"), nrow(d$ctrl), ncol(d$ctrl))
+  expect_error(draw(d$ctrl, cell_split = d$trt, cell_shape = shapes), "requires circles")
+  expect_no_error(draw(d$ctrl, cell_split = d$trt, cell_shape = "circle"))
   expect_error(draw(d$ctrl, cell_split = d$trt, cell_uncertainty = abs(d$ctrl)),
                "can't be combined with 'cell_uncertainty'")
   expect_error(draw(d$ctrl, cell_split = d$trt[1:3, ]), "'cell_split' must be")

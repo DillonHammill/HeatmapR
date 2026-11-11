@@ -55,7 +55,9 @@ group) and \code{top} (\code{TRUE} for the top markers of each group). Its
 \code{"features"} attribute lists the top markers of each group. Given to
 \code{features} in \code{\link{heat_map}} or \code{\link{heat_map_dot}},
 the rows with \code{top = TRUE} are shown, grouped by the group they
-mark; edit \code{top} to choose other markers.
+mark; edit \code{top} to choose other markers. Given to \code{x} in
+\code{\link{heat_map_dot}}, the markers are drawn as a dot plot coloured
+by fold change and sized by adjusted p-value.
 }
 \description{
 \code{heat_map_markers()} ranks the features of single-cell data by how well

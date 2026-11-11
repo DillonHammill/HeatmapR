@@ -178,6 +178,14 @@ heat_map_dot(sce, features = m, group_by = "cell_type", scale = "range",
              tree_y = TRUE, dot_min = 0.05, title = "Scaled 0 to 1")
 ```
 
+The markers themselves can be drawn as a dot plot: `heat_map_dot(m)` colours each dot by the log fold change of the gene in the group and sizes it by -log10 of the adjusted p-value (as scanpy's `rank_genes_groups_dotplot()`), with `marker_colour` and `marker_size` for other columns (e.g. `"auc"` or `"detected_in"`). A gene has a dot in each group where it passed the filters of `heat_map_markers()`; with `min_detected = 0` and `min_logfc = -Inf` every gene passes in every group, so the dot plot also shows where each marker is lower than in the other cells:
+
+```{r dot-markers, fig.width = 8, fig.height = 4, fig.alt = "Dot plot of the three top markers of each of six cell types, coloured by log fold change and sized by minus log10 of the adjusted p-value. Each type's markers are large red dots in its row, and the same genes are small light blue dots in the other rows, lower there than in the other cells."}
+all_pairs <- heat_map_markers(sce, group_by = "cell_type", n = 3,
+                              min_detected = 0, min_logfc = -Inf)
+heat_map_dot(all_pairs, title = "Markers by fold change and p-value")
+```
+
 ### Groups within groups
 
 Several columns in `group_by` group the cells by their combinations, ordered by the first column and then the next within it. A dot plot then has one row per combination, grouped by the first column in labelled strips and labelled by the others, so conditions can be compared within each cell type:
@@ -186,6 +194,8 @@ Several columns in `group_by` group the cells by their combinations, ordered by 
 heat_map_dot(sce, features = m, group_by = c("cell_type", "condition"),
              title = "Markers in each condition")
 ```
+
+`split_by` shows two conditions in one row instead, each dot split down the middle (see the cytometry example below).
 
 `heat_map()` splits and labels the cells of each combination (`group_max` then takes that many cells from each), and `heat_map_summarise()` gives one row per combination, e.g. a pseudobulk of the counts of each cell type in each donor:
 
@@ -282,6 +292,16 @@ heat_map(
   legend_title = "Scaled median",
   title = "Median of each cluster in each sample"
 )
+```
+
+A dot plot split by condition compares the conditions in each dot: with `split_by = "condition"`, the left half of each dot shows the control events of the cluster and the right half the stimulated, each half coloured by its mean (z-scored within each marker across the clusters and both conditions) and sized by the proportion of its events above `threshold`, here asinh 2 as positive:
+
+```{r cytometry-split, fig.width = 8, fig.height = 5, fig.alt = "Dot plot of 12 markers in eight clusters with each dot split down the middle, the control events of the cluster in the left half and the stimulated in the right. The halves match except for HLA-DR in clusters C5 and C6, whose right halves are larger and darker red."}
+positive <- events
+positive[markers] <- asinh(events[markers] / 5)
+heat_map_dot(positive, features = markers, group_by = "cluster",
+             split_by = "condition", threshold = 2,
+             title = "Control (left) and stimulated (right)")
 ```
 
 ## Clusters that may be two populations

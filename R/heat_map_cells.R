@@ -964,8 +964,8 @@ heat_map_downsample <- function(groups,
         set[[nm]] <- v[keep]
       }
     }
-    for(nm in c("cell_size", "cell_text", "cell_split", "cell_uncertainty",
-                "cell_values", "cell_border_mask")) {
+    for(nm in c("cell_size", "cell_text", "cell_split", "cell_split_size",
+                "cell_uncertainty", "cell_values", "cell_border_mask")) {
       v <- args[[nm]]
       if(is.null(v) || length(dim(v)) != 2) {
         next

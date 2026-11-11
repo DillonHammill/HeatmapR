@@ -260,6 +260,7 @@ heat_map_legend <- function(col = NULL,
         3,
         colours = a$colours,
         glyph = a$glyph,
+        round = a$round,
         lwd = a$lwd,
         lty = a$lty
       )
@@ -568,7 +569,8 @@ heat_map_legend <- function(col = NULL,
           yc - h * upi[["y"]],
           xc + h * upi[["x"]],
           yc + h * upi[["y"]],
-          upper = rows == 1
+          upper = rows == 1,
+          round = isTRUE(b$round)
         )
       } else if(identical(b$glyph, "line")) {
         h <- 0.5 * b$key_w
@@ -860,7 +862,7 @@ heat_map_legend <- function(col = NULL,
         }
       } else if(identical(b$glyph, "split")) {
         .draw_split_glyph(X(kx - h), Y(ky - h), X(kx + h), Y(ky + h),
-                          upper = z == 0)
+                          upper = z == 0, round = isTRUE(b$round))
       } else if(identical(b$glyph, "line")) {
         segments(X(kx - h), Y(ky), X(kx + h), Y(ky), col = b$colours,
                  lwd = b$lwd, lty = b$lty, xpd = NA)

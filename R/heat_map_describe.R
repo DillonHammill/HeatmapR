@@ -514,10 +514,18 @@ as.character.heat_map_description <- function(x,
     return("")
   }
   labels <- as.character(arg("cell_split_labels"))
-  out <- paste0(
-    "Each cell is split along its diagonal: the upper left half shows ",
-    labels[1], " and the lower right half ", labels[2], ", on the same scale."
-  )
+  out <- if(!is.null(info$split_sizes)) {
+    paste0(
+      "Each circle is split down the middle: the left half shows ",
+      labels[1], " and the right half ", labels[2], ", on the same scales."
+    )
+  } else {
+    paste0(
+      "Each cell is split along its diagonal: the upper left half shows ",
+      labels[1], " and the lower right half ", labels[2], ", on the same ",
+      "scale."
+    )
+  }
   d <- .describe_values(info$data)
   diff <- .describe_values(as.data.frame(info$split_data)) - d
   if(all(is.na(diff))) {
