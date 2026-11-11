@@ -149,10 +149,13 @@ annotating cells from their metadata. Only the chosen features of the
 cells shown are made dense, so a few markers of a million cells need
 little memory.
 
-- **Dot plots and markers** - `heat_map_dot()` draws the mean of each
-  group as colour and the proportion of its cells detected as size, and
+- **Dot plots, markers and gene-set scores** - `heat_map_dot()` draws
+  the mean of each group as colour and the proportion of its cells
+  detected as size (or two conditions in the halves of each dot),
   `heat_map_markers()` ranks the markers of each group by their AUC,
-  with Wilcoxon p-values, ready to pass to `features`.
+  with Wilcoxon p-values, ready to pass to `features` or to draw as a
+  dot plot, and `heat_map_score()` scores each cell for sets of genes
+  (z-scored means or module scores).
 - **Summaries of groups** - `heat_map_summarise()` finds the mean,
   median, sum or proportion detected of each feature in each group of
   cells from sparse data in compiled code, and `group_max` keeps small

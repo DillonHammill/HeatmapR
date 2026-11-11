@@ -70,7 +70,7 @@ Beyond clustering, scaling and customisable colours, shapes, sizes, text, legend
 
 **HeatmapR** reads single-cell data where it lives - `SingleCellExperiment` and `Seurat` objects, `flowFrame` and `flowSet` objects and sparse matrices - choosing features by name and grouping and annotating cells from their metadata. Only the chosen features of the cells shown are made dense, so a few markers of a million cells need little memory.
 
-* **Dot plots and markers** - `heat_map_dot()` draws the mean of each group as colour and the proportion of its cells detected as size, and `heat_map_markers()` ranks the markers of each group by their AUC, with Wilcoxon p-values, ready to pass to `features`.
+* **Dot plots, markers and gene-set scores** - `heat_map_dot()` draws the mean of each group as colour and the proportion of its cells detected as size (or two conditions in the halves of each dot), `heat_map_markers()` ranks the markers of each group by their AUC, with Wilcoxon p-values, ready to pass to `features` or to draw as a dot plot, and `heat_map_score()` scores each cell for sets of genes (z-scored means or module scores).
 * **Summaries of groups** - `heat_map_summarise()` finds the mean, median, sum or proportion detected of each feature in each group of cells from sparse data in compiled code, and `group_max` keeps small groups visible next to large ones.
 * **Cytometry** - the asinh transform and quantile scaling of markers, the medians of clusters in each sample, and stacked bars of the events of each condition in each cluster.
 * **Trajectories** - `heat_map_smooth()` smooths genes along pseudotime, one lineage at a time, and `tree_order_y = "peak"` orders them by when they peak.

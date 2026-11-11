@@ -160,6 +160,10 @@ sparse_group_dips_cpp <- function(i, p, x, nrow, ncol, sel, cells_by_column, gro
   .Call(`_HeatmapR_sparse_group_dips_cpp`, i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threshold, min_n, threads)
 }
 
+sparse_cell_sums_cpp <- function(i, p, x, nrow, ncol, sel, w, b, cells_by_column, threads) {
+  .Call(`_HeatmapR_sparse_cell_sums_cpp`, i, p, x, nrow, ncol, sel, w, b, cells_by_column, threads)
+}
+
 dense_group_sums_cpp <- function(x, sel, cells_by_column, group, n_groups, threshold, threads) {
   .Call(`_HeatmapR_dense_group_sums_cpp`, x, sel, cells_by_column, group, n_groups, threshold, threads)
 }
