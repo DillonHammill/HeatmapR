@@ -1,12 +1,21 @@
 # COLOUR-VISION CHECKS ---------------------------------------------------------
 
 test_that("colour-vision deficiencies are simulated as colorspace does", {
-  skip_if_not_installed("colorspace")
-  set.seed(4)
-  cols <- grDevices::rgb(stats::runif(50), stats::runif(50), stats::runif(50))
-  expect_identical(.simulate_cvd(cols, "deuteranopia"), colorspace::deutan(cols))
-  expect_identical(.simulate_cvd(cols, "protanopia"), colorspace::protan(cols))
-  expect_identical(.simulate_cvd(cols, "tritanopia"), colorspace::tritan(cols))
+  # colorspace 2.1's deutan(), protan() and tritan() of these colours
+  cols <- c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33",
+            "#A65628", "#F781BF", "#999999", "#66C2A5", "#1B9E77", "#D95F02")
+  expect_identical(.simulate_cvd(cols, "deuteranopia"),
+                   c("#938208", "#5274B7", "#A69852", "#586EA1", "#C4AE00",
+                     "#FFFA47", "#807327", "#ACB0BC", "#999999", "#AFADA7",
+                     "#8B877A", "#A08E00"))
+  expect_identical(.simulate_cvd(cols, "protanopia"),
+                   c("#645817", "#6480BB", "#B3A040", "#4166A6", "#A59100",
+                     "#FFF400", "#6D6122", "#8D9CC1", "#999999", "#BDB8A4",
+                     "#9A9275", "#837200"))
+  expect_identical(.simulate_cvd(cols, "tritanopia"),
+                   c("#FC0020", "#008C93", "#3EAA99", "#9A5971", "#FF616D",
+                     "#FFEEDB", "#B6454C", "#FF7E98", "#999999", "#44C3B9",
+                     "#009F93", "#EF4151"))
 })
 
 test_that("colours hard to tell apart are reported", {
