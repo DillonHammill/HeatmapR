@@ -390,7 +390,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 #### 2.4.1 Border Masking
 
-The `cell_border_mask` argument allows you to selectively apply colored borders to specific cells by supplying a logical matrix of the same dimensions as the input data. Cells with `TRUE` values will display colored borders, while cells with `FALSE` values will have transparent borders. This is particularly useful for highlighting specific patterns or regions of interest within a heatmap.
+The `cell_border_mask` argument allows you to selectively apply coloured borders to specific cells by supplying a logical matrix of the same dimensions as the input data. Cells with `TRUE` values will display colored borders, while cells with `FALSE` values will have transparent borders. This is particularly useful for highlighting specific patterns or regions of interest within a heatmap.
 
 ```{r, eval = FALSE}
 # Create a mask to highlight high values
@@ -1105,7 +1105,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 #### 5.1.1 Cosine Distance
 
-In addition to the standard distance metrics supported by `stats::dist()`, **HeatmapR** also supports cosine distance for hierarchical clustering. Cosine distance (1 - cosine similarity) measures the angle between vectors and is particularly useful for high-dimensional data where the magnitude of the vectors is less important than their direction. This is especially valuable when analyzing gene expression data or other normalized datasets.
+In addition to the standard distance metrics supported by `stats::dist()`, **HeatmapR** also supports cosine distance for hierarchical clustering. Cosine distance (1 - cosine similarity) measures the angle between vectors and is particularly useful for high-dimensional data where the magnitude of the vectors is less important than their direction. This is especially valuable when analysing gene expression data or other normalized datasets.
 
 ```{r, eval = FALSE}
 heat_map(
@@ -2064,7 +2064,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 ## 7. Complex Layouts
 
-`HeatmapR` supports the arrangement of multiple heatmaps in complex layouts using `heat_map_custom()`. `heat_map_custom()` is called prior to plotting to open the appropriate graphics device and set the desired layout before adding the heatmaps. Once the layout is complete, a call is made to `heat_map_complete()` to reset all `heat_map()` associated settings. The `layout` argument can be either a vector indicating the desired number of rows and columns or a mtrix defining a more complex layout. For example, if we want to split different car brands into separate heatmaps and arrange them:
+`HeatmapR` supports the arrangement of multiple heatmaps in complex layouts using `heat_map_custom()`. `heat_map_custom()` is called prior to plotting to open the appropriate graphics device and set the desired layout before adding the heatmaps. Once the layout is complete, a call is made to `heat_map_complete()` to reset all `heat_map()` associated settings. The `layout` argument can be either a vector indicating the desired number of rows and columns or a matrix defining a more complex layout. For example, if we want to split different car brands into separate heatmaps and arrange them:
 
 ```{r, eval = FALSE}
 heat_map_custom(

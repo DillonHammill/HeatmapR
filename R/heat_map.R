@@ -403,9 +403,9 @@
 #'   \code{cell_border_line_width} and is left out, like cell borders, when
 #'   the cells are too small.
 #' @param cell_border_mask a matrix of the same dimensions as \code{x} containing
-#'   TRUE/FALSE values indicating whether each cell should have a colored border
+#'   TRUE/FALSE values indicating whether each cell should have a coloured border
 #'   (TRUE) or a transparent border (FALSE), set to NULL by default to apply
-#'   border color to all cells. Missing values are treated as FALSE.
+#'   border colour to all cells. Missing values are treated as FALSE.
 #' @param cell_text logical indicating whether the values in \code{x} should be
 #'   displayed in each cell of the heatmap, set to FALSE by default.
 #' @param cell_text_font an integer to control the font face of cell text, set

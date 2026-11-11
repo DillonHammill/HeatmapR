@@ -665,9 +665,9 @@ numbers. The grid uses \code{cell_border_line_type} and
 the cells are too small.}
 
 \item{cell_border_mask}{a matrix of the same dimensions as \code{x} containing
-TRUE/FALSE values indicating whether each cell should have a colored border
+TRUE/FALSE values indicating whether each cell should have a coloured border
 (TRUE) or a transparent border (FALSE), set to NULL by default to apply
-border color to all cells. Missing values are treated as FALSE.}
+border colour to all cells. Missing values are treated as FALSE.}
 
 \item{cell_text}{logical indicating whether the values in \code{x} should be
 displayed in each cell of the heatmap, set to FALSE by default.}
