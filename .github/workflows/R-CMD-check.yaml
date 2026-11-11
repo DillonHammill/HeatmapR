@@ -50,7 +50,10 @@ jobs:
       # library
       - name: Install libpng, gettext and hdf5 (macOS R-devel)
         if: runner.os == 'macOS' && matrix.config.r == 'devel'
-        run: sudo Rscript -e 'source("https://mac.R-project.org/bin/install.R"); install.libs("libpng"); install.libs("gettext"); install.libs("hdf5")'
+        run: |
+          sudo Rscript -e 'source("https://mac.R-project.org/bin/install.R"); install.libs("libpng"); install.libs("gettext"); install.libs("hdf5")'
+          # (hdf5r's configure finds the library through h5cc)
+          echo "/opt/R/arm64/bin" >> "$GITHUB_PATH"
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
