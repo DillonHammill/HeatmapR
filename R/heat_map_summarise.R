@@ -50,7 +50,8 @@
 #' @param group_by the group of each cell of single-cell data: the name of a
 #'   column of the cells' metadata, or a vector with the group of each cell
 #'   (as \code{group_y}); see \code{\link{heat_map}}. Each group becomes
-#'   one row of the result. Several column names group the cells by their
+#'   one row of the result. Several column names (or a data.frame or list of
+#'   several variables, with one value per cell) group the cells by their
 #'   combinations, e.g. \code{c("cluster", "sample")} for the medians of each
 #'   cluster in each sample, in rows named \code{"cluster / sample"} and
 #'   ordered by cluster, then sample.
@@ -300,13 +301,8 @@ heat_map_summarise <- function(x,
     src <- .cell_source(x, assay)
     # GROUPS - ONE METADATA COLUMN, OR THE COMBINATIONS OF SEVERAL (E.G.
     # CLUSTER AND SAMPLE)
-    several <- is.character(group_by) && length(group_by) > 1 &&
-      length(group_by) < src$n
-    by <- .cell_by(group_by, src, "group_by", multiple = several)
-    if(several) {
-      by$parts <- by$values
-      by$values <- .summary_combine(by$parts)
-    }
+    by <- .cell_groups(group_by, src)
+    several <- !is.null(by$parts)
     groups <- if(is.null(by)) group_y else by$values
     stack <- .cell_by(stack_by, src, "stack_by")
     feat <- .cell_features(features, src, drop = c(by$cols, stack$cols))
@@ -676,13 +672,6 @@ heat_map_summarise <- function(x,
   method
 }
 
-#' The combinations of several grouping columns (e.g. cluster and sample) as
-#' one factor, ordered by the first column, then the second, ...
-#' @noRd
-.summary_combine <- function(parts) {
-  f <- lapply(parts, function(v) if(is.factor(v)) v else factor(v))
-  interaction(f, sep = " / ", lex.order = TRUE, drop = TRUE)
-}
 
 
 #' The metadata of the cells that can describe their groups: the grouping

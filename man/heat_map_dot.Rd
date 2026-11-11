@@ -28,7 +28,11 @@ list of features, or the markers returned by
 scanpy's \code{var_group_positions} brackets do).}
 
 \item{group_by}{the group of each cell, the name of a column of its
-metadata or a vector (see \code{\link{heat_map}}). Each group is one row.}
+metadata or a vector (see \code{\link{heat_map}}). Each group is one row.
+Several column names give one row per combination, e.g.
+\code{c("cell_type", "condition")} for each cell type in each
+condition: the rows are grouped by the first variable (in labelled
+strips) and each row is labelled by the others.}
 
 \item{assay}{the values of single-cell data to show (see
 \code{\link{heat_map}}).}

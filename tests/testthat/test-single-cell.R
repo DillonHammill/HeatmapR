@@ -160,7 +160,9 @@ test_that("single-cell arguments are checked", {
     draw(cells, group_by = "clust"),
     "not found: clust. Available: CD3, CD19, CD56, cluster, sample"
   )
-  expect_error(draw(cells, group_by = c("cluster", "sample")), "one column")
+  # (Several columns group the cells by their combinations)
+  expect_no_error(draw(cells, group_by = c("cluster", "sample")))
+  expect_error(draw(cells, group_by = c("cluster", "sampel")), "not found: sampel")
   expect_error(draw(cells, group_by = 1:3), "each of its 235 cells")
   expect_error(
     draw(cells, group_by = "cluster", tree_cut_y = 3),

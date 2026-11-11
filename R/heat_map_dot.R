@@ -22,6 +22,10 @@
 #'   scanpy's \code{var_group_positions} brackets do).
 #' @param group_by the group of each cell, the name of a column of its
 #'   metadata or a vector (see \code{\link{heat_map}}). Each group is one row.
+#'   Several column names give one row per combination, e.g.
+#'   \code{c("cell_type", "condition")} for each cell type in each
+#'   condition: the rows are grouped by the first variable (in labelled
+#'   strips) and each row is labelled by the others.
 #' @param assay the values of single-cell data to show (see
 #'   \code{\link{heat_map}}).
 #' @param scale how the means are scaled within each feature for their
@@ -146,10 +150,25 @@ heat_map_dot <- function(x,
 
   # MEANS AND PROPORTIONS DETECTED - ONE PASS OVER THE CELLS
   src <- .cell_source(x, assay)
-  by <- .cell_by(group_by, src, "group_by")
+  by <- .cell_groups(group_by, src)
   feat <- .cell_features(features, src, drop = by$cols)
   s <- .cell_summaries(src, feat, by$values, threshold)
   feat <- s$feat
+  # SEVERAL GROUPING VARIABLES - THE ROWS GROUPED BY THE FIRST (LABELLED
+  # STRIPS), EACH ROW LABELLED BY THE OTHERS
+  nested <- NULL
+  if(!is.null(by$parts)) {
+    parts <- .group_parts(by$values, by$parts, s$labels)
+    outer <- as.character(parts[[1]])
+    inner <- do.call(
+      paste,
+      c(lapply(parts[-1], as.character), list(sep = " / "))
+    )
+    nested <- list(
+      cut = factor(outer, levels = unique(outer)),
+      text = stats::setNames(inner, s$labels)
+    )
+  }
   # DIPS OF EACH FEATURE IN EACH GROUP, FOR BIMODAL FLAGS
   bimodal_min <- .check_bimodal(bimodal)
   dips <- if(!is.null(bimodal_min)) {
@@ -199,6 +218,12 @@ heat_map_dot <- function(x,
     args$tree_cut_x <- droplevels(feat$groups)
     args$tree_label_x <- TRUE
   }
+  # GROUPS OF CELLS BY THE FIRST VARIABLE AS LABELLED CLUSTERS OF ROWS
+  if(!is.null(nested)) {
+    args$tree_cut_y <- nested$cut
+    args$tree_label_y <- TRUE
+    args$axis_text_y <- nested$text
+  }
   # THE NUMBER OF CELLS IN EACH GROUP, FOR bar_values_y = "n"
   group_n <- tabulate(s$codes, length(s$labels))
   names(group_n) <- s$labels
@@ -226,12 +251,16 @@ heat_map_dot <- function(x,
         }
       }
     }
-    if(!is.null(feat$groups)) {
-      args$tree_cut_y <- args$tree_cut_x
-      args$tree_label_y <- TRUE
-      args$tree_cut_x <- NULL
-      args$tree_label_x <- NULL
-    }
+    # (THE GROUPS OF CELLS ON THE X AXIS, THE GROUPS OF FEATURES ON THE Y)
+    rows <- list(cut = args$tree_cut_y, label = args$tree_label_y,
+                 text = args$axis_text_y)
+    cols <- list(cut = args$tree_cut_x, label = args$tree_label_x)
+    args$tree_cut_x <- rows$cut
+    args$tree_label_x <- rows$label
+    args$axis_text_x <- rows$text
+    args$tree_cut_y <- cols$cut
+    args$tree_label_y <- cols$label
+    args$axis_text_y <- NULL
   }
 
   # OTHER SETTINGS OF THE HEATMAP

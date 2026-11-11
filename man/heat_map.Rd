@@ -819,8 +819,9 @@ to \code{"black"} by default.}
 transparency of bar borders in y axis bar plot, set to 1 by default.}
 
 \item{axis_text_x}{vector of text to use for x axis labels supplied in the
-order matching the constructed heatmap (from left to right), set to NULL
-by default to use the
+order matching the constructed heatmap (from left to right), or named by
+the column names of \code{x} to label each column by name wherever it is
+drawn, set to NULL by default to use the
 column names of \code{x}. Missing values (\code{NA}) are drawn as empty
 labels without a tick mark, so \code{NA} removes the x axis text. An \code{expression} can be supplied for mathematical
 annotation (see \code{?plotmath}).}
@@ -876,7 +877,8 @@ colours.}
 set to 1 by default.}
 
 \item{axis_text_y}{vector of text to use for y axis labels supplied in the
-order matching the constructed heatmap (from top to bottom), set to NULL
+order matching the constructed heatmap (from top to bottom), or named by
+the row names of \code{x} to label each row by name, set to NULL
 by default to use the row names of \code{x}, or the row indices when
 \code{x} has no row names. Missing values (\code{NA}) are drawn as empty
 labels without a tick mark, so \code{NA} removes the y axis text. An
@@ -1172,8 +1174,13 @@ object, \code{"sample"} or a \code{pData()} column of a
 \code{flowFrame} (left out of the features), or a vector with the group
 of each cell. The cells are grouped as by \code{tree_cut_y}, in the order
 of the groups' factor levels (sorted for other vectors), and the groups
-are labelled (\code{tree_label_y}). Cells without a group (\code{NA})
-are left out with a message.}
+are labelled (\code{tree_label_y}). Several column names (or a
+data.frame or list of several variables, with one value per cell) group
+the cells by their combinations, e.g. \code{c("cell_type",
+  "condition")} for each cell type in each condition: ordered by the first
+variable, then the next within it, labelled \code{"CD4 T / control"},
+and without empty combinations. Cells without a group (\code{NA}, or a
+missing value of any of the variables) are left out with a message.}
 
 \item{group_max}{the largest number of cells to show from each group of
 \code{group_by} (or in all when there are no groups), drawn with a fixed
