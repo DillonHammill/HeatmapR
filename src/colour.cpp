@@ -3,13 +3,9 @@
 // Colours are handled as packed integers, as the graphics engine stores
 // them (red in the lowest byte, then green, blue and alpha):
 //
-// - Numeric cells are coloured along a ramp with the arithmetic of
-//   grDevices::colorRamp() (stats' approx1() interpolation of each channel,
-//   clamped to [0, 1], times 255) and rgb(maxColorValue = 255), which
-//   truncates to integers.
-// - Transparency is applied with the arithmetic of adjustcolor(): the alpha
-//   channel times the transparency, clamped to [0, 1], and rgb()'s
-//   (unsigned int)(255 * x + 0.5).
+// - Numeric cells are coloured along a ramp as grDevices::colorRamp() and
+//   rgb(maxColorValue = 255) colour them.
+// - Transparency is applied as adjustcolor() applies it.
 // - Colours are written as "#RRGGBBAA" strings once per distinct colour, and
 //   raster images are passed to the device as packed integers (a
 //   nativeRaster), so their colours are never parsed from strings.
@@ -25,6 +21,7 @@
 // well below what can be seen).
 
 #include <cpp11.hpp>
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -73,87 +70,108 @@ inline double product(double a, double b) {
   return p;
 }
 
-// roundcolor() of colorRamp() times 255, truncated as rgb(maxColorValue =
-// 255) does
-inline uint32_t ramp_byte(double a) {
-  if (a > 1) a = 1;
-  if (a < 0) a = 0;
-  return static_cast<uint32_t>(product(a, 255));
-}
-
-// A ramp through n colours at positions x (increasing), with channels ch (n
-// values each, in [0, 1]). colour(v), for x[0] <= v <= x[n - 1], is the
-// opaque colour of approx1() of stats (linear interpolation) of each
-// channel: the interval approx1()'s binary search finds (the last i <= n - 2
-// with x[i] <= v), found once for the three channels, and the differences
-// across each interval worked out once (the same subtractions).
+// A ramp through n colours at increasing positions x (ties allowed), with
+// channels ch (red, green and blue, n values each, in [0, 1], one channel
+// after the other). colour(v), for x[0] <= v <= x[n - 1], is the packed
+// opaque colour grDevices::colorRamp() and rgb(maxColorValue = 255) give at
+// v.
+//
+// Written from ?approx, ?colorRamp and ?rgb and from the results of
+// approx(ties = "ordered"), colorRamp() and rgb(), compared as a black box.
+// Each channel is interpolated linearly between the knots i and i + 1 around
+// v, i being the last knot at or before v (but at most the last but one) -
+// so at tied positions the last of the tied knots counts and just below them
+// the interpolation runs towards the first. A v exactly at knot i + 1 or i
+// takes that knot's value; otherwise the value is
+//   y[i] + (y[i + 1] - y[i]) * ((v - x[i]) / (x[i + 1] - x[i])),
+// the arithmetic that gives approx()'s results exactly. The value is clamped
+// to [0, 1], multiplied by 255 (the product rounded on its own) and
+// truncated, as rgb(maxColorValue = 255) truncates it.
+//
+// The differences between neighbouring knots are computed once, and the
+// interval is found from a table of evenly spaced buckets over the ramp (a
+// step or two from the right knot for evenly spaced positions) instead of a
+// bisection: the walk from the bucket's knot ends at the same knot.
 class Ramp {
  public:
-  Ramp(const double* x, const double* ch, int n)
-      : x_(x), n_(n), dx_(n - 1), y_(ch, ch + 3 * static_cast<size_t>(n)),
-        dy_(3 * static_cast<size_t>(n - 1)) {
-    even_ = true;
-    for (int i = 0; i + 1 < n; ++i) {
-      dx_[i] = x[i + 1] - x[i];
-      if (!(x[i] < x[i + 1])) even_ = false;
-      for (int h = 0; h < 3; ++h) {
-        const double* y = ch + static_cast<size_t>(h) * n;
-        dy_[static_cast<size_t>(h) * (n - 1) + i] = y[i + 1] - y[i];
-      }
+  Ramp(const double* x, const double* ch, int n) : n_(n), knots_(n) {
+    for (int i = 0; i < n; ++i) {
+      Knot& k = knots_[i];
+      k.x = x[i];
+      for (int h = 0; h < 3; ++h) k.y[h] = ch[static_cast<size_t>(h) * n + i];
     }
-    // STRICTLY INCREASING POSITIONS - A FIRST GUESS FROM EVENLY SPACED ONES,
-    // CORRECTED TO THE INTERVAL OF THE BINARY SEARCH
-    scale_ = even_ ? (n - 1) / (x[n - 1] - x[0]) : 0;
-    even_ = even_ && std::isfinite(scale_);
-  }
-
-  int interval(double v) const {
-    if (even_) {
-      double g = (v - x_[0]) * scale_;
-      int i = g <= 0 ? 0 : (g >= n_ - 2 ? n_ - 2 : static_cast<int>(g));
-      while (i > 0 && v < x_[i]) --i;
-      while (i < n_ - 2 && !(v < x_[i + 1])) ++i;
-      return i;
+    // THE DIFFERENCES TO THE NEXT KNOT (NONE AFTER THE LAST)
+    for (int i = 0; i < n; ++i) {
+      Knot& k = knots_[i];
+      bool last = i + 1 == n;
+      k.dx = last ? 0 : x[i + 1] - x[i];
+      for (int h = 0; h < 3; ++h) k.dy[h] = last ? 0 : knots_[i + 1].y[h] - k.y[h];
     }
-    int i = 0, j = n_ - 1;
-    while (i < j - 1) {
-      int ij = (i + j) / 2;
-      if (v < x_[ij]) j = ij; else i = ij;
+    // THE BUCKETS: THE LAST KNOT (AT MOST THE LAST BUT ONE) AT OR BEFORE
+    // EACH BUCKET'S START
+    lo_ = x[0];
+    double width = x[n - 1] - x[0];
+    buckets_ = std::min(4096, std::max(16, 4 * (n - 1)));
+    scale_ = width > 0 ? buckets_ / width : 0;
+    table_.assign(buckets_ + 1, 0);
+    int i = 0;
+    for (int b = 0; b <= buckets_; ++b) {
+      double start = width > 0 ? lo_ + width * (static_cast<double>(b) / buckets_) : lo_;
+      while (i < n - 2 && x[i + 1] <= start) ++i;
+      table_[b] = i;
     }
-    return i;
   }
 
   int colour(double v) const {
-    int i = interval(v), j = i + 1;
-    double t = (v - x_[i]) / dx_[i];
+    // THE INTERVAL, FROM THE BUCKET OF v
+    double f = (v - lo_) * scale_;
+    int b = f > 0 ? (f < buckets_ ? static_cast<int>(f) : buckets_) : 0;
+    int i = table_[b];
+    while (i > 0 && v < knots_[i].x) --i;
+    while (i < n_ - 2 && knots_[i + 1].x <= v) ++i;
+    const Knot& k = knots_[i];
+    const Knot& k1 = knots_[i + 1];
     uint32_t c[3];
-    for (int h = 0; h < 3; ++h) {
-      const double* y = y_.data() + static_cast<size_t>(h) * n_;
-      double a;
-      if (v == x_[j]) {
-        a = y[j];
-      } else if (v == x_[i]) {
-        a = y[i];
-      } else {
-        a = y[i] + product(dy_[static_cast<size_t>(h) * (n_ - 1) + i], t);
-      }
-      c[h] = ramp_byte(a);
+    if (v == k1.x) {
+      for (int h = 0; h < 3; ++h) c[h] = byte(k1.y[h]);
+    } else if (v == k.x) {
+      for (int h = 0; h < 3; ++h) c[h] = byte(k.y[h]);
+    } else {
+      // LINEAR INTERPOLATION
+      double t = (v - k.x) / k.dx;
+      for (int h = 0; h < 3; ++h) c[h] = byte(k.y[h] + product(k.dy[h], t));
     }
     return pack(c[0], c[1], c[2], 255);
   }
 
  private:
-  const double* x_;
+  // A knot: its position and channels, and the differences to the next
+  struct Knot {
+    double x = 0, dx = 0;
+    double y[3] = {0, 0, 0};
+    double dy[3] = {0, 0, 0};
+  };
+
+  // A channel in [0, 1] (clamped) as a byte: times 255, truncated
+  static uint32_t byte(double y) {
+    if (!(y > 0)) y = 0;
+    if (y > 1) y = 1;
+    return static_cast<uint32_t>(static_cast<int>(product(y, 255)));
+  }
+
   int n_;
-  std::vector<double> dx_, y_, dy_;
-  bool even_;
-  double scale_;
+  std::vector<Knot> knots_;
+  double lo_ = 0, scale_ = 0;
+  int buckets_ = 0;
+  std::vector<int> table_;
 };
 
-// ScaleAlpha() of rgb(): (unsigned int)(255 * x + 0.5)
+// The alpha byte of an alpha level x in [0, 1], as rgb(alpha = x) gives it.
+// Written from ?rgb and the results of col2rgb(rgb(0, 0, 0, alpha = x),
+// alpha = TRUE), compared as a black box: the level times 255 (rounded on
+// its own), rounded half up - (k + 0.5) / 255 gives k + 1.
 inline uint32_t alpha_byte(double x) {
-  volatile double t = product(255, x) + 0.5;
-  return static_cast<uint32_t>(t);
+  return static_cast<uint32_t>(product(x, 255) + 0.5);
 }
 
 }  // namespace

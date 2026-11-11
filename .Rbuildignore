@@ -20,3 +20,4 @@ man/figures/HeatmapR/
 ^\.git$
 ^data-raw$
 ^vignettes/articles$
+^LICENSE\.md$

@@ -13,8 +13,8 @@ flagged <- function(x, threshold = 0) {
 }
 
 test_that("the dip is that of Hartigan and Hartigan (1985)", {
-  # REFERENCE DIPS FROM THE DIPTEST PACKAGE (AS 217 AS CORRECTED BY MARTIN
-  # MAECHLER), FOR INPUTS THAT DON'T DEPEND ON THE RANDOM NUMBER GENERATOR
+  # REFERENCE DIPS FROM diptest::dip(), FOR INPUTS THAT DON'T DEPEND ON THE
+  # RANDOM NUMBER GENERATOR
   ref <- list(
     list(qnorm(ppoints(50)), 0.01),
     list(qunif(ppoints(37)), 0.013513513513513561),

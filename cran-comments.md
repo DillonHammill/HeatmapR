@@ -7,6 +7,12 @@ two while `_R_CHECK_LIMIT_CORES_` is set; the tests use at most two threads
 unless `NOT_CRAN` is `"true"`. Examples and tests draw on `pdf(NULL)` or the
 current device and don't open new devices in non-interactive sessions.
 
+The licence changes from GPL-2 to MIT with this release. The author holds
+the copyright to all of the package's code: the compiled code that
+previously followed GPL-licensed code (from R's `hclust()` and `kmeans()`
+and from the `diptest` package) has been rewritten from the published
+algorithms.
+
 ## Test environments
 
 * local: Ubuntu 24.04, R 4.3.3
