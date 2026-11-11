@@ -538,6 +538,100 @@ them:</p>
 <p><img src="single-cell_files/figure-html/cytometry-states-1.png" class="r-plt" alt="Heatmap of the median of HLA-DR, CD45RA and CCR7 in each of eight clusters in each of eight samples, grouped by cluster with labelled strips and annotated by sample and condition, with bars of the number of events in each row; HLA-DR is higher in the stimulated samples of clusters C5 and C6." width="100%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
+<h2 id="clusters-that-may-be-two-populations">Clusters that may be two populations<a class="anchor" aria-label="anchor" href="#clusters-that-may-be-two-populations"></a>
+</h2>
+<p>A cluster can combine two populations that clustering didn’t
+separate, differing in one or two features. <code>bimodal = TRUE</code>
+outlines the cells of a summary or dot plot in which a group’s cells
+look like two populations, so that such clusters can be looked into.
+Each outline comes from the dip statistic of Hartigan and Hartigan
+(1985), the distance between the distribution of a feature’s values in
+the group and the closest distribution with one peak. The dip is 0 for
+one peak of any shape, about 0.02 for two equal populations 3 standard
+deviations apart and 0.05 for 4. A cell is outlined when its dip is at
+least 0.01 and above the dip that one population of as many cells
+exceeds 1% of the time (0.06 for 100 cells, 0.02 for 1,000), so that
+small groups aren’t outlined by chance.</p>
+<p>Peaks can come from the measurement and its transformation rather
+than from cells: piles of zeros, the two mirrored peaks the asinh
+transform with too small a cofactor makes of a negative population, the
+comb of 1, 2, 3, … counts on a log scale, saturated detectors. So the
+dips are found from the values above <code>threshold</code> (the cells
+in which a feature is detected, which dot sizes already show), after the
+transform and before scaling, with discrete values spread over the gaps
+between them and the piles at the ends of continuous values left out. On
+simulated data none of these was outlined, while two populations 3
+standard deviations apart were in groups of 5,000 cells.</p>
+<p>Below, clusters C1 and C2 of the cytometry events are joined, as a
+clustering at lower resolution might join them. The markers that
+separate them are outlined in the joined cluster, and the bars show the
+largest dip of each cluster:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">joined</span> <span class="op">&lt;-</span> <span class="va">events</span></span>
+<span><span class="va">joined</span><span class="op">$</span><span class="va">cluster</span><span class="op">[</span><span class="va">joined</span><span class="op">$</span><span class="va">cluster</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"C1"</span>, <span class="st">"C2"</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"C1+C2"</span></span>
+<span><span class="va">medians</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span><span class="va">joined</span>, features <span class="op">=</span> <span class="va">markers</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span>
+<span>                              fun <span class="op">=</span> <span class="st">"median"</span>, transform <span class="op">=</span> <span class="st">"asinh"</span>,</span>
+<span>                              scale <span class="op">=</span> <span class="st">"quantile"</span>, bimodal <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">sub</span> <span class="op">&lt;-</span> <span class="va">joined</span><span class="op">[</span><span class="fu"><a href="../reference/heat_map_downsample.html">heat_map_downsample</a></span><span class="op">(</span><span class="va">joined</span><span class="op">$</span><span class="va">cluster</span>, <span class="fl">2000</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
+<span>  <span class="va">medians</span>,</span>
+<span>  bimodal <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  cell_values <span class="op">=</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span><span class="va">sub</span>, features <span class="op">=</span> <span class="va">markers</span>,</span>
+<span>                                   group_by <span class="op">=</span> <span class="st">"cluster"</span>, fun <span class="op">=</span> <span class="st">"values"</span>,</span>
+<span>                                   transform <span class="op">=</span> <span class="st">"asinh"</span><span class="op">)</span>,</span>
+<span>  bar_values_y <span class="op">=</span> <span class="st">"dip"</span>,</span>
+<span>  legend_title <span class="op">=</span> <span class="st">"Scaled median"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"C1 and C2 joined"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="single-cell_files/figure-html/bimodal-cytometry-1.png" class="r-plt" alt="Heatmap of the scaled median of 12 markers in seven clusters, one of them joining clusters C1 and C2, with a density of each cluster's values inside every cell. The cells of the joined cluster in the markers that separate C1 from C2 are outlined with thick borders, their densities showing two peaks, and bars beside the rows show the largest dip of each cluster, by far the largest for the joined cluster." width="100%" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">medians</span>, <span class="st">"dip"</span><span class="op">)</span><span class="op">[</span><span class="st">"C1+C2"</span>, <span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    CD3    CD4    CD8   CD19   CD20   CD56   CD16   CD14  CD11c HLA-DR CD45RA </span></span>
+<span><span class="co">#&gt;  0.034  0.085  0.136  0.002  0.001  0.003  0.007  0.087  0.145  0.068  0.001 </span></span>
+<span><span class="co">#&gt;   CCR7 </span></span>
+<span><span class="co">#&gt;  0.124</span></span></code></pre></div>
+<p>Populations that differ in whether features are detected at all, such
+as CD4 and CD8 T cells in one cluster, each without the other’s markers,
+don’t give any single feature two peaks: on the count scale a feature
+detected in only some of the cells falls away steadily from zero, as
+dropout does. They are found across features instead, from the dip of
+the cells’ scores on the first principal component of the correlations
+of the features shown within the cluster, when that component carries
+real co-variation (so that features with two peaks of their own don’t
+add up to a split), and the features that drive it are outlined. Here
+the CD4 and CD8 T cells of the blood cells are one cluster:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">cells</span><span class="op">$</span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">cells</span><span class="op">$</span><span class="va">cell_type</span><span class="op">)</span></span>
+<span><span class="va">cells</span><span class="op">$</span><span class="va">group</span><span class="op">[</span><span class="va">cells</span><span class="op">$</span><span class="va">group</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD4 T"</span>, <span class="st">"CD8 T"</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"T cells"</span></span>
+<span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_dot.html">heat_map_dot</a></span><span class="op">(</span><span class="va">sce</span>, features <span class="op">=</span> <span class="fu">metadata</span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">$</span><span class="va">markers</span>, group_by <span class="op">=</span> <span class="va">cells</span><span class="op">$</span><span class="va">group</span>,</span>
+<span>                   bimodal <span class="op">=</span> <span class="cn">TRUE</span>, title <span class="op">=</span> <span class="st">"CD4 and CD8 T cells joined"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="single-cell_files/figure-html/bimodal-dot-1.png" class="r-plt" alt="Dot plot of four marker genes of each of six cell types in five groups of cells, one of them joining the CD4 and CD8 T cells. The dots of the joined T cells in the CD4 and CD8 T cell markers have thick outlines." width="100%" style="display: block; margin: auto;"></p>
+<p><code><a href="../reference/heat_map_describe.html">heat_map_describe()</a></code> names what is outlined, and
+<code>heat_map_info(hm)$bimodal</code> returns the dips:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_describe.html">heat_map_describe</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Heatmap titled "CD4 and CD8 T cells joined" of 5 rows by 24 columns. Colours</span></span>
+<span><span class="co">#&gt; show Mean (z-score), from dark blue (-1.79) through white to dark red (1.79).</span></span>
+<span><span class="co">#&gt; Cell size shows a second set of values, from 0 to 1. The highest value is 1.79</span></span>
+<span><span class="co">#&gt; (B, MS4A1) and the lowest is -0.638 (B, CD8A). The cells of T cells (dip</span></span>
+<span><span class="co">#&gt; 0.0817, in CD3E, IL7R, CCR7, LDHB and 4 more) may combine populations that</span></span>
+<span><span class="co">#&gt; differ in several features at once (the dip of their first principal</span></span>
+<span><span class="co">#&gt; component); the features driving it are outlined. Columns are split into 6</span></span>
+<span><span class="co">#&gt; groups, numbered from the left: CD4 T (4 columns, e.g. CD3E and IL7R) is</span></span>
+<span><span class="co">#&gt; highest for T cells and NK and lowest for DC and B; CD8 T (4 columns, e.g. CD8A</span></span>
+<span><span class="co">#&gt; and CD8B) is highest for T cells and DC and lowest for B and CD14 Mono; B (4</span></span>
+<span><span class="co">#&gt; columns, e.g. MS4A1 and CD79A) is highest for B and DC and lowest for NK and</span></span>
+<span><span class="co">#&gt; CD14 Mono; NK (4 columns, e.g. GNLY and NKG7) is highest for NK and B and</span></span>
+<span><span class="co">#&gt; lowest for DC and T cells; CD14 Mono (4 columns, e.g. CD14 and LYZ) is highest</span></span>
+<span><span class="co">#&gt; for CD14 Mono and T cells and lowest for DC and B; DC (4 columns, e.g. FCER1A</span></span>
+<span><span class="co">#&gt; and CST3) is highest for DC and B and lowest for NK and CD14 Mono.</span></span></code></pre></div>
+<p>An outline is a prompt to look, not a verdict: the distributions
+inside the cells (<code>cell_values</code>) show what the dip has found,
+and two states of one population (e.g. stimulated and resting cells) are
+two peaks too.</p>
+</div>
+<div class="section level2">
 <h2 id="trajectories">Trajectories<a class="anchor" aria-label="anchor" href="#trajectories"></a>
 </h2>
 <p>Along a trajectory, genes are smoothed along pseudotime and ordered
@@ -556,7 +650,7 @@ lineages as slingshot gives them (missing for cells outside the
 lineage). Both lineages share their start and branch at a pseudotime of
 0.4, and 30 genes, in a random order, each peak at their own point, some
 in one lineage only.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">traj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_example.html">heat_map_example</a></span><span class="op">(</span><span class="st">"trajectory"</span>, class <span class="op">=</span> <span class="st">"SingleCellExperiment"</span><span class="op">)</span></span>
 <span><span class="va">traj</span></span>
 <span><span class="co">#&gt; class: SingleCellExperiment </span></span>
@@ -582,7 +676,7 @@ in one lineage only.</p>
 <span><span class="co">#&gt; cell6  0.2604278 0.2604278 0.2604278</span></span></code></pre></div>
 <p>The genes along the pseudotime of all the cells, ordered by when they
 peak:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">smooth</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_smooth.html">heat_map_smooth</a></span><span class="op">(</span><span class="va">traj</span>, along <span class="op">=</span> <span class="st">"pseudotime"</span>, bins <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">smooth</span>,</span>
@@ -600,7 +694,7 @@ column), and <code>group_by = "lineage"</code> draws the lineages side
 by side. The peak order reads the position of each bin along the
 trajectory, so the genes of both lineages are ordered by when they
 peak:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lineages</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_smooth.html">heat_map_smooth</a></span><span class="op">(</span><span class="va">traj</span>, along <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lineage1"</span>, <span class="st">"lineage2"</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">40</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">lineages</span>, <span class="st">"groups"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;               lineage       along</span></span>

@@ -27,7 +27,8 @@ heat_map_summarise(
   scale = FALSE,
   q = 0.01,
   scale_when = "last",
-  stack_by = NULL
+  stack_by = NULL,
+  bimodal = FALSE
 )
 ```
 
@@ -61,19 +62,21 @@ heat_map_summarise(
 
   the summary of the values in each group, one of `"mean"` (default),
   `"median"`, `"sum"`, `"min"`, `"max"`, `"sd"`, `"n"` (the number of
-  non-missing values) or `"detected"` (the proportion of non-missing
-  values above `threshold`), or a function taking a numeric vector and
-  returning a single number. Missing values are removed before
-  summarising. `"values"` keeps the values themselves: the result is
-  then a matrix of lists holding the numeric vector of values in each
+  non-missing values), `"detected"` (the proportion of non-missing
+  values above `threshold`) or `"dip"` (the dip statistic of the values
+  above `threshold`: see `bimodal`), or a function taking a numeric
+  vector and returning a single number. Missing values are removed
+  before summarising. `"values"` keeps the values themselves: the result
+  is then a matrix of lists holding the numeric vector of values in each
   group, for `cell_values` in
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   to draw their distributions inside the cells.
 
 - threshold:
 
-  values above `threshold` are counted by `fun = "detected"`, set to 0
-  by default.
+  values above `threshold` are counted by `fun = "detected"`, and the
+  dips of `fun = "dip"` and `bimodal` are found from them, set to 0 by
+  default.
 
 - features:
 
@@ -139,6 +142,46 @@ heat_map_summarise(
   `heat_map(bar_values_y = "n", bar_type_y = "stack")` draws. Needs
   `group_by`.
 
+- bimodal:
+
+  `TRUE` to keep the dip of each feature in each group of rows (cells)
+  as the `"dip"` attribute of the result, and the number of values it
+  was found from as `"dip_n"`, for `heat_map(bimodal = TRUE)` to outline
+  the groups in which a feature looks like two populations; set to
+  `FALSE` by default. The dip of Hartigan and Hartigan (1985) is the
+  largest distance between the distribution of the values and the
+  closest unimodal distribution: 0 for one peak of any shape, and up to
+  0.25 as the values split into separate populations (about 0.02 for two
+  equal populations 3 standard deviations apart, 0.05 for 4). So that
+  the measurement and its transformation don't make peaks of their own,
+  the dip is found from the values above `threshold` (the cells in which
+  a feature is detected, which leaves out piles of zeros and the lower
+  of the two mirrored peaks the asinh transform with a small cofactor
+  makes of a negative population), after `transform` and before scaling
+  (quantile scaling clips values into piles), with discrete values such
+  as counts spread evenly over the gaps between them (so that the comb
+  of 1, 2, 3, ... counts isn't read as several peaks) and, for
+  continuous values, the piles at the lowest and highest values
+  (clipping, saturated detectors) left out. Groups with fewer than 20
+  such values have no dip. The dips are computed in compiled code.
+
+  Populations that differ in several features at once (most often
+  whether the features are detected at all, as in a cluster combining
+  CD4 and CD8 T cells: on the count scale, a feature detected in only
+  some cells falls away steadily from zero, as dropout does, and has one
+  peak) are found across features: the dip of the scores of each group's
+  cells on the first principal component of the correlations of its
+  features (those that vary and are detected in at least 5\\ them; at
+  most 50,000 cells of a group, drawn with a fixed seed). It is only
+  found when that component carries co-variation - an eigenvalue of at
+  least 2, and above the largest eigenvalue of as many independent
+  features - so that features that each have two peaks of their own
+  (e.g. from the asinh transform) don't add up to a split, and it is
+  kept as the `"dip_pc"` attribute (and `"dip_pc_n"`, the cells used) in
+  the features that drive the component (more than an equal share of
+  it), `NA` elsewhere. Needs groups of rows from `group_by` or
+  `group_y`.
+
 ## Value
 
 a numeric matrix with one column per group of `group_x` (or the columns
@@ -154,7 +197,14 @@ number of cells of each group (row) in each part (column); and
 columns and the other metadata that is the same for every cell of the
 group (e.g. the condition of each sample), which
 `heat_map(group_by = , annotation_by = )` can use as the metadata of the
-rows.
+rows. With `bimodal = TRUE` the result also keeps the `"dip"`,
+`"dip_n"`, `"dip_pc"` and `"dip_pc_n"` attributes (see `bimodal`).
+
+## References
+
+Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+*The Annals of Statistics*, 13(1), 70-84.
+[doi:10.1214/aos/1176346577](https://doi.org/10.1214/aos/1176346577)
 
 ## See also
 

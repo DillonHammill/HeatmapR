@@ -494,6 +494,36 @@ conventions and defaults have changed; they are listed first.
   by group with labels, as scanpy’s `var_group_positions` brackets do.
 - `legend_size_format` labels the size legend: `"percent"` for
   proportions, or a function.
+- Clusters that may be two populations: `heat_map(bimodal = TRUE)` and
+  `heat_map_dot(bimodal = TRUE)` outline, with a thick border, the cells
+  of a summary in which a group’s cells look like two populations, so
+  that clusters that should perhaps be split can be looked into.
+  `heat_map_summarise(bimodal = TRUE)` keeps the dip statistic of
+  Hartigan and Hartigan (1985) of each feature in each group
+  (`fun = "dip"` gives the dips themselves), found in compiled code so
+  that the measurement and its transformation don’t make peaks of their
+  own: only from the values above `threshold` (leaving out piles of
+  zeros and the lower of the two mirrored peaks the asinh transform with
+  a small cofactor makes of a negative population), after the transform
+  and before scaling, with discrete values such as counts spread over
+  the gaps between them, and without the piles at the ends of continuous
+  values (clipping, saturated detectors). A cell is outlined when its
+  dip is at least 0.01 (or the number given to `bimodal`) and above the
+  dip one population of as many cells exceeds 1% of the time.
+  Populations that differ in several features at once, such as CD4 and
+  CD8 T cells in one cluster, each without the other’s markers, are
+  found from the dip of the cells’ scores on the first principal
+  component of the features’ correlations within the cluster, when it
+  carries co-variation, and outlined in the features that drive it. On
+  simulated data no single population was outlined - negative
+  populations under a small cofactor, integer and low counts, skewed and
+  saturated ones - while two populations 3 standard deviations apart
+  were in groups of 5,000 cells. `bar_values_y = "dip"` draws the
+  largest dip of each row, `heat_map_info()$bimodal` returns the dips
+  and
+  [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+  names the cells outlined. The dip is HeatmapR’s own implementation of
+  Hartigan’s algorithm (AS 217), without new dependencies.
 - [`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md)
   simulates the data of the examples and guides: blood cells of six
   types with their marker genes (`"rna"`), cytometry events in clusters

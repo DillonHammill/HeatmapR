@@ -243,6 +243,7 @@
 <span>  transform <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cofactor <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  scale_q <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  bimodal <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -989,8 +990,9 @@ one row per row of <code>x</code> and one column per part gives stacked bars
 (<code>bar_type_y = "stack"</code> or <code>"fill"</code>). <code>"n"</code> shows the
 number of cells in each group of a summary from
 <code><a href="heat_map_summarise.html">heat_map_summarise</a>(group_by = ...)</code>, or with stacked bars
-their numbers in each part of <code>stack_by</code>. The axis of the
-row bar graph is drawn on the x axis side with the x axis text font,
+their numbers in each part of <code>stack_by</code>, and <code>"dip"</code> the
+largest dip of each row of a summary with dips (see <code>bimodal</code>).
+The axis of the row bar graph is drawn on the x axis side with the x axis text font,
 size, colour, adjustment and tick length (and that of the column bar
 graph on the y axis side with the y axis settings); its numbers are
 always horizontal.</p></dd>
@@ -1611,6 +1613,30 @@ cytometry) or one per column, named by column.</p></dd>
 <dt id="arg-scale-q">scale_q<a class="anchor" aria-label="anchor" href="#arg-scale-q"></a></dt>
 <dd><p>the quantile of <code>scale_method = "quantile"</code>, set to
 0.01 by default.</p></dd>
+
+
+<dt id="arg-bimodal">bimodal<a class="anchor" aria-label="anchor" href="#arg-bimodal"></a></dt>
+<dd><p><code>TRUE</code> to outline, with a thick border, the cells of a
+summary of groups of cells in which a feature looks like two populations
+(e.g. a cluster that combines two smaller ones differing in one or two
+markers), so that they can be looked into; or the smallest dip to
+outline. Set to <code>FALSE</code> by default. Needs the dips of a summary from
+<code>heat_map_summarise(bimodal = TRUE)</code> (see there for how they are
+found) or of <code>heat_map_dot(bimodal = TRUE)</code>. A cell is outlined when
+its dip is at least <code>bimodal</code> (0.01 for <code>TRUE</code>) and above the
+dip that one population of the same number of cells exceeds 1\<!-- % of the -->
+time (0.059 for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so that
+small groups aren't outlined by chance. Groups whose cells split across
+several of the features at once - most often whether the features are
+detected at all, as in a cluster combining CD4 and CD8 T cells, which no
+single feature shows as two peaks - are outlined in the features that
+drive the split, from the dip across features (see
+<code><a href="heat_map_summarise.html">heat_map_summarise</a></code>). The legend gains a key, and
+<code>bar_values_y = "dip"</code> (or <code>bar_values_x</code>) draws the largest
+dip of each row (column) as bars. <code>heat_map_info()$bimodal</code> returns
+the dips, the numbers of values they were found from and the cells
+outlined, and <code><a href="heat_map_describe.html">heat_map_describe()</a></code> names them. The distributions
+behind each cell (<code>cell_values</code>) show what the dip has found.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

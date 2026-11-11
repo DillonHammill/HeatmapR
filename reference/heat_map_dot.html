@@ -90,6 +90,7 @@ a dendrogram of the groups (<code>tree_y = TRUE</code>) or annotations.</p>
 <span>  threshold <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  dot_min <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  swap_axes <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  bimodal <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -150,6 +151,15 @@ dot to be drawn, set to 0 by default (as Seurat's <code>dot.min</code>).</p></dd
 as rows and the groups as columns, set to <code>FALSE</code> by default.</p></dd>
 
 
+<dt id="arg-bimodal">bimodal<a class="anchor" aria-label="anchor" href="#arg-bimodal"></a></dt>
+<dd><p><code>TRUE</code> to outline, with a thick border, the dots of
+groups in which a feature looks like two populations among the cells it
+is detected in (e.g. a cluster combining two smaller ones), from the dip
+of each feature in each group; or the smallest dip to outline. Set to
+<code>FALSE</code> by default. See <code><a href="heat_map_summarise.html">heat_map_summarise</a></code> for how the
+dips are found and <code><a href="heat_map.html">heat_map</a></code> for when a dot is outlined.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>other arguments passed to <code><a href="heat_map.html">heat_map</a></code>, e.g.
 <code>cell_col_scale</code>, <code>tree_y</code> or <code>popup</code>. They replace the
@@ -193,6 +203,13 @@ proportions detected and the cells in each group are returned by
 <span class="r-in"><span>  popup <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="heat_map_dot-2.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Blood cells, with the dots of groups whose cells look like two</span></span></span>
+<span class="r-in"><span><span class="co"># populations outlined</span></span></span>
+<span class="r-in"><span><span class="va">blood</span> <span class="op">&lt;-</span> <span class="fu"><a href="heat_map_example.html">heat_map_example</a></span><span class="op">(</span><span class="st">"rna"</span>, n <span class="op">=</span> <span class="fl">1500</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">heat_map_dot</span><span class="op">(</span><span class="va">blood</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">blood</span>, <span class="st">"markers"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>             group_by <span class="op">=</span> <span class="st">"cell_type"</span>, bimodal <span class="op">=</span> <span class="cn">TRUE</span>, popup <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="heat_map_dot-3.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

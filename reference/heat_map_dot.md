@@ -26,6 +26,7 @@ heat_map_dot(
   threshold = 0,
   dot_min = 0,
   swap_axes = FALSE,
+  bimodal = FALSE,
   ...
 )
 ```
@@ -86,6 +87,18 @@ heat_map_dot(
   logical indicating whether the features should be drawn as rows and
   the groups as columns, set to `FALSE` by default.
 
+- bimodal:
+
+  `TRUE` to outline, with a thick border, the dots of groups in which a
+  feature looks like two populations among the cells it is detected in
+  (e.g. a cluster combining two smaller ones), from the dip of each
+  feature in each group; or the smallest dip to outline. Set to `FALSE`
+  by default. See
+  [`heat_map_summarise`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  for how the dips are found and
+  [`heat_map`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  for when a dot is outlined.
+
 - ...:
 
   other arguments passed to
@@ -131,5 +144,12 @@ heat_map_dot(
   scale = "range",
   popup = FALSE
 )
+
+
+# Blood cells, with the dots of groups whose cells look like two
+# populations outlined
+blood <- heat_map_example("rna", n = 1500)
+heat_map_dot(blood, features = attr(blood, "markers"),
+             group_by = "cell_type", bimodal = TRUE, popup = FALSE)
 
 ```

@@ -79,8 +79,9 @@ names(info)
 #>  [5] "col_clusters"  "tree_x"        "tree_y"        "support_x"    
 #>  [9] "support_y"     "zoom_x"        "zoom_y"        "axis_text_x"  
 #> [13] "axis_text_y"   "colours"       "split_colours" "split_data"   
-#> [17] "sizes"         "shapes"        "centers"       "annotations"  
-#> [21] "layout"        "raster"        "col_limits"    "size_limits"
+#> [17] "bimodal"       "sizes"         "shapes"        "centers"      
+#> [21] "annotations"   "layout"        "raster"        "col_limits"   
+#> [25] "size_limits"
 # THE ROWS IN THE ORDER THEY ARE SHOWN, FROM THE TOP
 head(rownames(mtcars)[info$row_order])
 #> [1] "Hornet 4 Drive" "Valiant"        "Merc 280"       "Merc 280C"     

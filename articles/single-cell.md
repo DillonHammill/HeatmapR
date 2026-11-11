@@ -526,6 +526,127 @@ events in each row; HLA-DR is higher in the stimulated samples of
 clusters C5 and
 C6.](single-cell_files/figure-html/cytometry-states-1.png)
 
+## Clusters that may be two populations
+
+A cluster can combine two populations that clustering didn’t separate,
+differing in one or two features. `bimodal = TRUE` outlines the cells of
+a summary or dot plot in which a group’s cells look like two
+populations, so that such clusters can be looked into. Each outline
+comes from the dip statistic of Hartigan and Hartigan (1985), the
+distance between the distribution of a feature’s values in the group and
+the closest distribution with one peak. The dip is 0 for one peak of any
+shape, about 0.02 for two equal populations 3 standard deviations apart
+and 0.05 for 4. A cell is outlined when its dip is at least 0.01 and
+above the dip that one population of as many cells exceeds 1% of the
+time (0.06 for 100 cells, 0.02 for 1,000), so that small groups aren’t
+outlined by chance.
+
+Peaks can come from the measurement and its transformation rather than
+from cells: piles of zeros, the two mirrored peaks the asinh transform
+with too small a cofactor makes of a negative population, the comb of 1,
+2, 3, … counts on a log scale, saturated detectors. So the dips are
+found from the values above `threshold` (the cells in which a feature is
+detected, which dot sizes already show), after the transform and before
+scaling, with discrete values spread over the gaps between them and the
+piles at the ends of continuous values left out. On simulated data none
+of these was outlined, while two populations 3 standard deviations apart
+were in groups of 5,000 cells.
+
+Below, clusters C1 and C2 of the cytometry events are joined, as a
+clustering at lower resolution might join them. The markers that
+separate them are outlined in the joined cluster, and the bars show the
+largest dip of each cluster:
+
+``` r
+
+joined <- events
+joined$cluster[joined$cluster %in% c("C1", "C2")] <- "C1+C2"
+medians <- heat_map_summarise(joined, features = markers, group_by = "cluster",
+                              fun = "median", transform = "asinh",
+                              scale = "quantile", bimodal = TRUE)
+sub <- joined[heat_map_downsample(joined$cluster, 2000), ]
+heat_map(
+  medians,
+  bimodal = TRUE,
+  cell_values = heat_map_summarise(sub, features = markers,
+                                   group_by = "cluster", fun = "values",
+                                   transform = "asinh"),
+  bar_values_y = "dip",
+  legend_title = "Scaled median",
+  title = "C1 and C2 joined"
+)
+```
+
+![Heatmap of the scaled median of 12 markers in seven clusters, one of
+them joining clusters C1 and C2, with a density of each cluster's values
+inside every cell. The cells of the joined cluster in the markers that
+separate C1 from C2 are outlined with thick borders, their densities
+showing two peaks, and bars beside the rows show the largest dip of each
+cluster, by far the largest for the joined
+cluster.](single-cell_files/figure-html/bimodal-cytometry-1.png)
+
+``` r
+
+round(attr(medians, "dip")["C1+C2", ], 3)
+#>    CD3    CD4    CD8   CD19   CD20   CD56   CD16   CD14  CD11c HLA-DR CD45RA 
+#>  0.034  0.085  0.136  0.002  0.001  0.003  0.007  0.087  0.145  0.068  0.001 
+#>   CCR7 
+#>  0.124
+```
+
+Populations that differ in whether features are detected at all, such as
+CD4 and CD8 T cells in one cluster, each without the other’s markers,
+don’t give any single feature two peaks: on the count scale a feature
+detected in only some of the cells falls away steadily from zero, as
+dropout does. They are found across features instead, from the dip of
+the cells’ scores on the first principal component of the correlations
+of the features shown within the cluster, when that component carries
+real co-variation (so that features with two peaks of their own don’t
+add up to a split), and the features that drive it are outlined. Here
+the CD4 and CD8 T cells of the blood cells are one cluster:
+
+``` r
+
+cells <- as.data.frame(colData(sce))
+cells$group <- as.character(cells$cell_type)
+cells$group[cells$group %in% c("CD4 T", "CD8 T")] <- "T cells"
+hm <- heat_map_dot(sce, features = metadata(sce)$markers, group_by = cells$group,
+                   bimodal = TRUE, title = "CD4 and CD8 T cells joined")
+```
+
+![Dot plot of four marker genes of each of six cell types in five groups
+of cells, one of them joining the CD4 and CD8 T cells. The dots of the
+joined T cells in the CD4 and CD8 T cell markers have thick
+outlines.](single-cell_files/figure-html/bimodal-dot-1.png)
+
+[`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+names what is outlined, and `heat_map_info(hm)$bimodal` returns the
+dips:
+
+``` r
+
+heat_map_describe(hm)
+#> Heatmap titled "CD4 and CD8 T cells joined" of 5 rows by 24 columns. Colours
+#> show Mean (z-score), from dark blue (-1.79) through white to dark red (1.79).
+#> Cell size shows a second set of values, from 0 to 1. The highest value is 1.79
+#> (B, MS4A1) and the lowest is -0.638 (B, CD8A). The cells of T cells (dip
+#> 0.0817, in CD3E, IL7R, CCR7, LDHB and 4 more) may combine populations that
+#> differ in several features at once (the dip of their first principal
+#> component); the features driving it are outlined. Columns are split into 6
+#> groups, numbered from the left: CD4 T (4 columns, e.g. CD3E and IL7R) is
+#> highest for T cells and NK and lowest for DC and B; CD8 T (4 columns, e.g. CD8A
+#> and CD8B) is highest for T cells and DC and lowest for B and CD14 Mono; B (4
+#> columns, e.g. MS4A1 and CD79A) is highest for B and DC and lowest for NK and
+#> CD14 Mono; NK (4 columns, e.g. GNLY and NKG7) is highest for NK and B and
+#> lowest for DC and T cells; CD14 Mono (4 columns, e.g. CD14 and LYZ) is highest
+#> for CD14 Mono and T cells and lowest for DC and B; DC (4 columns, e.g. FCER1A
+#> and CST3) is highest for DC and B and lowest for NK and CD14 Mono.
+```
+
+An outline is a prompt to look, not a verdict: the distributions inside
+the cells (`cell_values`) show what the dip has found, and two states of
+one population (e.g. stimulated and resting cells) are two peaks too.
+
 ## Trajectories
 
 Along a trajectory, genes are smoothed along pseudotime and ordered by
