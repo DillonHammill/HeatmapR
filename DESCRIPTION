@@ -22,8 +22,10 @@ Description: Provides a lightweight framework for creating high quality, complex
     median linkage, leaves are ordered optimally as in Bar-Joseph, Gifford
     and Jaakkola (2001) <doi:10.1093/bioinformatics/17.suppl_1.S22>, Kendall
     correlations are computed by Knight's (1966) algorithm
-    <doi:10.1080/01621459.1966.10480879> and k-means by Hartigan and Wong
-    (1979) <doi:10.2307/2346830>, all in compiled code.
+    <doi:10.1080/01621459.1966.10480879>, k-means by Hartigan and Wong
+    (1979) <doi:10.2307/2346830> and the dip statistic of unimodality, which
+    flags groups of cells that may be two populations, by Hartigan and
+    Hartigan (1985) <doi:10.1214/aos/1176346577>, all in compiled code.
     Dendrogram visualisation methods are based on the 'ggdendro' package by
     de Vries and Ripley (2020) <https://CRAN.R-project.org/package=ggdendro>.
 URL: https://dillonhammill.github.io/HeatmapR/
@@ -46,6 +48,7 @@ RoxygenNote: 7.3.3
 Language: en-GB
 Suggests: 
     covr,
+    diptest,
     ggplot2,
     gridGraphics,
     knitr,

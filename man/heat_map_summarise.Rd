@@ -18,7 +18,8 @@ heat_map_summarise(
   scale = FALSE,
   q = 0.01,
   scale_when = "last",
-  stack_by = NULL
+  stack_by = NULL,
+  bimodal = FALSE
 )
 }
 \arguments{
@@ -43,17 +44,20 @@ one row of the result. Rows in a missing group are dropped.}
 
 \item{fun}{the summary of the values in each group, one of \code{"mean"}
 (default), \code{"median"}, \code{"sum"}, \code{"min"}, \code{"max"},
-\code{"sd"}, \code{"n"} (the number of non-missing values) or
+\code{"sd"}, \code{"n"} (the number of non-missing values),
 \code{"detected"} (the proportion of non-missing values above
-\code{threshold}), or a function taking a numeric vector and returning a
-single number. Missing values are removed before summarising.
+\code{threshold}) or \code{"dip"} (the dip statistic of the values above
+\code{threshold}: see \code{bimodal}), or a function taking a numeric
+vector and returning a single number. Missing values are removed before
+summarising.
 \code{"values"} keeps the values themselves: the result is then a matrix
 of lists holding the numeric vector of values in each group, for
 \code{cell_values} in \code{heat_map()} to draw their distributions
 inside the cells.}
 
 \item{threshold}{values above \code{threshold} are counted by
-\code{fun = "detected"}, set to 0 by default.}
+\code{fun = "detected"}, and the dips of \code{fun = "dip"} and
+\code{bimodal} are found from them, set to 0 by default.}
 
 \item{features}{the features of single-cell data to summarise, as names
 (or indices); see \code{\link{heat_map}}. Set to \code{NULL} by
@@ -99,6 +103,44 @@ cells' metadata, or a vector with the part of each cell. The number of
 cells of each group in each part is kept in the \code{"stack"} attribute
 of the result, which \code{heat_map(bar_values_y = "n", bar_type_y =
   "stack")} draws. Needs \code{group_by}.}
+
+\item{bimodal}{\code{TRUE} to keep the dip of each feature in each group of
+rows (cells) as the \code{"dip"} attribute of the result, and the number
+of values it was found from as \code{"dip_n"}, for \code{heat_map(bimodal
+  = TRUE)} to outline the groups in which a feature looks like two
+populations; set to \code{FALSE} by default. The dip of Hartigan and
+Hartigan (1985) is the largest distance between the distribution of the
+values and the closest unimodal distribution: 0 for one peak of any
+shape, and up to 0.25 as the values split into separate populations
+(about 0.02 for two equal populations 3 standard deviations apart, 0.05
+for 4). So that the measurement and its transformation don't make peaks
+of their own, the dip is found from the values above \code{threshold}
+(the cells in which a feature is detected, which leaves out piles of
+zeros and the lower of the two mirrored peaks the asinh transform with a
+small cofactor makes of a negative population), after \code{transform}
+and before scaling (quantile scaling clips values into piles), with
+discrete values such as counts spread evenly over the gaps between them
+(so that the comb of 1, 2, 3, ... counts isn't read as several peaks)
+and, for continuous values, the piles at the lowest and highest values
+(clipping, saturated detectors) left out. Groups with fewer than 20
+such values have no dip. The dips are computed in compiled code.
+
+Populations that differ in several features at once (most often whether
+the features are detected at all, as in a cluster combining CD4 and CD8 T
+cells: on the count scale, a feature detected in only some cells falls
+away steadily from zero, as dropout does, and has one peak) are found
+across features: the dip of the scores of each group's cells on the
+first principal component of the correlations of its features (those
+that vary and are detected in at least 5\\% of the cells, at least 3 of
+them; at most 50,000 cells of a group, drawn with a fixed seed). It is
+only found when that component carries co-variation - an eigenvalue of
+at least 2, and above the largest eigenvalue of as many independent
+features - so that features that each have two peaks of their own (e.g.
+from the asinh transform) don't add up to a split, and it is kept as the
+\code{"dip_pc"} attribute (and \code{"dip_pc_n"}, the cells used) in
+the features that drive the component (more than an equal share of it),
+\code{NA} elsewhere. Needs groups of rows from \code{group_by} or
+\code{group_y}.}
 }
 \value{
 a numeric matrix with one column per group of \code{group_x} (or
@@ -114,7 +156,9 @@ matrix with the number of cells of each group (row) in each part
 holding the grouping columns and the other metadata that is the same for
 every cell of the group (e.g. the condition of each sample), which
 \code{heat_map(group_by = , annotation_by = )} can use as the metadata
-of the rows.
+of the rows. With \code{bimodal = TRUE} the result also keeps the
+\code{"dip"}, \code{"dip_n"}, \code{"dip_pc"} and \code{"dip_pc_n"}
+attributes (see \code{bimodal}).
 }
 \description{
 \code{heat_map_summarise()} reduces the columns (and/or rows) of a matrix
@@ -178,6 +222,11 @@ medians <- heat_map_summarise(
 )
 heat_map(medians, bar_values_y = "n", bar_type_y = "stack", popup = FALSE)
 
+}
+\references{
+Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of
+unimodality. \emph{The Annals of Statistics}, 13(1), 70-84.
+\doi{10.1214/aos/1176346577}
 }
 \seealso{
 \code{\link{heat_map}}

@@ -602,6 +602,26 @@ heat_map_bar <- function(x,
                         x,
                         type,
                         axis) {
+  # THE LARGEST DIP OF EACH ROW (COLUMN) OF A SUMMARY WITH DIPS
+  if(identical(values, "dip")) {
+    d <- attr(x, "dip")
+    if(is.null(d)) {
+      stop(
+        "'bar_values_", axis, "' = \"dip\" needs the dips of a summary from ",
+        "heat_map_summarise(bimodal = TRUE).",
+        call. = FALSE
+      )
+    }
+    # (THE DIPS OF SINGLE FEATURES AND ACROSS FEATURES)
+    pc <- attr(x, "dip_pc")
+    if(!is.null(pc)) {
+      d <- pmax(d, pc, na.rm = TRUE)
+    }
+    largest <- function(v) {
+      if(all(is.na(v))) NA_real_ else max(v, na.rm = TRUE)
+    }
+    return(apply(d, if(axis == "x") 2 else 1, largest))
+  }
   if(!identical(values, "n")) {
     return(values)
   }

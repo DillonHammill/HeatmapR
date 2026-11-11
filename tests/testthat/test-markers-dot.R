@@ -347,7 +347,7 @@ test_that("heat_map_dot() checks its arguments", {
   expect_error(
     heat_map_dot(cells, features = NULL, group_by = "cluster", assay = NULL,
                  scale = "zscore", scale_limits = NULL, threshold = 0,
-                 dot_min = 0, swap_axes = FALSE, "a"),
+                 dot_min = 0, swap_axes = FALSE, bimodal = FALSE, "a"),
     "must be named"
   )
 })

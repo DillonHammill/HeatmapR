@@ -249,7 +249,8 @@ test_that("heat_map() returns a heat_map object that can be redrawn", {
     c("data", "row_order", "col_order", "row_clusters", "col_clusters",
       "tree_x", "tree_y", "support_x", "support_y", "zoom_x",
       "zoom_y", "axis_text_x",
-      "axis_text_y", "colours", "split_colours", "split_data", "sizes",
+      "axis_text_y", "colours", "split_colours", "split_data", "bimodal",
+      "sizes",
       "shapes", "centers",
       "annotations", "layout", "raster", "col_limits", "size_limits")
   )

@@ -151,7 +151,8 @@ by_column_source <- function(m) {
 
 # A summary without the group sizes, make-up and metadata that group_by adds
 plain <- function(m) {
-  for(a in c("n", "stack", "groups", "along")) {
+  for(a in c("n", "stack", "groups", "along", "dip", "dip_n", "dip_pc",
+              "dip_pc_n")) {
     attr(m, a) <- NULL
   }
   m

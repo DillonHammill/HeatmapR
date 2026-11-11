@@ -44,6 +44,10 @@ native_colours_cpp <- function(col) {
   .Call(`_HeatmapR_native_colours_cpp`, col)
 }
 
+dip_cpp <- function(x, threshold, spread, min_n) {
+  .Call(`_HeatmapR_dip_cpp`, x, threshold, spread, min_n)
+}
+
 first_pc_cpp <- function(x, threads) {
   .Call(`_HeatmapR_first_pc_cpp`, x, threads)
 }
@@ -144,12 +148,20 @@ sparse_group_auc_cpp <- function(i, p, x, nrow, ncol, sel, cells_by_column, grou
   .Call(`_HeatmapR_sparse_group_auc_cpp`, i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threads)
 }
 
+sparse_group_dips_cpp <- function(i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threshold, min_n, threads) {
+  .Call(`_HeatmapR_sparse_group_dips_cpp`, i, p, x, nrow, ncol, sel, cells_by_column, group, n_groups, threshold, min_n, threads)
+}
+
 dense_group_sums_cpp <- function(x, sel, cells_by_column, group, n_groups, threshold, threads) {
   .Call(`_HeatmapR_dense_group_sums_cpp`, x, sel, cells_by_column, group, n_groups, threshold, threads)
 }
 
 dense_group_medians_cpp <- function(x, sel, cells_by_column, group, n_groups, threads) {
   .Call(`_HeatmapR_dense_group_medians_cpp`, x, sel, cells_by_column, group, n_groups, threads)
+}
+
+dense_group_dips_cpp <- function(x, sel, cells_by_column, group, n_groups, threshold, min_n, threads) {
+  .Call(`_HeatmapR_dense_group_dips_cpp`, x, sel, cells_by_column, group, n_groups, threshold, min_n, threads)
 }
 
 dense_group_auc_cpp <- function(x, sel, cells_by_column, group, n_groups, threads) {

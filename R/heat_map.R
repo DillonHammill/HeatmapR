@@ -478,8 +478,9 @@
 #'   (\code{bar_type_y = "stack"} or \code{"fill"}). \code{"n"} shows the
 #'   number of cells in each group of a summary from
 #'   \code{\link{heat_map_summarise}(group_by = ...)}, or with stacked bars
-#'   their numbers in each part of \code{stack_by}. The axis of the
-#'   row bar graph is drawn on the x axis side with the x axis text font,
+#'   their numbers in each part of \code{stack_by}, and \code{"dip"} the
+#'   largest dip of each row of a summary with dips (see \code{bimodal}).
+#'   The axis of the row bar graph is drawn on the x axis side with the x axis text font,
 #'   size, colour, adjustment and tick length (and that of the column bar
 #'   graph on the y axis side with the y axis settings); its numbers are
 #'   always horizontal.
@@ -821,6 +822,27 @@
 #'   cytometry) or one per column, named by column.
 #' @param scale_q the quantile of \code{scale_method = "quantile"}, set to
 #'   0.01 by default.
+#' @param bimodal \code{TRUE} to outline, with a thick border, the cells of a
+#'   summary of groups of cells in which a feature looks like two populations
+#'   (e.g. a cluster that combines two smaller ones differing in one or two
+#'   markers), so that they can be looked into; or the smallest dip to
+#'   outline. Set to \code{FALSE} by default. Needs the dips of a summary from
+#'   \code{heat_map_summarise(bimodal = TRUE)} (see there for how they are
+#'   found) or of \code{heat_map_dot(bimodal = TRUE)}. A cell is outlined when
+#'   its dip is at least \code{bimodal} (0.01 for \code{TRUE}) and above the
+#'   dip that one population of the same number of cells exceeds 1\% of the
+#'   time (0.059 for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so that
+#'   small groups aren't outlined by chance. Groups whose cells split across
+#'   several of the features at once - most often whether the features are
+#'   detected at all, as in a cluster combining CD4 and CD8 T cells, which no
+#'   single feature shows as two peaks - are outlined in the features that
+#'   drive the split, from the dip across features (see
+#'   \code{\link{heat_map_summarise}}). The legend gains a key, and
+#'   \code{bar_values_y = "dip"} (or \code{bar_values_x}) draws the largest
+#'   dip of each row (column) as bars. \code{heat_map_info()$bimodal} returns
+#'   the dips, the numbers of values they were found from and the cells
+#'   outlined, and \code{heat_map_describe()} names them. The distributions
+#'   behind each cell (\code{cell_values}) show what the dip has found.
 #' @param ... additional arguments passed to \code{\link{heat_map_clust}} (and
 #'   on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other
 #'   arguments are ignored with a warning, which catches misspelled argument
@@ -1102,6 +1124,7 @@ heat_map <- function(x,
                      transform = NULL,
                      cofactor = 5,
                      scale_q = 0.01,
+                     bimodal = FALSE,
                      ...) {
 
   # ARGUMENTS ------------------------------------------------------------------
@@ -1139,6 +1162,8 @@ heat_map <- function(x,
   # READ BEFORE THE DATA ARE CONVERTED
   bar_n_x <- identical(bar_values_x, "n")
   bar_n_y <- identical(bar_values_y, "n")
+  bar_dip_x <- identical(bar_values_x, "dip")
+  bar_dip_y <- identical(bar_values_y, "dip")
   bar_values_x <- .bar_counts(bar_values_x, x, bar_type_x, "x")
   bar_values_y <- .bar_counts(bar_values_y, x, bar_type_y, "y")
   bar_title_x <- attr(bar_values_x, "title")
@@ -1146,6 +1171,15 @@ heat_map <- function(x,
 
   # POSITIONS OF THE BINS OF A TRAJECTORY (heat_map_smooth()) FOR PEAK ORDERS
   peak_positions <- .peak_positions(x)
+
+  # DIPS OF A SUMMARY (heat_map_summarise(bimodal = TRUE)) FOR BIMODAL FLAGS
+  bimodal_min <- .check_bimodal(bimodal)
+  dips_given <- list(
+    dip = attr(x, "dip"),
+    n = attr(x, "dip_n"),
+    pc_dip = attr(x, "dip_pc"),
+    pc_n = attr(x, "dip_pc_n")
+  )
 
   # SINGLE-CELL DATA - THE CHOSEN CELLS AND FEATURES, GROUPS AS CLUSTERS AND
   # ANNOTATIONS AS TRACKS (THE REDRAW DRAWS THEM AS GIVEN)
@@ -1190,6 +1224,21 @@ heat_map <- function(x,
   # EMPTY DATA
   if(nrow(x) == 0 || ncol(x) == 0) {
     stop("'x' must contain at least one row and one column!")
+  }
+
+  # CELLS IN WHICH A FEATURE LOOKS LIKE TWO POPULATIONS
+  bimodal_dips <- NULL
+  bimodal_flags <- NULL
+  if(!is.null(bimodal_min)) {
+    bimodal_dips <- .dips_for(dips_given, x)
+    if(is.null(bimodal_dips)) {
+      stop(
+        "'bimodal' needs the dips of a summary from ",
+        "heat_map_summarise(bimodal = TRUE), or heat_map_dot(bimodal = TRUE).",
+        call. = FALSE
+      )
+    }
+    bimodal_flags <- .bimodal_all(bimodal_dips, bimodal_min)
   }
 
   # NUMERIC COLUMNS
@@ -1832,6 +1881,9 @@ heat_map <- function(x,
       legend_keys <- c(legend_keys, list(split = .split_key(cell_split_labels)))
     }
   }
+  if(!is.null(bimodal_flags) && any(bimodal_flags) && !.legend_off(legend)) {
+    legend_keys <- c(legend_keys, list(Bimodal = .bimodal_key()))
+  }
   # VALUES ON THE COLOUR SCALE - BOTH HALVES OF SPLIT CELLS
   col_values <- function() {
     if(is.null(split_mat)) {
@@ -1995,6 +2047,12 @@ heat_map <- function(x,
     } else {
       "Cells"
     }
+  }
+  if(bar_dip_x && is.null(bar_axis_label_x)) {
+    bar_axis_label_x <- "Dip"
+  }
+  if(bar_dip_y && is.null(bar_axis_label_y)) {
+    bar_axis_label_y <- "Dip"
   }
 
   # CELL ARGUMENTS -------------------------------------------------------------
@@ -3252,6 +3310,30 @@ heat_map <- function(x,
     )
   }
 
+  # CELLS IN WHICH A FEATURE LOOKS LIKE TWO POPULATIONS - THICK OUTLINES OVER
+  # THE CELLS (OR DOTS)
+  if(!is.null(bimodal_flags) && any(bimodal_flags)) {
+    flagged <- cells_of(bimodal_flags) %in% TRUE & cell_shapes != "none"
+    if(any(flagged)) {
+      # (RECTANGLES INSET, SO THAT THE OUTLINES OF NEIGHBOURS STAY APART)
+      sizes <- cell_sizes[flagged]
+      rects <- cell_shapes[flagged] == "rect"
+      sizes[rects] <- 0.86 * sizes[rects]
+      .draw_cells(
+        x = cell_x[flagged],
+        y = cell_y[flagged],
+        size = sizes,
+        shape = cell_shapes[flagged],
+        fill = rep(NA_character_, sum(flagged)),
+        border = rep("black", sum(flagged)),
+        line_type = 1,
+        line_width = .BIMODAL_LWD,
+        cell_in = lay$cell_in,
+        value = cell_r[flagged]
+      )
+    }
+  }
+
   # ZOOM LENS - THE BAND, THE WEDGE AND THE ENLARGED CELLS, DRAWN WITH USER
   # CO-ORDINATES THAT PUT THE CELLS OF THE BAND IN THE PANEL
   for(zp in Map(
@@ -3778,6 +3860,17 @@ heat_map <- function(x,
       .cell_matrix(split_fill, cell_ind, x)
     },
     split_data = split_mat,
+    bimodal = if(!is.null(bimodal_flags)) {
+      list(
+        dip = bimodal_dips$dip,
+        n = bimodal_dips$n,
+        dip_pc = bimodal_dips$pc_dip,
+        n_pc = bimodal_dips$pc_n,
+        flagged = bimodal_flags,
+        min = bimodal_min,
+        groups = bimodal_dips$groups
+      )
+    },
     sizes = if(is.null(size_mat)) {
       .uniform_cells(1, x)
     } else {
