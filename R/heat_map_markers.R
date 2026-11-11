@@ -127,61 +127,25 @@ heat_map_markers <- function(x,
     stop("'min_logfc' must be a single number.", call. = FALSE)
   }
 
-  # MEANS AND PROPORTIONS DETECTED IN AND OUT OF EACH GROUP
+  # MEANS AND PROPORTIONS DETECTED IN AND OUT OF EACH GROUP, AND THE AUC OF
+  # THE FEATURES KEPT IN SOME GROUP
   src <- .cell_source(x, assay)
   by <- .cell_by(group_by, src, "group_by")
   feat <- .cell_features(features, src, drop = by$cols)
-  s <- .cell_summaries(src, feat, by$values, threshold, dense = TRUE)
+  st <- .marker_stats(src, feat, by$values, threshold, min_detected,
+                      min_logfc)
+  s <- st$s
   feat <- s$feat
   G <- length(s$labels)
-  if(G < 2) {
-    stop("Markers need at least two groups of cells.", call. = FALSE)
-  }
-  out_of <- function(a) {
-    matrix(colSums(a), G, ncol(a), byrow = TRUE) - a
-  }
-  n_out <- out_of(s$n)
-  mean_out <- out_of(s$sum) / n_out
-  detected_out <- out_of(s$detected_n) / n_out
-  logfc <- s$mean - mean_out
-  keep <- !is.na(logfc) & !is.na(s$detected) &
-    s$detected >= min_detected & logfc >= min_logfc
-
-  # AUC OF THE FEATURES KEPT IN SOME GROUP, WITH THE RANK-SUM STATISTIC AND
-  # TIES FOR ITS P-VALUE
-  cand <- which(colSums(keep) > 0)
-  auc <- u <- matrix(NA_real_, G, ncol(keep))
-  ties <- rep(NA_real_, ncol(keep))
-  if(length(cand) > 0) {
-    a <- if(inherits(src$values, "dgCMatrix")) {
-      v <- src$values
-      dims <- methods::slot(v, "Dim")
-      sparse_group_auc_cpp(
-        methods::slot(v, "i"),
-        methods::slot(v, "p"),
-        methods::slot(v, "x"),
-        dims[1],
-        dims[2],
-        as.integer(feat$index[cand]),
-        src$by_column,
-        s$codes,
-        G,
-        .threads()
-      )
-    } else {
-      dense_group_auc_cpp(
-        s$values,
-        s$value_sel[cand],
-        s$value_by_column,
-        s$value_codes,
-        G,
-        .threads()
-      )
-    }
-    auc[, cand] <- a$auc
-    u[, cand] <- a$u
-    ties[cand] <- a$ties
-  }
+  kept <- .marker_keep(s, min_detected, min_logfc)
+  n_out <- kept$n_out
+  mean_out <- kept$mean_out
+  detected_out <- kept$detected_out
+  logfc <- kept$logfc
+  keep <- kept$keep
+  auc <- st$auc
+  u <- st$u
+  ties <- st$ties
 
   # ONE ROW PER FEATURE KEPT FOR A GROUP - BY GROUP, FROM THE HIGHEST AUC
   ind <- which(keep, arr.ind = TRUE)
@@ -229,6 +193,99 @@ heat_map_markers <- function(x,
     features = if(any(res$top)) .marker_features(res) else list(),
     class = c("heat_map_markers", "data.frame")
   )
+}
+
+#' The summaries of each group of cells and the AUC of the features kept in
+#' some group, with the rank-sum statistic and ties for its p-value - on-disk
+#' data a block of features at a time
+#' @noRd
+.marker_stats <- function(src,
+                          feat,
+                          groups,
+                          threshold,
+                          min_detected,
+                          min_logfc) {
+  if(.source_blocked(src)) {
+    parts <- .by_blocks(src, feat, function(bs, bf) {
+      .marker_stats(bs, bf, groups, threshold, min_detected, min_logfc)
+    })
+    s <- parts[[1]]$s
+    for(nm in c("sum", "n", "detected_n", "mean", "detected")) {
+      s[[nm]] <- do.call(cbind, lapply(parts, function(z) z$s[[nm]]))
+    }
+    s$feat <- feat
+    bind <- function(nm) do.call(cbind, lapply(parts, `[[`, nm))
+    return(list(
+      s = s,
+      auc = bind("auc"),
+      u = bind("u"),
+      ties = unlist(lapply(parts, `[[`, "ties"), use.names = FALSE)
+    ))
+  }
+  s <- .cell_summaries(src, feat, groups, threshold, dense = TRUE)
+  feat <- s$feat
+  G <- length(s$labels)
+  if(G < 2) {
+    stop("Markers need at least two groups of cells.", call. = FALSE)
+  }
+  keep <- .marker_keep(s, min_detected, min_logfc)$keep
+  cand <- which(colSums(keep) > 0)
+  auc <- u <- matrix(NA_real_, G, ncol(keep))
+  ties <- rep(NA_real_, ncol(keep))
+  if(length(cand) > 0) {
+    a <- if(inherits(src$values, "dgCMatrix")) {
+      v <- src$values
+      dims <- methods::slot(v, "Dim")
+      sparse_group_auc_cpp(
+        methods::slot(v, "i"),
+        methods::slot(v, "p"),
+        methods::slot(v, "x"),
+        dims[1],
+        dims[2],
+        as.integer(feat$index[cand]),
+        src$by_column,
+        s$codes,
+        G,
+        .threads()
+      )
+    } else {
+      dense_group_auc_cpp(
+        s$values,
+        s$value_sel[cand],
+        s$value_by_column,
+        s$value_codes,
+        G,
+        .threads()
+      )
+    }
+    auc[, cand] <- a$auc
+    u[, cand] <- a$u
+    ties[cand] <- a$ties
+  }
+  # (THE DENSE VALUES ARE NOT KEPT)
+  s$values <- NULL
+  list(s = s, auc = auc, u = u, ties = ties)
+}
+
+#' The means and proportions detected out of each group, the difference of
+#' the means, and the features kept in each group (detected in min_detected
+#' of its cells, with a mean at least min_logfc above the other cells')
+#' @noRd
+.marker_keep <- function(s,
+                         min_detected,
+                         min_logfc) {
+  G <- length(s$labels)
+  out_of <- function(a) {
+    matrix(colSums(a), G, ncol(a), byrow = TRUE) - a
+  }
+  n_out <- out_of(s$n)
+  mean_out <- out_of(s$sum) / n_out
+  detected_out <- out_of(s$detected_n) / n_out
+  logfc <- s$mean - mean_out
+  keep <- !is.na(logfc) & !is.na(s$detected) &
+    s$detected >= min_detected & logfc >= min_logfc
+  list(n_out = n_out, mean_out = mean_out, detected_out = detected_out,
+       logfc = logfc, keep = keep)
 }
 
 #' Two-sided p-values of rank-sum statistics u (of groups of n1 cells against

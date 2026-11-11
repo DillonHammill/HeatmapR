@@ -101,7 +101,8 @@ heat_map_downsample <- function(groups,
 .cells_object <- function(x) {
   inherits(
     x,
-    c("SummarizedExperiment", "Seurat", "flowFrame", "flowSet", "sparseMatrix")
+    c("SummarizedExperiment", "Seurat", "flowFrame", "flowSet", "sparseMatrix",
+      "DelayedArray", "IterableMatrix")
   )
 }
 
@@ -143,6 +144,7 @@ heat_map_downsample <- function(groups,
   if(is.null(dim(x))) {
     x <- data.frame(x)
   }
+  x <- .unwrap_delayed(x)
   if(inherits(x, "sparseMatrix")) {
     x <- .as_dgc(x)
   }
@@ -229,7 +231,9 @@ heat_map_downsample <- function(groups,
       call. = FALSE
     )
   }
-  values <- SummarizedExperiment::assay(x, assay, withDimnames = TRUE)
+  values <- .unwrap_delayed(
+    SummarizedExperiment::assay(x, assay, withDimnames = TRUE)
+  )
   if(inherits(values, "sparseMatrix")) {
     values <- .as_dgc(values)
   }
@@ -309,7 +313,9 @@ heat_map_downsample <- function(groups,
       call. = FALSE
     )
   }
-  values <- SeuratObject::LayerData(x, assay = a, layer = layer)
+  values <- .unwrap_delayed(
+    SeuratObject::LayerData(x, assay = a, layer = layer)
+  )
   if(inherits(values, "sparseMatrix")) {
     values <- .as_dgc(values)
   }
@@ -745,7 +751,7 @@ heat_map_downsample <- function(groups,
 #' @noRd
 .cells_as_rows <- function(src) {
   !src$by_column && !is.data.frame(src$values) &&
-    (is.matrix(src$values) || inherits(src$values, "dgCMatrix"))
+    !inherits(src$values, "heat_map_frames")
 }
 
 #' The hint for a matrix of features by cells read as cells by features
@@ -828,14 +834,14 @@ heat_map_downsample <- function(groups,
     } else {
       v[index, cells, drop = FALSE]
     }
-    out <- t(as.matrix(out))
+    out <- t(.as_dense(out))
   } else {
     out <- if(is.null(cells)) {
       v[, index, drop = FALSE]
     } else {
       v[cells, index, drop = FALSE]
     }
-    out <- as.matrix(out)
+    out <- .as_dense(out)
   }
   cell_names <- src$cells
   if(!is.null(cell_names) && !is.null(cells)) {
@@ -1090,7 +1096,15 @@ heat_map_downsample <- function(groups,
   codes <- as.integer(f)
   labels <- levels(f)
   out <- list(labels = labels, codes = codes)
-  if(inherits(src$values, "dgCMatrix")) {
+  if(.source_blocked(src) && !dense) {
+    # ON-DISK DATA - A BLOCK OF FEATURES AT A TIME
+    parts <- .by_blocks(src, feat, function(bs, bf) {
+      .cell_summaries(bs, bf, groups, threshold)
+    })
+    bind <- function(nm) do.call(cbind, lapply(parts, `[[`, nm))
+    sums <- list(sum = bind("sum"), n = bind("n"),
+                 detected_n = bind("detected_n"))
+  } else if(inherits(src$values, "dgCMatrix")) {
     v <- src$values
     dims <- methods::slot(v, "Dim")
     r <- sparse_group_sums_cpp(

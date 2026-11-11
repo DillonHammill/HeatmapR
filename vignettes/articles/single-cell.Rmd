@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-**HeatmapR** reads single-cell data where it lives: `SingleCellExperiment` and `SummarizedExperiment` objects, `Seurat` objects, `flowFrame` and `flowSet` objects, and sparse matrices, as well as matrices and data frames. Features are chosen by name, groups and annotations come from the cells' metadata, and only the chosen features of the cells shown are ever made dense, so a few markers of a million cells need little memory. Five arguments do most of the work, in `heat_map()`, `heat_map_summarise()` and `heat_map_dot()`:
+**HeatmapR** reads single-cell data where it lives: `SingleCellExperiment` and `SummarizedExperiment` objects, `Seurat` objects, `flowFrame` and `flowSet` objects, and sparse matrices, in memory or on disk (DelayedArray, HDF5Array and BPCells), as well as matrices and data frames. Features are chosen by name, groups and annotations come from the cells' metadata, and only the chosen features of the cells shown are ever made dense, so a few markers of a million cells need little memory. Five arguments do most of the work, in `heat_map()`, `heat_map_summarise()` and `heat_map_dot()`:
 
 | Argument | What it does |
 |---|---|
@@ -122,6 +122,31 @@ heat_map(
   title = "From a Seurat object"
 )
 ```
+
+### On-disk data
+
+Assays too large for memory can stay on disk. A `SingleCellExperiment` whose assays are `DelayedArray` objects - e.g. written with HDF5Array's `writeHDF5Array()` or `writeTENxMatrix()`, or loaded with `HDF5Array::loadHDF5SummarizedExperiment()` - and a `Seurat` object whose layers are BPCells matrices are read like those in memory: heatmaps and dot plots read only the chosen features of the cells shown, and summaries, markers and scores of every gene read the data a block of genes at a time, each block realised as a sparse (or dense) matrix and passed to the same compiled code, so the results are the same as those of the data in memory. (A `DelayedArray` that only wraps a matrix in memory is read as that matrix.) Here the logs of the counts are left as a delayed operation, which is read in blocks like data on disk:
+
+```{r on-disk}
+disk <- sce
+assay(disk, "log1p") <- log1p(DelayedArray::DelayedArray(counts(sce)))
+class(assay(disk, "log1p"))
+memory <- sce
+assay(memory, "log1p") <- log1p(counts(sce))
+all.equal(
+  heat_map_markers(disk, group_by = "cell_type", assay = "log1p"),
+  heat_map_markers(memory, group_by = "cell_type", assay = "log1p")
+)
+```
+
+```{r on-disk-hdf5, eval = FALSE}
+# AN HDF5-BACKED OBJECT, SAVED ONCE AND LOADED WITHOUT READING THE COUNTS
+HDF5Array::saveHDF5SummarizedExperiment(sce, "pbmc_h5")
+disk <- HDF5Array::loadHDF5SummarizedExperiment("pbmc_h5")
+heat_map_summarise(disk, group_by = "cell_type")
+```
+
+A block holds 2^24 values of all the cells (128 MB as a dense matrix) or eight times as many values of sparse data; `options(HeatmapR.block_values = )` sets the size.
 
 ## Summaries of groups
 

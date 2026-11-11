@@ -278,6 +278,16 @@ heat_map_score <- function(x,
 .feature_moments <- function(src,
                              index) {
   v <- src$values
+  if(.source_blocked(src)) {
+    # ON-DISK DATA - A BLOCK OF FEATURES AT A TIME
+    parts <- .by_blocks(src, list(index = index), function(bs, bf) {
+      .feature_moments(bs, bf$index)
+    })
+    return(list(
+      mean = unlist(lapply(parts, `[[`, "mean"), use.names = FALSE),
+      sd = unlist(lapply(parts, `[[`, "sd"), use.names = FALSE)
+    ))
+  }
   if(inherits(v, "dgCMatrix")) {
     dims <- methods::slot(v, "Dim")
     one <- rep(1L, src$n)
@@ -336,7 +346,31 @@ heat_map_score <- function(x,
                        index,
                        w,
                        b) {
+  s <- .cell_sums(src, index, w, b)
+  out <- s$sum / s$n
+  out[s$n == 0] <- NA_real_
+  out
+}
+
+#' The sum over some features of w * value + b in each cell, and the number
+#' of values summed (missing values left out)
+#' @noRd
+.cell_sums <- function(src,
+                       index,
+                       w,
+                       b) {
   v <- src$values
+  if(.source_blocked(src)) {
+    # ON-DISK DATA - A BLOCK OF FEATURES AT A TIME
+    sum <- n <- numeric(src$n)
+    for(blk in .source_blocks(src, index)) {
+      s <- .cell_sums(.source_block(src, index[blk]), seq_along(blk), w[blk],
+                      b[blk])
+      sum <- sum + s$sum
+      n <- n + s$n
+    }
+    return(list(sum = sum, n = n))
+  }
   if(inherits(v, "dgCMatrix")) {
     dims <- methods::slot(v, "Dim")
     r <- sparse_cell_sums_cpp(
@@ -365,9 +399,7 @@ heat_map_score <- function(x,
       n <- n + rowSums(ok)
     }
   }
-  out <- sum / n
-  out[n == 0] <- NA_real_
-  out
+  list(sum = sum, n = n)
 }
 
 #' The metadata of the cells for the scores - the metadata of an object, or

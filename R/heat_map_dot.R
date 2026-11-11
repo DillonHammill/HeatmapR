@@ -241,6 +241,9 @@ heat_map_dot <- function(x,
   # THE ASINH OF THE VALUES OF THE CELLS - OF THE NON-ZERO VALUES OF SPARSE
   # DATA, OR OF THE CHOSEN FEATURES AS A DENSE MATRIX
   if(!is.null(.summary_transform(transform))) {
+    mem <- .source_memory(src, feat)
+    src <- mem$src
+    feat <- mem$feat
     if(inherits(src$values, "dgCMatrix")) {
       src$values <- .sparse_asinh(src, feat, cofactor)
     } else {
