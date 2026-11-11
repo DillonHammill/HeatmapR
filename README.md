@@ -144,7 +144,8 @@ annotations</a>
 
 **HeatmapR** reads single-cell data where it lives -
 `SingleCellExperiment` and `Seurat` objects, `flowFrame` and `flowSet`
-objects and sparse matrices, in memory or on disk (DelayedArray,
+objects, AnnData (`.h5ad`) files and sparse matrices, in memory or on
+disk (DelayedArray,
 HDF5Array and BPCells) - choosing features by name and grouping and
 annotating cells from their metadata. Only the chosen features of the
 cells shown are made dense, so a few markers of a million cells need

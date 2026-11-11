@@ -6,7 +6,8 @@
 #'   or single-cell data: a \code{SingleCellExperiment} or
 #'   \code{SummarizedExperiment}, a \code{Seurat} object, a \code{flowFrame}
 #'   or \code{flowSet}, or a sparse matrix (e.g. a \code{dgCMatrix}, one cell
-#'   per row). Assays can be held on disk: \code{DelayedArray} objects (e.g.
+#'   per row), or an AnnData file read by \code{\link{heat_map_read_h5ad}}
+#'   (or the name of an \code{.h5ad} file). Assays can be held on disk: \code{DelayedArray} objects (e.g.
 #'   the \code{HDF5Matrix} and \code{TENxMatrix} of HDF5Array) and BPCells
 #'   matrices (e.g. in \code{Seurat} layers) are read a block of features
 #'   at a time. Single-cell data are drawn with one row per cell and one
