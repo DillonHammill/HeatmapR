@@ -51,6 +51,7 @@ Suggests:
     DelayedArray,
     ggplot2,
     gridGraphics,
+    hdf5r,
     knitr,
     Matrix,
     patchwork,

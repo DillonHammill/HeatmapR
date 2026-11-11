@@ -102,8 +102,8 @@ heat_map_downsample <- function(groups,
   inherits(
     x,
     c("SummarizedExperiment", "Seurat", "flowFrame", "flowSet", "sparseMatrix",
-      "DelayedArray", "IterableMatrix")
-  )
+      "DelayedArray", "IterableMatrix", "heat_map_h5ad", "AnnDataR6")
+  ) || .is_h5ad_file(x)
 }
 
 #' Single-cell data as a source of cells and features
@@ -122,6 +122,12 @@ heat_map_downsample <- function(groups,
 #' @noRd
 .cell_source <- function(x,
                          assay = NULL) {
+  if(inherits(x, "heat_map_h5ad") || .is_h5ad_file(x)) {
+    return(.cells_h5ad(x, assay))
+  }
+  if(inherits(x, "AnnDataR6")) {
+    return(.cells_anndata(x, assay))
+  }
   if(inherits(x, "SummarizedExperiment")) {
     return(.cells_se(x, assay))
   }
@@ -131,7 +137,7 @@ heat_map_downsample <- function(groups,
   if(!is.null(assay)) {
     stop(
       "'assay' is only used for SingleCellExperiment, SummarizedExperiment ",
-      "and Seurat objects.",
+      "and Seurat objects and AnnData files.",
       call. = FALSE
     )
   }
@@ -750,7 +756,7 @@ heat_map_downsample <- function(groups,
 #' or sparse matrix given as it is, not a data.frame or an object)
 #' @noRd
 .cells_as_rows <- function(src) {
-  !src$by_column && !is.data.frame(src$values) &&
+  !src$by_column && isTRUE(src$columns) && !is.data.frame(src$values) &&
     !inherits(src$values, "heat_map_frames")
 }
 

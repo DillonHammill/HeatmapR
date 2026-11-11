@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-**HeatmapR** reads single-cell data where it lives: `SingleCellExperiment` and `SummarizedExperiment` objects, `Seurat` objects, `flowFrame` and `flowSet` objects, and sparse matrices, in memory or on disk (DelayedArray, HDF5Array and BPCells), as well as matrices and data frames. Features are chosen by name, groups and annotations come from the cells' metadata, and only the chosen features of the cells shown are ever made dense, so a few markers of a million cells need little memory. Five arguments do most of the work, in `heat_map()`, `heat_map_summarise()` and `heat_map_dot()`:
+**HeatmapR** reads single-cell data where it lives: `SingleCellExperiment` and `SummarizedExperiment` objects, `Seurat` objects, `flowFrame` and `flowSet` objects, AnnData (`.h5ad`) files, and sparse matrices, in memory or on disk (DelayedArray, HDF5Array and BPCells), as well as matrices and data frames. Features are chosen by name, groups and annotations come from the cells' metadata, and only the chosen features of the cells shown are ever made dense, so a few markers of a million cells need little memory. Five arguments do most of the work, in `heat_map()`, `heat_map_summarise()` and `heat_map_dot()`:
 
 | Argument | What it does |
 |---|---|
@@ -121,6 +121,18 @@ heat_map(
   axis_text_x = NA,
   title = "From a Seurat object"
 )
+```
+
+### AnnData files
+
+AnnData (`.h5ad`) files written by scanpy and anndata, or downloaded from CELLxGENE, are read by `heat_map_read_h5ad()` without Python, through the hdf5r package. The metadata of the cells (`obs`) is read at once, so `group_by` and `annotation_by` name its columns; `X`, a layer (`assay = "counts"`) or `raw` is read as a sparse matrix the first time it is used and kept for the next heatmap. Features are named by the index of `var` or by a column of symbols or IDs, such as CELLxGENE's `feature_name`. A small file of 60 cells of three types comes with the package:
+
+```{r h5ad, fig.width = 6, fig.height = 3, fig.alt = "Dot plot of eight genes in three cell types read from an AnnData file. The first four genes are large dark red dots in T cells and small elsewhere."}
+file <- system.file("extdata", "example.h5ad", package = "HeatmapR")
+cells <- heat_map_read_h5ad(file)
+cells
+heat_map_dot(cells, features = paste0("GENE", 1:8), group_by = "cell_type",
+             title = "From an AnnData file")
 ```
 
 ### On-disk data
