@@ -64,6 +64,10 @@ distinct_rows_cpp <- function(x) {
   .Call(`_HeatmapR_distinct_rows_cpp`, x)
 }
 
+kmeanspp_cpp <- function(x, k, seed) {
+  .Call(`_HeatmapR_kmeanspp_cpp`, x, k, seed)
+}
+
 hclust_cpp <- function(d, n, method, members, threads) {
   .Call(`_HeatmapR_hclust_cpp`, d, n, method, members, threads)
 }

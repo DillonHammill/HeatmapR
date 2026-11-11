@@ -1164,10 +1164,17 @@ heat_map_clust <- function(x,
 
 #' Deterministic k-means clusters of the rows of a matrix
 #'
-#' k-means starts from the centres of k equal slices of the rows along their
-#' first principal component (or, when those coincide, from k distinct rows
-#' spread along it), so the clusters don't depend on the random seed. The
-#' clusters are numbered so that similar clusters are neighbours: in the
+#' k-means (Hartigan-Wong) is run from the centres of k equal slices of the
+#' rows along their first principal component (or, when those coincide, from
+#' k distinct rows spread along it) and from \code{.KMEANS_STARTS} k-means++
+#' starts (Arthur and Vassilvitskii 2007, greedy; fixed seeds), and the
+#' clusters with the smallest total within-cluster sum of squares are kept,
+#' so the clusters don't depend on the random seed. Slices along the first
+#' principal component suit clusters strung out along it; k-means++ suits
+#' clusters of very different sizes, whose small clusters slices can miss.
+#' For more than \code{.KMEANS_SAMPLE} rows the starts are compared on a
+#' sample of rows (fixed seed), and the best is then fitted to every row.
+#' The clusters are numbered so that similar clusters are neighbours: in the
 #' optimal leaf order of their centres, starting from the end with the lowest
 #' scores on the first principal component.
 #'
@@ -1251,6 +1258,13 @@ heat_map_clust <- function(x,
     cl <- fit$cluster
     centres <- fit$centers
   }
+  # k-MEANS++ STARTS - KEPT WHEN THEY GIVE A SMALLER WITHIN-CLUSTER SUM OF
+  # SQUARES
+  pp <- .kmeans_pp(m, k, cl, centres)
+  if(!is.null(pp)) {
+    cl <- pp$cluster
+    centres <- pp$centers
+  }
   # NUMBER THE CLUSTERS SO THAT SIMILAR CLUSTERS ARE NEIGHBOURS
   pc_mean <- vapply(seq_len(k), function(z) mean(pc[cl == z]), numeric(1))
   ord <- order(pc_mean)
@@ -1262,4 +1276,74 @@ heat_map_clust <- function(x,
     }
   }
   match(cl, ord)
+}
+
+# k-means++ starts tried besides the slices along the first principal
+# component, and the number of rows on which the starts are compared
+.KMEANS_STARTS <- 3L
+.KMEANS_SAMPLE <- 20000L
+
+#' Total within-cluster sum of squares of clusters cl with centres
+#' @noRd
+.kmeans_wss <- function(m,
+                        cl,
+                        centres) {
+  sum((m - centres[cl, , drop = FALSE])^2)
+}
+
+#' k-means from k-means++ starts, when better than the clusters given
+#'
+#' Hartigan-Wong from \code{.KMEANS_STARTS} greedy k-means++ starts (seeds 1,
+#' 2, ...), compared by their total within-cluster sum of squares with the
+#' clusters cl (centres) of the other start. Up to \code{.KMEANS_SAMPLE}
+#' rows every fit is of all the rows; for more, the starts are fitted to a
+#' sample of \code{.KMEANS_SAMPLE} rows (fixed seed) - cl's start being its
+#' centres - and only a k-means++ start that does better there is fitted to
+#' every row, from its centres on the sample.
+#'
+#' @return list(cluster, centers) of a better fit, or NULL to keep cl.
+#'
+#' @noRd
+.kmeans_pp <- function(m,
+                       k,
+                       cl,
+                       centres) {
+  n <- nrow(m)
+  if(.KMEANS_STARTS < 1 || k < 2 || k >= n) {
+    return(NULL)
+  }
+  sampled <- n > .KMEANS_SAMPLE
+  s <- if(sampled) {
+    .with_seed(2357, sort(sample.int(n, .KMEANS_SAMPLE)))
+  } else {
+    seq_len(n)
+  }
+  ms <- if(sampled) m[s, , drop = FALSE] else m
+  # THE OTHER START ON THE ROWS COMPARED
+  base <- if(sampled) .try_kmeans(ms, centres) else list(cluster = cl, centers = centres)
+  if(is.null(base)) {
+    return(NULL)
+  }
+  best_wss <- .kmeans_wss(ms, base$cluster, base$centers)
+  best <- NULL
+  for(seed in seq_len(.KMEANS_STARTS)) {
+    rows <- kmeanspp_cpp(ms, as.integer(k), seed)
+    if(is.null(rows)) {
+      break
+    }
+    fit <- .try_kmeans(ms, ms[rows, , drop = FALSE])
+    if(is.null(fit)) {
+      next
+    }
+    w <- .kmeans_wss(ms, fit$cluster, fit$centers)
+    # (CLEARLY SMALLER - ROUNDING MUSTN'T DECIDE)
+    if(w < best_wss * (1 - 1e-10)) {
+      best_wss <- w
+      best <- fit
+    }
+  }
+  if(is.null(best) || !sampled) {
+    return(best)
+  }
+  .try_kmeans(m, best$centers)
 }

@@ -117,6 +117,13 @@ extern "C" SEXP _HeatmapR_distinct_rows_cpp(SEXP x) {
     return cpp11::as_sexp(distinct_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x)));
   END_CPP11
 }
+// kmeanspp.cpp
+SEXP kmeanspp_cpp(cpp11::doubles_matrix<> x, int k, double seed);
+extern "C" SEXP _HeatmapR_kmeanspp_cpp(SEXP x, SEXP k, SEXP seed) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(kmeanspp_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<double>>(seed)));
+  END_CPP11
+}
 // linkage.cpp
 cpp11::list hclust_cpp(cpp11::doubles d, int n, int method, SEXP members, int threads);
 extern "C" SEXP _HeatmapR_hclust_cpp(SEXP d, SEXP n, SEXP method, SEXP members, SEXP threads) {
@@ -477,6 +484,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_join_groups_cpp",          (DL_FUNC) &_HeatmapR_join_groups_cpp,           8},
     {"_HeatmapR_kernel_settings_cpp",      (DL_FUNC) &_HeatmapR_kernel_settings_cpp,       3},
     {"_HeatmapR_kmeans_hw_cpp",            (DL_FUNC) &_HeatmapR_kmeans_hw_cpp,             4},
+    {"_HeatmapR_kmeanspp_cpp",             (DL_FUNC) &_HeatmapR_kmeanspp_cpp,              3},
     {"_HeatmapR_map_centers_cpp",          (DL_FUNC) &_HeatmapR_map_centers_cpp,           2},
     {"_HeatmapR_mean_order_cpp",           (DL_FUNC) &_HeatmapR_mean_order_cpp,            2},
     {"_HeatmapR_merge_check_cpp",          (DL_FUNC) &_HeatmapR_merge_check_cpp,           3},
