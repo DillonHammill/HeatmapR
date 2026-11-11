@@ -413,13 +413,23 @@ heat_map_complete <- function(){
 #' @export
 heat_map_layout <- function(layout = NULL){
   
-  # SIGNAL CUSTOM LAYOUT
-  options("heat_map_custom" = TRUE)
-  
   # MESSAGE
   if(is.null(layout)){
     stop("Supply either a vector or matrix to construct a custom layout.")
   }
+  if(!is.numeric(layout) || anyNA(layout) || any(layout < 0) ||
+     any(layout != round(layout)) ||
+     (!is.matrix(layout) && (length(layout) < 2 || length(layout) > 3 ||
+                             any(layout[1:2] < 1)))) {
+    stop(
+      "'layout' must be the numbers of rows and columns (and 1 to fill by ",
+      "row or 2 by column), or a matrix of panel numbers.",
+      call. = FALSE
+    )
+  }
+
+  # SIGNAL CUSTOM LAYOUT
+  options("heat_map_custom" = TRUE)
   
   # MATRIX
   if(!is.matrix(layout)){

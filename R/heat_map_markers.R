@@ -116,7 +116,7 @@ heat_map_markers <- function(x,
   if(missing(group_by) || is.null(group_by)) {
     stop("Supply 'group_by' to group the cells.", call. = FALSE)
   }
-  n <- .check_cell_count(n, "n")
+  n <- .check_cell_count(n, "n", "markers per group")
   if(!is.numeric(min_detected) || length(min_detected) != 1 ||
      is.na(min_detected) || min_detected < 0 || min_detected > 1) {
     stop("'min_detected' must be a proportion between 0 and 1.", call. = FALSE)

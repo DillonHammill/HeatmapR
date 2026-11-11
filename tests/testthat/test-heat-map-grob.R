@@ -19,6 +19,9 @@ test_that("heatmaps become grobs that draw at the size they are given", {
   hm <- draw(test_matrix(5, 4), title = "Original")
   g <- heat_map_grob(hm, title = "Grob title")
   expect_true(grid::is.grob(g))
+  # (grid.grabExpr() opens a device when none is open - Rplots.pdf)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
   drawn_grob <- grid::grid.force(
     grid::grid.grabExpr(grid::grid.draw(g), width = 6, height = 5)
   )

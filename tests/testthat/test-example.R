@@ -110,7 +110,7 @@ test_that("examples as SingleCellExperiment objects", {
     as.matrix(cells[, 1:2000])
   )
   expect_identical(
-    as.data.frame(SummarizedExperiment::colData(sce))$cell_type,
+    SummarizedExperiment::colData(sce)$cell_type,
     cells$cell_type
   )
   expect_identical(methods::slot(sce, "metadata")$markers, attr(cells, "markers"))

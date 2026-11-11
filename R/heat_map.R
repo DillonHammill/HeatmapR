@@ -31,12 +31,12 @@
 #'   clustered (one row per row or column of the heatmap) and returns a
 #'   \code{dist} object or a square matrix of distances.
 #' @param clust_method indicates the type of agglomeration method to use when
-#'   constructing performing hierarchical clustering, set to \code{"complete"}
+#'   performing hierarchical clustering, set to \code{"complete"}
 #'   by default. See \code{?hclust} for alternatives.
 #' @param clust_max the largest number of rows (or columns) clustered exactly,
 #'   set to 5000 by default. Exact clustering needs the distances between every
 #'   pair of rows, so its memory and time grow with the square of their number
-#'   (about 400 MB and 1.2 seconds on two cores for 10,000 rows). Larger
+#'   (about 400 MB and 1.5 seconds on two cores for 10,000 rows). Larger
 #'   margins are
 #'   clustered in two stages: a sample of \code{clust_max} rows is clustered
 #'   exactly, its dendrogram is split into groups, every row joins the group
@@ -839,7 +839,7 @@
 #'   for how they are found) or of \code{heat_map_dot(bimodal = TRUE)}. A cell
 #'   is outlined when its dip is at least \code{bimodal} (0.01 for \code{TRUE})
 #'   and above the dip that one population of the same number of cells exceeds
-#'   1\% of the time (0.059 for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so
+#'   1% of the time (0.059 for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so
 #'   that small groups aren't outlined by chance. Groups whose cells split
 #'   across several of the features at once - most often whether the features
 #'   are detected at all, as in a cluster combining CD4 and CD8 T cells, which
@@ -897,14 +897,14 @@
 #' Garnier, S. et al. viridisLite: colorblind-friendly color maps (lite
 #'   version). \url{https://CRAN.R-project.org/package=viridisLite}
 #'
-#' Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
-#'   \emph{The Annals of Statistics}, 13(1), 70-84.
-#'   \doi{10.1214/aos/1176346577}
-#'
 #' Grunau, C., Ozudogru, A. A., Rozhon, V. and Tetek, J. (2023). A nearly
 #'   tight analysis of greedy k-means++. \emph{Proceedings of the 2023
 #'   ACM-SIAM Symposium on Discrete Algorithms (SODA 2023)}, 1012-1070.
 #'   \doi{10.48550/arXiv.2207.07949}
+#'
+#' Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+#'   \emph{The Annals of Statistics}, 13(1), 70-84.
+#'   \doi{10.1214/aos/1176346577}
 #'
 #' Hartigan, J. A. and Wong, M. A. (1979). Algorithm AS 136: a k-means
 #'   clustering algorithm. \emph{Applied Statistics}, 28(1), 100-108.
@@ -1415,6 +1415,18 @@ heat_map <- function(x,
   for(arg in c("tree_size_x", "tree_size_y", "bar_size_x", "bar_size_y",
                "annotation_size_x", "annotation_size_y")) {
     .check_positive(get(arg), arg)
+  }
+  # DECIMAL PLACES, TITLE AND TRANSPARENCY
+  if(!is.numeric(round) || length(round) != 1 || !is.finite(round) ||
+     round < 0 || round != floor(round)) {
+    stop("'round' must be a whole number of decimal places.", call. = FALSE)
+  }
+  if(length(title) > 1) {
+    stop("'title' must be a single string.", call. = FALSE)
+  }
+  if(!is.numeric(cell_col_alpha) ||
+     any(cell_col_alpha < 0 | cell_col_alpha > 1, na.rm = TRUE)) {
+    stop("'cell_col_alpha' must be numbers from 0 to 1.", call. = FALSE)
   }
   if(!is.numeric(axis_text_angle_y) || length(axis_text_angle_y) != 1 ||
      !axis_text_angle_y %in% 0:3) {
@@ -2195,8 +2207,11 @@ heat_map <- function(x,
   if(!is.numeric(cell_size_scale_range) ||
      length(cell_size_scale_range) != 2 ||
      any(!is.finite(cell_size_scale_range)) ||
-     any(cell_size_scale_range < 0)) {
-    stop("'cell_size_scale_range' must be two non-negative numbers!")
+     any(cell_size_scale_range < 0 | cell_size_scale_range > 1)) {
+    stop(
+      "'cell_size_scale_range' must be two proportions of the cell width ",
+      "(from 0 to 1)!"
+    )
   }
   size_fun <- function(v) {
     .size_scale(
@@ -2267,16 +2282,17 @@ heat_map <- function(x,
   # CELL_COL_PALETTE
   cell_col_palette <- .col_palette(cell_col_palette)
 
-  # CHARACTER COLUMN COLOURS
+  # CHARACTER COLUMN COLOURS - ONE PER DISTINCT VALUE, SO THAT VALUES SHARED
+  # BY SEVERAL COLUMNS DON'T TAKE NEIGHBOURING COLOURS OF A LONGER PALETTE
   cell_levels <- NULL
   if (length(char_cols) != 0) {
-    cell_levels <- unlist(
+    cell_levels <- unique(unlist(
       lapply(char_cols, function(z) {
         levels <- unique(chr_mat[, z])
         levels[!is.na(levels)]
       }),
       use.names = FALSE
-    )
+    ))
     names(cell_levels) <- cell_col_palette(length(cell_levels))
   }
 
@@ -2667,8 +2683,17 @@ heat_map <- function(x,
   } else if (!is.expression(axis_text_x)) {
     if (.all_na(axis_text_x)) {
       axis_text_x <- rep("", ncol(x))
-    } else if (any(is.na(axis_text_x))) {
-      axis_text_x[is.na(axis_text_x)] <- ""
+    } else {
+      if (length(axis_text_x) != ncol(x)) {
+        warning(
+          "'axis_text_x' has ", length(axis_text_x), " labels for ",
+          ncol(x), " columns; they are recycled.",
+          call. = FALSE
+        )
+      }
+      if (any(is.na(axis_text_x))) {
+        axis_text_x[is.na(axis_text_x)] <- ""
+      }
     }
   }
 
@@ -2687,8 +2712,17 @@ heat_map <- function(x,
   } else if (!is.expression(axis_text_y)) {
     if (.all_na(axis_text_y)) {
       axis_text_y <- rep("", nrow(x))
-    } else if (any(is.na(axis_text_y))) {
-      axis_text_y[is.na(axis_text_y)] <- ""
+    } else {
+      if (length(axis_text_y) != nrow(x)) {
+        warning(
+          "'axis_text_y' has ", length(axis_text_y), " labels for ",
+          nrow(x), " rows; they are recycled.",
+          call. = FALSE
+        )
+      }
+      if (any(is.na(axis_text_y))) {
+        axis_text_y[is.na(axis_text_y)] <- ""
+      }
     }
   }
 

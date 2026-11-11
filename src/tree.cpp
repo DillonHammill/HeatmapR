@@ -581,6 +581,8 @@ cpp11::list join_groups_cpp(cpp11::list members, cpp11::list merges,
 [[cpp11::register]]
 int merge_check_cpp(cpp11::doubles m, int k, int n) {
   R_xlen_t len = m.size();
+  // (NO MERGES: ONLY A SINGLE LEAF IS A TREE)
+  if (k < 1) return len == 0 && n <= 1 ? 0 : 2;
   std::vector<unsigned char> seen_leaf(static_cast<size_t>(n) + 1, 0);
   R_xlen_t leaves = 0;
   bool leaf_ok = true;

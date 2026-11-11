@@ -72,11 +72,12 @@ heat_map_downsample <- function(groups,
 #' A largest number of cells: a whole number of at least 1, or Inf
 #' @noRd
 .check_cell_count <- function(n,
-                              arg) {
+                              arg,
+                              what = "cells") {
   if(!is.numeric(n) || length(n) != 1 || is.na(n) || n < 1 ||
      (is.finite(n) && n != round(n))) {
     stop(
-      "'", arg, "' must be a whole number of cells, at least 1.",
+      "'", arg, "' must be a whole number of ", what, ", at least 1.",
       call. = FALSE
     )
   }

@@ -30,7 +30,9 @@ cpp11::doubles first_pc_cpp(cpp11::doubles_matrix<> x, int threads) {
   const double* xv = REAL(x.data());
   const size_t n = x.nrow();
   const int p = x.ncol();
-  if (p > 4096) cpp11::stop("first_pc_cpp() handles up to 4096 columns");
+  // (THE COVARIANCE MATRIX TAKES p x p VALUES IN EACH OF UP TO 8 PARTS)
+  if (p > 256) cpp11::stop("first_pc_cpp() handles up to 256 columns");
+  if (n == 0) return cpp11::writable::doubles(static_cast<R_xlen_t>(0));
   // COLUMN MEANS, AS colMeans() COMPUTES THEM
   std::vector<double> mu(p);
   par::parallel_for(static_cast<size_t>(p), n * p < (1u << 20) ? 1 : threads, [&](size_t j) {
@@ -40,16 +42,18 @@ cpp11::doubles first_pc_cpp(cpp11::doubles_matrix<> x, int threads) {
     mu[j] = static_cast<double>(s / n);
   });
   // COVARIANCE (UPPER TRIANGLE) AND THE ROW FURTHEST FROM THE CENTRE, A BLOCK
-  // OF ROWS AT A TIME
+  // OF ROWS AT A TIME, IN UP TO 8 PARTS OF CONSECUTIVE BLOCKS ADDED UP IN
+  // ORDER - THE SAME PARTS WHATEVER THE NUMBER OF THREADS, SO THE SAME SUMS
   const size_t block = 256;
   size_t n_blocks = (n + block - 1) / block;
-  int t = std::max(1, std::min<int>(threads, static_cast<int>(n_blocks)));
+  const size_t n_parts = std::min<size_t>(8, n_blocks);
+  size_t chunk = (n_blocks + n_parts - 1) / n_parts;
+  int t = std::max(1, std::min<int>(threads, static_cast<int>(n_parts)));
   if (static_cast<double>(n) * p * p < 1048576.0) t = 1;
-  size_t chunk = (n_blocks + t - 1) / t;
-  std::vector<std::vector<double>> part(t, std::vector<double>(static_cast<size_t>(p) * p, 0.0));
-  std::vector<double> far_d(t, -1.0);
-  std::vector<size_t> far_i(t, 0);
-  par::parallel_for(static_cast<size_t>(t), t, [&](size_t w) {
+  std::vector<std::vector<double>> part(n_parts, std::vector<double>(static_cast<size_t>(p) * p, 0.0));
+  std::vector<double> far_d(n_parts, -1.0);
+  std::vector<size_t> far_i(n_parts, 0);
+  par::parallel_for(n_parts, t, [&](size_t w) {
     std::vector<double>& C = part[w];
     std::vector<double> B(block * p);
     size_t b0 = w * chunk, b1 = std::min(n_blocks, (w + 1) * chunk);
@@ -80,7 +84,7 @@ cpp11::doubles first_pc_cpp(cpp11::doubles_matrix<> x, int threads) {
   std::vector<double> C(static_cast<size_t>(p) * p, 0.0);
   size_t far = 0;
   double fd = -1;
-  for (int w = 0; w < t; ++w) {
+  for (size_t w = 0; w < n_parts; ++w) {
     for (size_t e = 0; e < C.size(); ++e) C[e] += part[w][e];
     if (far_d[w] > fd) {
       fd = far_d[w];

@@ -788,12 +788,17 @@ void check_merge(cpp11::integers merge) {
   int k = Rf_nrows(merge);
   if (k < 1 || Rf_ncols(merge) != 2) cpp11::stop("'merge' must have two columns");
   const int* m = INTEGER(merge);
+  // (EVERY LEAF AND EVERY EARLIER MERGE JOINED EXACTLY ONCE)
+  std::vector<unsigned char> leaf(static_cast<size_t>(k) + 2, 0), node(static_cast<size_t>(k) + 1, 0);
   for (int z = 0; z < k; ++z) {
     for (int j = 0; j < 2; ++j) {
       int v = m[z + j * k];
       if (v == NA_INTEGER || v == 0 || v < -(k + 1) || v > z) {
         cpp11::stop("'merge' is not the merge matrix of a tree");
       }
+      unsigned char& used = v < 0 ? leaf[-v] : node[v];
+      if (used) cpp11::stop("'merge' is not the merge matrix of a tree");
+      used = 1;
     }
   }
 }
@@ -849,6 +854,7 @@ cpp11::integers spectral_dist_cpp(cpp11::doubles d, int n, int k, int threads) {
 cpp11::doubles silhouette_dist_cpp(cpp11::integers merge, cpp11::integers sample,
                                    cpp11::doubles d, int K, int threads) {
   check_merge(merge);
+  if (K < 1) cpp11::stop("'K' must be positive");
   int k = Rf_nrows(merge), m = static_cast<int>(sample.size());
   if (static_cast<double>(d.size()) != 0.5 * static_cast<double>(m) * (m - 1)) {
     cpp11::stop("the distances must be between the %d sampled leaves", m);

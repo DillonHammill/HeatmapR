@@ -8,10 +8,12 @@ unless `NOT_CRAN` is `"true"`. Examples and tests draw on `pdf(NULL)` or the
 current device and don't open new devices in non-interactive sessions.
 
 The licence changes from GPL-2 to MIT with this release. The author holds
-the copyright to all of the package's code: the compiled code that
-previously followed GPL-licensed code (from R's `hclust()` and `kmeans()`
-and from the `diptest` package) has been rewritten from the published
-algorithms.
+the copyright to all of the package's code. HeatmapR 1.1.0 had no compiled
+code; its only code derived from another package, modified functions of
+the GPL-licensed `ggdendro` package, has been removed. Compiled code
+written during the development of 2.0.0 that followed GPL-licensed code
+(R's `hclust()` and `kmeans()` and the `diptest` package) has been
+rewritten from the published algorithms.
 
 ## Test environments
 

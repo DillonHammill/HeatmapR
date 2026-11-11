@@ -251,6 +251,13 @@ heat_map_clust <- function(x,
   }
   # CLUSTER MARGIN
   if(is.character(tree)) {
+    # ("row", "column", OR THEIR AXES "y" AND "x" - ABBREVIATIONS ALLOWED)
+    if(length(tree) != 1 || is.na(tree) ||
+       !grepl("^(r|ro|row|rows|y|c|co|col|cols|colu|colum|column|columns|x)$",
+              tolower(tree))) {
+      stop("'tree' must be \"row\" or \"column\", a dist or an hclust object.",
+           call. = FALSE)
+    }
     tree <- if(grepl("^r|^y", tree, ignore.case = TRUE)) 1 else 2
   }
   # THE NUMERIC COLUMNS, LEAVES AS ROWS
@@ -1115,7 +1122,7 @@ heat_map_clust <- function(x,
 .first_pc <- function(m) {
   # (COMPILED - THE COVARIANCE MATRIX IN ONE PASS OVER THE DATA, THEN POWER
   # ITERATION ON IT)
-  if(ncol(m) >= 2 && ncol(m) <= 4096 && is.double(m) &&
+  if(ncol(m) >= 2 && ncol(m) <= 256 && is.double(m) &&
      all_finite_cpp(m, .threads())) {
     return(first_pc_cpp(m, .threads()))
   }

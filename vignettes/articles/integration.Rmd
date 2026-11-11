@@ -10,6 +10,7 @@ description: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
+  message = FALSE,
   fig.width = 7,
   fig.height = 7,
   out.width = "100%",
@@ -42,7 +43,7 @@ plot(hm, cell_shape = "circle", cell_size = abs(scale(mtcars)),
      title = "mtcars, redrawn")
 ```
 
-`heat_map_save()` writes a heatmap to a file (PNG, JPEG, TIFF, PDF, SVG or EPS, from the extension), at the size and resolution you choose: either the object itself (`x = hm`) or every heatmap drawn after the call until `heat_map_complete()`.
+`heat_map_save()` writes a heatmap to a file (PNG, JPEG, TIFF, PDF or SVG, from the extension), at the size and resolution you choose: either the object itself (`x = hm`) or every heatmap drawn after the call until `heat_map_complete()`.
 
 ```{r save}
 file <- tempfile(fileext = ".pdf")

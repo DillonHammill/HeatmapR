@@ -177,7 +177,7 @@ wide(clust)
 
 The chart shows the tall matrices (30 to 100 columns) against their number of rows, which is what the time of clustering depends on:
 
-```{r clust-plot, fig.alt = "Line chart of the seconds taken to cluster and draw tall heatmaps against the number of rows, on log scales, for each package. HeatmapR's lines stay below one second up to 100,000 rows, its exact clustering reaches 7 seconds at 20,000 rows, while the other packages rise from a few seconds to two minutes at 20,000 rows and fail, marked by crosses, at 100,000."}
+```{r clust-plot, fig.alt = "Line chart of the seconds taken to cluster and draw tall heatmaps against the number of rows, on log scales, for each package. HeatmapR's lines stay near one second up to 100,000 rows, its exact clustering reaches 7 seconds at 20,000 rows, while the other packages rise from a few seconds to two minutes at 20,000 rows and fail, marked by crosses, at 100,000."}
 plot_times(clust[clust$cells / clust$rows <= 100 & clust$rows >= 1000, ], "rows",
            xlab = "Rows (log scale)", main = "Clustered heatmaps")
 ```
@@ -198,7 +198,7 @@ No clustering, the rows and columns in the order of the data. Times in seconds:
 wide(draw)
 ```
 
-```{r draw-plot, fig.alt = "Line chart of the seconds taken to draw heatmaps without clustering against the number of cells, on log scales, for each package. HeatmapR stays between a tenth and half a second up to 9 million cells; ComplexHeatmap, pheatmap, ggplot2 and stats::heatmap grow with the number of cells to between 4 and 26 seconds; heatmap.2 takes minutes or fails from 500,000 cells."}
+```{r draw-plot, fig.alt = "Line chart of the seconds taken to draw heatmaps without clustering against the number of cells, on log scales, for each package. HeatmapR stays between a tenth and six tenths of a second up to 9 million cells; ComplexHeatmap, pheatmap, ggplot2 and stats::heatmap grow with the number of cells to between 4 and 26 seconds; heatmap.2 takes minutes or fails from 500,000 cells."}
 plot_times(draw, "cells", xlab = "Cells (log scale)", main = "Drawing without clustering")
 ```
 
@@ -228,7 +228,7 @@ Peak memory in MB:
 wide(hc, "memory")
 ```
 
-HeatmapR's exact clustering computes the distances in blocks that stay in the cache, four at a time with SIMD instructions and on all cores, keeps them in one matrix without the copies that `hclust()` makes, and merges clusters by the nearest-neighbour chain algorithm, which needs O(n^2) time for complete, average, McQuitty and Ward linkage (single linkage is built from a minimum spanning tree, centroid and median linkage by `hclust()`'s own algorithm). When distances are distinct the tree is the one `hclust()` returns.
+HeatmapR's exact clustering computes the distances in blocks that stay in the cache, four at a time with SIMD instructions and on all cores, keeps them in one matrix without the copies that `hclust()` makes, and merges clusters by the nearest-neighbour chain algorithm, which needs O(n^2) time for complete, average, McQuitty and Ward linkage (single linkage is built from a minimum spanning tree, centroid and median linkage by the generic algorithm of Müllner 2011). When distances are distinct the tree is the one `hclust()` returns.
 
 ## Optimal leaf ordering
 

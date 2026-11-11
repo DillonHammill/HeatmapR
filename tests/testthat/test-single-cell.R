@@ -340,7 +340,8 @@ test_that("sparse summaries are the same on any number of threads", {
       .cell_dense(rows, 1:300)
     )
   })
-  heat_map_threads(4)
+  # (AT MOST TWO THREADS ON CRAN)
+  heat_map_threads(if (identical(Sys.getenv("NOT_CRAN"), "true")) 4 else 2)
   four <- lapply(c("mean", "median"), function(f) {
     list(
       .sparse_summarise(rows, feat, g, NULL, f, 0),

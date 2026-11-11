@@ -107,6 +107,9 @@ SEXP kmeanspp_cpp(cpp11::doubles_matrix<> x, int k, double seed, int threads) {
   const size_t m = static_cast<size_t>(x.nrow());
   const int p = x.ncol();
   if (k < 1 || static_cast<size_t>(k) > m || p < 1) return R_NilValue;
+  if (!(seed >= 0 && seed < 18446744073709551616.0) || seed != std::floor(seed)) {
+    cpp11::stop("'seed' must be a whole number from 0 to 2^64 - 1");
+  }
   const double* X = REAL(x.data());
   SplitMix rng(static_cast<uint64_t>(seed));
   const int candidates =

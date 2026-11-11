@@ -256,3 +256,142 @@ test_that("a dominant block of optimal leaf ordering gives the same order on two
   expect_identical(one, two)
   expect_setequal(unlist(one), 1:49)
 })
+
+test_that("values shared by several non-numeric columns take distinct colours", {
+  set.seed(1)
+  m <- matrix(sample(c("low", "mid", "high"), 60, TRUE), 10,
+              dimnames = list(paste0("g", 1:10), paste0("s", 1:6)))
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  hm <- heat_map(m, popup = FALSE)
+  cols <- heat_map_info(hm)$colours
+  # One colour per value, the palette's three colours, the same in every column
+  pal <- grDevices::colorRampPalette(
+    c("red", "blue", "green", "orange", "magenta", "purple")
+  )(3)
+  expect_setequal(unique(as.vector(cols)), paste0(pal, "FF"))
+  lev <- unique(as.vector(m))
+  for (v in lev) {
+    expect_length(unique(cols[m == v]), 1)
+  }
+})
+
+test_that("sparse matrices need increasing rows within each column", {
+  # (A dgCMatrix whose slots were set without validation)
+  expect_error(
+    sparse_group_sums_cpp(c(1L, 0L), c(0L, 2L), c(1, 2), 2L, 1L, 1L, TRUE,
+                          1L, 1L, 0, 1L),
+    "increase within each column"
+  )
+  expect_error(
+    sparse_group_sums_cpp(c(0L, 0L), c(0L, 2L), c(1, 2), 2L, 1L, 1L, TRUE,
+                          1L, 1L, 0, 1L),
+    "increase within each column"
+  )
+})
+
+test_that("the first principal component is the same on any number of threads", {
+  set.seed(4)
+  x <- matrix(rnorm(60000 * 10), 60000)
+  pc <- first_pc_cpp(x, 1L)
+  expect_identical(first_pc_cpp(x, 2L), pc)
+  if (identical(Sys.getenv("NOT_CRAN"), "true")) {
+    expect_identical(first_pc_cpp(x, 3L), pc)
+  }
+  expect_length(first_pc_cpp(matrix(numeric(0), 0, 3), 1L), 0)
+  # Wide data - the power iteration in R, the same direction up to sign
+  w <- 3 * outer(rnorm(500), rnorm(300)) + matrix(rnorm(500 * 300), 500)
+  a <- .first_pc(w)
+  b <- prcomp(w)$x[, 1]
+  expect_equal(abs(cor(a, b)), 1, tolerance = 1e-6)
+})
+
+test_that("compiled entry points check trees, seeds and member counts", {
+  h <- stats::hclust(stats::dist(matrix(rnorm(20), 10)))
+  d <- as.vector(stats::dist(matrix(rnorm(20), 10)))
+  expect_error(silhouette_dist_cpp(h$merge, 1:10, d, 0L, 1L), "'K' must be positive")
+  bad <- rbind(c(-1L, -2L), c(-1L, -2L))
+  expect_error(olo_order_cpp(bad, rep(1, 3), FALSE, 1L), "not the merge matrix")
+  expect_error(silhouette_dist_cpp(bad, 1:3, rep(1, 3), 2L, 1L), "not the merge matrix")
+  expect_identical(merge_check_cpp(c(1, -1, -2), 0L, 2L), 2L)
+  x <- matrix(rnorm(200), 100)
+  expect_error(kmeanspp_cpp(x, 3L, -1, 1L), "'seed' must be")
+  expect_error(kmeanspp_cpp(x, 3L, NaN, 1L), "'seed' must be")
+  expect_error(kmeanspp_cpp(x, 3L, 1.5, 1L), "'seed' must be")
+  expect_error(hclust_cpp(as.vector(stats::dist(1:4)), 4L, 1L, 1:4, 1L), "member count")
+})
+
+test_that("raster images stay below the 32,767 pixels cairo devices can draw", {
+  # (png(), svg() and jpeg() on cairo draw nothing for a larger image, nor
+  # anything after it on the page)
+  raster_dims <- function(x, ...) {
+    grDevices::pdf(NULL)
+    on.exit(grDevices::dev.off())
+    grDevices::dev.control("enable")
+    heat_map(x, popup = FALSE, ...)
+    dl <- grDevices::recordPlot()[[1]]
+    d <- lapply(dl, function(e) {
+      r <- Filter(function(z) inherits(z, "nativeRaster"), e[[2]])
+      if (length(r) > 0) dim(r[[1]])
+    })
+    do.call(rbind, Filter(Negate(is.null), d))
+  }
+  set.seed(1)
+  d <- raster_dims(matrix(rnorm(40000 * 2), ncol = 2), legend = FALSE)
+  expect_true(all(d < 32767))
+  expect_equal(sum(d[, 1]) / nrow(unique(d[, 2, drop = FALSE])), 40000)
+  d <- raster_dims(matrix(rnorm(2 * 40000), nrow = 2), legend = FALSE)
+  expect_true(all(d < 32767))
+})
+
+test_that("argument checks catch unknown trees, decimal places, titles and transparency", {
+  expect_error(heat_map_clust(mtcars, tree = "foo"), "'tree' must be")
+  expect_identical(
+    heat_map_clust(mtcars, tree = "col")$order,
+    heat_map_clust(mtcars, tree = "column")$order
+  )
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  m <- test_matrix(3, 3)
+  expect_error(heat_map(m, round = "a", popup = FALSE), "'round' must be")
+  expect_error(heat_map(m, title = c("a", "b"), popup = FALSE), "'title' must be")
+  expect_error(heat_map(m, cell_col_alpha = 2, popup = FALSE), "'cell_col_alpha' must be")
+  expect_error(heat_map(m, cell_col_alpha = -1, popup = FALSE), "'cell_col_alpha' must be")
+})
+
+test_that("labels of the wrong length and names that match nothing are flagged", {
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  expect_warning(
+    heat_map(mtcars, axis_text_x = c("a", "b", "c"), popup = FALSE),
+    "3 labels for 11 columns"
+  )
+  expect_warning(
+    heat_map(mtcars, axis_text_y = c("a", "b"), popup = FALSE),
+    "2 labels for 32 rows"
+  )
+  expect_warning(
+    heat_map(mtcars, annotation_y = data.frame(a = 1:32, row.names = paste0("z", 1:32)),
+             popup = FALSE),
+    "match no rows"
+  )
+  expect_warning(
+    heat_map(mtcars, bar_values_y = setNames(1:32, paste0("z", 1:32)), popup = FALSE),
+    "match no row names"
+  )
+  # Matching names and unnamed values of the right length stay quiet
+  expect_no_warning(
+    heat_map(mtcars, annotation_y = data.frame(a = 1:32, row.names = rownames(mtcars)),
+             bar_values_y = 1:32, axis_text_x = toupper(colnames(mtcars)), popup = FALSE)
+  )
+})
+
+test_that("bar values, marker counts and layouts give clear messages", {
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  expect_error(heat_map(mtcars, bar_values_y = letters[c(1:26, 1:6)], popup = FALSE),
+               "must hold numbers")
+  expect_error(heat_map_layout("a"), "'layout' must be")
+  expect_false(isTRUE(getOption("heat_map_custom")))
+  expect_error(heat_map_markers(mtcars, group_by = "cyl", n = 0), "markers per group")
+})
