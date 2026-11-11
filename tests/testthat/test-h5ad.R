@@ -142,31 +142,22 @@ test_that(".h5ad files that can't be read are reported", {
 
 test_that("AnnData objects of the anndata R package are read", {
   skip_if_not_installed("Matrix")
-  skip_if_not_installed("R6")
   logn <- fixture_values("logn.csv")
   counts <- fixture_values("counts.csv")
-  # A stand-in for anndata's AnnDataR6 class: cells by features
-  AnnDataR6 <- R6::R6Class("AnnDataR6", public = list(
-    X = NULL, layers = NULL, obs = NULL, var = NULL, obs_names = NULL,
-    var_names = NULL, raw = NULL,
-    initialize = function(X, layers, obs, var) {
-      self$X <- X
-      self$layers <- layers
-      self$obs <- obs
-      self$var <- var
-      self$obs_names <- rownames(obs)
-      self$var_names <- rownames(var)
-    }
-  ))
+  # A stand-in for anndata's AnnDataR6 class (an R6 object, read through its
+  # fields): cells by features
   obs <- data.frame(cell_type = rep(c("T", "B", "NK"), each = 20),
                     row.names = rownames(logn))
   var <- data.frame(gene_ids = sprintf("ENSG%011d", 0:29), row.names = colnames(logn))
-  x <- AnnDataR6$new(
-    X = methods::as(methods::as(logn, "RsparseMatrix"), "generalMatrix"),
-    layers = list(counts = counts),
-    obs = obs,
-    var = var
-  )
+  x <- new.env()
+  x$X <- methods::as(methods::as(logn, "RsparseMatrix"), "generalMatrix")
+  x$layers <- list(counts = counts)
+  x$obs <- obs
+  x$var <- var
+  x$obs_names <- rownames(obs)
+  x$var_names <- rownames(var)
+  x$raw <- NULL
+  class(x) <- c("AnnDataR6", "R6")
   expect_true(.cells_object(x))
   src <- .cell_source(x)
   expect_s4_class(src$values, "dgCMatrix")
