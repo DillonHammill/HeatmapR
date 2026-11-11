@@ -59,6 +59,7 @@ reference:
   - heat_map_scale
   - heat_map_summarise
   - heat_map_markers
+  - heat_map_score
   - heat_map_smooth
   - heat_map_downsample
   - heat_map_clust

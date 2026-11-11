@@ -286,6 +286,13 @@ extern "C" SEXP _HeatmapR_sparse_group_dips_cpp(SEXP i, SEXP p, SEXP x, SEXP nro
   END_CPP11
 }
 // sparse.cpp
+cpp11::list sparse_cell_sums_cpp(cpp11::integers i, cpp11::integers p, cpp11::doubles x, int nrow, int ncol, cpp11::integers sel, cpp11::doubles w, cpp11::doubles b, bool cells_by_column, int threads);
+extern "C" SEXP _HeatmapR_sparse_cell_sums_cpp(SEXP i, SEXP p, SEXP x, SEXP nrow, SEXP ncol, SEXP sel, SEXP w, SEXP b, SEXP cells_by_column, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(sparse_cell_sums_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(i), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(p), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(nrow), cpp11::as_cpp<cpp11::decay_t<int>>(ncol), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(sel), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(w), cpp11::as_cpp<cpp11::decay_t<cpp11::doubles>>(b), cpp11::as_cpp<cpp11::decay_t<bool>>(cells_by_column), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+  END_CPP11
+}
+// sparse.cpp
 cpp11::list dense_group_sums_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel, bool cells_by_column, cpp11::integers group, int n_groups, double threshold, int threads);
 extern "C" SEXP _HeatmapR_dense_group_sums_cpp(SEXP x, SEXP sel, SEXP cells_by_column, SEXP group, SEXP n_groups, SEXP threshold, SEXP threads) {
   BEGIN_CPP11
@@ -517,6 +524,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_scale_cpp",                (DL_FUNC) &_HeatmapR_scale_cpp,                 6},
     {"_HeatmapR_silhouette_dist_cpp",      (DL_FUNC) &_HeatmapR_silhouette_dist_cpp,       5},
     {"_HeatmapR_silhouette_rows_cpp",      (DL_FUNC) &_HeatmapR_silhouette_rows_cpp,       7},
+    {"_HeatmapR_sparse_cell_sums_cpp",     (DL_FUNC) &_HeatmapR_sparse_cell_sums_cpp,     10},
     {"_HeatmapR_sparse_dense_cpp",         (DL_FUNC) &_HeatmapR_sparse_dense_cpp,          9},
     {"_HeatmapR_sparse_group_auc_cpp",     (DL_FUNC) &_HeatmapR_sparse_group_auc_cpp,     10},
     {"_HeatmapR_sparse_group_dips_cpp",    (DL_FUNC) &_HeatmapR_sparse_group_dips_cpp,    12},

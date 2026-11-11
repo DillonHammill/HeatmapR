@@ -638,6 +638,81 @@ struct Dense {
   }
 };
 
+// For the features sel (1-based, distinct) of a sparse matrix of cells (see
+// sparse_dense_cpp()), each with a weight w and an offset b: for each cell,
+// "sum", the sum over the features of w * value + b (b alone for a zero,
+// which isn't stored), and "missing", the number of the features whose value
+// is missing (NaN, left out of the sum). The weighted means of gene sets -
+// z-scores ((value - mean) / sd) or plain means - without a dense copy. Each
+// cell's sum adds its features in a fixed order whatever the threads.
+[[cpp11::register]]
+cpp11::list sparse_cell_sums_cpp(cpp11::integers i, cpp11::integers p, cpp11::doubles x,
+                                 int nrow, int ncol, cpp11::integers sel,
+                                 cpp11::doubles w, cpp11::doubles b,
+                                 bool cells_by_column, int threads) {
+  Csc m(i, p, x, nrow, ncol);
+  const int nfeat = cells_by_column ? nrow : ncol;
+  const int ncells = cells_by_column ? ncol : nrow;
+  std::vector<int> feat = features(sel, nfeat);
+  const int nf = static_cast<int>(feat.size());
+  if (w.size() != nf || b.size() != nf) cpp11::stop("one weight and offset per feature");
+  // EACH FEATURE'S WEIGHT AND OFFSET (CHOSEN FEATURES ONLY) AND THE SUM OF THE
+  // OFFSETS - EVERY CELL'S SUM BEFORE ITS NON-ZERO VALUES
+  std::vector<double> wf(nfeat, 0.0), bf(nfeat, 0.0);
+  std::vector<char> chosen(nfeat, 0);
+  double base = 0;
+  for (int f = 0; f < nf; ++f) {
+    wf[feat[f]] = w[f];
+    bf[feat[f]] = b[f];
+    chosen[feat[f]] = 1;
+    base += b[f];
+  }
+  cpp11::writable::doubles sum(ncells), missing(ncells);
+  double* s = REAL(sum.data());
+  double* mi = REAL(missing.data());
+  std::fill(s, s + ncells, base);
+  std::fill(mi, mi + ncells, 0.0);
+  if (cells_by_column) {
+    // CELL BY CELL, ITS VALUES IN THE ORDER OF THE FEATURES (ROWS)
+    double work = static_cast<double>(m.nnz);
+    par::parallel_for(static_cast<size_t>(ncells), work >= 1048576.0 ? threads : 1,
+                      [&](size_t c) {
+                        double acc = s[c], na = 0;
+                        for (int k = m.p[c]; k < m.p[c + 1]; ++k) {
+                          int r = m.i[k];
+                          if (!chosen[r]) continue;
+                          double v = m.x[k];
+                          if (std::isnan(v)) {
+                            acc -= bf[r];
+                            na += 1;
+                          } else {
+                            acc += wf[r] * v;
+                          }
+                        }
+                        s[c] = acc;
+                        mi[c] = na;
+                      },
+                      1024);
+  } else {
+    // FEATURE BY FEATURE IN THE ORDER GIVEN, EACH ADDING TO ITS CELLS (ROWS)
+    for (int f = 0; f < nf; ++f) {
+      int c = feat[f];
+      for (int k = m.p[c]; k < m.p[c + 1]; ++k) {
+        int r = m.i[k];
+        double v = m.x[k];
+        if (std::isnan(v)) {
+          s[r] -= bf[c];
+          mi[r] += 1;
+        } else {
+          s[r] += wf[c] * v;
+        }
+      }
+    }
+  }
+  using namespace cpp11::literals;
+  return cpp11::writable::list({"sum"_nm = sum, "missing"_nm = missing});
+}
+
 // For the features sel of a dense matrix of cells (see Dense) and the
 // groups 1..n_groups of its cells (group: one per cell, NA for none): "sum"
 // (of the values that aren't missing, added in the order of the cells, as

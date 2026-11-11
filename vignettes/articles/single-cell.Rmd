@@ -206,6 +206,24 @@ dim(pseudobulk)
 head(rownames(pseudobulk))
 ```
 
+## Gene-set scores
+
+`heat_map_score()` scores each cell for each of several sets of genes, so a heatmap or dot plot can show a handful of pathways or programs in place of hundreds of genes. `method = "zscore"` (the default) averages the genes of a set after z-scoring each across the cells, so a highly expressed gene doesn't outweigh the others; `"mean"` averages the values themselves; and `"module"` subtracts the mean of control genes of similar expression (the score of Tirosh et al. 2016, as Seurat's `AddModuleScore()` computes it): every gene is binned by its mean expression and, for each gene of the set, 100 genes of its bin are drawn as controls with a fixed seed, so a score above zero means more expression than genes of that level usually have. The scores are computed from the non-zero values of sparse data, and come back as one column per set with the metadata of the cells, so they are drawn and summarised like genes:
+
+```{r scores, fig.width = 6, fig.height = 4, fig.alt = "Dot plot of four module scores, T, B, myeloid and NK, in six cell types. Each score is a large dark red dot in the cell types of its program, and small blue dots elsewhere."}
+programs <- list(
+  T = c("CD3E", "IL7R", "CD8A", "CD8B"),
+  B = c("MS4A1", "CD79A", "CD79B", "BANK1"),
+  Myeloid = c("LYZ", "S100A8", "S100A9", "FCER1A", "CST3"),
+  NK = c("GNLY", "NKG7", "PRF1", "GZMB")
+)
+scores <- heat_map_score(sce, programs, method = "module")
+head(scores)
+heat_map_dot(scores, group_by = "cell_type", title = "Module scores")
+```
+
+In the dot plot the size of each dot is the share of the group's cells scoring above zero (`threshold`). The markers of `heat_map_markers()` give one set per group (`heat_map_score(sce, m)`), and sets naming genes that aren't in the data are scored on the genes that are, with a message.
+
 ## Cytometry
 
 Cytometry data arrive with events as rows and markers as columns. A matrix or data frame works as it is, with `group_by` and `annotation_by` naming its columns (which are then left out of the features); `flowFrame` and `flowSet` objects are read directly, without flowCore, with markers named by their description (e.g. `"CD3"`) or channel (`"FL1-A"`), and a flowSet's samples and phenotype data as metadata:
@@ -508,6 +526,8 @@ Mann, H. B. and Whitney, D. R. (1947). On a test of whether one of two random va
 Marchenko, V. A. and Pastur, L. A. (1967). Distribution of eigenvalues for some sets of random matrices. *Mathematics of the USSR-Sbornik*, 1(4), 457-483. [doi:10.1070/SM1967v001n04ABEH001994](https://doi.org/10.1070/SM1967v001n04ABEH001994)
 
 Street, K. et al. (2018). Slingshot: cell lineage and pseudotime inference for single-cell transcriptomics. *BMC Genomics*, 19, 477. [doi:10.1186/s12864-018-4772-0](https://doi.org/10.1186/s12864-018-4772-0)
+
+Tirosh, I. et al. (2016). Dissecting the multicellular ecosystem of metastatic melanoma by single-cell RNA-seq. *Science*, 352(6282), 189-196. [doi:10.1126/science.aad0501](https://doi.org/10.1126/science.aad0501)
 
 Wilcoxon, F. (1945). Individual comparisons by ranking methods. *Biometrics Bulletin*, 1(6), 80-83. [doi:10.2307/3001968](https://doi.org/10.2307/3001968)
 
