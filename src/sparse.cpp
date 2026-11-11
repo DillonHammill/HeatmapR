@@ -25,6 +25,7 @@
 #include <cmath>
 #include <vector>
 
+#include "dip.h"
 #include "parallel.h"
 
 namespace {
@@ -567,6 +568,46 @@ cpp11::list sparse_group_auc_cpp(cpp11::integers i, cpp11::integers p,
   return cpp11::writable::list({"auc"_nm = out, "u"_nm = u, "ties"_nm = ties});
 }
 
+// The dip (see dip.cpp) of each feature sel (1-based, distinct) of a sparse
+// matrix of cells (see sparse_dense_cpp()) in each group 1..n_groups of the
+// cells (group: one per cell, NA for none), from the values above threshold
+// (the zeros not stored count when threshold < 0): a list of "dip" (NA with
+// fewer than min_n values) and "n" (the values used), n_groups x
+// length(sel) matrices.
+[[cpp11::register]]
+cpp11::list sparse_group_dips_cpp(cpp11::integers i, cpp11::integers p,
+                                  cpp11::doubles x, int nrow, int ncol,
+                                  cpp11::integers sel, bool cells_by_column,
+                                  cpp11::integers group, int n_groups, double threshold,
+                                  int min_n, int threads) {
+  Csc m(i, p, x, nrow, ncol);
+  const int nfeat = cells_by_column ? nrow : ncol;
+  const int ncells = cells_by_column ? ncol : nrow;
+  std::vector<int> feat = features(sel, nfeat);
+  std::vector<int> grp = cell_groups(group, ncells, n_groups);
+  const size_t nf = feat.size();
+  const size_t G = static_cast<size_t>(n_groups);
+  cpp11::writable::doubles_matrix<> dips(n_groups, static_cast<int>(nf)),
+      used(n_groups, static_cast<int>(nf));
+  double* o = REAL(dips.data());
+  double* u = REAL(used.data());
+  const size_t mn = static_cast<size_t>(std::max(min_n, 1));
+  grouped_values(m, cells_by_column, grp, feat, G, threads,
+                 [&](size_t f, double* v, const size_t* off, const double*, const double* zeros) {
+                   std::vector<double> w;
+                   for (size_t g = 0; g < G; ++g) {
+                     w.assign(v + off[g], v + off[g + 1]);
+                     if (0.0 > threshold) w.insert(w.end(), static_cast<size_t>(zeros[g]), 0.0);
+                     size_t n_used = 0;
+                     double d = dip::group_dip(w, threshold, mn, &n_used);
+                     o[g + f * G] = std::isnan(d) ? NA_REAL : d;
+                     u[g + f * G] = static_cast<double>(n_used);
+                   }
+                 });
+  using namespace cpp11::literals;
+  return cpp11::writable::list({"dip"_nm = dips, "n"_nm = used});
+}
+
 // The features sel (1-based, distinct) of a dense matrix of cells: with
 // cells_by_column the features are its rows and the cells its columns,
 // otherwise the cells are its rows. Checked; the value of cell c, feature f
@@ -663,6 +704,49 @@ cpp11::doubles_matrix<> dense_group_medians_cpp(cpp11::doubles_matrix<> x,
     }
   });
   return out;
+}
+
+// The dip (see dip.cpp) of each feature sel of a dense matrix of cells (see
+// Dense) in each group 1..n_groups of its cells (group: one per cell, NA for
+// none), from the values above threshold: a list of "dip" (NA with fewer
+// than min_n values) and "n" (the values used), n_groups x length(sel)
+// matrices.
+[[cpp11::register]]
+cpp11::list dense_group_dips_cpp(cpp11::doubles_matrix<> x, cpp11::integers sel,
+                                 bool cells_by_column, cpp11::integers group,
+                                 int n_groups, double threshold, int min_n, int threads) {
+  Dense d(x, sel, cells_by_column);
+  std::vector<int> grp = cell_groups(group, static_cast<int>(d.ncells), n_groups);
+  const size_t nf = d.feat.size(), G = static_cast<size_t>(n_groups);
+  cpp11::writable::doubles_matrix<> dips(n_groups, static_cast<int>(nf)),
+      used(n_groups, static_cast<int>(nf));
+  double* o = REAL(dips.data());
+  double* u = REAL(used.data());
+  const size_t mn = static_cast<size_t>(std::max(min_n, 1));
+  double work = static_cast<double>(d.ncells) * nf;
+  par::parallel_for(nf, work >= 262144.0 ? threads : 1, [&](size_t f) {
+    // THE VALUES OF EACH GROUP
+    std::vector<size_t> off(G + 1, 0);
+    for (size_t c = 0; c < d.ncells; ++c) {
+      if (grp[c] >= 0) ++off[grp[c] + 1];
+    }
+    for (size_t g = 0; g < G; ++g) off[g + 1] += off[g];
+    std::vector<double> v(off[G]);
+    std::vector<size_t> fill(off.begin(), off.end() - 1);
+    for (size_t c = 0; c < d.ncells; ++c) {
+      if (grp[c] >= 0) v[fill[grp[c]]++] = d.at(c, f);
+    }
+    std::vector<double> w;
+    for (size_t g = 0; g < G; ++g) {
+      w.assign(v.begin() + off[g], v.begin() + off[g + 1]);
+      size_t n_used = 0;
+      double dd = dip::group_dip(w, threshold, mn, &n_used);
+      o[g + f * G] = std::isnan(dd) ? NA_REAL : dd;
+      u[g + f * G] = static_cast<double>(n_used);
+    }
+  });
+  using namespace cpp11::literals;
+  return cpp11::writable::list({"dip"_nm = dips, "n"_nm = used});
 }
 
 // The AUC (see group_auc()) of each feature sel of a dense matrix of cells

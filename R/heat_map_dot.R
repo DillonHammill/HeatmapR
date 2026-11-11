@@ -38,6 +38,12 @@
 #'   dot to be drawn, set to 0 by default (as Seurat's \code{dot.min}).
 #' @param swap_axes logical indicating whether the features should be drawn
 #'   as rows and the groups as columns, set to \code{FALSE} by default.
+#' @param bimodal \code{TRUE} to outline, with a thick border, the dots of
+#'   groups in which a feature looks like two populations among the cells it
+#'   is detected in (e.g. a cluster combining two smaller ones), from the dip
+#'   of each feature in each group; or the smallest dip to outline. Set to
+#'   \code{FALSE} by default. See \code{\link{heat_map_summarise}} for how the
+#'   dips are found and \code{\link{heat_map}} for when a dot is outlined.
 #' @param ... other arguments passed to \code{\link{heat_map}}, e.g.
 #'   \code{cell_col_scale}, \code{tree_y} or \code{popup}. They replace the
 #'   settings of the dot plot of the same name.
@@ -70,6 +76,12 @@
 #'   popup = FALSE
 #' )
 #'
+#' # Blood cells, with the dots of groups whose cells look like two
+#' # populations outlined
+#' blood <- heat_map_example("rna", n = 1500)
+#' heat_map_dot(blood, features = attr(blood, "markers"),
+#'              group_by = "cell_type", bimodal = TRUE, popup = FALSE)
+#'
 #' @export
 heat_map_dot <- function(x,
                          features = NULL,
@@ -80,6 +92,7 @@ heat_map_dot <- function(x,
                          threshold = 0,
                          dot_min = 0,
                          swap_axes = FALSE,
+                         bimodal = FALSE,
                          ...) {
 
   # ARGUMENTS
@@ -121,6 +134,11 @@ heat_map_dot <- function(x,
   feat <- .cell_features(features, src, drop = by$cols)
   s <- .cell_summaries(src, feat, by$values, threshold)
   feat <- s$feat
+  # DIPS OF EACH FEATURE IN EACH GROUP, FOR BIMODAL FLAGS
+  bimodal_min <- .check_bimodal(bimodal)
+  dips <- if(!is.null(bimodal_min)) {
+    suppressMessages(.group_dips(src, feat, by$values, threshold, pc = TRUE))
+  }
 
   # COLOUR - THE MEANS SCALED WITHIN EACH FEATURE
   col <- s$mean
@@ -165,10 +183,24 @@ heat_map_dot <- function(x,
     args$tree_cut_x <- droplevels(feat$groups)
     args$tree_label_x <- TRUE
   }
+  if(!is.null(dips)) {
+    attr(args$x, "dip") <- dips$dip
+    attr(args$x, "dip_n") <- dips$n
+    attr(args$x, "dip_pc") <- dips$pc_dip
+    attr(args$x, "dip_pc_n") <- dips$pc_n
+    args$bimodal <- bimodal_min
+  }
   if(swap_axes) {
     for(nm in c("x", "cell_size", "cell_shape")) {
       if(is.matrix(args[[nm]])) {
         args[[nm]] <- t(args[[nm]])
+        # (THE DIPS STAY GROUPS BY FEATURES - heat_map() LINES THEM UP)
+        if(nm == "x" && !is.null(dips)) {
+          attr(args$x, "dip") <- dips$dip
+          attr(args$x, "dip_n") <- dips$n
+          attr(args$x, "dip_pc") <- dips$pc_dip
+          attr(args$x, "dip_pc_n") <- dips$pc_n
+        }
       }
     }
     if(!is.null(feat$groups)) {

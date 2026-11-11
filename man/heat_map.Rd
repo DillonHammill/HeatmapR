@@ -194,6 +194,7 @@ heat_map(
   transform = NULL,
   cofactor = 5,
   scale_q = 0.01,
+  bimodal = FALSE,
   ...
 )
 }
@@ -761,8 +762,9 @@ one row per row of \code{x} and one column per part gives stacked bars
 (\code{bar_type_y = "stack"} or \code{"fill"}). \code{"n"} shows the
 number of cells in each group of a summary from
 \code{\link{heat_map_summarise}(group_by = ...)}, or with stacked bars
-their numbers in each part of \code{stack_by}. The axis of the
-row bar graph is drawn on the x axis side with the x axis text font,
+their numbers in each part of \code{stack_by}, and \code{"dip"} the
+largest dip of each row of a summary with dips (see \code{bimodal}).
+The axis of the row bar graph is drawn on the x axis side with the x axis text font,
 size, colour, adjustment and tick length (and that of the column bar
 graph on the y axis side with the y axis settings); its numbers are
 always horizontal.}
@@ -1197,6 +1199,28 @@ cytometry) or one per column, named by column.}
 
 \item{scale_q}{the quantile of \code{scale_method = "quantile"}, set to
 0.01 by default.}
+
+\item{bimodal}{\code{TRUE} to outline, with a thick border, the cells of a
+summary of groups of cells in which a feature looks like two populations
+(e.g. a cluster that combines two smaller ones differing in one or two
+markers), so that they can be looked into; or the smallest dip to
+outline. Set to \code{FALSE} by default. Needs the dips of a summary from
+\code{heat_map_summarise(bimodal = TRUE)} (see there for how they are
+found) or of \code{heat_map_dot(bimodal = TRUE)}. A cell is outlined when
+its dip is at least \code{bimodal} (0.01 for \code{TRUE}) and above the
+dip that one population of the same number of cells exceeds 1\\% of the
+time (0.059 for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so that
+small groups aren't outlined by chance. Groups whose cells split across
+several of the features at once - most often whether the features are
+detected at all, as in a cluster combining CD4 and CD8 T cells, which no
+single feature shows as two peaks - are outlined in the features that
+drive the split, from the dip across features (see
+\code{\link{heat_map_summarise}}). The legend gains a key, and
+\code{bar_values_y = "dip"} (or \code{bar_values_x}) draws the largest
+dip of each row (column) as bars. \code{heat_map_info()$bimodal} returns
+the dips, the numbers of values they were found from and the cells
+outlined, and \code{heat_map_describe()} names them. The distributions
+behind each cell (\code{cell_values}) show what the dip has found.}
 
 \item{...}{additional arguments passed to \code{\link{heat_map_clust}} (and
 on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other

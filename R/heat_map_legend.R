@@ -591,6 +591,7 @@ heat_map_legend <- function(col = NULL,
           ytop = yc + h * upi[["y"]],
           col = b$colours,
           border = "black",
+          lwd = if(is.null(b$lwd)) 1 else b$lwd,
           xpd = TRUE
         )
       }
@@ -865,7 +866,8 @@ heat_map_legend <- function(col = NULL,
                  lwd = b$lwd, lty = b$lty, xpd = NA)
       } else {
         rect(X(kx - h), Y(ky - h), X(kx + h), Y(ky + h),
-             col = b$colours, border = "black", xpd = NA)
+             col = b$colours, border = "black",
+             lwd = if(is.null(b$lwd)) 1 else b$lwd, xpd = NA)
       }
       text(
         X(kx + h + g$gap), Y(ky),

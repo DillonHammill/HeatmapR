@@ -63,6 +63,7 @@ heat_map_describe <- function(x,
     .describe_colour(info, arg, fmt),
     .describe_extremes(info, fmt),
     .describe_split(info, arg, fmt),
+    .describe_bimodal(info, fmt, max_groups),
     .describe_clusters(info, arg, "y", max_groups),
     .describe_clusters(info, arg, "x", max_groups),
     .describe_extras(info, arg)
@@ -541,6 +542,64 @@ as.character.heat_map_description <- function(x,
     out, " From ", labels[1], " to ", labels[2], ", the largest ",
     paste(changes, collapse = " and the largest "), "."
   )
+}
+
+#' The cells outlined as possibly two populations (bimodal = TRUE): features
+#' with two peaks in a group, and groups whose cells split across several
+#' features
+#' @noRd
+.describe_bimodal <- function(info,
+                              fmt,
+                              max_groups) {
+  b <- info$bimodal
+  if(is.null(b)) {
+    return("")
+  }
+  min_dip <- b$min
+  one <- .bimodal_flags(b$dip, b$n, min_dip)
+  across <- if(!is.null(b$dip_pc)) .bimodal_flags(b$dip_pc, b$n_pc, min_dip)
+  if(!any(one) && !any(across)) {
+    return(
+      "No group's cells look like two populations in the features shown (dip test)."
+    )
+  }
+  rows <- .describe_names(info$data, "y")
+  cols <- .describe_names(info$data, "x")
+  # (THE GROUPS ARE ALONG THE ROWS, OR ALONG THE COLUMNS OF SWAPPED AXES)
+  by_row <- !identical(b$groups, "columns")
+  out <- character()
+  if(any(one)) {
+    ind <- which(one)
+    ind <- ind[order(-b$dip[ind])]
+    where <- vapply(ind, function(i) {
+      k <- arrayInd(i, dim(b$dip))
+      g <- if(by_row) rows[k[1]] else cols[k[2]]
+      f <- if(by_row) cols[k[2]] else rows[k[1]]
+      paste0(g, " in ", f, " (dip ", fmt(b$dip[i]), ")")
+    }, character(1))
+    out <- c(out, paste0(
+      "Outlined cells may combine two populations, their values having two ",
+      "peaks (dip test): ", .describe_list(where, max = max(1, max_groups)), "."
+    ))
+  }
+  if(any(across)) {
+    groups <- if(by_row) which(rowSums(across) > 0) else which(colSums(across) > 0)
+    where <- vapply(groups, function(g) {
+      feats <- if(by_row) which(across[g, ]) else which(across[, g])
+      d <- if(by_row) b$dip_pc[g, feats[1]] else b$dip_pc[feats[1], g]
+      paste0(
+        if(by_row) rows[g] else cols[g], " (dip ", fmt(d), ", in ",
+        .describe_list(if(by_row) cols[feats] else rows[feats], max = 4), ")"
+      )
+    }, character(1))
+    out <- c(out, paste0(
+      "The cells of ", .describe_list(where, max = max(1, max_groups)),
+      " may combine populations that differ in several features at once ",
+      "(the dip of their first principal component); the features driving it ",
+      "are outlined."
+    ))
+  }
+  paste(out, collapse = " ")
 }
 
 #' Dendrograms, branch support and clusters of the rows or columns

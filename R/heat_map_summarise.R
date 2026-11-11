@@ -29,16 +29,19 @@
 #'   one row of the result. Rows in a missing group are dropped.
 #' @param fun the summary of the values in each group, one of \code{"mean"}
 #'   (default), \code{"median"}, \code{"sum"}, \code{"min"}, \code{"max"},
-#'   \code{"sd"}, \code{"n"} (the number of non-missing values) or
+#'   \code{"sd"}, \code{"n"} (the number of non-missing values),
 #'   \code{"detected"} (the proportion of non-missing values above
-#'   \code{threshold}), or a function taking a numeric vector and returning a
-#'   single number. Missing values are removed before summarising.
+#'   \code{threshold}) or \code{"dip"} (the dip statistic of the values above
+#'   \code{threshold}: see \code{bimodal}), or a function taking a numeric
+#'   vector and returning a single number. Missing values are removed before
+#'   summarising.
 #'   \code{"values"} keeps the values themselves: the result is then a matrix
 #'   of lists holding the numeric vector of values in each group, for
 #'   \code{cell_values} in \code{heat_map()} to draw their distributions
 #'   inside the cells.
 #' @param threshold values above \code{threshold} are counted by
-#'   \code{fun = "detected"}, set to 0 by default.
+#'   \code{fun = "detected"}, and the dips of \code{fun = "dip"} and
+#'   \code{bimodal} are found from them, set to 0 by default.
 #' @param features the features of single-cell data to summarise, as names
 #'   (or indices); see \code{\link{heat_map}}. Set to \code{NULL} by
 #'   default for every feature.
@@ -75,6 +78,43 @@
 #'   cells of each group in each part is kept in the \code{"stack"} attribute
 #'   of the result, which \code{heat_map(bar_values_y = "n", bar_type_y =
 #'   "stack")} draws. Needs \code{group_by}.
+#' @param bimodal \code{TRUE} to keep the dip of each feature in each group of
+#'   rows (cells) as the \code{"dip"} attribute of the result, and the number
+#'   of values it was found from as \code{"dip_n"}, for \code{heat_map(bimodal
+#'   = TRUE)} to outline the groups in which a feature looks like two
+#'   populations; set to \code{FALSE} by default. The dip of Hartigan and
+#'   Hartigan (1985) is the largest distance between the distribution of the
+#'   values and the closest unimodal distribution: 0 for one peak of any
+#'   shape, and up to 0.25 as the values split into separate populations
+#'   (about 0.02 for two equal populations 3 standard deviations apart, 0.05
+#'   for 4). So that the measurement and its transformation don't make peaks
+#'   of their own, the dip is found from the values above \code{threshold}
+#'   (the cells in which a feature is detected, which leaves out piles of
+#'   zeros and the lower of the two mirrored peaks the asinh transform with a
+#'   small cofactor makes of a negative population), after \code{transform}
+#'   and before scaling (quantile scaling clips values into piles), with
+#'   discrete values such as counts spread evenly over the gaps between them
+#'   (so that the comb of 1, 2, 3, ... counts isn't read as several peaks)
+#'   and, for continuous values, the piles at the lowest and highest values
+#'   (clipping, saturated detectors) left out. Groups with fewer than 20
+#'   such values have no dip. The dips are computed in compiled code.
+#'
+#'   Populations that differ in several features at once (most often whether
+#'   the features are detected at all, as in a cluster combining CD4 and CD8 T
+#'   cells: on the count scale, a feature detected in only some cells falls
+#'   away steadily from zero, as dropout does, and has one peak) are found
+#'   across features: the dip of the scores of each group's cells on the
+#'   first principal component of the correlations of its features (those
+#'   that vary and are detected in at least 5\% of the cells, at least 3 of
+#'   them; at most 50,000 cells of a group, drawn with a fixed seed). It is
+#'   only found when that component carries co-variation - an eigenvalue of
+#'   at least 2, and above the largest eigenvalue of as many independent
+#'   features - so that features that each have two peaks of their own (e.g.
+#'   from the asinh transform) don't add up to a split, and it is kept as the
+#'   \code{"dip_pc"} attribute (and \code{"dip_pc_n"}, the cells used) in
+#'   the features that drive the component (more than an equal share of it),
+#'   \code{NA} elsewhere. Needs groups of rows from \code{group_by} or
+#'   \code{group_y}.
 #'
 #' @return a numeric matrix with one column per group of \code{group_x} (or
 #'   the columns of \code{x}) and one row per group of \code{group_y} (or the
@@ -89,7 +129,13 @@
 #'   holding the grouping columns and the other metadata that is the same for
 #'   every cell of the group (e.g. the condition of each sample), which
 #'   \code{heat_map(group_by = , annotation_by = )} can use as the metadata
-#'   of the rows.
+#'   of the rows. With \code{bimodal = TRUE} the result also keeps the
+#'   \code{"dip"}, \code{"dip_n"}, \code{"dip_pc"} and \code{"dip_pc_n"}
+#'   attributes (see \code{bimodal}).
+#'
+#' @references Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of
+#'   unimodality. \emph{The Annals of Statistics}, 13(1), 70-84.
+#'   \doi{10.1214/aos/1176346577}
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'
@@ -161,7 +207,8 @@ heat_map_summarise <- function(x,
                                scale = FALSE,
                                q = 0.01,
                                scale_when = "last",
-                               stack_by = NULL) {
+                               stack_by = NULL,
+                               bimodal = FALSE) {
 
   # TRANSFORM AND SCALING OF THE CELLS (FIRST) OR THE SUMMARIES (LAST)
   transform <- .summary_transform(transform)
@@ -174,6 +221,18 @@ heat_map_summarise <- function(x,
     stop("'q' must be a number from 0 to less than 0.5.", call. = FALSE)
   }
   scale_first <- !is.null(scale) && scale_when == "first"
+  # DIPS OF EACH FEATURE IN EACH GROUP OF ROWS (CELLS), FOR BIMODAL FLAGS
+  if(!isTRUE(bimodal) && !isFALSE(bimodal)) {
+    stop("'bimodal' must be TRUE or FALSE.", call. = FALSE)
+  }
+  if(bimodal && (!is.null(group_x) || (is.null(group_by) && is.null(group_y)))) {
+    stop(
+      "'bimodal' needs groups of cells (rows) from 'group_by' or 'group_y', ",
+      "without 'group_x'.",
+      call. = FALSE
+    )
+  }
+  dips <- NULL
   if(!is.null(scale) && !scale_first && identical(fun, "values")) {
     stop(
       "The values of fun = \"values\" can't be scaled after summarising - ",
@@ -182,7 +241,7 @@ heat_map_summarise <- function(x,
     )
   }
   # THE CELLS (OR ROWS) OF x, TRANSFORMED AND SCALED BEFORE SUMMARISING
-  prepare <- function(v) {
+  prepare <- function(v, scaled = scale_first) {
     num <- .numeric_cols(v)
     if(length(num) == 0) {
       return(v)
@@ -196,7 +255,7 @@ heat_map_summarise <- function(x,
           cofactor = .scale_cofactor(cofactor, colnames(v), ncol(v))
         )
       }
-      if(scale_first) {
+      if(scaled) {
         v <- heat_map_scale(v, scale = "column", method = scale, q = q)
       }
       return(v)
@@ -208,7 +267,7 @@ heat_map_summarise <- function(x,
         cofactor = .scale_cofactor(cofactor, colnames(v)[num], length(num))
       )
     }
-    if(scale_first) {
+    if(scaled) {
       v[, num] <- heat_map_scale(
         v[, num, drop = FALSE],
         scale = "column",
@@ -281,13 +340,48 @@ heat_map_summarise <- function(x,
     if(!is.null(stack) && is.null(by)) {
       stop("'stack_by' needs groups of cells from 'group_by'.", call. = FALSE)
     }
+    # DIPS OF THE TRANSFORMED VALUES OF THE CELLS (BEFORE ANY SCALING, WHICH
+    # CLIPS QUANTILE-SCALED VALUES INTO PILES)
+    transformed <- NULL
+    if(bimodal) {
+      dsrc <- src
+      dfeat <- feat
+      if(!is.null(transform)) {
+        if(inherits(src$values, "dgCMatrix")) {
+          dsrc$values <- .sparse_asinh(src, feat, cofactor)
+        } else {
+          dense <- prepare(
+            .cell_dense(src, feat$index, NULL, feat$names),
+            scaled = FALSE
+          )
+          # (THE TRANSFORMED CELLS ARE SUMMARISED TOO, UNLESS THEY ARE SCALED
+          # FIRST)
+          if(!scale_first) {
+            transformed <- dense
+          }
+          dsrc <- .cell_source(dense)
+          dfeat <- list(
+            index = seq_len(ncol(dense)),
+            names = colnames(dense),
+            groups = feat$groups
+          )
+        }
+      }
+      dips <- suppressMessages(
+        .group_dips(dsrc, dfeat, groups, threshold, pc = TRUE)
+      )
+    }
     # TRANSFORMED OR SCALED CELLS - THE ASINH OF THE NON-ZERO VALUES OF
     # SPARSE DATA, OR THE CHOSEN FEATURES AS A DENSE MATRIX
     if(!is.null(transform) || scale_first) {
       if(inherits(src$values, "dgCMatrix") && !scale_first) {
         src$values <- .sparse_asinh(src, feat, cofactor)
       } else {
-        dense <- prepare(.cell_dense(src, feat$index, NULL, feat$names))
+        dense <- if(!is.null(transformed)) {
+          transformed
+        } else {
+          prepare(.cell_dense(src, feat$index, NULL, feat$names))
+        }
         src <- .cell_source(dense)
         feat <- list(
           index = seq_len(ncol(dense)),
@@ -298,6 +392,17 @@ heat_map_summarise <- function(x,
     }
     out <- .summarise_cells(src, feat, groups, group_x, fun, threshold)
   } else {
+    if(bimodal) {
+      dx <- if(!is.null(transform)) prepare(x, scaled = FALSE) else x
+      dsrc <- .cell_source(dx)
+      dips <- suppressMessages(.group_dips(
+        dsrc,
+        .cell_features(NULL, dsrc),
+        .summary_row_groups(group_y, dx),
+        threshold,
+        pc = TRUE
+      ))
+    }
     out <- .summarise_matrix(
       if(!is.null(transform) || scale_first) prepare(x) else x,
       group_x,
@@ -310,6 +415,16 @@ heat_map_summarise <- function(x,
   # SCALING OF THE SUMMARIES - EACH FEATURE (COLUMN)
   if(!is.null(scale) && !scale_first && !is.list(out)) {
     out <- heat_map_scale(out, scale = "column", method = scale, q = q)
+  }
+
+  # THE DIP OF EACH FEATURE IN EACH GROUP, FOR BIMODAL FLAGS IN heat_map()
+  if(!is.null(dips) && !is.list(out)) {
+    rows <- rownames(out)
+    cols <- colnames(out)
+    attr(out, "dip") <- dips$dip[rows, cols, drop = FALSE]
+    attr(out, "dip_n") <- dips$n[rows, cols, drop = FALSE]
+    attr(out, "dip_pc") <- dips$pc_dip[rows, cols, drop = FALSE]
+    attr(out, "dip_pc_n") <- dips$pc_n[rows, cols, drop = FALSE]
   }
 
   # THE SIZE AND MAKE-UP OF EACH GROUP, FOR BARS AND ANNOTATIONS IN
@@ -338,6 +453,10 @@ heat_map_summarise <- function(x,
                              group_x,
                              fun,
                              threshold) {
+  # DIPS OF GROUPS OF CELLS IN COMPILED CODE
+  if(identical(fun, "dip") && is.null(group_x) && !is.null(groups)) {
+    return(.group_dips(src, feat, groups, threshold)$dip)
+  }
   # SUMS, COUNTS AND MEDIANS FROM THE NON-ZERO VALUES OF SPARSE DATA
   if(inherits(src$values, "dgCMatrix") && is.character(fun) &&
      length(fun) == 1 &&
@@ -834,7 +953,8 @@ heat_map_summarise <- function(x,
     max = max,
     sd = sd,
     n = length,
-    detected = function(v) mean(v > threshold)
+    detected = function(v) mean(v > threshold),
+    dip = function(v) .dip(v, threshold)
   )
   if(!is.character(fun) || length(fun) != 1 || !fun %in% names(funs)) {
     stop(
@@ -845,4 +965,23 @@ heat_map_summarise <- function(x,
     )
   }
   funs[[fun]]
+}
+
+#' The group of each row of a matrix or data.frame for its dips: group_y,
+#' one group per row (matched to the row names when named)
+#' @noRd
+.summary_row_groups <- function(group_y,
+                                x) {
+  if(!is.null(dim(group_y)) || length(group_y) != nrow(x)) {
+    stop(
+      "'group_y' must assign each of the ", nrow(x), " rows of 'x' to a ",
+      "group.",
+      call. = FALSE
+    )
+  }
+  if(!is.null(names(group_y)) && !is.null(rownames(x)) &&
+     setequal(names(group_y), rownames(x)) && !anyDuplicated(rownames(x))) {
+    group_y <- group_y[rownames(x)]
+  }
+  unname(group_y)
 }

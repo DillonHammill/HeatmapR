@@ -14,6 +14,7 @@ heat_map_dot(
   threshold = 0,
   dot_min = 0,
   swap_axes = FALSE,
+  bimodal = FALSE,
   ...
 )
 }
@@ -51,6 +52,13 @@ dot to be drawn, set to 0 by default (as Seurat's \code{dot.min}).}
 
 \item{swap_axes}{logical indicating whether the features should be drawn
 as rows and the groups as columns, set to \code{FALSE} by default.}
+
+\item{bimodal}{\code{TRUE} to outline, with a thick border, the dots of
+groups in which a feature looks like two populations among the cells it
+is detected in (e.g. a cluster combining two smaller ones), from the dip
+of each feature in each group; or the smallest dip to outline. Set to
+\code{FALSE} by default. See \code{\link{heat_map_summarise}} for how the
+dips are found and \code{\link{heat_map}} for when a dot is outlined.}
 
 \item{...}{other arguments passed to \code{\link{heat_map}}, e.g.
 \code{cell_col_scale}, \code{tree_y} or \code{popup}. They replace the
@@ -92,6 +100,12 @@ heat_map_dot(
   scale = "range",
   popup = FALSE
 )
+
+# Blood cells, with the dots of groups whose cells look like two
+# populations outlined
+blood <- heat_map_example("rna", n = 1500)
+heat_map_dot(blood, features = attr(blood, "markers"),
+             group_by = "cell_type", bimodal = TRUE, popup = FALSE)
 
 }
 \seealso{
