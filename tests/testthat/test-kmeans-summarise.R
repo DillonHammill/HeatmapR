@@ -300,7 +300,10 @@ test_that("k-means++ starts don't depend on the number of threads", {
   x <- matrix(rnorm(70001 * 6), 70001)
   r <- kmeanspp_cpp(x, 12L, 1, 1L)
   expect_identical(kmeanspp_cpp(x, 12L, 1, 2L), r)
-  expect_identical(kmeanspp_cpp(x, 12L, 1, 3L), r)
+  # (AT MOST TWO THREADS ON CRAN)
+  if (identical(Sys.getenv("NOT_CRAN"), "true")) {
+    expect_identical(kmeanspp_cpp(x, 12L, 1, 3L), r)
+  }
   old <- options(HeatmapR.threads = 1L)
   on.exit(options(old), add = TRUE)
   cl <- .kmeans_groups(x, 12)
@@ -322,7 +325,9 @@ test_that("the best of several k-means starts is found on separate threads", {
   expect_identical(b$centers, fits[[first]]$centers)
   expect_identical(b$iter, fits[[first]]$iter)
   expect_identical(kmeans_hw_best_cpp(x, starts, 100L, 2L), b)
-  expect_identical(kmeans_hw_best_cpp(x, starts, 100L, 4L), b)
+  if (identical(Sys.getenv("NOT_CRAN"), "true")) {
+    expect_identical(kmeans_hw_best_cpp(x, starts, 100L, 4L), b)
+  }
   # Starts that fail (an empty cluster) are skipped; none working gives NULL
   bad <- x[c(1, 1, 2:7), ]
   expect_identical(kmeans_hw_best_cpp(x, c(list(bad), starts), 100L, 2L)$start, b$start + 1L)

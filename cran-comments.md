@@ -23,7 +23,7 @@ algorithms.
 
 0 errors | 0 warnings | 1 note
 
-* installed size is 9.0Mb (libs 7.6Mb with debugging symbols, 0.8Mb
+* installed size is 14.5Mb (libs 12.1Mb with debugging symbols, 1.2Mb
   without): the package now contains compiled code.
 
 The local check also reported notes and warnings from the sandbox it ran in
@@ -33,7 +33,5 @@ for the PDF manual, no `en_US.UTF-8` locale, the system R's
 
 ## Reverse dependencies
 
-To check before submission with
-`tools::package_dependencies("HeatmapR", reverse = TRUE, which = "all")`
-(and `revdepcheck::revdep_check()` if there are any) - not run yet, as the
-local check had no access to CRAN.
+There are no reverse dependencies: the CRAN page of HeatmapR 1.1.0 lists
+no packages that depend on, import, suggest or link to it.
