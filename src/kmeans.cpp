@@ -138,44 +138,75 @@ cpp11::doubles first_pc_cpp(cpp11::doubles_matrix<> x, int threads) {
 
 // HARTIGAN-WONG K-MEANS -----------------------------------------------------
 //
-// The algorithm of Hartigan and Wong (1979), as their sections 1-3 describe
-// it. Each point starts in the cluster of its closest centre (IC1), its
-// second closest (IC2) noted, and the centres become the means of their
-// points. Then two stages alternate. The optimal-transfer stage takes each
-// point i in turn, in its cluster L1 of n1 points, and moves it to the
-// cluster L2 (of n2 points) that minimises R2 = n2 d(i, L2)^2 / (n2 + 1)
-// when that is below R1 = n1 d(i, L1)^2 / (n1 - 1), the loss of taking it
-// out of L1; only the clusters of the "live set" (those changed lately) need
-// be searched for points whose own cluster hasn't changed. The
-// quick-transfer stage only swaps points between IC1 and IC2, pass after
-// pass, until it has gone through every point without a transfer. The
-// iterations stop when an optimal-transfer pass moves no point.
+// The algorithm of Hartigan and Wong (1979), Steps 1-7 of the paper's
+// "Method". Step 1: each point goes to the cluster of its closest centre
+// (IC1), its second closest (IC2) noted; Step 2: the centres become the means
+// of their points; Step 3: every cluster is in the live set. Step 4, the
+// optimal-transfer stage, takes each point i in turn, in its cluster L1 of n1
+// points, and finds the cluster L2 (of n2 points) that minimises R2 = n2 d(i,
+// L2)^2 / (n2 + 1): over every other cluster when L1 is live (Step 4a), over
+// the live clusters when it isn't (Step 4b). The point moves to L2 when R2 is
+// below R1 = n1 d(i, L1)^2 / (n1 - 1), the loss of taking it out of L1, and
+// both centres are updated. Step 5: the fit stops when a pass leaves the live
+// set empty. Step 6, the quick-transfer stage, only swaps points between IC1
+// and IC2, and Step 7 repeats it until M steps (M points) go by without a
+// transfer, then returns to Step 4.
 //
-// Hartigan and Wong leave some details open; they were settled by comparing
-// the clusters and iteration counts with those of stats::kmeans(), used as a
-// black box, on thousands of problems (many with tied distances):
+// As the paper's text states them:
+// - the live set (Step 4): a cluster updated in the last quick-transfer stage
+//   is live throughout the next optimal-transfer stage; otherwise it is live
+//   while it was updated within the last M steps of the optimal-transfer
+//   stage (that stage's steps only); the two clusters of a transfer become
+//   live (Step 4a), and all are live at the start (Step 3);
+// - no transfer when the smallest R2 is at least R1, and then L2 becomes the
+//   point's IC2; after a transfer L1 becomes its IC2 (Step 4a);
+// - R1 is "remembered" while L1 is unchanged (Steps 4a and 6): here it is
+//   computed again, which gives the same value;
+// - the quick-transfer stage needn't check a point whose two clusters haven't
+//   changed in the last M steps (Step 6);
+// - the iterations are passes of the optimal-transfer stage; ifault 0 no
+//   fault, 1 a cluster empty after the first assignment, 2 the maximum number
+//   of iterations exceeded, 3 K <= 1 or K >= M ("Fault diagnostics").
 //
+// The text leaves open the details below, or (where marked) reads otherwise;
+// they were settled by comparing clusters and iteration counts with those of
+// stats::kmeans(), used as a black box, on thousands of problems (many with
+// tied distances):
 // - ties for the closest and second closest centres go to the lower-numbered
-//   cluster;
+//   cluster (Step 1);
 // - R1 and R2 are d^2 times the ratios n / (n - 1) and n / (n + 1), worked
-//   out whenever a cluster's size changes;
+//   out whenever a cluster's size changes (the text gives the formulas only);
 // - the search for L2 starts from the point's IC2 and takes another cluster
 //   when d^2 < R2 / (n / (n + 1)) for the best R2 so far, the clusters in
-//   their order; the point moves when R2 < R1 (otherwise L2 becomes its IC2);
-// - the quick-transfer stage moves a point when d(i, IC2)^2 < R1 / (n2 / (n2
-//   + 1));
+//   their order (ties and rounding; Step 4a);
+// - Step 4b too starts from the point's IC2, live or not: the text has the
+//   minimum "computed only over clusters in the live set", but kmeans() keeps
+//   IC2 among them (the literal reading gives other iteration counts, and now
+//   and then other clusters);
+// - a cluster of one point keeps it, in both stages (its R1 is 0 / 0);
+// - the quick-transfer stage moves a point only when R2 < R1, as d(i, IC2)^2
+//   < R1 / (n2 / (n2 + 1)): the text (Step 6) switches unless R1 < R2, so on
+//   exact ties too, but kmeans() leaves tied points where they are;
 // - when a point moves, the centres become (c n1 - x) / (n1 - 1) and (c n2 +
-//   x) / (n2 + 1);
-// - a cluster that an optimal-transfer step updates stays live for the next
-//   M - 1 steps of that stage (M being the number of points: so not at the
-//   next turn of the point that moved), and one updated in the
-//   quick-transfer stage stays live throughout the next optimal-transfer
-//   pass; a point whose own cluster is live is compared with every cluster;
-// - the quick-transfer stage checks a point only when one of its two
-//   clusters changed within the last M - 1 steps of either stage; it ends
-//   after M steps without a transfer, and it gives up (ifault 4, which ends
-//   the fit) when it reaches its (50 M)-th step;
-// - with two clusters the fit ends after the first quick-transfer stage.
+//   x) / (n2 + 1) (the text: "the means of points assigned to them");
+// - the bounds of "the last M steps": a cluster that an optimal-transfer step
+//   updates stays live for the next M - 1 steps of that stage (so not at the
+//   next turn of the point that moved); the quick-transfer stage checks a
+//   point when one of its clusters changed within the last M - 1 steps,
+//   counting the steps of both stages (Step 6 doesn't say which), and it ends
+//   after M steps without a transfer counted from its start (Step 7: counting
+//   earlier steps would end it sooner, but only on steps that check nothing);
+// - the live set is empty at the end of a pass (Step 5) when the pass moved
+//   no point, clusters updated by the quick-transfer stage before it not
+//   counting;
+// - not in the paper: the quick-transfer stage gives up (ifault 4, which ends
+//   the fit) when it reaches its (50 M)-th step, as ?kmeans documents;
+// - not in the paper (whose Step 7 returns to Step 4): with two clusters the
+//   fit ends after the first quick-transfer stage, as the spec requires and
+//   kmeans() reports (iter 1; with a last optimal-transfer pass the clusters
+//   came out the same in every case compared);
+// - the final centres are the exact means of the final clusters, each column
+//   summed in row order (as rowsum()).
 //
 // Distances are sums of squares taken in column order (as R's compiled code
 // adds them): the SIMD kernels below take four points or four centres at a
@@ -210,8 +241,9 @@ const double HW_INF = std::numeric_limits<double>::infinity();
 const double HW_MARGIN = 1e-8;
 const double HW_TINY = 1e-100;
 
-// Written from Hartigan & Wong (1979), section 2 (squared Euclidean
-// distances), the squares added in column order.
+// Written from Hartigan & Wong (1979), "Method" (D(I, L), the Euclidean
+// distance, squared in R1 and R2), the squares added in column order as
+// stats::kmeans() (a black box) adds them.
 // The squared distance between a point (p values `stride` apart) and a
 // centre (p consecutive values)
 inline double hw_dist(const double* a, size_t stride, const double* c, int p) {
@@ -363,8 +395,8 @@ __attribute__((target("avx2"))) void hw_centres_avx2(const double* a, const doub
 
 #endif
 
-// Written from Hartigan & Wong (1979), sections 2 and 3, with the details
-// settled against stats::kmeans() listed above.
+// Written from Hartigan & Wong (1979), "Method", Steps 1-7, with the details
+// listed above settled against stats::kmeans() as a black box.
 // A Hartigan-Wong fit: the data, the clusters, their centres and the
 // bookkeeping of the live set
 struct HWFit {
@@ -381,10 +413,11 @@ struct HWFit {
   std::vector<int> nc;        // cluster sizes
   std::vector<double> an1;    // n / (n - 1) (infinite for one point)
   std::vector<double> an2;    // n / (n + 1)
-  // The live set: cluster l is live at optimal-transfer step s when
-  // updated in the last quick-transfer stage (or at the start), or when s <
-  // live_to[l]; the quick-transfer stage checks a point when one of its
-  // clusters has step < changed_to[l] (steps of both stages counted)
+  // The live set (Steps 3 and 4): cluster l is live at optimal-transfer step
+  // s when updated in the last quick-transfer stage (or at the start), or
+  // when s < live_to[l]; the quick-transfer stage checks a point (Step 6)
+  // when one of its clusters has step < changed_to[l] (steps of both stages
+  // counted)
   std::vector<unsigned char> itran;
   std::vector<hw_count> live_to;
   std::vector<hw_count> changed_to;
@@ -400,6 +433,7 @@ struct HWFit {
   std::vector<double> travel;
   std::vector<double> up1, up1_at, lo2, lo2_at;
 
+  // The ratios of R1 and R2 for cluster l (Step 4a)
   void set_ratios(int l) {
     const double n = nc[l];
     an2[l] = n / (n + 1);
@@ -433,8 +467,9 @@ struct HWFit {
     travel[l] = std::nextafter(travel[l] + std::sqrt(sq) * (1 + HW_MARGIN), HW_INF);
   }
 
-  // Point i moves from cluster l1 to cluster l2: both centres updated in
-  // place, as Hartigan & Wong update them
+  // Point i moves from cluster l1 to cluster l2 (Steps 4a and 6): both
+  // centres become the means of their points, updated in place in the form
+  // that matches stats::kmeans(), and l1 becomes the point's IC2
   void transfer(size_t i, int l1, int l2) {
     const double n1 = nc[l1], n2 = nc[l2];
     double* c1 = cen.data() + static_cast<size_t>(l1) * p;
@@ -480,8 +515,8 @@ struct HWFit {
 
   bool live(int l) const { return itran[l] || step < live_to[l]; }
 
-  // Each point's closest and second closest centres (ties to the lower
-  // number), blocks of points shared between threads
+  // Each point's closest and second closest centres (Step 1; ties to the
+  // lower number), blocks of points shared between threads
   void nearest_two(int threads) {
     // (THE CENTRES PADDED WITH ZEROS TO A MULTIPLE OF FOUR)
     std::vector<double> padded(static_cast<size_t>(kp) * p, 0.0);
@@ -555,7 +590,7 @@ struct HWFit {
     });
   }
 
-  // One pass of the optimal-transfer stage; whether a point moved
+  // One pass of the optimal-transfer stage (Step 4); whether a point moved
   bool optimal_transfer() {
     bool any = false;
     for (size_t i = 0; i < m; ++i, ++step, ++all_steps) {
@@ -564,8 +599,9 @@ struct HWFit {
       // (A CLUSTER OF ONE POINT KEEPS IT)
       if (nc[l1] == 1) continue;
       const int l0 = ic2[i];
-      // THE CLUSTERS TO SEARCH: ALL WHEN THE POINT'S OWN IS LIVE, OTHERWISE
-      // THE LIVE ONES (AND THE SECOND CLOSEST, THE BEST SO FAR AT THE START)
+      // THE CLUSTERS TO SEARCH: ALL WHEN THE POINT'S OWN IS LIVE (STEP 4a),
+      // OTHERWISE THE LIVE ONES (STEP 4b); THE SECOND CLOSEST, LIVE OR NOT,
+      // IS THE BEST SO FAR AT THE START (AS IN stats::kmeans())
       const bool all = live(l1);
       for (int j = 0; j < p; ++j) xi[j] = x[i + static_cast<size_t>(j) * m];
       bool have_all = false;
@@ -602,7 +638,7 @@ struct HWFit {
         }
       }
       if (best >= r1) {
-        // (NO TRANSFER: THE BEST CLUSTER BECOMES THE SECOND CLOSEST)
+        // (NO TRANSFER: THE BEST CLUSTER BECOMES THE SECOND CLOSEST, STEP 4a)
         ic2[i] = l2;
         set_bounds(i, d1, travel[l1], d2, travel[l2]);
       } else {
@@ -616,7 +652,8 @@ struct HWFit {
     return any;
   }
 
-  // The quick-transfer stage; false when it reached its step limit
+  // The quick-transfer stage (Steps 6 and 7); false when it reached its step
+  // limit (not in the paper: ifault 4 of ?kmeans)
   bool quick_transfer() {
     const hw_count limit = 50 * M - 1;
     hw_count q = 0, since = 0;
@@ -625,8 +662,9 @@ struct HWFit {
       if ((q & 4095) == 0) par::poll();
       const int l1 = ic1[i], l2 = ic2[i];
       bool swapped = false;
-      // (ONLY POINTS WHOSE CLUSTERS CHANGED LATELY - AND WHOSE BOUNDS DON'T
-      // ALREADY SETTLE IT; A CLUSTER OF ONE POINT KEEPS IT)
+      // (ONLY POINTS WHOSE CLUSTERS CHANGED LATELY, STEP 6 - AND WHOSE BOUNDS
+      // DON'T ALREADY SETTLE IT; A CLUSTER OF ONE POINT KEEPS IT; A SWAP ONLY
+      // WHEN R2 < R1, AS IN stats::kmeans())
       if ((all_steps < changed_to[l1] || all_steps < changed_to[l2]) && nc[l1] > 1 &&
           !stays(i, l1, l2)) {
         double d1, d2;
@@ -655,16 +693,17 @@ struct HWFit {
 
 }  // namespace
 
-// Written from Hartigan & Wong (1979), sections 1-3, Hartigan (1975),
-// chapter 4, and ?kmeans, with stats::kmeans() as a black box for the
-// details listed above.
+// Written from Hartigan & Wong (1979), "Method" (Steps 1-7) and "Fault
+// diagnostics" (ifault 0-3), and ?kmeans (ifault 4), with stats::kmeans() as
+// a black box for the details listed above.
 // k-means of the rows of x (no missing values) from the rows of centres
 // (distinct), by the algorithm of Hartigan and Wong: list(cluster (1-based),
 // centers (k x p, the means of the clusters), iter (the optimal-transfer
 // passes, iter_max + 1 when they didn't converge), ifault: 0 converged; 1 an
-// empty cluster (cluster: each point's closest centre, centers: the starting
-// ones); 2 not converged in iter_max iterations; 3 k < 2 or k >= m (cluster
-// NA); 4 the quick-transfer stage stopped at its step limit)
+// empty cluster after the first assignment (cluster: each point's closest
+// centre, centers: the starting ones); 2 not converged in iter_max
+// iterations; 3 k < 2 or k >= m (cluster NA); 4 the quick-transfer stage
+// stopped at its step limit)
 [[cpp11::register]]
 cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> centres,
                           int iter_max, int threads) {
@@ -685,7 +724,7 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
     return cpp11::writable::list({"cluster"_nm = cluster, "centers"_nm = centers,
                                   "iter"_nm = iter, "ifault"_nm = ifault});
   };
-  // INVALID NUMBER OF CLUSTERS
+  // INVALID NUMBER OF CLUSTERS (ifault 3)
   if (k < 2 || static_cast<size_t>(k) >= m) {
     std::fill(cl, cl + m, NA_INTEGER);
     return result(0, 3);
@@ -715,18 +754,18 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
   f.up1_at.assign(m, 0.0);
   f.lo2.assign(m, 0.0);
   f.lo2_at.assign(m, 0.0);
-  // EACH POINT'S CLOSEST AND SECOND CLOSEST STARTING CENTRES
+  // EACH POINT'S CLOSEST AND SECOND CLOSEST STARTING CENTRES (STEP 1)
   f.set_centres(cv);
   f.nearest_two(threads);
   for (size_t i = 0; i < m; ++i) f.nc[f.ic1[i]]++;
-  // (AN EMPTY CLUSTER: A STARTING CENTRE CLOSEST TO NO POINT)
+  // (AN EMPTY CLUSTER, ifault 1: A STARTING CENTRE CLOSEST TO NO POINT)
   for (int l = 0; l < k; ++l) {
     if (f.nc[l] == 0) {
       for (size_t i = 0; i < m; ++i) cl[i] = f.ic1[i] + 1;
       return result(0, 1);
     }
   }
-  // THE CENTRES OF THE CLUSTERS, EVERY CLUSTER LIVE
+  // THE CENTRES OF THE CLUSTERS (STEP 2), EVERY CLUSTER LIVE (STEP 3)
   std::vector<double> mu(static_cast<size_t>(k) * p);
   f.means(mu.data(), threads);
   f.set_centres(mu.data());
@@ -734,7 +773,8 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
   f.itran.assign(k, 1);
   f.live_to.assign(k, -f.M);
   f.changed_to.assign(k, -f.M);
-  // THE TWO STAGES IN TURN
+  // THE TWO STAGES IN TURN (STEPS 4-7): STOP AFTER A PASS THAT MOVES NO POINT
+  // (STEP 5), OR AFTER iter_max PASSES (ifault 2)
   int iter = 0, ifault = 2;
   while (iter < iter_max) {
     ++iter;
@@ -748,7 +788,8 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
       break;
     }
     // (TWO CLUSTERS: EACH POINT'S OTHER CLUSTER IS ITS SECOND CLOSEST, SO
-    // THE QUICK-TRANSFER STAGE HAS FOUND THE OPTIMUM)
+    // THE QUICK-TRANSFER STAGE HAS FOUND THE OPTIMUM - NOT IN THE PAPER, BUT
+    // AS stats::kmeans() COUNTS ITERATIONS)
     if (k == 2) {
       ifault = 0;
       break;

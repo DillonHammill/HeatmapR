@@ -42,14 +42,24 @@ These functions were deleted and rewritten in a clean room.
 | Component | Files | Sources |
 |---|---|---|
 | Linkage | `src/linkage.cpp`: `lance_williams()`, `generic_impl()`, `hclust_form()` | Müllner (2011), section 3.1, read as a rendering of the arXiv paper; Lance and Williams (1967) coefficients; `?hclust`; `stats::hclust()` as a black box |
-| k-means | `src/kmeans.cpp`: `kmeans_hw_cpp()` | The description of the algorithm in Hartigan and Wong (1979), sections 1-3, and Hartigan (1975); `?kmeans`; `stats::kmeans()` as a black box for the details the prose leaves open |
+| k-means | `src/kmeans.cpp`: `kmeans_hw_cpp()` | The description of the algorithm in Hartigan and Wong (1979), Method steps 1-7 and Fault diagnostics; `?kmeans`; `stats::kmeans()` as a black box for the details the text leaves open |
 | Dip | `src/dip.cpp`: `dip_sorted()` | The definition of the dip and the outline of its computation in Hartigan and Hartigan (1985), worked out from first principles; `diptest::dip()` as a black box for the scale and ties |
 | Numerics | `src/metric.cpp`, `src/scale.cpp`, `src/sparse.cpp`, `src/colour.cpp` | R's help pages (`?dist`, `?cor`, `?quantile`, `?mean`, `?sd`, `?approx`, `?colorRamp`, `?rgb`), Kendall (1945), Hyndman and Fan (1996), and black-box comparisons with R |
 
 Notes on the sources:
 
-- **k-means:** the network refused the paper's PDF, so the implementer worked
-  from the paper's description as it knew it.
+- **k-means:** the network refused the paper's PDF, so the implementer first
+  worked from the paper's description as it knew it. The author then supplied
+  the paper, and the implementer was given only its text pages, with the code
+  listings blanked out. It checked every step against them and found three
+  points where the code follows `stats::kmeans()` rather than the literal
+  text:
+  - Step 4b also searches the point's IC2;
+  - Step 6 doesn't switch on an exact tie;
+  - with k = 2, the fit stops after the first quick-transfer stage.
+
+  The comments in `src/kmeans.cpp` cite the steps and mark each detail
+  settled against `stats::kmeans()`.
 - **Dip:** the paper's page couldn't be fetched, so the computation was
   worked out from the definition.
 
