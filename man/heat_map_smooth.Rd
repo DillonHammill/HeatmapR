@@ -80,7 +80,8 @@ weighted by the cells in each bin. The means are found in compiled code,
 without a dense copy of sparse data.
 
 Branching trajectories are smoothed one lineage at a time, from several
-\code{along} columns (one per lineage, e.g. slingshot's pseudotimes, which
+\code{along} columns (one per lineage, e.g. slingshot's pseudotimes, Street
+et al. 2018, which
 are missing for cells outside a lineage) or from \code{group_by}; the
 lineages are stacked in the result, and \code{heat_map(group_by =
 "lineage")} draws them side by side.
@@ -108,6 +109,11 @@ heat_map(
   popup = FALSE
 )
 
+}
+\references{
+Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
+inference for single-cell transcriptomics. \emph{BMC Genomics}, 19, 477.
+\doi{10.1186/s12864-018-4772-0}
 }
 \seealso{
 \code{\link{heat_map}}, \code{\link{heat_map_summarise}}

@@ -21,15 +21,27 @@
 #'   Rows or columns with no variation are mapped to 0.5 for range scaling
 #'   and 0 for mean and z-score scaling, rather than \code{NaN}. Quantile
 #'   scaling maps the \code{q} and \code{1 - q} quantiles of each column
-#'   (row) to 0 and 1 and clips the values beyond them, so that a few extreme
-#'   values don't compress the colours of the rest; when the two quantiles are equal, values above them
-#'   are 1 and the others 0. The \code{"asinh"} transform takes the inverse
+#'   (row; type 7 of Hyndman and Fan 1996, as \code{quantile()} finds them)
+#'   to 0 and 1 and clips the values beyond them, so that a few extreme
+#'   values don't compress the colours of the rest; when the two quantiles are
+#'   equal, values above them are 1 and the others 0. The \code{"asinh"}
+#'   transform takes the inverse
 #'   hyperbolic sine of each value divided by \code{cofactor}, the usual
-#'   transform of cytometry intensities (it ignores \code{scale}).
+#'   transform of cytometry intensities (Bendall et al. 2011; it ignores
+#'   \code{scale}).
 #' @param cofactor the cofactor of the \code{"asinh"} transform: one number
 #'   (5 by default, as for mass cytometry; about 150 is common for flow
 #'   cytometry), or one per numeric column (in order, or named by column).
 #' @param q the quantile of quantile scaling, set to 0.01 by default.
+#'
+#' @references Bendall, S. C. et al. (2011). Single-cell mass cytometry of
+#'   differential immune and drug responses across a human hematopoietic
+#'   continuum. \emph{Science}, 332(6030), 687-696.
+#'   \doi{10.1126/science.1198704}
+#'
+#' Hyndman, R. J. and Fan, Y. (1996). Sample quantiles in statistical
+#'   packages. \emph{The American Statistician}, 50(4), 361-365.
+#'   \doi{10.1080/00031305.1996.10473566}
 #'
 #' @return a matrix or data.frame containing the scaled data.
 #'

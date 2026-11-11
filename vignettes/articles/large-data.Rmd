@@ -114,7 +114,7 @@ Set `clust_max = Inf` to always cluster exactly; `heat_map_clust()` takes the sa
 
 ## k-means splits
 
-A dendrogram of 100,000 rows is more than anyone can read. Often what you want is a handful of groups, and k-means finds them quickly: `tree_kmeans_y = 5` splits the rows into 5 clusters (the Hartigan-Wong algorithm of `stats::kmeans()`, in compiled code). The clusters start from equal slices of the rows along their first principal component, so they don't depend on the random seed, and are ordered so that similar clusters are neighbours. They then act like groups supplied to `tree_cut_y`: separated by gaps, labelled, and with `tree_y = TRUE`, clustered within each cluster.
+A dendrogram of 100,000 rows is more than anyone can read. Often what you want is a handful of groups, and k-means finds them quickly: `tree_kmeans_y = 5` splits the rows into 5 clusters (the Hartigan-Wong algorithm of `stats::kmeans()`, Hartigan and Wong 1979, in compiled code). The clusters start from equal slices of the rows along their first principal component, so they don't depend on the random seed, and are ordered so that similar clusters are neighbours. They then act like groups supplied to `tree_cut_y`: separated by gaps, labelled, and with `tree_y = TRUE`, clustered within each cluster.
 
 ```{r kmeans, fig.alt = "Heatmap of the 100,000 cells split into five k-means clusters, separated by gaps and labelled K1 to K5 beside the rows, with the markers clustered by a dendrogram above."}
 hm <- heat_map(
@@ -134,7 +134,7 @@ k-means favours clusters of similar size, so it doesn't always find the populati
 
 ## Choosing the number of clusters
 
-`tree_cut_y = "auto"` cuts the dendrogram into 2 to 20 clusters and keeps the cut with the largest mean silhouette width, unless none reaches 0.25 (when the data have no substantial structure and the dendrogram isn't cut). The silhouettes of all the cuts are computed together in compiled code, and dendrograms with more than `clust_max` leaves are scored on a sample of them.
+`tree_cut_y = "auto"` cuts the dendrogram into 2 to 20 clusters and keeps the cut with the largest mean silhouette width (Rousseeuw 1987), unless none reaches 0.25 (when the data have no substantial structure on the scale of Kaufman and Rousseeuw 1990 and the dendrogram isn't cut). The silhouettes of all the cuts are computed together in compiled code, and dendrograms with more than `clust_max` leaves are scored on a sample of them.
 
 ```{r auto}
 tree <- heat_map_clust(cells, cut = "auto")
@@ -215,3 +215,11 @@ heat_map(
   title = "Median of each population"
 )
 ```
+
+## References
+
+Hartigan, J. A. and Wong, M. A. (1979). Algorithm AS 136: a k-means clustering algorithm. *Applied Statistics*, 28(1), 100-108. [doi:10.2307/2346830](https://doi.org/10.2307/2346830)
+
+Kaufman, L. and Rousseeuw, P. J. (1990). *Finding Groups in Data: An Introduction to Cluster Analysis*. Wiley. [doi:10.1002/9780470316801](https://doi.org/10.1002/9780470316801)
+
+Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the interpretation and validation of cluster analysis. *Journal of Computational and Applied Mathematics*, 20, 53-65. [doi:10.1016/0377-0427(87)90125-7](https://doi.org/10.1016/0377-0427(87)90125-7)

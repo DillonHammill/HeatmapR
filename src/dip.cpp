@@ -10,6 +10,17 @@
 // the dip no longer grows - algorithm AS 217 (Hartigan 1985), as corrected in
 // the diptest package by Martin Maechler, whose dips these equal.
 //
+// dip_sorted() follows diptest's C code (src/dip.c): AS 217, Copyright (C)
+// Royal Statistical Society 1985; Fortran and S-PLUS code by Dario Ringach;
+// translated to C and corrected by Martin Maechler, Copyright (C) Martin
+// Maechler, distributed under the GNU GPL (version 2 or later). See
+// inst/COPYRIGHTS.
+//
+// Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+//   The Annals of Statistics, 13(1), 70-84.
+// Hartigan, P. M. (1985). Algorithm AS 217: computation of the dip
+//   statistic to test for unimodality. Applied Statistics, 34(3), 320-325.
+//
 // Before the dip, the values of a group of cells are prepared so that the
 // measurement, not the transformation of the data, decides the dip:
 //

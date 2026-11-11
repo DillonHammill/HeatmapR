@@ -278,36 +278,38 @@ default.}
 
 \item{tree_order_x}{how the branches of the x axis dendrogram are ordered,
 either \code{"default"} (the order from \code{hclust}), \code{"olo"}
-(optimal leaf ordering, which flips branches so that neighbouring columns
-are as similar as possible), \code{"mean"} (branches ordered by their
-mean values - \code{\link[stats]{heatmap}} orders them by the sum of
-their columns' means instead, which favours small branches) or
-\code{"spectral"}. Optimal leaf ordering is exact for up to 4000
-columns, which takes well under a second; larger dendrograms are ordered
-in blocks (see \code{\link{heat_map_clust}}). A spectral order needs no
-dendrogram: the columns are ordered by recursive spectral bisection of
-the graph joining each column to its 6 nearest neighbours (by
-\code{dist_method}), which lays gradients and trajectories out along
-their length, cycles around their loop and clusters one after another,
-and runs of up to 12 columns are then reversed where that brings
-similar columns together. With a dendrogram, its branches are ordered by
-the mean spectral position of their columns. Up to \code{clust_max}
-columns are ordered exactly; more are ordered from a sample of
-\code{clust_max} landmarks, each other column placed beside its nearest
-landmark (200,000 take about 4 seconds). \code{"peak"} orders the
-columns by where they are highest along the rows, in the order of the
-rows in the data (ties by where they are lowest), so that features
-peaking early along a trajectory come first and cascades run diagonally
-(see \code{\link{heat_map_smooth}}); it needs no dendrogram either, and
-with one orders its branches by the mean peak position of their columns.
-The rows of a trajectory from \code{heat_map_smooth()} are placed by
-their position along it (e.g. pseudotime), so the peaks of its lineages
-are compared by when they occur; other rows split into groups by a
-factor or character \code{tree_cut_y} (or \code{group_by}) are placed
-by their position within their group.}
+(optimal leaf ordering, Bar-Joseph et al. 2001, which flips branches so
+that neighbouring columns are as similar as possible), \code{"mean"}
+(branches ordered by their mean values - \code{\link[stats]{heatmap}}
+orders them by the sum of their columns' means instead, which favours small
+branches) or \code{"spectral"}. Optimal leaf ordering is exact for up to
+4000 columns, which takes well under a second; larger dendrograms are
+ordered in blocks (see \code{\link{heat_map_clust}}). A spectral order
+needs no dendrogram: the columns are ordered by recursive spectral
+bisection (Shi and Malik 2000; Atkins et al. 1998) of the graph joining
+each column to its 6 nearest neighbours (by \code{dist_method}, weighted as
+in UMAP, McInnes et al. 2018), which lays gradients and trajectories out
+along their length, cycles around their loop and clusters one after
+another, and runs of up to 12 columns are then reversed where that brings
+similar columns together (windowed 2-opt, Croes 1958). With a dendrogram,
+its branches are ordered by the mean spectral position of their columns. Up
+to \code{clust_max} columns are ordered exactly; more are ordered from a
+sample of \code{clust_max} landmarks, each other column placed beside its
+nearest landmark (200,000 take about 4 seconds). \code{"peak"} orders the
+columns by where they are highest along the rows, in the order of the rows
+in the data (ties by where they are lowest), so that features peaking early
+along a trajectory come first and cascades run diagonally (see
+\code{\link{heat_map_smooth}}); it needs no dendrogram either, and with one
+orders its branches by the mean peak position of their columns. The rows of
+a trajectory from \code{heat_map_smooth()} are placed by their position
+along it (e.g. pseudotime), so the peaks of its lineages are compared by
+when they occur; other rows split into groups by a factor or character
+\code{tree_cut_y} (or \code{group_by}) are placed by their position within
+their group.}
 
 \item{tree_support_x}{\code{TRUE} or a number of resamples (at least 10)
-to draw each branch of the x axis dendrogram by its bootstrap support:
+to draw each branch of the x axis dendrogram by its bootstrap support
+(Felsenstein 1985):
 the rows are resampled with replacement and the columns clustered again
 (with \code{dist_method} and \code{clust_method}, within each group for
 a dendrogram split by groups), and each branch scores the proportion of
@@ -349,9 +351,9 @@ when the clusters are contiguous in its order. Clusters are always
 numbered, and labelled by \code{tree_label_text_x}, in the displayed
 order from left to right.}
 
-\item{tree_kmeans_x}{number of k-means clusters to split the columns of
-\code{x} into, an alternative to \code{tree_cut_x} (e.g.
-\code{tree_kmeans_x = 3}). See \code{tree_kmeans_y}.}
+\item{tree_kmeans_x}{number of k-means clusters (Hartigan and Wong 1979) to
+split the columns of \code{x} into, an alternative to \code{tree_cut_x}
+(e.g. \code{tree_kmeans_x = 3}). See \code{tree_kmeans_y}.}
 
 \item{tree_split_x}{a numeric to control the spacing between x axis tree
 splits, set to 1 by default. Setting the argument to 0 will remove axis
@@ -385,7 +387,8 @@ text in the x axis cluster labels, set to 1 by default.}
 \item{tree_label_text_col_x}{a vector of colours to control the colour of
 text in x axis cluster labels, set to \code{"auto"} by default to
 use white text on dark labels and black text on light ones, whichever
-contrasts more with the colour of each label.}
+contrasts more with the colour of each label (by the contrast ratio of
+the Web Content Accessibility Guidelines).}
 
 \item{tree_label_text_col_alpha_x}{a vector of numerics to control the
 transparency of text in x axis cluster labels, set to 1 by default to use
@@ -504,7 +507,8 @@ text in the y axis cluster labels, set to 1 by default.}
 \item{tree_label_text_col_y}{a vector of colours to control the colour of
 text in y axis cluster labels, set to \code{"auto"} by default to
 use white text on dark labels and black text on light ones, whichever
-contrasts more with the colour of each label.}
+contrasts more with the colour of each label (by the contrast ratio of
+the Web Content Accessibility Guidelines).}
 
 \item{tree_label_text_col_alpha_y}{a vector of numerics to control the
 transparency of text in y axis cluster labels, set to 1 by default to use
@@ -513,19 +517,19 @@ solid colours.}
 \item{cell_shape}{indicates the shape to use for the cells in the heatmap,
 options include \code{"rect"}, \code{"circle"}, \code{"diamond"},
 \code{"ellipse"}, \code{"number"} or \code{"none"}. Circles, diamonds and
-ellipses stay round on cells that aren't square, sized by the shorter
-side of the cells. Ellipses show values between -1 and 1, such as
-correlations, by their shape - the outline of a bivariate normal
+ellipses stay round on cells that aren't square, sized by the shorter side
+of the cells. Ellipses show values between -1 and 1, such as correlations,
+by their shape (Murdoch and Chow 1996) - the outline of a bivariate normal
 distribution with that correlation, rising to the right for positive
 values, falling for negative values, and narrower the closer the value is
 to -1 or 1 (a circle at 0); values beyond -1 and 1 are drawn as -1 or 1
 with a warning. \code{"number"} writes the value of each cell (or its
-\code{cell_text}) in the colour of the cell instead of filling it,
-darkened where the colour is too light to read, and \code{"none"} leaves
-the cell empty apart from its \code{cell_text}. Alternatively, a matrix of
-the same dimensions as \code{x} containing the shape to use for each
-cell, e.g. ellipses below the diagonal of a correlation matrix and numbers
-above it (see \code{\link{heat_map_cor}}).}
+\code{cell_text}) in the colour of the cell instead of filling it, darkened
+where the colour is too light to read, and \code{"none"} leaves the cell
+empty apart from its \code{cell_text}. Alternatively, a matrix of the same
+dimensions as \code{x} containing the shape to use for each cell, e.g.
+ellipses below the diagonal of a correlation matrix and numbers above it
+(see \code{\link{heat_map_cor}}).}
 
 \item{cell_size}{logical indicating whether each cell in the heatmap should
 be scaled by the value in \code{x}, set to FALSE by default. Alternatively,
@@ -538,12 +542,12 @@ palette listed in \code{\link[grDevices]{hcl.pals}} (e.g. \code{"Dark 3"})
 or a function that returns \code{n} colours.}
 
 \item{cell_col_scale}{a vector of colours to use for the colour scale of
-numeric values. By default the scale runs through the colour-blind
-friendly viridis colours from dark purple to yellow, then on through
-orange and red to dark red. Alternatively, the name of a palette listed in
-\code{\link[grDevices]{hcl.pals}} (e.g. \code{"viridis"} or
-\code{"Blue-Red 3"}), a palette function that takes the number of
-colours as its first argument \code{n} (e.g. one created by
+numeric values. By default the scale runs through the colour-blind friendly
+viridis colours (as in \pkg{viridisLite}) from dark purple to yellow, then
+on through orange and red to dark red. Alternatively, the name of a palette
+listed in \code{\link[grDevices]{hcl.pals}} (e.g. \code{"viridis"} or
+\code{"Blue-Red 3"}), a palette function that takes the number of colours
+as its first argument \code{n} (e.g. one created by
 \code{\link[grDevices]{colorRampPalette}}), or a function created by
 \code{\link[grDevices]{colorRamp}}.}
 
@@ -594,15 +598,15 @@ dimensions as \code{x}, or a vector that is recycled down the columns of
 \code{x} (as in \code{matrix()}). Legends use solid colours unless all
 cells share the same transparency.}
 
-\item{cell_uncertainty}{a numeric matrix with the same dimensions as
-\code{x} holding the uncertainty of each value, such as a standard error,
-a confidence interval width or a p-value. Cells are coloured with a
-value-suppressing palette: the more uncertain a value, the fewer colours
-its part of the scale has and the closer they are to grey, so an
-uncertain value can't look like a strong one. The most certain level
-uses 8 colours across the scale (with the default 4 levels), the next 4,
-then 2, and the most uncertain level a single, nearly grey colour.
-Missing uncertainties are treated as the most uncertain. The colour
+\item{cell_uncertainty}{a numeric matrix with the same dimensions as \code{x}
+holding the uncertainty of each value, such as a standard error, a
+confidence interval width or a p-value. Cells are coloured with a
+value-suppressing palette (Correll et al. 2018): the more uncertain a
+value, the fewer colours its part of the scale has and the closer they are
+to grey, so an uncertain value can't look like a strong one. The most
+certain level uses 8 colours across the scale (with the default 4 levels),
+the next 4, then 2, and the most uncertain level a single, nearly grey
+colour. Missing uncertainties are treated as the most uncertain. The colour
 legend becomes a key with one row per uncertainty level.}
 
 \item{cell_uncertainty_breaks}{1 to 5 increasing thresholds between the
@@ -696,18 +700,17 @@ summary from \code{\link{heat_map_summarise}(group_by = ...)}, or with
 stacked bars their numbers in each part of \code{stack_by}.}
 
 \item{bar_type_x}{the type of plot drawn for \code{bar_values_x}:
-\code{"bar"} (one value per column), \code{"box"} (box plots of the
-values of each column, with the median, quartiles, whiskers to the most
-extreme values within 1.5 times the interquartile range and points beyond
-them) or \code{"violin"} (densities of the values of each column, with a
-line at the median), \code{"stack"} (stacked bars of the parts of each
-column, e.g. the number of cells of each condition in each cluster) or
-\code{"fill"} (stacked bars of the proportions of the parts). Set to
-\code{NULL} by default to draw bars for a vector and box plots for
+\code{"bar"} (one value per column), \code{"box"} (box plots of the values
+of each column, with the median, quartiles, whiskers to the most extreme
+values within 1.5 times the interquartile range and points beyond them) or
+\code{"violin"} (Hintze and Nelson 1998: densities of the values of each
+column, with a line at the median), \code{"stack"} (stacked bars of the
+parts of each column, e.g. the number of cells of each condition in each
+cluster) or \code{"fill"} (stacked bars of the proportions of the parts).
+Set to \code{NULL} by default to draw bars for a vector and box plots for
 distributions. \code{bar_fill_x} and the \code{bar_line_*_x} arguments
-style the boxes and violins; for stacked bars \code{bar_fill_x} gives
-one colour per part (named by part or in order), and the parts get a
-legend.}
+style the boxes and violins; for stacked bars \code{bar_fill_x} gives one
+colour per part (named by part or in order), and the parts get a legend.}
 
 \item{bar_axis_label_x}{axis label to use for the x axis bar plot.}
 
@@ -1189,9 +1192,9 @@ then drawn along the x axis (\code{tree_cut_x}, \code{annotation_x});
 other arguments refer to the heatmap as drawn.}
 
 \item{transform}{\code{"asinh"} to transform the values with the inverse
-hyperbolic sine of each value divided by \code{cofactor} before any
-scaling (the usual transform of cytometry intensities), or \code{NULL}
-(default) to draw the values as they are.}
+hyperbolic sine of each value divided by \code{cofactor} before any scaling
+(the usual transform of cytometry intensities, Bendall et al. 2011), or
+\code{NULL} (default) to draw the values as they are.}
 
 \item{cofactor}{the cofactor of \code{transform = "asinh"}: one number (5
 by default, as for mass cytometry; about 150 is common for flow
@@ -1203,24 +1206,24 @@ cytometry) or one per column, named by column.}
 \item{bimodal}{\code{TRUE} to outline, with a thick border, the cells of a
 summary of groups of cells in which a feature looks like two populations
 (e.g. a cluster that combines two smaller ones differing in one or two
-markers), so that they can be looked into; or the smallest dip to
-outline. Set to \code{FALSE} by default. Needs the dips of a summary from
-\code{heat_map_summarise(bimodal = TRUE)} (see there for how they are
-found) or of \code{heat_map_dot(bimodal = TRUE)}. A cell is outlined when
-its dip is at least \code{bimodal} (0.01 for \code{TRUE}) and above the
-dip that one population of the same number of cells exceeds 1\\% of the
-time (0.059 for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so that
-small groups aren't outlined by chance. Groups whose cells split across
-several of the features at once - most often whether the features are
-detected at all, as in a cluster combining CD4 and CD8 T cells, which no
-single feature shows as two peaks - are outlined in the features that
+markers), so that they can be looked into; or the smallest dip (Hartigan
+and Hartigan 1985) to outline. Set to \code{FALSE} by default. Needs the
+dips of a summary from \code{heat_map_summarise(bimodal = TRUE)} (see there
+for how they are found) or of \code{heat_map_dot(bimodal = TRUE)}. A cell
+is outlined when its dip is at least \code{bimodal} (0.01 for \code{TRUE})
+and above the dip that one population of the same number of cells exceeds
+1\\% of the time (0.059 for 100 cells, 0.019 for 1,000, 0.009 for 5,000), so
+that small groups aren't outlined by chance. Groups whose cells split
+across several of the features at once - most often whether the features
+are detected at all, as in a cluster combining CD4 and CD8 T cells, which
+no single feature shows as two peaks - are outlined in the features that
 drive the split, from the dip across features (see
 \code{\link{heat_map_summarise}}). The legend gains a key, and
-\code{bar_values_y = "dip"} (or \code{bar_values_x}) draws the largest
-dip of each row (column) as bars. \code{heat_map_info()$bimodal} returns
-the dips, the numbers of values they were found from and the cells
-outlined, and \code{heat_map_describe()} names them. The distributions
-behind each cell (\code{cell_values}) show what the dip has found.}
+\code{bar_values_y = "dip"} (or \code{bar_values_x}) draws the largest dip
+of each row (column) as bars. \code{heat_map_info()$bimodal} returns the
+dips, the numbers of values they were found from and the cells outlined,
+and \code{heat_map_describe()} names them. The distributions behind each
+cell (\code{cell_values}) show what the dip has found.}
 
 \item{...}{additional arguments passed to \code{\link{heat_map_clust}} (and
 on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other
@@ -1303,6 +1306,72 @@ heat_map(
   popup = FALSE
 )
 
+}
+\references{
+Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A
+spectral algorithm for seriation and the consecutive ones problem.
+\emph{SIAM Journal on Computing}, 28(1), 297-310.
+\doi{10.1137/S0097539795285771}
+
+Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast optimal
+leaf ordering for hierarchical clustering. \emph{Bioinformatics},
+17(suppl 1), S22-S29. \doi{10.1093/bioinformatics/17.suppl_1.S22}
+
+Bendall, S. C. et al. (2011). Single-cell mass cytometry of differential
+immune and drug responses across a human hematopoietic continuum.
+\emph{Science}, 332(6030), 687-696. \doi{10.1126/science.1198704}
+
+Correll, M., Moritz, D. and Heer, J. (2018). Value-suppressing
+uncertainty palettes. \emph{Proceedings of the 2018 CHI Conference on
+Human Factors in Computing Systems}. \doi{10.1145/3173574.3174216}
+
+Croes, G. A. (1958). A method for solving traveling-salesman problems.
+\emph{Operations Research}, 6(6), 791-812. \doi{10.1287/opre.6.6.791}
+
+Felsenstein, J. (1985). Confidence limits on phylogenies: an approach
+using the bootstrap. \emph{Evolution}, 39(4), 783-791.
+\doi{10.1111/j.1558-5646.1985.tb00420.x}
+
+Garnier, S. et al. viridisLite: colorblind-friendly color maps (lite
+version). \url{https://CRAN.R-project.org/package=viridisLite}
+
+Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+\emph{The Annals of Statistics}, 13(1), 70-84.
+\doi{10.1214/aos/1176346577}
+
+Hartigan, J. A. and Wong, M. A. (1979). Algorithm AS 136: a k-means
+clustering algorithm. \emph{Applied Statistics}, 28(1), 100-108.
+\doi{10.2307/2346830}
+
+Hintze, J. L. and Nelson, R. D. (1998). Violin plots: a box plot-density
+trace synergism. \emph{The American Statistician}, 52(2), 181-184.
+\doi{10.1080/00031305.1998.10480559}
+
+Hyndman, R. J. and Fan, Y. (1996). Sample quantiles in statistical
+packages. \emph{The American Statistician}, 50(4), 361-365.
+\doi{10.1080/00031305.1996.10473566}
+
+Kaufman, L. and Rousseeuw, P. J. (1990). \emph{Finding Groups in Data: An
+Introduction to Cluster Analysis}. Wiley. \doi{10.1002/9780470316801}
+
+McInnes, L., Healy, J. and Melville, J. (2018). UMAP: uniform manifold
+approximation and projection for dimension reduction.
+\emph{arXiv}:1802.03426. \doi{10.48550/arXiv.1802.03426}
+
+Murdoch, D. J. and Chow, E. D. (1996). A graphical display of large
+correlation matrices. \emph{The American Statistician}, 50(2), 178-180.
+
+Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the
+interpretation and validation of cluster analysis. \emph{Journal of
+Computational and Applied Mathematics}, 20, 53-65.
+\doi{10.1016/0377-0427(87)90125-7}
+
+Shi, J. and Malik, J. (2000). Normalized cuts and image segmentation.
+\emph{IEEE Transactions on Pattern Analysis and Machine Intelligence},
+22(8), 888-905. \doi{10.1109/34.868688}
+
+W3C (2018). Web Content Accessibility Guidelines (WCAG) 2.1.
+\url{https://www.w3.org/TR/WCAG21/}
 }
 \seealso{
 \code{\link{heat_map_info}}, \code{\link{heat_map_save}}

@@ -1,9 +1,9 @@
 ## DENDROGRAM BRANCH SUPPORT ---------------------------------------------------
 
-# Bootstrap support of each branch: the other dimension of the data is
-# resampled with replacement, the leaves are clustered again in the same way
-# and each branch scores the proportion of resamples in which its exact set of
-# leaves is a branch again. Branches are drawn by their support.
+# Bootstrap support of each branch (Felsenstein 1985): the other dimension of
+# the data is resampled with replacement, the leaves are clustered again in
+# the same way and each branch scores the proportion of resamples in which its
+# exact set of leaves is a branch again. Branches are drawn by their support.
 
 # Support styles - 90% or more, 70 to 89% and less than 70%
 .SUPPORT <- list(
