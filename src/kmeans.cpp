@@ -1,7 +1,7 @@
 // k-means helpers: the first principal component of the rows of a matrix
 //
-// tree_kmeans_* starts k-means from slices of the rows along their first
-// principal component. Power iteration on the data itself reads every value
+// tree_kmeans_* numbers its clusters from their scores on the first principal
+// component. Power iteration on the data itself reads every value
 // twice per iteration (up to 100 iterations); here the covariance matrix is
 // built in one pass over the data (blocks of rows shared between threads),
 // the iteration runs on it, and a last pass gives the scores.
@@ -800,37 +800,6 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
   for (size_t i = 0; i < m; ++i) cl[i] = f.ic1[i] + 1;
   f.means(co, threads);
   return result(iter, ifault);
-}
-
-// Means of the rows of x (no missing values) in each of groups 1..k (every
-// group holding a row), as rowsum(x, groups) / tabulate(groups, k) computes
-// them: each column summed in row order from 0, then divided by the count
-[[cpp11::register]]
-cpp11::doubles_matrix<> group_means_cpp(cpp11::doubles_matrix<> x, cpp11::integers groups, int k,
-                                        int threads) {
-  const size_t m = x.nrow();
-  const int n = x.ncol();
-  if (static_cast<size_t>(groups.size()) != m) cpp11::stop("one group per row is needed");
-  const int* g = INTEGER(groups);
-  std::vector<int> count(k, 0);
-  for (size_t i = 0; i < m; ++i) {
-    if (g[i] == NA_INTEGER || g[i] < 1 || g[i] > k) cpp11::stop("groups must be 1..k");
-    count[g[i] - 1]++;
-  }
-  for (int l = 0; l < k; ++l) {
-    if (count[l] == 0) cpp11::stop("every group must hold a row");
-  }
-  cpp11::writable::doubles_matrix<> out(k, n);
-  double* o = REAL(out.data());
-  const double* xv = REAL(x.data());
-  par::parallel_for(static_cast<size_t>(n), static_cast<double>(m) * n < 1048576.0 ? 1 : threads,
-                    [&](size_t j) {
-    std::vector<double> sum(k, 0.0);
-    const double* col = xv + j * m;
-    for (size_t i = 0; i < m; ++i) sum[g[i] - 1] += col[i];
-    for (int l = 0; l < k; ++l) o[j * k + l] = sum[l] / count[l];
-  });
-  return out;
 }
 
 // Which rows of x (no missing values) are the first of their values, as

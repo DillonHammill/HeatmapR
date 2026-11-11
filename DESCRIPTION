@@ -24,8 +24,8 @@ Description: Provides a lightweight framework for creating high quality, complex
     (2001) <doi:10.1093/bioinformatics/17.suppl_1.S22>, Kendall
     correlations are computed by Knight's (1966) algorithm
     <doi:10.1080/01621459.1966.10480879>, k-means by Hartigan and Wong
-    (1979) <doi:10.2307/2346830>, also from the k-means++ starts of Arthur
-    and Vassilvitskii (2007), and the dip statistic of unimodality, which
+    (1979) <doi:10.2307/2346830> from the k-means++ starting centres of
+    Arthur and Vassilvitskii (2007), and the dip statistic of unimodality, which
     flags groups of cells that may be two populations, by Hartigan and
     Hartigan (1985) <doi:10.1214/aos/1176346577>, all in compiled code.
     Dendrogram visualisation methods are based on the 'ggdendro' package by
