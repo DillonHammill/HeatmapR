@@ -372,8 +372,12 @@
 #'   \code{x} holds the control. Each cell is split along its diagonal: the
 #'   value in \code{x} fills the upper left half and the value in
 #'   \code{cell_split} the lower right half, on the same colour scale (its
-#'   limits cover both). Requires full-size rectangular cells (no
-#'   \code{cell_size} or other \code{cell_shape}) and can't be combined with
+#'   limits cover both). Circles (\code{cell_shape = "circle"}) are split down
+#'   the middle instead: \code{x} fills the left half and \code{cell_split}
+#'   the right half, and each half can have its own size (\code{cell_size} and
+#'   \code{cell_split_size}), as in the split dots of
+#'   \code{\link{heat_map_dot}}. Other cells must be full-size rectangles (no
+#'   \code{cell_size} or other \code{cell_shape}). Can't be combined with
 #'   \code{cell_uncertainty}; cells of non-numeric columns are not split. With
 #'   \code{scale}, each column (or row) of \code{x} is scaled together with
 #'   the same column (or row) of \code{cell_split}, so that the halves stay
@@ -381,6 +385,13 @@
 #' @param cell_split_labels two labels for the halves of the cells in the
 #'   legend - the values in \code{x} and in \code{cell_split}, set to
 #'   \code{c("x", "cell_split")} by default.
+#' @param cell_split_size a numeric matrix with the same dimensions as
+#'   \code{x} giving the size of the right half of each split circle, on the
+#'   same size scale as the matrix given to \code{cell_size} (which sizes the
+#'   left halves; the limits of the scale cover both). Set to \code{NULL} by
+#'   default, for halves of the same size - or, with \code{cell_size = TRUE},
+#'   right halves sized by \code{cell_split}. Halves with a missing size are
+#'   not drawn.
 #' @param cell_col_empty a colour to use for missing values in \code{x}, set to
 #'   \code{"white"} by default.
 #' @param cell_border_line_type a integer to indicate the type of line to use
@@ -816,7 +827,7 @@
 #'   visible next to large ones. Arguments with one value per cell
 #'   (\code{bar_values_y}, a logical \code{mark_y}, and matrices given to
 #'   \code{cell_size}, \code{cell_text}, \code{cell_split},
-#'   \code{cell_uncertainty}, \code{cell_values} and
+#'   \code{cell_split_size}, \code{cell_uncertainty}, \code{cell_values} and
 #'   \code{cell_border_mask}) are kept for the cells shown. Set to
 #'   \code{NULL} by default to show every cell.
 #' @param annotation_by annotations of the cells drawn as tracks beside the
@@ -1083,6 +1094,7 @@ heat_map <- function(x,
                      cell_uncertainty_title = "Uncertainty",
                      cell_split = NULL,
                      cell_split_labels = c("x", "cell_split"),
+                     cell_split_size = NULL,
                      cell_col_empty = "white",
                      cell_border_line_type = 1,
                      cell_border_line_width = 1,
@@ -1977,9 +1989,15 @@ heat_map <- function(x,
         call. = FALSE
       )
     }
-    # LEGEND KEY FOR THE TWO HALVES
+    # LEGEND KEY FOR THE TWO HALVES - SPLIT CIRCLES OR SQUARES
     if(!.legend_off(legend)) {
-      legend_keys <- c(legend_keys, list(split = .split_key(cell_split_labels)))
+      legend_keys <- c(
+        legend_keys,
+        list(split = .split_key(
+          cell_split_labels,
+          round = "circle" %in% as.vector(as.matrix(cell_shape))
+        ))
+      )
     }
   }
   if(!is.null(bimodal_flags) && any(bimodal_flags) && !.legend_off(legend)) {
@@ -2193,20 +2211,38 @@ heat_map <- function(x,
   size_mat <- NULL
   cell_size_min <- NULL
   cell_size_max <- NULL
+  split_size_mat <- NULL
   if(!is.null(size_data)) {
     size_cols <- .numeric_cols(size_data)
     if(length(size_cols) > 0) {
       size_mat <- .value_matrix(size_data, size_cols, "numeric")
+      # SIZES OF THE RIGHT HALVES OF SPLIT CIRCLES - THE SPLIT VALUES
+      # THEMSELVES WITH cell_size = TRUE
+      split_size_mat <- .check_split_size(
+        if(is.null(cell_split_size) && !is.null(split_mat) &&
+           isTRUE(cell_size)) {
+          split_mat
+        } else {
+          cell_split_size
+        },
+        x,
+        split_mat,
+        size_mat,
+        size_cols
+      )
       # CUSTOM LIMITS
       if(!is.null(cell_size_scale_limits)) {
         lims <- .check_limits(cell_size_scale_limits, "cell_size_scale_limits")
-      # DATA LIMITS
+      # DATA LIMITS - BOTH HALVES OF SPLIT CIRCLES
       } else {
-        lims <- .finite_range_cols(size_mat, size_cols)
+        lims <- .finite_range_cols(size_mat, size_cols, split_size_mat)
       }
       cell_size_min <- lims[1]
       cell_size_max <- lims[2]
     }
+  }
+  if(is.null(size_mat)) {
+    .check_split_size(cell_split_size, x, split_mat, NULL, size_cols)
   }
 
   # CELL SIZE MAPPING - SHARED WITH LEGEND
@@ -2493,12 +2529,32 @@ heat_map <- function(x,
   } else {
     all(cell_shapes == "rect")
   }
-  if(!is.null(split_mat) && (!is.null(size_mat) || !all_rect)) {
+  # SPLIT CIRCLES (OR "none") - EACH HALF WITH ITS OWN SIZE - OR SPLIT
+  # FULL-SIZE RECTANGLES
+  split_round <- !is.null(split_mat) && !all_rect
+  if(!is.null(split_mat) &&
+     ((all_rect && !is.null(size_mat)) ||
+      (split_round && !(if(is.null(shape_mat)) {
+        cell_shape == "circle"
+      } else {
+        all(cell_shapes %in% c("circle", "none"))
+      })))) {
     stop(
-      "'cell_split' requires full-size rectangular cells - remove 'cell_size' ",
-      "and use cell_shape = \"rect\".",
+      "'cell_split' requires circles (cell_shape = \"circle\") or full-size ",
+      "rectangular cells (no 'cell_size').",
       call. = FALSE
     )
+  }
+  # SIZES OF THE RIGHT HALVES OF SPLIT CIRCLES, AND THE CIRCLES DRAWN AS
+  # HALVES (NUMERIC CELLS) - THE OTHERS ARE DRAWN WHOLE
+  split_sizes <- NULL
+  if(split_round) {
+    split_sizes <- cell_sizes
+    if(!is.null(split_size_mat)) {
+      ind <- rep(col_ind %in% size_cols, each = n_row)
+      split_sizes[ind] <- size_fun(cells_of(split_size_mat)[ind])
+    }
+    split_halved <- !is.na(split_fill) & cell_shapes == "circle"
   }
   # ELLIPSES SHOW VALUES FROM -1 TO 1
   if(any_shape("ellipse")) {
@@ -3372,7 +3428,10 @@ heat_map <- function(x,
     .draw_cells(
       x = cell_x,
       y = cell_y,
-      size = cell_sizes,
+      # (SPLIT CIRCLES ARE DRAWN AS HALVES BELOW)
+      size = if(split_round) replace(cell_sizes, split_halved, NA) else {
+        cell_sizes
+      },
       shape = cell_shapes,
       fill = cell_fill,
       border = cell_borders,
@@ -3383,8 +3442,23 @@ heat_map <- function(x,
     )
   }
 
+  # SECOND VALUES IN THE RIGHT HALVES OF SPLIT CIRCLES
+  if(split_round) {
+    .draw_split_dots(
+      x = cell_x[split_halved],
+      y = cell_y[split_halved],
+      size = cell_sizes[split_halved],
+      split_size = split_sizes[split_halved],
+      fill = cell_fill[split_halved],
+      split_fill = split_fill[split_halved],
+      border = rep_len(cell_borders, n_cells)[split_halved],
+      line_type = cell_border_line_type,
+      line_width = cell_border_line_width,
+      cell_in = lay$cell_in,
+      line = !(border_hidden_x || border_hidden_y)
+    )
   # SECOND VALUES IN THE LOWER RIGHT HALVES OF THE CELLS
-  if(!is.null(split_fill)) {
+  } else if(!is.null(split_fill)) {
     .draw_split_cells(
       x = cell_x,
       y = cell_y,
@@ -3517,10 +3591,15 @@ heat_map <- function(x,
           line_width = cell_border_line_width
         )
       }
+      panel_halved <- if(split_round) split_halved[panel]
       .draw_cells(
         x = panel_x,
         y = panel_y,
-        size = cells_sizes(panel),
+        size = if(split_round) {
+          replace(cells_sizes(panel), panel_halved, NA)
+        } else {
+          cells_sizes(panel)
+        },
         shape = cells_shapes(panel),
         fill = packed_strings_cpp(cell_packed[panel], TRUE),
         border = if(min(panel_in) < border_min_in && is.null(mask_mat)) {
@@ -3533,7 +3612,25 @@ heat_map <- function(x,
         cell_in = panel_in,
         value = cells_r(panel)
       )
-      if(!is.null(split_fill)) {
+      if(split_round) {
+        .draw_split_dots(
+          x = panel_x[panel_halved],
+          y = panel_y[panel_halved],
+          size = cells_sizes(panel)[panel_halved],
+          split_size = split_sizes[panel][panel_halved],
+          fill = packed_strings_cpp(cell_packed[panel], TRUE)[panel_halved],
+          split_fill = split_fill[panel][panel_halved],
+          border = if(min(panel_in) < border_min_in && is.null(mask_mat)) {
+            NA_character_
+          } else {
+            cells_borders_all(panel)[panel_halved]
+          },
+          line_type = cell_border_line_type,
+          line_width = cell_border_line_width,
+          cell_in = panel_in,
+          line = min(panel_in) >= border_min_in
+        )
+      } else if(!is.null(split_fill)) {
         .draw_split_cells(
           x = panel_x,
           y = panel_y,
@@ -3995,6 +4092,9 @@ heat_map <- function(x,
     colours = .cell_info_colours(cell_packed, disp_row, col_ind, x),
     split_colours = if(!is.null(split_fill)) {
       .cell_matrix(split_fill, cell_ind, x)
+    },
+    split_sizes = if(split_round) {
+      .cell_matrix(split_sizes, cell_ind, x)
     },
     split_data = split_mat,
     bimodal = if(!is.null(bimodal_flags)) {

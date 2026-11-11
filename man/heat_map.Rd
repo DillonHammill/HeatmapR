@@ -64,6 +64,7 @@ heat_map(
   cell_uncertainty_title = "Uncertainty",
   cell_split = NULL,
   cell_split_labels = c("x", "cell_split"),
+  cell_split_size = NULL,
   cell_col_empty = "white",
   cell_border_line_type = 1,
   cell_border_line_width = 1,
@@ -626,8 +627,12 @@ holding a second value for each cell, such as the treated condition when
 \code{x} holds the control. Each cell is split along its diagonal: the
 value in \code{x} fills the upper left half and the value in
 \code{cell_split} the lower right half, on the same colour scale (its
-limits cover both). Requires full-size rectangular cells (no
-\code{cell_size} or other \code{cell_shape}) and can't be combined with
+limits cover both). Circles (\code{cell_shape = "circle"}) are split down
+the middle instead: \code{x} fills the left half and \code{cell_split}
+the right half, and each half can have its own size (\code{cell_size} and
+\code{cell_split_size}), as in the split dots of
+\code{\link{heat_map_dot}}. Other cells must be full-size rectangles (no
+\code{cell_size} or other \code{cell_shape}). Can't be combined with
 \code{cell_uncertainty}; cells of non-numeric columns are not split. With
 \code{scale}, each column (or row) of \code{x} is scaled together with
 the same column (or row) of \code{cell_split}, so that the halves stay
@@ -636,6 +641,14 @@ comparable.}
 \item{cell_split_labels}{two labels for the halves of the cells in the
 legend - the values in \code{x} and in \code{cell_split}, set to
 \code{c("x", "cell_split")} by default.}
+
+\item{cell_split_size}{a numeric matrix with the same dimensions as
+\code{x} giving the size of the right half of each split circle, on the
+same size scale as the matrix given to \code{cell_size} (which sizes the
+left halves; the limits of the scale cover both). Set to \code{NULL} by
+default, for halves of the same size - or, with \code{cell_size = TRUE},
+right halves sized by \code{cell_split}. Halves with a missing size are
+not drawn.}
 
 \item{cell_col_empty}{a colour to use for missing values in \code{x}, set to
 \code{"white"} by default.}
@@ -1188,7 +1201,7 @@ seed by \code{\link{heat_map_downsample}}, so that small groups stay
 visible next to large ones. Arguments with one value per cell
 (\code{bar_values_y}, a logical \code{mark_y}, and matrices given to
 \code{cell_size}, \code{cell_text}, \code{cell_split},
-\code{cell_uncertainty}, \code{cell_values} and
+\code{cell_split_size}, \code{cell_uncertainty}, \code{cell_values} and
 \code{cell_border_mask}) are kept for the cells shown. Set to
 \code{NULL} by default to show every cell.}
 
