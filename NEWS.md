@@ -150,6 +150,7 @@ HeatmapR 2.0.0 is a major release: a new layout that sizes every part of a heatm
 * Removed unused and commented-out code, including the modified `ggdendro` functions and unused internal helpers.
 * The test suite now checks the output of each feature (through `heat_map_info()` and the recorded drawing calls) rather than only that no error occurs, and covers over 99% of the code.
 * Documentation now matches the function defaults and the README describes CRAN installation.
+* Methods are referenced where they are used: the help pages of `heat_map()`, `heat_map_clust()`, `heat_map_scale()`, `heat_map_summarise()`, `heat_map_markers()`, `heat_map_dot()`, `heat_map_cor()`, `heat_map_smooth()` and `heat_map_example()`, the vignette and the articles cite the papers behind them. The authors and copyright holders of the code ported from R's `hclust.f` and `kmns.f` (algorithm AS 136) and from the `diptest` package (algorithm AS 217) are listed in `Authors@R`, and `inst/COPYRIGHTS` describes each port. The DOI of Murtagh and Contreras (2012) in the Description is corrected.
 
 # HeatmapR 1.1.0
 

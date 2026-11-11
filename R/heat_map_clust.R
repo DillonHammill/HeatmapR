@@ -44,14 +44,16 @@
 #' @param order how the branches of the dendrogram are ordered:
 #'   \code{"default"} keeps the order from \code{hclust}, \code{"olo"} flips
 #'   branches to minimise the distances between neighbouring leaves (optimal
-#'   leaf ordering) and \code{"mean"} orders branches by their mean values
-#'   (\code{\link[stats]{heatmap}} orders them by the sum of their leaves'
-#'   means instead, which favours small branches). \code{"spectral"} orders
+#'   leaf ordering, Bar-Joseph et al. 2001) and \code{"mean"} orders branches
+#'   by their mean values (\code{\link[stats]{heatmap}} orders them by the sum
+#'   of their leaves' means instead, which favours small branches).
+#'   \code{"spectral"} orders
 #'   branches by the mean position of their leaves in a spectral order
 #'   (recursive spectral bisection of the graph joining each leaf to its 6
-#'   nearest neighbours), so that gradients and trajectories run in one
-#'   direction across the dendrogram. \code{"peak"} orders branches by the
-#'   mean position of their leaves' maxima along the columns (ties by the
+#'   nearest neighbours; Shi and Malik 2000, Atkins et al. 1998), so that
+#'   gradients and trajectories run in one direction across the dendrogram.
+#'   \code{"peak"} orders branches by the mean position of their leaves' maxima
+#'   along the columns (ties by the
 #'   position of their minima), so that features peaking early come first,
 #'   e.g. along pseudotime (see \code{\link{heat_map_smooth}}). A numeric
 #'   vector with one value per row orders branches by the mean value of their
@@ -82,17 +84,22 @@
 #'   up to all the columns (as \code{dist} scales them) and correlations use
 #'   the values both rows have (as \code{cor(use =
 #'   "pairwise.complete.obs")}; Spearman's ranks the values of each pair);
-#'   rows that share no values can't be clustered. Single linkage is computed
-#'   from a minimum spanning tree (Prim's algorithm, which needs no matrix of
-#'   distances) and centroid and median linkage by \code{hclust}'s own
-#'   algorithm, both giving the tree \code{hclust} gives. Complete, average,
-#'   McQuitty and Ward linkage are computed by the nearest-neighbour chain
-#'   algorithm, which builds the same tree as \code{\link[stats]{hclust}}
+#'   rows that share no values can't be clustered. Kendall's tau is computed
+#'   by Knight's (1966) algorithm. Single linkage is computed from a minimum
+#'   spanning tree (Prim's algorithm, Prim 1957, which needs no matrix of
+#'   distances; Gower and Ross 1969) and centroid and median linkage by
+#'   \code{hclust}'s own algorithm (the nearest-neighbour list of Murtagh
+#'   1985, ported from R's \code{hclust.f}), both giving the tree
+#'   \code{hclust} gives. Complete, average, McQuitty and Ward linkage are
+#'   computed by the nearest-neighbour chain algorithm (Murtagh 1983; Mullner
+#'   2011), which builds the same tree as \code{\link[stats]{hclust}}
 #'   when the distances are distinct. When distances are tied (common for
 #'   integer, binary or rounded data), more than one tree is correct and the
 #'   two can choose differently between tied merges, so the tree - and the
 #'   branches above the tied merges - can differ from the one \code{hclust}
-#'   returns while being equally valid.
+#'   returns while being equally valid. Distances to merged clusters are
+#'   updated by the formula of Lance and Williams (1967); Murtagh and
+#'   Contreras (2012) give an overview of these algorithms.
 #'
 #' @return object of class \code{hclust} which describes the tree produced by
 #'   the clustering process. Branch heights are rescaled to the range
@@ -104,6 +111,64 @@
 #'   scored). A tree clustered in two stages (more than
 #'   \code{max} rows) has a \code{two_stage} element giving the size of the
 #'   sample and the number of groups.
+#'
+#' @references Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A
+#'   spectral algorithm for seriation and the consecutive ones problem.
+#'   \emph{SIAM Journal on Computing}, 28(1), 297-310.
+#'   \doi{10.1137/S0097539795285771}
+#'
+#' Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast optimal
+#'   leaf ordering for hierarchical clustering. \emph{Bioinformatics},
+#'   17(suppl 1), S22-S29. \doi{10.1093/bioinformatics/17.suppl_1.S22}
+#'
+#' Croes, G. A. (1958). A method for solving traveling-salesman problems.
+#'   \emph{Operations Research}, 6(6), 791-812. \doi{10.1287/opre.6.6.791}
+#'
+#' Gower, J. C. and Ross, G. J. S. (1969). Minimum spanning trees and single
+#'   linkage cluster analysis. \emph{Applied Statistics}, 18(1), 54-64.
+#'   \doi{10.2307/2346439}
+#'
+#' Kaufman, L. and Rousseeuw, P. J. (1990). \emph{Finding Groups in Data: An
+#'   Introduction to Cluster Analysis}. Wiley. \doi{10.1002/9780470316801}
+#'
+#' Knight, W. R. (1966). A computer method for calculating Kendall's tau
+#'   with ungrouped data. \emph{Journal of the American Statistical
+#'   Association}, 61(314), 436-439. \doi{10.1080/01621459.1966.10480879}
+#'
+#' Lance, G. N. and Williams, W. T. (1967). A general theory of
+#'   classificatory sorting strategies: 1. Hierarchical systems. \emph{The
+#'   Computer Journal}, 9(4), 373-380. \doi{10.1093/comjnl/9.4.373}
+#'
+#' McInnes, L., Healy, J. and Melville, J. (2018). UMAP: uniform manifold
+#'   approximation and projection for dimension reduction.
+#'   \emph{arXiv}:1802.03426. \doi{10.48550/arXiv.1802.03426}
+#'
+#' Mullner, D. (2011). Modern hierarchical, agglomerative clustering
+#'   algorithms. \emph{arXiv}:1109.2378. \doi{10.48550/arXiv.1109.2378}
+#'
+#' Murtagh, F. (1983). A survey of recent advances in hierarchical
+#'   clustering algorithms. \emph{The Computer Journal}, 26(4), 354-359.
+#'   \doi{10.1093/comjnl/26.4.354}
+#'
+#' Murtagh, F. (1985). \emph{Multidimensional Clustering Algorithms}.
+#'   COMPSTAT Lectures 4. Physica-Verlag.
+#'
+#' Murtagh, F. and Contreras, P. (2012). Algorithms for hierarchical
+#'   clustering: an overview. \emph{WIREs Data Mining and Knowledge
+#'   Discovery}, 2(1), 86-97. \doi{10.1002/widm.53}
+#'
+#' Prim, R. C. (1957). Shortest connection networks and some
+#'   generalizations. \emph{Bell System Technical Journal}, 36(6), 1389-1401.
+#'   \doi{10.1002/j.1538-7305.1957.tb01515.x}
+#'
+#' Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the
+#'   interpretation and validation of cluster analysis. \emph{Journal of
+#'   Computational and Applied Mathematics}, 20, 53-65.
+#'   \doi{10.1016/0377-0427(87)90125-7}
+#'
+#' Shi, J. and Malik, J. (2000). Normalized cuts and image segmentation.
+#'   \emph{IEEE Transactions on Pattern Analysis and Machine Intelligence},
+#'   22(8), 888-905. \doi{10.1109/34.868688}
 #'
 #' @importFrom stats dist hclust as.dist cutree
 #' @importFrom methods formalArgs

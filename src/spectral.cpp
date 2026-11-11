@@ -18,14 +18,31 @@
 // well, but folds a cycle and leaves clusters internally unordered; the
 // recursion orders every part along its own main direction. Windowed 2-opt
 // then reverses runs of up to 12 rows where that shortens the path through
-// them, which smooths the order locally without changing its layout. The
-// order runs in the direction of the rows' original order (positive
-// correlation).
+// them (Croes 1958), which smooths the order locally without changing its
+// layout. The order runs in the direction of the rows' original order
+// (positive correlation).
 //
 // SILHOUETTES. The cuts of a tree into 2, 3, ... clusters are nested: each
 // splits one cluster of the one before (merges are undone from the root
 // down), so the sums of distances from each row to each cluster are updated
-// from the smaller half of each split instead of recomputed.
+// from the smaller half of each split instead of recomputed. The silhouette
+// width of a leaf is Rousseeuw's (1987).
+//
+// Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A spectral
+//   algorithm for seriation and the consecutive ones problem. SIAM Journal
+//   on Computing, 28(1), 297-310.
+// Croes, G. A. (1958). A method for solving traveling-salesman problems.
+//   Operations Research, 6(6), 791-812.
+// Fiedler, M. (1973). Algebraic connectivity of graphs. Czechoslovak
+//   Mathematical Journal, 23(2), 298-305.
+// McInnes, L., Healy, J. and Melville, J. (2018). UMAP: uniform manifold
+//   approximation and projection for dimension reduction. arXiv:1802.03426.
+// Rousseeuw, P. J. (1987). Silhouettes: a graphical aid to the
+//   interpretation and validation of cluster analysis. Journal of
+//   Computational and Applied Mathematics, 20, 53-65.
+// Shi, J. and Malik, J. (2000). Normalized cuts and image segmentation.
+//   IEEE Transactions on Pattern Analysis and Machine Intelligence, 22(8),
+//   888-905.
 //
 
 #include <cpp11.hpp>

@@ -142,6 +142,13 @@ cpp11::doubles first_pc_cpp(cpp11::doubles_matrix<> x, int threads) {
 // copied once into row-major order, the first assignment of every row to
 // its two nearest centres is shared between threads, and none of kmeans()'s
 // copies of the data are made.
+//
+// kmns.f is based on Applied Statistics algorithm AS 136 (Hartigan, J. A.
+// and Wong, M. A. (1979). A k-means clustering algorithm. Applied
+// Statistics, 28(1), 100-108), Copyright (C) Royal Statistical Society
+// 1979, with changes for R by B. D. Ripley and M. Maechler, Copyright (C)
+// The R Core Team, distributed with R under the GNU GPL (version 2 or 3).
+// See inst/COPYRIGHTS.
 namespace {
 
 // kmns.f's BIG is a single-precision constant stored in double precision

@@ -5,11 +5,11 @@
 #' \code{heat_map_cor()} draws a correlation matrix as a heatmap whose rows
 #' and columns share one order, so the diagonal runs from the top left to the
 #' bottom right and each triangle can show the correlations in a different
-#' way. By default the lower triangle shows ellipses, whose shape follows the
-#' correlation (rising to the right for positive correlations, falling for
-#' negative ones and narrower the stronger the correlation), the upper
-#' triangle the correlation coefficients written in their colours, and the
-#' diagonal the names of the variables, with the variables clustered so that
+#' way. By default the lower triangle shows ellipses (Murdoch and Chow 1996),
+#' whose shape follows the correlation (rising to the right for positive
+#' correlations, falling for negative ones and narrower the stronger the
+#' correlation), the upper triangle the correlation coefficients written in
+#' their colours, and the diagonal the names of the variables, with the variables clustered so that
 #' correlated variables sit together.
 #'
 #' The variables are clustered with \code{\link[stats]{hclust}} on one minus
@@ -53,6 +53,13 @@
 #'   is the correlation matrix.
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
+#'
+#' @references Murdoch, D. J. and Chow, E. D. (1996). A graphical display of
+#'   large correlation matrices. \emph{The American Statistician}, 50(2),
+#'   178-180.
+#'
+#' Wei, T. and Simko, V. corrplot: visualization of a correlation matrix.
+#'   \url{https://CRAN.R-project.org/package=corrplot}
 #'
 #' @seealso \code{\link{heat_map}}
 #'

@@ -11,9 +11,9 @@
 //   reducible linkages (Ward, complete, average, McQuitty): the same merges
 //   as joining the closest pair each time, which can only differ from
 //   hclust() in the order of merges at exactly equal heights.
-// - Prim's minimum spanning tree for single linkage, which needs no matrix
-//   of distances: the single linkage tree is the spanning tree's edges in
-//   order of length.
+// - Prim's minimum spanning tree (Prim 1957) for single linkage, which
+//   needs no matrix of distances: the single linkage tree is the spanning
+//   tree's edges in order of length (Gower and Ross 1969).
 //
 // Distances come from a dist object or are computed from the rows of a
 // matrix (metric.h). They are stored as the lower triangle of a dist object,
@@ -22,6 +22,23 @@
 // updates are shared between threads while many clusters are active, each
 // thread taking a contiguous part in order, so that ties are resolved as on
 // one thread.
+//
+// The nearest-neighbour list and the Lance-Williams updates are ported from
+// hclust.f of R's stats package: F. Murtagh (1986), with modifications for
+// R by Ross Ihaka, Fritz Leisch and Martin Maechler; Copyright (C) The R
+// Core Team, distributed with R under the GNU GPL (version 2 or 3). See
+// inst/COPYRIGHTS.
+//
+// Gower, J. C. and Ross, G. J. S. (1969). Minimum spanning trees and single
+//   linkage cluster analysis. Applied Statistics, 18(1), 54-64.
+// Mullner, D. (2011). Modern hierarchical, agglomerative clustering
+//   algorithms. arXiv:1109.2378.
+// Murtagh, F. (1983). A survey of recent advances in hierarchical
+//   clustering algorithms. The Computer Journal, 26(4), 354-359.
+// Murtagh, F. (1985). Multidimensional Clustering Algorithms. COMPSTAT
+//   Lectures 4. Physica-Verlag.
+// Prim, R. C. (1957). Shortest connection networks and some
+//   generalizations. Bell System Technical Journal, 36(6), 1389-1401.
 
 #include <cpp11.hpp>
 #include <algorithm>

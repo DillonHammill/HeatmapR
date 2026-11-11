@@ -123,7 +123,10 @@ long long inversions(double* y, int m, std::vector<double>& buf) {
   return inv;
 }
 
-// Knight's algorithm: O(m log m) instead of comparing every pair
+// Knight's algorithm: O(m log m) instead of comparing every pair (Knight, W.
+// R. (1966). A computer method for calculating Kendall's tau with
+// ungrouped data. Journal of the American Statistical Association, 61(314),
+// 436-439)
 TauCounts tau_counts(const double* a, const double* b, int m, Scratch& w) {
   TauCounts c;
   if (m < 2) return c;

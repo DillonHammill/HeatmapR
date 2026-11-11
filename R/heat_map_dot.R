@@ -6,9 +6,10 @@
 #' group of cells (e.g. per cluster) and one column per feature: the colour of
 #' each dot is the mean of the feature in the group, scaled within each
 #' feature, and its area the proportion of the group's cells in which the
-#' feature is detected, as Seurat's \code{DotPlot()} and scanpy's
-#' \code{dotplot()} draw them. The means and proportions are found in one pass
-#' over the data, from the non-zero values of sparse data (see
+#' feature is detected, as Seurat's \code{DotPlot()} (Hao et al. 2024) and
+#' scanpy's \code{dotplot()} (Wolf et al. 2018) draw them. The means and
+#' proportions are found in one pass over the data, from the non-zero values of
+#' sparse data (see
 #' \code{\link{heat_map_summarise}}). The plot is a heatmap of circles, so
 #' every option of \code{\link{heat_map}} can be added through \code{...}, e.g.
 #' a dendrogram of the groups (\code{tree_y = TRUE}) or annotations.
@@ -41,8 +42,9 @@
 #' @param bimodal \code{TRUE} to outline, with a thick border, the dots of
 #'   groups in which a feature looks like two populations among the cells it
 #'   is detected in (e.g. a cluster combining two smaller ones), from the dip
-#'   of each feature in each group; or the smallest dip to outline. Set to
-#'   \code{FALSE} by default. See \code{\link{heat_map_summarise}} for how the
+#'   (Hartigan and Hartigan 1985) of each feature in each group; or the smallest
+#'   dip to outline. Set to \code{FALSE} by default. See
+#'   \code{\link{heat_map_summarise}} for how the
 #'   dips are found and \code{\link{heat_map}} for when a dot is outlined.
 #' @param ... other arguments passed to \code{\link{heat_map}}, e.g.
 #'   \code{cell_col_scale}, \code{tree_y} or \code{popup}. They replace the
@@ -54,6 +56,18 @@
 #'   \code{\link{heat_map_summarise}}.
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
+#'
+#' @references Hao, Y. et al. (2024). Dictionary learning for integrative,
+#'   multimodal and scalable single-cell analysis. \emph{Nature Biotechnology},
+#'   42(2), 293-304. \doi{10.1038/s41587-023-01767-y}
+#'
+#' Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
+#'   \emph{The Annals of Statistics}, 13(1), 70-84.
+#'   \doi{10.1214/aos/1176346577}
+#'
+#' Wolf, F. A., Angerer, P. and Theis, F. J. (2018). SCANPY: large-scale
+#'   single-cell gene expression data analysis. \emph{Genome Biology}, 19, 15.
+#'   \doi{10.1186/s13059-017-1382-0}
 #'
 #' @seealso \code{\link{heat_map_markers}}, \code{\link{heat_map_summarise}}
 #'

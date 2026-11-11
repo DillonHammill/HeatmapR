@@ -97,7 +97,9 @@
 #'   (so that the comb of 1, 2, 3, ... counts isn't read as several peaks)
 #'   and, for continuous values, the piles at the lowest and highest values
 #'   (clipping, saturated detectors) left out. Groups with fewer than 20
-#'   such values have no dip. The dips are computed in compiled code.
+#'   such values have no dip. The dips are computed in compiled code, by
+#'   algorithm AS 217 (Hartigan 1985) as corrected in the \pkg{diptest}
+#'   package.
 #'
 #'   Populations that differ in several features at once (most often whether
 #'   the features are detected at all, as in a cluster combining CD4 and CD8 T
@@ -109,7 +111,8 @@
 #'   them; at most 50,000 cells of a group, drawn with a fixed seed). It is
 #'   only found when that component carries co-variation - an eigenvalue of
 #'   at least 2, and above the largest eigenvalue of as many independent
-#'   features - so that features that each have two peaks of their own (e.g.
+#'   features (the upper edge of the Marchenko-Pastur law, Marchenko and
+#'   Pastur 1967) - so that features that each have two peaks of their own (e.g.
 #'   from the asinh transform) don't add up to a split, and it is kept as the
 #'   \code{"dip_pc"} attribute (and \code{"dip_pc_n"}, the cells used) in
 #'   the features that drive the component (more than an equal share of it),
@@ -136,6 +139,14 @@
 #' @references Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of
 #'   unimodality. \emph{The Annals of Statistics}, 13(1), 70-84.
 #'   \doi{10.1214/aos/1176346577}
+#'
+#' Hartigan, P. M. (1985). Algorithm AS 217: computation of the dip
+#'   statistic to test for unimodality. \emph{Applied Statistics}, 34(3),
+#'   320-325. \doi{10.2307/2347485}
+#'
+#' Marchenko, V. A. and Pastur, L. A. (1967). Distribution of eigenvalues
+#'   for some sets of random matrices. \emph{Mathematics of the USSR-Sbornik},
+#'   1(4), 457-483. \doi{10.1070/SM1967v001n04ABEH001994}
 #'
 #' @author Dillon Hammill (dillon.hammill21@gmail.com)
 #'

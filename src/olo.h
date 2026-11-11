@@ -1,6 +1,8 @@
 // Optimal leaf ordering - the computation (see olo.cpp for the R interface)
 //
-// Bar-Joseph, Gifford and Jaakkola 2001
+// Bar-Joseph, Z., Gifford, D. K. and Jaakkola, T. S. (2001). Fast optimal
+// leaf ordering for hierarchical clustering. Bioinformatics, 17(suppl 1),
+// S22-S29.
 //
 // For every merge, the cost of the best ordering of its leaves that starts at
 // a leaf of its left branch and ends at a leaf of its right branch is built

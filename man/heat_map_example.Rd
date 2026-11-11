@@ -57,16 +57,18 @@ log-normalised to 10,000 counts per cell
 CD19, CD20, CD56, CD16, CD14, CD11c, HLA-DR, CD45RA and CCR7) in eight
 clusters (C1 to C8), from eight samples (S1 to S8) in two conditions (S1
 to S4 \code{"control"}, S5 to S8 \code{"stimulated"}). The intensities
-are raw, as from a mass cytometer: \code{asinh(x / 5)} recovers the
-simulated levels. Cluster C3 is twice as common in the stimulated
-samples, and HLA-DR rises in clusters C5 and C6 under stimulation.}
+are raw, as from a mass cytometer: \code{asinh(x / 5)} (the usual
+transform, Bendall et al. 2011) recovers the simulated levels. Cluster C3
+is twice as common in the stimulated samples, and HLA-DR rises in clusters
+C5 and C6 under stimulation.}
 \item{\code{"trajectory"}}{4,000 cells of a branching trajectory with 30
 genes (log-transformed counts, \code{log1p()}), in a random order (the
 genes are the first 30 columns of the data.frame). Every
 cell has a \code{pseudotime} from 0 to 1, and \code{lineage1} and
-\code{lineage2} give the pseudotime of each lineage, as slingshot gives
-them (missing for cells outside the lineage). The lineages share their
-start and branch at a pseudotime of 0.4; each gene peaks at its own
+\code{lineage2} give the pseudotime of each lineage, as slingshot (Street
+et al. 2018) gives them (missing for cells outside the lineage). The
+lineages share their start and branch at a pseudotime of 0.4; each gene
+peaks at its own
 point, and some genes peaking after the branch are expressed in one
 lineage only.}
 }
@@ -96,6 +98,16 @@ smooth <- heat_map_smooth(traj, along = "pseudotime", features = 1:30,
 heat_map(smooth, swap_axes = TRUE, scale = "row", tree_order_y = "peak",
          annotation_by = "pseudotime", axis_text_x = NA, popup = FALSE)
 
+}
+\references{
+Bendall, S. C. et al. (2011). Single-cell mass cytometry of
+differential immune and drug responses across a human hematopoietic
+continuum. \emph{Science}, 332(6030), 687-696.
+\doi{10.1126/science.1198704}
+
+Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
+inference for single-cell transcriptomics. \emph{BMC Genomics}, 19, 477.
+\doi{10.1186/s12864-018-4772-0}
 }
 \seealso{
 \code{\link{heat_map}}, \code{\link{heat_map_dot}},
