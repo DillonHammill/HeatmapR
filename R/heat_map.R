@@ -231,11 +231,16 @@
 #' @param tree_kmeans_y number of k-means clusters to split the rows of
 #'   \code{x} into, an alternative to \code{tree_cut_y} that is quick for many
 #'   rows (e.g. \code{tree_kmeans_y = 4}). The rows are clustered on the
-#'   numeric columns of \code{x} after scaling (by the Hartigan-Wong
-#'   algorithm, giving the clusters \code{stats::kmeans()} gives, in compiled
-#'   code), starting from the centres of
-#'   equal slices of the rows along their first principal component, so the
-#'   clusters don't depend on the random seed. The clusters are ordered so
+#'   numeric columns of \code{x} after scaling, by the Hartigan-Wong
+#'   algorithm (in compiled code), from the centres of equal slices of the
+#'   rows along their first principal component and from three k-means++
+#'   starts (Arthur and Vassilvitskii 2007, greedy as in Grunau et al. 2023),
+#'   fitted on separate threads, keeping the clusters with the smallest
+#'   within-cluster sum of squares (for more than 20,000 rows, the starts are
+#'   compared on a sample of 20,000 and every row is then fitted from the
+#'   best).
+#'   The starts use fixed seeds, so the clusters don't depend on the random
+#'   seed. The clusters are ordered so
 #'   that similar clusters are neighbours (optimal leaf order of their
 #'   centres) and then act like groups supplied to \code{tree_cut_y}: with a
 #'   dendrogram (\code{tree_y = TRUE}) the rows are clustered within each
@@ -398,9 +403,9 @@
 #'   \code{cell_border_line_width} and is left out, like cell borders, when
 #'   the cells are too small.
 #' @param cell_border_mask a matrix of the same dimensions as \code{x} containing
-#'   TRUE/FALSE values indicating whether each cell should have a colored border
+#'   TRUE/FALSE values indicating whether each cell should have a coloured border
 #'   (TRUE) or a transparent border (FALSE), set to NULL by default to apply
-#'   border color to all cells. Missing values are treated as FALSE.
+#'   border colour to all cells. Missing values are treated as FALSE.
 #' @param cell_text logical indicating whether the values in \code{x} should be
 #'   displayed in each cell of the heatmap, set to FALSE by default.
 #' @param cell_text_font an integer to control the font face of cell text, set
@@ -861,7 +866,11 @@
 #'   including row and column orders, cluster assignments, dendrograms and
 #'   cell colours, can be extracted with \code{\link{heat_map_info}}.
 #'
-#' @references Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A
+#' @references Arthur, D. and Vassilvitskii, S. (2007). k-means++: the
+#'   advantages of careful seeding. \emph{Proceedings of the 18th Annual
+#'   ACM-SIAM Symposium on Discrete Algorithms (SODA '07)}, 1027-1035.
+#'
+#' Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A
 #'   spectral algorithm for seriation and the consecutive ones problem.
 #'   \emph{SIAM Journal on Computing}, 28(1), 297-310.
 #'   \doi{10.1137/S0097539795285771}
@@ -891,6 +900,11 @@
 #' Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of unimodality.
 #'   \emph{The Annals of Statistics}, 13(1), 70-84.
 #'   \doi{10.1214/aos/1176346577}
+#'
+#' Grunau, C., Ozudogru, A. A., Rozhon, V. and Tetek, J. (2023). A nearly
+#'   tight analysis of greedy k-means++. \emph{Proceedings of the 2023
+#'   ACM-SIAM Symposium on Discrete Algorithms (SODA 2023)}, 1012-1070.
+#'   \doi{10.48550/arXiv.2207.07949}
 #'
 #' Hartigan, J. A. and Wong, M. A. (1979). Algorithm AS 136: a k-means
 #'   clustering algorithm. \emph{Applied Statistics}, 28(1), 100-108.

@@ -56,12 +56,16 @@ kmeans_hw_cpp <- function(x, centres, iter_max, threads) {
   .Call(`_HeatmapR_kmeans_hw_cpp`, x, centres, iter_max, threads)
 }
 
-group_means_cpp <- function(x, groups, k, threads) {
-  .Call(`_HeatmapR_group_means_cpp`, x, groups, k, threads)
+kmeans_hw_best_cpp <- function(x, starts, iter_max, threads) {
+  .Call(`_HeatmapR_kmeans_hw_best_cpp`, x, starts, iter_max, threads)
 }
 
 distinct_rows_cpp <- function(x) {
   .Call(`_HeatmapR_distinct_rows_cpp`, x)
+}
+
+kmeanspp_cpp <- function(x, k, seed, threads) {
+  .Call(`_HeatmapR_kmeanspp_cpp`, x, k, seed, threads)
 }
 
 hclust_cpp <- function(d, n, method, members, threads) {

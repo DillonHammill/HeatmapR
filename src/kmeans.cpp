@@ -1,7 +1,8 @@
 // k-means helpers: the first principal component of the rows of a matrix
 //
 // tree_kmeans_* starts k-means from slices of the rows along their first
-// principal component. Power iteration on the data itself reads every value
+// principal component (besides k-means++ starts) and numbers its clusters by
+// their scores on it. Power iteration on the data itself reads every value
 // twice per iteration (up to 100 iterations); here the covariance matrix is
 // built in one pass over the data (blocks of rows shared between threads),
 // the iteration runs on it, and a last pass gives the scores.
@@ -691,46 +692,21 @@ struct HWFit {
   }
 };
 
-}  // namespace
-
-// Written from Hartigan & Wong (1979), "Method" (Steps 1-7) and "Fault
-// diagnostics" (ifault 0-3), and ?kmeans (ifault 4), with stats::kmeans() as
-// a black box for the details listed above.
-// k-means of the rows of x (no missing values) from the rows of centres
-// (distinct), by the algorithm of Hartigan and Wong: list(cluster (1-based),
-// centers (k x p, the means of the clusters), iter (the optimal-transfer
-// passes, iter_max + 1 when they didn't converge), ifault: 0 converged; 1 an
-// empty cluster after the first assignment (cluster: each point's closest
-// centre, centers: the starting ones); 2 not converged in iter_max
-// iterations; 3 k < 2 or k >= m (cluster NA); 4 the quick-transfer stage
-// stopped at its step limit)
-[[cpp11::register]]
-cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> centres,
-                          int iter_max, int threads) {
-  using namespace cpp11::literals;
-  const size_t m = x.nrow();
-  const int p = x.ncol();
-  const int k = centres.nrow();
-  if (centres.ncol() != p) cpp11::stop("the centres must have the columns of the data");
-  if (iter_max < 1) cpp11::stop("iter_max must be at least 1");
-  if (threads < 1) threads = 1;
-  const double* cv = REAL(centres.data());
-  cpp11::writable::doubles_matrix<> centers(k, p);
-  double* co = REAL(centers.data());
-  std::copy(cv, cv + static_cast<size_t>(k) * p, co);
-  cpp11::writable::integers cluster(static_cast<R_xlen_t>(m));
-  int* cl = INTEGER(cluster);
-  auto result = [&](int iter, int ifault) {
-    return cpp11::writable::list({"cluster"_nm = cluster, "centers"_nm = centers,
-                                  "iter"_nm = iter, "ifault"_nm = ifault});
-  };
+// k-means of the m rows of x (p columns, column-major) from the k rows of
+// start (k x p, column-major), by the algorithm of Hartigan and Wong, without
+// R: the 1-based cluster of each row into cl, the centres (k x p) into co and
+// the optimal-transfer passes into iter; returns ifault (see kmeans_hw_cpp)
+int hw_fit(const double* x, size_t m, int p, int k, const double* start, int iter_max,
+           int threads, int* cl, double* co, int& iter) {
+  std::copy(start, start + static_cast<size_t>(k) * p, co);
+  iter = 0;
   // INVALID NUMBER OF CLUSTERS (ifault 3)
   if (k < 2 || static_cast<size_t>(k) >= m) {
     std::fill(cl, cl + m, NA_INTEGER);
-    return result(0, 3);
+    return 3;
   }
   HWFit f;
-  f.x = REAL(x.data());
+  f.x = x;
   f.m = m;
   f.p = p;
   f.k = k;
@@ -755,14 +731,14 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
   f.lo2.assign(m, 0.0);
   f.lo2_at.assign(m, 0.0);
   // EACH POINT'S CLOSEST AND SECOND CLOSEST STARTING CENTRES (STEP 1)
-  f.set_centres(cv);
+  f.set_centres(start);
   f.nearest_two(threads);
   for (size_t i = 0; i < m; ++i) f.nc[f.ic1[i]]++;
   // (AN EMPTY CLUSTER, ifault 1: A STARTING CENTRE CLOSEST TO NO POINT)
   for (int l = 0; l < k; ++l) {
     if (f.nc[l] == 0) {
       for (size_t i = 0; i < m; ++i) cl[i] = f.ic1[i] + 1;
-      return result(0, 1);
+      return 1;
     }
   }
   // THE CENTRES OF THE CLUSTERS (STEP 2), EVERY CLUSTER LIVE (STEP 3)
@@ -775,7 +751,7 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
   f.changed_to.assign(k, -f.M);
   // THE TWO STAGES IN TURN (STEPS 4-7): STOP AFTER A PASS THAT MOVES NO POINT
   // (STEP 5), OR AFTER iter_max PASSES (ifault 2)
-  int iter = 0, ifault = 2;
+  int ifault = 2;
   while (iter < iter_max) {
     ++iter;
     if (!f.optimal_transfer()) {
@@ -799,38 +775,101 @@ cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> cen
   // THE CLUSTERS AND THEIR EXACT MEANS
   for (size_t i = 0; i < m; ++i) cl[i] = f.ic1[i] + 1;
   f.means(co, threads);
-  return result(iter, ifault);
+  return ifault;
 }
 
-// Means of the rows of x (no missing values) in each of groups 1..k (every
-// group holding a row), as rowsum(x, groups) / tabulate(groups, k) computes
-// them: each column summed in row order from 0, then divided by the count
+}  // namespace
+
+// Written from Hartigan & Wong (1979), "Method" (Steps 1-7) and "Fault
+// diagnostics" (ifault 0-3), and ?kmeans (ifault 4), with stats::kmeans() as
+// a black box for the details listed above.
+// k-means of the rows of x (no missing values) from the rows of centres
+// (distinct), by the algorithm of Hartigan and Wong: list(cluster (1-based),
+// centers (k x p, the means of the clusters), iter (the optimal-transfer
+// passes, iter_max + 1 when they didn't converge), ifault: 0 converged; 1 an
+// empty cluster after the first assignment (cluster: each point's closest
+// centre, centers: the starting ones); 2 not converged in iter_max
+// iterations; 3 k < 2 or k >= m (cluster NA); 4 the quick-transfer stage
+// stopped at its step limit)
 [[cpp11::register]]
-cpp11::doubles_matrix<> group_means_cpp(cpp11::doubles_matrix<> x, cpp11::integers groups, int k,
-                                        int threads) {
+cpp11::list kmeans_hw_cpp(cpp11::doubles_matrix<> x, cpp11::doubles_matrix<> centres,
+                          int iter_max, int threads) {
+  using namespace cpp11::literals;
   const size_t m = x.nrow();
-  const int n = x.ncol();
-  if (static_cast<size_t>(groups.size()) != m) cpp11::stop("one group per row is needed");
-  const int* g = INTEGER(groups);
-  std::vector<int> count(k, 0);
-  for (size_t i = 0; i < m; ++i) {
-    if (g[i] == NA_INTEGER || g[i] < 1 || g[i] > k) cpp11::stop("groups must be 1..k");
-    count[g[i] - 1]++;
+  const int p = x.ncol();
+  const int k = centres.nrow();
+  if (centres.ncol() != p) cpp11::stop("the centres must have the columns of the data");
+  if (iter_max < 1) cpp11::stop("iter_max must be at least 1");
+  if (threads < 1) threads = 1;
+  cpp11::writable::doubles_matrix<> centers(k, p);
+  cpp11::writable::integers cluster(static_cast<R_xlen_t>(m));
+  int iter = 0;
+  const int ifault = hw_fit(REAL(x.data()), m, p, k, REAL(centres.data()), iter_max, threads,
+                            INTEGER(cluster), REAL(centers.data()), iter);
+  return cpp11::writable::list({"cluster"_nm = cluster, "centers"_nm = centers,
+                                "iter"_nm = iter, "ifault"_nm = ifault});
+}
+
+// k-means of the rows of x (no missing values) from each of several starts
+// (a list of k x p matrices of distinct rows), one start per thread, keeping
+// the fit with the smallest total within-cluster sum of squares (summed in
+// row order) - the first when the sums are equal to a relative 1e-10, so that
+// rounding doesn't decide - among those without ifault 1 or 3: as
+// kmeans_hw_cpp, with start (its 1-based position) and wss; NULL when no
+// start worked. The fits don't depend on the number of threads.
+[[cpp11::register]]
+SEXP kmeans_hw_best_cpp(cpp11::doubles_matrix<> x, cpp11::list starts, int iter_max,
+                        int threads) {
+  using namespace cpp11::literals;
+  const size_t m = x.nrow();
+  const int p = x.ncol();
+  if (iter_max < 1) cpp11::stop("iter_max must be at least 1");
+  if (threads < 1) threads = 1;
+  const size_t n_starts = static_cast<size_t>(starts.size());
+  std::vector<const double*> sv(n_starts);
+  std::vector<int> ks(n_starts);
+  for (size_t s = 0; s < n_starts; ++s) {
+    cpp11::doubles_matrix<> c(starts[static_cast<R_xlen_t>(s)]);
+    if (c.ncol() != p) cpp11::stop("the centres must have the columns of the data");
+    sv[s] = REAL(c.data());
+    ks[s] = c.nrow();
   }
-  for (int l = 0; l < k; ++l) {
-    if (count[l] == 0) cpp11::stop("every group must hold a row");
-  }
-  cpp11::writable::doubles_matrix<> out(k, n);
-  double* o = REAL(out.data());
   const double* xv = REAL(x.data());
-  par::parallel_for(static_cast<size_t>(n), static_cast<double>(m) * n < 1048576.0 ? 1 : threads,
-                    [&](size_t j) {
-    std::vector<double> sum(k, 0.0);
-    const double* col = xv + j * m;
-    for (size_t i = 0; i < m; ++i) sum[g[i] - 1] += col[i];
-    for (int l = 0; l < k; ++l) o[j * k + l] = sum[l] / count[l];
+  std::vector<std::vector<int>> cls(n_starts, std::vector<int>(m));
+  std::vector<std::vector<double>> fit_cen(n_starts);
+  std::vector<int> iters(n_starts, 0), faults(n_starts, 3);
+  std::vector<double> wss(n_starts, 0.0);
+  // (THE STARTS SHARE THE THREADS; WITH FEWER STARTS THAN THREADS, EACH FIT
+  // STILL RUNS ON ONE)
+  par::parallel_for(n_starts, threads, [&](size_t s) {
+    const int k = ks[s];
+    fit_cen[s].assign(static_cast<size_t>(k) * p, 0.0);
+    faults[s] = hw_fit(xv, m, p, k, sv[s], iter_max, 1, cls[s].data(), fit_cen[s].data(), iters[s]);
+    if (faults[s] == 1 || faults[s] == 3) return;
+    double w = 0;
+    for (int j = 0; j < p; ++j) {
+      const double* col = xv + static_cast<size_t>(j) * m;
+      const double* cj = fit_cen[s].data() + static_cast<size_t>(j) * k;
+      for (size_t i = 0; i < m; ++i) {
+        double d = col[i] - cj[cls[s][i] - 1];
+        w += d * d;
+      }
+    }
+    wss[s] = w;
   });
-  return out;
+  int best = -1;
+  for (size_t s = 0; s < n_starts; ++s) {
+    if (faults[s] == 1 || faults[s] == 3) continue;
+    if (best < 0 || wss[s] < wss[best] * (1 - 1e-10)) best = static_cast<int>(s);
+  }
+  if (best < 0) return R_NilValue;
+  const int k = ks[best];
+  cpp11::writable::doubles_matrix<> centers(k, p);
+  std::copy(fit_cen[best].begin(), fit_cen[best].end(), REAL(centers.data()));
+  cpp11::writable::integers cluster(cls[best].begin(), cls[best].end());
+  return cpp11::writable::list({"cluster"_nm = cluster, "centers"_nm = centers,
+                                "iter"_nm = iters[best], "ifault"_nm = faults[best],
+                                "start"_nm = best + 1, "wss"_nm = wss[best]});
 }
 
 // Which rows of x (no missing values) are the first of their values, as

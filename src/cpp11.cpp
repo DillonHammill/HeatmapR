@@ -104,10 +104,10 @@ extern "C" SEXP _HeatmapR_kmeans_hw_cpp(SEXP x, SEXP centres, SEXP iter_max, SEX
   END_CPP11
 }
 // kmeans.cpp
-cpp11::doubles_matrix<> group_means_cpp(cpp11::doubles_matrix<> x, cpp11::integers groups, int k, int threads);
-extern "C" SEXP _HeatmapR_group_means_cpp(SEXP x, SEXP groups, SEXP k, SEXP threads) {
+SEXP kmeans_hw_best_cpp(cpp11::doubles_matrix<> x, cpp11::list starts, int iter_max, int threads);
+extern "C" SEXP _HeatmapR_kmeans_hw_best_cpp(SEXP x, SEXP starts, SEXP iter_max, SEXP threads) {
   BEGIN_CPP11
-    return cpp11::as_sexp(group_means_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::integers>>(groups), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
+    return cpp11::as_sexp(kmeans_hw_best_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<cpp11::list>>(starts), cpp11::as_cpp<cpp11::decay_t<int>>(iter_max), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // kmeans.cpp
@@ -115,6 +115,13 @@ cpp11::logicals distinct_rows_cpp(cpp11::doubles_matrix<> x);
 extern "C" SEXP _HeatmapR_distinct_rows_cpp(SEXP x) {
   BEGIN_CPP11
     return cpp11::as_sexp(distinct_rows_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x)));
+  END_CPP11
+}
+// kmeanspp.cpp
+SEXP kmeanspp_cpp(cpp11::doubles_matrix<> x, int k, double seed, int threads);
+extern "C" SEXP _HeatmapR_kmeanspp_cpp(SEXP x, SEXP k, SEXP seed, SEXP threads) {
+  BEGIN_CPP11
+    return cpp11::as_sexp(kmeanspp_cpp(cpp11::as_cpp<cpp11::decay_t<cpp11::doubles_matrix<>>>(x), cpp11::as_cpp<cpp11::decay_t<int>>(k), cpp11::as_cpp<cpp11::decay_t<double>>(seed), cpp11::as_cpp<cpp11::decay_t<int>>(threads)));
   END_CPP11
 }
 // linkage.cpp
@@ -468,7 +475,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_distinct_rows_cpp",        (DL_FUNC) &_HeatmapR_distinct_rows_cpp,         1},
     {"_HeatmapR_finite_range_cpp",         (DL_FUNC) &_HeatmapR_finite_range_cpp,          3},
     {"_HeatmapR_first_pc_cpp",             (DL_FUNC) &_HeatmapR_first_pc_cpp,              2},
-    {"_HeatmapR_group_means_cpp",          (DL_FUNC) &_HeatmapR_group_means_cpp,           4},
     {"_HeatmapR_group_medoids_cpp",        (DL_FUNC) &_HeatmapR_group_medoids_cpp,         5},
     {"_HeatmapR_hardware_threads_cpp",     (DL_FUNC) &_HeatmapR_hardware_threads_cpp,      0},
     {"_HeatmapR_hash_cpp",                 (DL_FUNC) &_HeatmapR_hash_cpp,                  1},
@@ -476,7 +482,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_HeatmapR_hclust_rows_cpp",          (DL_FUNC) &_HeatmapR_hclust_rows_cpp,           5},
     {"_HeatmapR_join_groups_cpp",          (DL_FUNC) &_HeatmapR_join_groups_cpp,           8},
     {"_HeatmapR_kernel_settings_cpp",      (DL_FUNC) &_HeatmapR_kernel_settings_cpp,       3},
+    {"_HeatmapR_kmeans_hw_best_cpp",       (DL_FUNC) &_HeatmapR_kmeans_hw_best_cpp,        4},
     {"_HeatmapR_kmeans_hw_cpp",            (DL_FUNC) &_HeatmapR_kmeans_hw_cpp,             4},
+    {"_HeatmapR_kmeanspp_cpp",             (DL_FUNC) &_HeatmapR_kmeanspp_cpp,              4},
     {"_HeatmapR_map_centers_cpp",          (DL_FUNC) &_HeatmapR_map_centers_cpp,           2},
     {"_HeatmapR_mean_order_cpp",           (DL_FUNC) &_HeatmapR_mean_order_cpp,            2},
     {"_HeatmapR_merge_check_cpp",          (DL_FUNC) &_HeatmapR_merge_check_cpp,           3},

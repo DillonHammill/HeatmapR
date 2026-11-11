@@ -390,7 +390,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 #### 2.4.1 Border Masking
 
-The `cell_border_mask` argument allows you to selectively apply colored borders to specific cells by supplying a logical matrix of the same dimensions as the input data. Cells with `TRUE` values will display colored borders, while cells with `FALSE` values will have transparent borders. This is particularly useful for highlighting specific patterns or regions of interest within a heatmap.
+The `cell_border_mask` argument allows you to selectively apply coloured borders to specific cells by supplying a logical matrix of the same dimensions as the input data. Cells with `TRUE` values will display colored borders, while cells with `FALSE` values will have transparent borders. This is particularly useful for highlighting specific patterns or regions of interest within a heatmap.
 
 ```{r, eval = FALSE}
 # Create a mask to highlight high values
@@ -1105,7 +1105,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 #### 5.1.1 Cosine Distance
 
-In addition to the standard distance metrics supported by `stats::dist()`, **HeatmapR** also supports cosine distance for hierarchical clustering. Cosine distance (1 - cosine similarity) measures the angle between vectors and is particularly useful for high-dimensional data where the magnitude of the vectors is less important than their direction. This is especially valuable when analyzing gene expression data or other normalized datasets.
+In addition to the standard distance metrics supported by `stats::dist()`, **HeatmapR** also supports cosine distance for hierarchical clustering. Cosine distance (1 - cosine similarity) measures the angle between vectors and is particularly useful for high-dimensional data where the magnitude of the vectors is less important than their direction. This is especially valuable when analysing gene expression data or other normalized datasets.
 
 ```{r, eval = FALSE}
 heat_map(
@@ -1628,7 +1628,7 @@ rownames(mtcars)[info$row_order]
 
 #### 5.2.3 k-means Clusters
 
-For thousands of rows, `tree_kmeans_y` (or `tree_kmeans_x` for columns) splits the rows into k-means clusters (Hartigan and Wong 1979) instead of cutting a dendrogram. The rows are clustered on the scaled data, starting from slices of the rows along their first principal component, so the same clusters are found every time whatever the random seed, and similar clusters are placed next to each other. The k-means clusters then work like clusters supplied to `tree_cut_y`: they are separated by splits and can be labelled, and with `tree_y = TRUE` the rows are clustered within each k-means cluster. `heat_map_info()$row_clusters` returns the cluster of each row.
+For thousands of rows, `tree_kmeans_y` (or `tree_kmeans_x` for columns) splits the rows into k-means clusters (Hartigan and Wong 1979) instead of cutting a dendrogram. The rows are clustered on the scaled data from several starts: the centres of equal slices of the rows along their first principal component, which suit clusters strung out along it, and three k-means++ starts (Arthur and Vassilvitskii 2007), which spread the starting centres over the data so that small clusters get one of their own. The clusters with the smallest within-cluster sum of squares are kept. The starts use fixed seeds, so the same clusters are found every time whatever the random seed, and similar clusters are placed next to each other. The k-means clusters then work like clusters supplied to `tree_cut_y`: they are separated by splits and can be labelled, and with `tree_y = TRUE` the rows are clustered within each k-means cluster. `heat_map_info()$row_clusters` returns the cluster of each row.
 
 ```{r, eval = FALSE}
 set.seed(5)
@@ -1685,7 +1685,7 @@ heat_map(
 ```
 
 ```{r echo = FALSE, out.width = '95%', fig.align="center", fig.alt = "Row z-scored heatmap of 2,000 simulated genes across 12 samples, split by k-means into four clusters separated by gaps and clustered by a dendrogram within each, in which three clusters are high in samples S9 to S12, S1 to S4 and S5 to S8 respectively and one shows no pattern."}
-knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/4a8dd2e4f37aa5e3b37a6474bff4f22e772c096e/vignettes/HeatmapR/HeatmapR-kmeans.png')
+knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/HeatmapR/175cde17305a4b00524495d238953733d926d18a/vignettes/HeatmapR/HeatmapR-kmeans.png')
 ```
 
 ### 5.3 Group Summaries
@@ -2064,7 +2064,7 @@ knitr::include_graphics('https://raw.githubusercontent.com/DillonHammill/Heatmap
 
 ## 7. Complex Layouts
 
-`HeatmapR` supports the arrangement of multiple heatmaps in complex layouts using `heat_map_custom()`. `heat_map_custom()` is called prior to plotting to open the appropriate graphics device and set the desired layout before adding the heatmaps. Once the layout is complete, a call is made to `heat_map_complete()` to reset all `heat_map()` associated settings. The `layout` argument can be either a vector indicating the desired number of rows and columns or a mtrix defining a more complex layout. For example, if we want to split different car brands into separate heatmaps and arrange them:
+`HeatmapR` supports the arrangement of multiple heatmaps in complex layouts using `heat_map_custom()`. `heat_map_custom()` is called prior to plotting to open the appropriate graphics device and set the desired layout before adding the heatmaps. Once the layout is complete, a call is made to `heat_map_complete()` to reset all `heat_map()` associated settings. The `layout` argument can be either a vector indicating the desired number of rows and columns or a matrix defining a more complex layout. For example, if we want to split different car brands into separate heatmaps and arrange them:
 
 ```{r, eval = FALSE}
 heat_map_custom(
@@ -2361,6 +2361,8 @@ In a chunk that draws the heatmap, compute the description in an earlier chunk a
 `HeatmapR` is a lightweight R package built on base graphics that allows for the creation of high resolution complex heatmaps that can be arranged in sophisticated layouts with other plot objects. 
 
 ## References
+
+Arthur, D. and Vassilvitskii, S. (2007). k-means++: the advantages of careful seeding. *Proceedings of the 18th Annual ACM-SIAM Symposium on Discrete Algorithms (SODA '07)*, 1027-1035.
 
 Atkins, J. E., Boman, E. G. and Hendrickson, B. (1998). A spectral algorithm for seriation and the consecutive ones problem. *SIAM Journal on Computing*, 28(1), 297-310. [doi:10.1137/S0097539795285771](https://doi.org/10.1137/S0097539795285771)
 
