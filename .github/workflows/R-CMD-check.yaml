@@ -46,10 +46,11 @@ jobs:
 
       # R-devel on macOS has no binary packages, so packages are built from
       # source: vdiffr needs the libpng headers and library in /opt/R/arm64,
-      # and dotCall64 (for SeuratObject) needs gettext's libintl
-      - name: Install libpng and gettext (macOS R-devel)
+      # dotCall64 (for SeuratObject) needs gettext's libintl and hdf5r the hdf5
+      # library
+      - name: Install libpng, gettext and hdf5 (macOS R-devel)
         if: runner.os == 'macOS' && matrix.config.r == 'devel'
-        run: sudo Rscript -e 'source("https://mac.R-project.org/bin/install.R"); install.libs("libpng"); install.libs("gettext")'
+        run: sudo Rscript -e 'source("https://mac.R-project.org/bin/install.R"); install.libs("libpng"); install.libs("gettext"); install.libs("hdf5")'
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
