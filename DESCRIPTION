@@ -48,6 +48,7 @@ RoxygenNote: 7.3.3
 Language: en-GB
 Suggests: 
     covr,
+    DelayedArray,
     ggplot2,
     gridGraphics,
     knitr,

@@ -31,7 +31,9 @@ columns are summarised; other columns are dropped with a message.
 Single-cell data are summarised with one row per group of cells and one
 column per feature. The mean, sum, number, proportion detected and
 median of sparse data are found from the non-zero values, without a
-dense copy, and equal those of the dense data.}
+dense copy, and equal those of the dense data. Assays held on disk
+(\code{DelayedArray}, HDF5Array and BPCells matrices) are summarised a
+block of features at a time, with the same results.}
 
 \item{group_x}{a vector assigning each column of \code{x} to a group, in
 the order of the columns of \code{x} (or named by column name). Each

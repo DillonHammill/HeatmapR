@@ -52,7 +52,9 @@ heatmaps require a pdf file or \code{multiple = TRUE}.}
 \item{...}{additional arguments for the appropriate \code{png()},
 \code{tiff()}, \code{jpeg()}, \code{svg()} or \code{pdf} graphics devices.
 TIFF files are compressed without loss (\code{compression = "lzw"})
-unless another \code{compression} is given.}
+unless another \code{compression} is given, except when they are drawn
+by quartz (the default on macOS), which can't compress them
+(\code{type = "cairo"} can, where R has cairo).}
 }
 \value{
 No return value, called for side effects.

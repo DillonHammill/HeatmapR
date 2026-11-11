@@ -115,6 +115,10 @@
                         groups,
                         threshold = 0,
                         pc = FALSE) {
+  # (ON-DISK FEATURES READ INTO MEMORY)
+  mem <- .source_memory(src, feat)
+  src <- mem$src
+  feat <- mem$feat
   s <- .cell_summaries(src, feat, groups, threshold, dense = TRUE)
   G <- length(s$labels)
   r <- if(inherits(src$values, "dgCMatrix")) {

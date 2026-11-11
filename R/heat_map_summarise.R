@@ -19,7 +19,9 @@
 #'   Single-cell data are summarised with one row per group of cells and one
 #'   column per feature. The mean, sum, number, proportion detected and
 #'   median of sparse data are found from the non-zero values, without a
-#'   dense copy, and equal those of the dense data.
+#'   dense copy, and equal those of the dense data. Assays held on disk
+#'   (\code{DelayedArray}, HDF5Array and BPCells matrices) are summarised a
+#'   block of features at a time, with the same results.
 #' @param group_x a vector assigning each column of \code{x} to a group, in
 #'   the order of the columns of \code{x} (or named by column name). Each
 #'   group becomes one column of the result. Columns in a missing group are
@@ -344,6 +346,14 @@ heat_map_summarise <- function(x,
     if(!is.null(stack) && is.null(by)) {
       stop("'stack_by' needs groups of cells from 'group_by'.", call. = FALSE)
     }
+    # ON-DISK DATA - THE CHOSEN FEATURES IN MEMORY TO BE TRANSFORMED, SCALED OR
+    # TESTED FOR DIPS ACROSS FEATURES (OTHERWISE SUMMARISED A BLOCK AT A TIME)
+    if(.source_blocked(src) &&
+       (bimodal || !is.null(transform) || scale_first)) {
+      mem <- .source_memory(src, feat)
+      src <- mem$src
+      feat <- mem$feat
+    }
     # DIPS OF THE TRANSFORMED VALUES OF THE CELLS (BEFORE ANY SCALING, WHICH
     # CLIPS QUANTILE-SCALED VALUES INTO PILES)
     transformed <- NULL
@@ -457,6 +467,19 @@ heat_map_summarise <- function(x,
                              group_x,
                              fun,
                              threshold) {
+  # ON-DISK DATA - EACH FEATURE SUMMARISED ON ITS OWN, A BLOCK AT A TIME, OR
+  # THE FEATURES IN MEMORY FOR GROUPS OF FEATURES
+  if(.source_blocked(src)) {
+    if(is.null(group_x) && !is.null(groups)) {
+      parts <- .by_blocks(src, feat, function(bs, bf) {
+        .summarise_cells(bs, bf, groups, NULL, fun, threshold)
+      })
+      return(do.call(cbind, parts))
+    }
+    mem <- .source_memory(src, feat)
+    src <- mem$src
+    feat <- mem$feat
+  }
   # DIPS OF GROUPS OF CELLS IN COMPILED CODE
   if(identical(fun, "dip") && is.null(group_x) && !is.null(groups)) {
     return(.group_dips(src, feat, groups, threshold)$dip)

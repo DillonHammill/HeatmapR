@@ -164,6 +164,8 @@ test_that("a matrix of features by cells gets a hint to transpose it", {
 })
 
 test_that("TIFF files are compressed unless asked otherwise", {
+  # (quartz, macOS's bitmap device, can't compress TIFF files)
+  skip_if(identical(getOption("bitmapType"), "quartz"))
   hm <- draw(test_matrix(10, 8))
   a <- tempfile(fileext = ".tiff")
   b <- tempfile(fileext = ".tif")

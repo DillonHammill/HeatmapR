@@ -144,10 +144,12 @@ annotations</a>
 
 **HeatmapR** reads single-cell data where it lives -
 `SingleCellExperiment` and `Seurat` objects, `flowFrame` and `flowSet`
-objects and sparse matrices - choosing features by name and grouping and
+objects and sparse matrices, in memory or on disk (DelayedArray,
+HDF5Array and BPCells) - choosing features by name and grouping and
 annotating cells from their metadata. Only the chosen features of the
 cells shown are made dense, so a few markers of a million cells need
-little memory.
+little memory, and summaries, markers and scores of every gene read
+on-disk data a block of genes at a time.
 
 - **Dot plots, markers and gene-set scores** - `heat_map_dot()` draws
   the mean of each group as colour and the proportion of its cells
