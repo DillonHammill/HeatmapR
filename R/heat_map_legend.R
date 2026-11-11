@@ -265,14 +265,15 @@ heat_map_legend <- function(col = NULL,
         lty = a$lty
       )
     } else {
+      # (THE COLOUR SCALES OF BLOCKS OF COLUMNS ARE AS LARGE AS THE MAIN ONE)
       b <- block(
         "bar",
         .legend_col_labels(a$limits),
         3,
         limits = a$limits,
         ramp = a$ramp,
-        alpha = 1,
-        min_in = 0.7
+        alpha = if(isTRUE(a$main)) col_alpha else 1,
+        min_in = if(isTRUE(a$main)) 1 else 0.7
       )
     }
     b$title <- a$title

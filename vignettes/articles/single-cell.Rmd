@@ -224,6 +224,24 @@ heat_map_dot(scores, group_by = "cell_type", title = "Module scores")
 
 In the dot plot the size of each dot is the share of the group's cells scoring above zero (`threshold`). The markers of `heat_map_markers()` give one set per group (`heat_map_score(sce, m)`), and sets naming genes that aren't in the data are scored on the genes that are, with a message.
 
+### Aligned data sets
+
+`heat_map_align()` draws data sets measured on the same cells or groups side by side - genes and surface proteins (ADT) of CITE-seq, expression and chromatin accessibility, or genes and scores - as blocks of one heatmap. The rows are matched by name and put in one order, clustered (`tree = TRUE`) or split by k-means (`tree_kmeans`) on the `main` data set alone; each block is scaled on its own and has its own colour scale and legend, so values in different units never share a scale. The mean marker genes of each cell type beside their module scores, the genes z-scored within each gene and the scores on a diverging scale centred at zero:
+
+```{r align, fig.width = 8, fig.height = 4, fig.alt = "Two heatmap blocks side by side for six cell types: the mean expression of 24 marker genes, z-scored within each gene, and four module scores on a blue to red scale centred at zero. The rows are clustered on the genes, and each block has its own colour legend. Each cell type is high for its own four marker genes and for its own program's score."}
+program_means <- heat_map_summarise(scores, group_by = "cell_type")
+heat_map_align(
+  list(Genes = means, Programs = program_means),
+  scale = list("column", NULL),
+  cell_col_scale = list(NULL, "Blue-Red 3"),
+  cell_col_scale_center = list(NULL, 0),
+  tree = TRUE,
+  title = "Marker genes and module scores of each cell type"
+)
+```
+
+With `axis = "y"` data sets that share their columns (e.g. genes and proteins as rows, groups as columns) are stacked as blocks of rows. `heat_map(cell_col_blocks_x = )` gives any heatmap blocks of columns on their own colour scales.
+
 ## Cytometry
 
 Cytometry data arrive with events as rows and markers as columns. A matrix or data frame works as it is, with `group_by` and `annotation_by` naming its columns (which are then left out of the features); `flowFrame` and `flowSet` objects are read directly, without flowCore, with markers named by their description (e.g. `"CD3"`) or channel (`"FL1-A"`), and a flowSet's samples and phenotype data as metadata:
