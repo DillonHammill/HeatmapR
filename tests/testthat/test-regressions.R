@@ -252,7 +252,7 @@ test_that("heat_map() returns a heat_map object that can be redrawn", {
       "axis_text_y", "colours", "split_colours", "split_sizes", "split_data", "bimodal",
       "sizes",
       "shapes", "centers",
-      "annotations", "layout", "raster", "col_limits", "size_limits")
+      "annotations", "layout", "raster", "col_limits", "col_blocks", "size_limits")
   )
   expect_equal(sort(info$row_order), seq_len(nrow(mtcars)))
   expect_equal(names(info$row_clusters), rownames(mtcars))

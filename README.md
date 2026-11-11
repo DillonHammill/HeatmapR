@@ -156,6 +156,10 @@ little memory.
   with Wilcoxon p-values, ready to pass to `features` or to draw as a
   dot plot, and `heat_map_score()` scores each cell for sets of genes
   (z-scored means or module scores).
+- **Aligned heatmaps** - `heat_map_align()` lines up data sets
+  measured on the same cells or groups, such as genes and surface
+  proteins, as blocks of one heatmap, each scaled and coloured on its own
+  with its own legend, with the rows clustered on one of them.
 - **Summaries of groups** - `heat_map_summarise()` finds the mean,
   median, sum or proportion detected of each feature in each group of
   cells from sparse data in compiled code, and `group_max` keeps small

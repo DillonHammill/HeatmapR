@@ -57,6 +57,8 @@ heat_map(
   cell_col_scale_limits = NULL,
   cell_col_scale_center = NULL,
   cell_col_scale_breaks = NULL,
+  cell_col_blocks_x = NULL,
+  cell_col_blocks_y = NULL,
   cell_size_scale_limits = NULL,
   cell_size_scale_method = "linear",
   cell_size_scale_range = c(0, 1),
@@ -604,6 +606,22 @@ evenly spaced along \code{cell_col_scale} whatever the widths of the bins,
 and values beyond the outer breaks take the colours of the outer bins.
 The breaks set the limits of the colour scale and label the colour
 legend.}
+
+\item{cell_col_blocks_x, cell_col_blocks_y}{blocks of columns (or rows),
+each with its own colour scale and colour legend: a vector or factor
+with one value per column (row) of \code{x} in its original order,
+naming the block of each - e.g. \code{"RNA"} for the columns of genes
+and \code{"ADT"} for those of proteins, whose values aren't comparable.
+Each block's colours span its own values (or its own
+\code{cell_col_scale_limits}) and its legend is titled by its name.
+\code{cell_col_scale}, \code{cell_col_scale_limits} and
+\code{cell_col_scale_center} then take one setting for every block or a
+list with one per block (in the order of the blocks, or named by them).
+Blocks are separate from clusters: give the same vector to
+\code{tree_cut_x} to split and label the blocks (as
+\code{\link{heat_map_align}} does). Can't be combined with
+\code{cell_col_scale_breaks} or \code{cell_uncertainty}. Set to
+\code{NULL} by default for one colour scale.}
 
 \item{cell_size_scale_limits}{a numeric vector of length 2 specifying custom
 limits for the size scale as \code{c(min, max)}. If NULL (default), limits

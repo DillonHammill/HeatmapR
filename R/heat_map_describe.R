@@ -390,6 +390,24 @@ as.character.heat_map_description <- function(x,
   data <- info$data
   out <- character(0)
   lim <- info$col_limits
+  # BLOCKS OF COLUMNS (ROWS), EACH ON ITS OWN COLOUR SCALE
+  blocks <- info$col_blocks
+  if(!is.null(blocks) && length(lim) == 2) {
+    paths <- vapply(names(blocks$limits), function(b) {
+      l <- blocks$limits[[b]]
+      nm <- .colour_name(.ramp_colours(c(0, 0.5, 1), blocks$scales[[b]]))
+      paste0(
+        b, " from ", nm[1], " (", fmt(l[1]), ")",
+        if(!nm[2] %in% nm[c(1, 3)]) paste0(" through ", nm[2]),
+        " to ", nm[3], " (", fmt(l[2]), ")"
+      )
+    }, character(1))
+    out <- c(out, paste0(
+      "Each block of ", if(blocks$axis == "x") "columns" else "rows",
+      " has its own colour scale: ", paste(paths, collapse = "; "), "."
+    ))
+    lim <- NULL
+  }
   if(length(lim) == 2) {
     names <- .colour_name(
       .ramp_colours(c(0, 0.5, 1), .col_scale(arg("cell_col_scale")))
@@ -494,6 +512,32 @@ as.character.heat_map_description <- function(x,
   where <- function(i) {
     k <- arrayInd(i, dim(values))
     paste0(fmt(values[i]), " (", rows[k[1]], ", ", cols[k[2]], ")")
+  }
+  # BLOCKS ON THEIR OWN COLOUR SCALES - THE EXTREMES OF EACH
+  blocks <- info$col_blocks
+  if(!is.null(blocks)) {
+    parts <- vapply(names(blocks$limits), function(b) {
+      in_b <- blocks$blocks == b
+      cells <- if(blocks$axis == "x") col(values) else row(values)
+      idx <- which(in_b[cells] & !is.na(values))
+      if(length(idx) == 0) {
+        return(NA_character_)
+      }
+      hi <- idx[which.max(values[idx])]
+      lo <- idx[which.min(values[idx])]
+      paste0(where(hi), " and ", where(lo), " in ", b)
+    }, character(1))
+    parts <- parts[!is.na(parts)]
+    return(paste0(
+      "The highest and lowest values are ",
+      if(length(parts) > 1) {
+        paste0(paste(parts[-length(parts)], collapse = ", "), ", and ",
+               parts[length(parts)])
+      } else {
+        parts
+      },
+      "."
+    ))
   }
   hi <- which.max(values)
   lo <- which.min(values)

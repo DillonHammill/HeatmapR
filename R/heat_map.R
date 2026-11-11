@@ -353,6 +353,21 @@
 #'   and values beyond the outer breaks take the colours of the outer bins.
 #'   The breaks set the limits of the colour scale and label the colour
 #'   legend.
+#' @param cell_col_blocks_x,cell_col_blocks_y blocks of columns (or rows),
+#'   each with its own colour scale and colour legend: a vector or factor
+#'   with one value per column (row) of \code{x} in its original order,
+#'   naming the block of each - e.g. \code{"RNA"} for the columns of genes
+#'   and \code{"ADT"} for those of proteins, whose values aren't comparable.
+#'   Each block's colours span its own values (or its own
+#'   \code{cell_col_scale_limits}) and its legend is titled by its name.
+#'   \code{cell_col_scale}, \code{cell_col_scale_limits} and
+#'   \code{cell_col_scale_center} then take one setting for every block or a
+#'   list with one per block (in the order of the blocks, or named by them).
+#'   Blocks are separate from clusters: give the same vector to
+#'   \code{tree_cut_x} to split and label the blocks (as
+#'   \code{\link{heat_map_align}} does). Can't be combined with
+#'   \code{cell_col_scale_breaks} or \code{cell_uncertainty}. Set to
+#'   \code{NULL} by default for one colour scale.
 #' @param cell_size_scale_limits a numeric vector of length 2 specifying custom
 #'   limits for the size scale as \code{c(min, max)}. If NULL (default), limits
 #'   are computed from the data before rounding. Only used when \code{cell_size}
@@ -1114,6 +1129,8 @@ heat_map <- function(x,
                      cell_col_scale_limits = NULL,
                      cell_col_scale_center = NULL,
                      cell_col_scale_breaks = NULL,
+                     cell_col_blocks_x = NULL,
+                     cell_col_blocks_y = NULL,
                      cell_size_scale_limits = NULL,
                      cell_size_scale_method = "linear",
                      cell_size_scale_range = c(0, 1),
@@ -2086,10 +2103,37 @@ heat_map <- function(x,
 
   # COLOUR SCALE LIMITS (UNROUNDED DATA) ---------------------------------------
 
+  # BLOCKS OF COLUMNS (ROWS) WITH THEIR OWN COLOUR SCALES - THE FIRST BLOCK'S
+  # SCALE AND LIMITS ARE THE MAIN ONES
+  col_blocks <- .check_col_blocks(cell_col_blocks_x, cell_col_blocks_y, x,
+                                  cell_col_scale_breaks, cell_uncertainty)
+  if(!is.null(col_blocks)) {
+    col_blocks$scales <- lapply(
+      .block_setting(
+        if(missing(cell_col_scale)) NULL else cell_col_scale,
+        col_blocks$levels,
+        "cell_col_scale",
+        list_only = TRUE
+      ),
+      .col_scale
+    )
+    col_blocks$limits <- .block_limits(
+      col_blocks,
+      num_mat,
+      num_cols,
+      split_mat,
+      cell_col_scale_limits,
+      cell_col_scale_center
+    )
+  }
+
   cell_min <- NULL
   cell_max <- NULL
   col_breaks <- .check_breaks(cell_col_scale_breaks)
-  if(length(num_cols) > 0) {
+  if(length(num_cols) > 0 && !is.null(col_blocks)) {
+    cell_min <- col_blocks$limits[[1]][1]
+    cell_max <- col_blocks$limits[[1]][2]
+  } else if(length(num_cols) > 0) {
     # LIMITS THAT IGNORE OUTLIERS
     if(identical(cell_col_scale_limits, "robust")) {
       lims <- .robust_range(col_values())
@@ -2389,10 +2433,12 @@ heat_map <- function(x,
     }
   }
 
-  # CELL_COLOUR_SCALE
-  cell_col_scale <- .col_scale(
-    if(missing(cell_col_scale)) NULL else cell_col_scale
-  )
+  # CELL_COLOUR_SCALE - THE FIRST BLOCK'S WITH BLOCKS OF COLUMNS (ROWS)
+  cell_col_scale <- if(!is.null(col_blocks)) {
+    col_blocks$scales[[1]]
+  } else {
+    .col_scale(if(missing(cell_col_scale)) NULL else cell_col_scale)
+  }
 
   # CELL_COL_PALETTE - DISTINCT COLOURS FOR MANY VALUES BY DEFAULT
   cell_col_palette <- .col_palette(
@@ -2546,6 +2592,19 @@ heat_map <- function(x,
     }
     cell_packed[cell_missing] <- empty_packed
   }
+  # THE NUMERIC CELLS OF THE OTHER BLOCKS ON THEIR OWN SCALES
+  if(!is.null(col_blocks) && length(col_blocks$levels) > 1) {
+    cell_block <- cells_of(col_blocks$matrix)
+    for(b in seq_along(col_blocks$levels)[-1]) {
+      ind <- cell_num & !cell_missing & cell_block == b
+      if(any(ind)) {
+        cell_packed[ind] <- .ramp_packed(
+          .block_k(cell_num_val[ind], col_blocks$limits[[b]]),
+          col_blocks$scales[[b]]
+        )
+      }
+    }
+  }
   # (CELLS OF CHARACTER COLUMNS HAVE NO NUMERIC VALUE - THE RAMP LEFT THEM
   # EMPTY)
   if(length(char_cols) > 0) {
@@ -2573,6 +2632,18 @@ heat_map <- function(x,
         col_k(split_val[split_ind]),
         cell_col_scale
       )
+      # (EACH BLOCK ON ITS OWN SCALE)
+      if(!is.null(col_blocks) && length(col_blocks$levels) > 1) {
+        for(b in seq_along(col_blocks$levels)[-1]) {
+          ind <- split_ind & cell_block == b
+          if(any(ind)) {
+            split_fill[ind] <- .ramp_colours(
+              .block_k(split_val[ind], col_blocks$limits[[b]]),
+              col_blocks$scales[[b]]
+            )
+          }
+        }
+      }
     }
     split_fill[cell_num & is.na(split_val)] <- cell_col_empty
     ok <- !is.na(split_fill)
@@ -2892,8 +2963,28 @@ heat_map <- function(x,
     axis_label_y <- ""
   }
 
-  # ANNOTATION LEGENDS & LEGEND KEYS (BRANCH SUPPORT) - DRAWN AS SWATCHES
+  # ANNOTATION LEGENDS & LEGEND KEYS (BRANCH SUPPORT) - DRAWN AS SWATCHES;
+  # FIRST THE COLOUR LEGENDS OF THE OTHER BLOCKS OF COLUMNS (ROWS)
+  block_legends <- NULL
+  if(!is.null(col_blocks)) {
+    if(length(legend_title) == 0 || is.na(legend_title[1])) {
+      legend_title[1] <- col_blocks$titles[1]
+    }
+    if("colour" %in% legend_types && length(num_cols) > 0 &&
+       length(col_blocks$levels) > 1) {
+      block_legends <- lapply(seq_along(col_blocks$levels)[-1], function(b) {
+        list(
+          title = col_blocks$titles[b],
+          ramp = col_blocks$scales[[b]],
+          limits = col_blocks$limits[[b]],
+          main = TRUE
+        )
+      })
+      names(block_legends) <- col_blocks$titles[-1]
+    }
+  }
   legend_annots <- c(
+    block_legends,
     if(annotation_legend) c(annot_x$legends, annot_y$legends),
     bar_legends,
     legend_keys
@@ -4221,6 +4312,14 @@ heat_map <- function(x,
     layout = hm_layout,
     raster = cell_raster_drawn,
     col_limits = c(cell_min, cell_max),
+    col_blocks = if(!is.null(col_blocks)) {
+      list(
+        axis = col_blocks$axis,
+        blocks = col_blocks$f,
+        limits = stats::setNames(col_blocks$limits, col_blocks$levels),
+        scales = stats::setNames(col_blocks$scales, col_blocks$levels)
+      )
+    },
     size_limits = c(cell_size_min, cell_size_max)
   )
 
