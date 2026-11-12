@@ -143,6 +143,56 @@
   )
 }
 
+#' The columns of the data's metadata with two values (e.g. two conditions),
+#' which can split the dots of a dot plot
+#' @noRd
+.app_two_values <- function(d) {
+  if(is.null(d) || length(d$meta) == 0) {
+    return(character(0))
+  }
+  meta <- if(d$kind == "cells") .cell_source(d$x)$meta else d$x
+  if(is.null(meta)) {
+    return(character(0))
+  }
+  Filter(function(nm) {
+    v <- meta[[nm]]
+    !is.null(v) && length(unique(v[!is.na(v)])) == 2
+  }, d$meta)
+}
+
+#' What a selection on the heatmap keeps: the features among its labels, the
+#' rows of a table (not of a dot plot, whose rows are groups) and the groups
+#' of a dot plot grouped by one column
+#'
+#' @param d the data.
+#' @param labels the labels selected (rows and columns).
+#' @param fun the function drawing the heatmap.
+#' @param data_code the R code of the arguments choosing the data.
+#' @return a list: features, rows (names) and groups (a list of the column
+#'   and its values, or NULL).
+#' @noRd
+.app_selection <- function(d,
+                           labels,
+                           fun,
+                           data_code) {
+  labels <- as.character(labels)
+  out <- list(features = intersect(labels, d$features), rows = character(0),
+              groups = NULL)
+  group <- if("group_by" %in% names(data_code)) {
+    eval(parse(text = data_code[["group_by"]])[[1]], baseenv())
+  }
+  if(fun == "heat_map_dot") {
+    if(length(group) == 1 && d$kind == "table") {
+      values <- unique(as.character(d$x[[group]]))
+      hit <- intersect(labels, values)
+      if(length(hit) > 0) out$groups <- list(column = group, values = hit)
+    }
+  } else if(d$kind == "table" && fun == "heat_map" && !is.null(rownames(d$x))) {
+    out$rows <- setdiff(intersect(labels, rownames(d$x)), out$features)
+  }
+  out
+}
+
 #' The download dialog
 #' @noRd
 .app_download_modal <- function(image,
@@ -226,6 +276,7 @@
     current <- shiny::reactiveVal(data)
     token <- shiny::reactiveVal(1)
     rows_keep <- shiny::reactiveVal(NULL)
+    groups_keep <- shiny::reactiveVal(NULL)
     last_good <- shiny::reactiveVal(NULL)
     history <- shiny::reactiveValues(stack = NULL, pos = 0)
     previous <- NULL
@@ -256,6 +307,7 @@
         }
       }
       rows_keep(NULL)
+      groups_keep(NULL)
       token(shiny::isolate(token()) + 1)
       current(d)
       session$sendCustomMessage("hm-view", list(view = "work"))
@@ -391,6 +443,9 @@
         )
       )
     })
+    # (ON THE PAGE WHILE THE DATA SECTION IS CLOSED, SO THAT SELECTIONS ON
+    # THE HEATMAP CAN CHANGE THEM)
+    shiny::outputOptions(output, "data_roles", suspendWhenHidden = FALSE)
     # (EVERY FEATURE CAN BE FOUND BY TYPING, FROM THE SERVER)
     shiny::observeEvent(token(), {
       d <- current()
@@ -419,13 +474,43 @@
         annotate <- d$features[roles == "annotate"]
         return(.app_data_code(d, features, group, annotate, input$assay))
       }
+      # (AN EMPTY PICKER IS NULL, AS ONE NOT ON THE PAGE YET: ONLY THOSE NOT
+      # SEEN YET TAKE THEIR FIRST VALUES)
+      seen <- picked()
       feats <- input[[id("features")]]
       group <- input[[id("group")]]
       annotate <- input[[id("annotate")]]
-      if(is.null(feats)) feats <- d$shown
-      if(is.null(group) && is.null(input[[id("features")]])) group <- d$group
+      if(is.null(feats) && !id("features") %in% seen) feats <- d$shown
+      if(is.null(group) && !id("group") %in% seen) group <- d$group
       .app_data_code(d, feats, group, annotate, input$assay)
     })
+    picked <- shiny::reactiveVal(character(0))
+    shiny::observe({
+      tok <- token()
+      ids <- paste0(c("features", "group", "annotate"), "_", tok)
+      have <- ids[!vapply(ids, function(i) is.null(input[[i]]), logical(1))]
+      old <- shiny::isolate(picked())
+      if(length(setdiff(have, old)) > 0) picked(union(old, have))
+    })
+    # (THE ROWS NO LONGER GROUPED, E.G. TO SPLIT THEM INTO CLUSTERS)
+    ungroup <- function() {
+      d <- shiny::isolate(current())
+      if(is.null(d)) return()
+      if(.app_roles_mode(d)) {
+        roles <- .app_default_roles(d)
+        for(i in seq_along(d$features)) {
+          r <- shiny::isolate(input[[rid("role", i)]])
+          if(is.null(r)) r <- roles[i]
+          if(r == "group") {
+            shiny::updateSelectInput(session, rid("role", i),
+                                     selected = "annotate")
+          }
+        }
+      } else {
+        shiny::updateSelectizeInput(session, rid("group"),
+                                    selected = character(0))
+      }
+    }
 
     # ---- settings ----
     output$fun_title <- shiny::renderText(
@@ -435,35 +520,69 @@
       switch(fun(), heat_map_dot = "Dot plot", heat_map_cor = "Correlation", "")
     )
     shiny::outputOptions(output, "fun_rail", suspendWhenHidden = FALSE)
+    # (THE SETTINGS OF DOT PLOTS AND CORRELATIONS, ONLY THOSE OF THE PLOT
+    # SHOWN: BOTH STAY ON THE PAGE, SO THEIR VALUES ARE KEPT WHEN THE PLOT
+    # CHANGES, AND THROUGH A CHANGE OF DATA)
     output$fun_settings <- shiny::renderUI({
-      ctl <- fun_controls[[fun()]]
-      if(is.null(ctl)) return(NULL)
-      # (COLUMNS OF THE DATA TO CHOOSE FROM, E.G. TO SPLIT THE DOTS BY)
-      meta <- current()$meta
-      ctl <- lapply(ctl, function(k) {
-        if(k$type == "meta") k$choices <- c("Nothing" = "", meta)
-        k
-      })
-      shiny::tagList(
-        shiny::p(class = "hm-hint", if(fun() == "heat_map_dot") {
-          "One dot for each group (Data: group the rows) and feature: its colour is the mean, its size the share of cells detected."
-        } else {
-          "The correlations between the columns shown."
-        }),
-        .app_controls_ui(ctl)
+      two <- .app_two_values(current())
+      hints <- c(
+        heat_map_dot = "One dot for each group (Data: group the rows) and feature: its colour is the mean, its size the share of cells detected.",
+        heat_map_cor = "The correlations between the columns shown."
       )
+      shown <- shiny::isolate(fun())
+      shiny::tagList(lapply(names(fun_controls), function(f) {
+        ctl <- lapply(fun_controls[[f]], function(k) {
+          if(k$type == "meta") {
+            k$choices <- c("Nothing" = "", two)
+            if(length(two) == 0) {
+              k$help <- "No column of the data has two values to split by."
+            }
+          }
+          k
+        })
+        now <- shiny::isolate(.app_settings_code(ctl, input))
+        shiny::div(class = "hm-fun-block", `data-fun` = f,
+                   hidden = if(f != shown) NA,
+                   shiny::p(class = "hm-hint", hints[[f]]),
+                   .app_controls_ui(ctl, now))
+      }))
     })
+    # (ON THE PAGE WHILE ITS SECTION IS CLOSED, FOR UNDO AND REDO)
+    shiny::outputOptions(output, "fun_settings", suspendWhenHidden = FALSE)
+    # (EVERY SETTING SET: OF heat_map() AND OF EACH PLOT, WITH THE PLOT SHOWN)
+    state <- shiny::reactive({
+      c(list(fun = fun(), heat_map = .app_settings_code(controls, input)),
+        lapply(fun_controls, function(fc) .app_settings_code(fc, input)))
+    })
+    # (THE SETTINGS OF THE PLOT SHOWN: ITS OWN ARGUMENTS REPLACE THOSE OF
+    # heat_map(), AND THOSE IT DOESN'T USE ARE LEFT OUT - KEPT FOR THE NEXT
+    # HEATMAP)
     settings_code <- shiny::reactive({
-      out <- .app_settings_code(controls, input)
-      fc <- fun_controls[[fun()]]
+      st <- state()
+      out <- st$heat_map
+      fc <- fun_controls[[st$fun]]
       if(!is.null(fc)) {
-        # (THE FUNCTION'S OWN ARGUMENTS REPLACE THOSE OF heat_map())
-        out <- out[setdiff(names(out), names(fc))]
-        out <- c(out, .app_settings_code(fc, input))
+        out <- out[setdiff(names(out), c(names(fc), .APP_NOT_FOR[[st$fun]]))]
+        out <- c(out, st[[st$fun]])
       }
       out
     })
-    settings_d <- shiny::debounce(settings_code, 350)
+    # (SETTINGS OF heat_map() THE PLOT DOESN'T USE ARE HIDDEN)
+    shiny::observe({
+      fc <- fun_controls[[fun()]]
+      session$sendCustomMessage("hm-unused", list(
+        names = as.list(intersect(c(names(fc), .APP_NOT_FOR[[fun()]]),
+                                  names(controls))),
+        fun = fun()
+      ))
+    })
+    # (THE KIND OF PLOT WAITS WITH ITS SETTINGS, SO ONE IS NEVER DRAWN WITH
+    # THE SETTINGS OF ANOTHER)
+    plot_d <- shiny::debounce(shiny::reactive(list(fun = fun(),
+                                                   settings = settings_code(),
+                                                   state = state())),
+                              350)
+    settings_d <- shiny::reactive(plot_d()$settings)
 
     # (THE NUMBER OF CHANGED SETTINGS IN EACH SECTION, ON THE RAIL)
     shiny::observe({
@@ -476,7 +595,8 @@
       s <- settings_code()
       ctls <- all_controls(fun())
       keep <- rows_keep()
-      if(length(s) == 0 && is.null(keep)) {
+      groups <- groups_keep()
+      if(length(s) == 0 && is.null(keep) && is.null(groups)) {
         return(shiny::div(class = "hm-chips hm-chips-empty",
                           shiny::span(class = "hm-muted",
                                       "Settings you change show here, each with a button to undo it.")))
@@ -492,6 +612,9 @@
         class = "hm-chips", role = "list", `aria-label` = "Changed settings",
         shiny::span(class = "hm-muted", "Changed"),
         if(!is.null(keep)) chip("__rows", "Rows", paste(length(keep), "shown")),
+        if(!is.null(groups)) {
+          chip("__groups", "Groups", paste(length(groups$values), "shown"))
+        },
         lapply(names(s), function(nm) {
           chip(nm, ctls[[nm]]$label, .app_chip_value(ctls[[nm]], s[[nm]]))
         }),
@@ -504,6 +627,10 @@
       for(nm in names) {
         if(nm == "__rows") {
           rows_keep(NULL)
+        } else if(nm == "__groups") {
+          groups_keep(NULL)
+        } else if(nm == "__group") {
+          ungroup()
         } else if(!is.null(ctls[[nm]])) {
           .app_set_input(session, ctls[[nm]], "")
         }
@@ -512,7 +639,7 @@
     shiny::observeEvent(input$reset_one, {
       nm <- input$reset_one
       if(identical(nm, "__all")) {
-        reset(c("__rows", names(settings_code())))
+        reset(c("__rows", "__groups", names(settings_code())))
       } else {
         reset(nm)
       }
@@ -525,14 +652,16 @@
     })
 
     # ---- undo and redo ----
-    shiny::observeEvent(settings_d(), {
-      s <- settings_d()
+    # (EACH STEP HOLDS THE PLOT AND ALL ITS SETTINGS, SO THAT A CHANGE OF PLOT
+    # IS UNDONE TOO)
+    shiny::observeEvent(plot_d(), {
+      p <- plot_d()
       if(is.null(history$stack)) {
-        history$stack <- list(s)
+        history$stack <- list(p)
         history$pos <- 1
-      } else if(!identical(s, history$stack[[history$pos]])) {
+      } else if(!identical(p$state, history$stack[[history$pos]]$state)) {
         stack <- history$stack[seq_len(history$pos)]
-        stack[[length(stack) + 1]] <- s
+        stack[[length(stack) + 1]] <- p
         history$stack <- utils::tail(stack, 200)
         history$pos <- length(history$stack)
       }
@@ -541,13 +670,20 @@
       ))
     }, ignoreNULL = FALSE)
     go <- function(to) {
-      target <- history$stack[[to]]
-      now <- shiny::isolate(settings_code())
-      ctls <- all_controls(shiny::isolate(fun()))
-      for(nm in union(names(now), names(target))) {
-        if(!is.null(ctls[[nm]]) && !identical(now[nm], target[nm])) {
-          .app_set_input(session, ctls[[nm]],
-                         if(nm %in% names(target)) target[[nm]] else "")
+      target <- history$stack[[to]]$state
+      now <- shiny::isolate(state())
+      if(!identical(now$fun, target$fun)) {
+        shiny::updateRadioButtons(session, "fun", selected = target$fun)
+      }
+      for(g in setdiff(names(target), "fun")) {
+        ctls <- if(g == "heat_map") controls else fun_controls[[g]]
+        a <- now[[g]]
+        b <- target[[g]]
+        for(nm in union(names(a), names(b))) {
+          if(!is.null(ctls[[nm]]) && !identical(a[nm], b[nm])) {
+            .app_set_input(session, ctls[[nm]],
+                           if(nm %in% names(b)) b[[nm]] else "")
+          }
         }
       }
       history$pos <- to
@@ -563,8 +699,8 @@
     })
     last_change <- shiny::reactive({
       if(is.null(history$stack) || history$pos < 2) return("")
-      now <- history$stack[[history$pos]]
-      before <- history$stack[[history$pos - 1]]
+      now <- history$stack[[history$pos]]$settings
+      before <- history$stack[[history$pos - 1]]$settings
       diff <- names(now)[!names(now) %in% names(before) |
                            now != before[names(now)]]
       if(length(diff) == 0) "" else diff[length(diff)]
@@ -574,45 +710,9 @@
     built <- shiny::reactive({
       d <- current()
       shiny::req(d)
-      f <- fun()
-      if(f == "heat_map_cor" && d$kind == "cells") {
-        return(list(error = paste("Correlations are drawn between the columns",
-                                  "of tables; choose a heatmap or a dot plot",
-                                  "for single-cell data.")))
-      }
-      fd <- .app_fun_data(f, c(data_code(), settings_d()))
-      args_code <- fd$args
-      env <- new.env(parent = globalenv())
-      env$x <- d$x
-      keep <- rows_keep()
-      if(!is.null(keep) && d$kind == "table") {
-        keep <- intersect(keep, rownames(d$x))
-        if(length(keep) > 0) env$x <- d$x[keep, , drop = FALSE]
-      }
-      x <- tryCatch(.app_value(fd$x_code, env, TRUE, "x"),
-                    error = function(e) env$x)
-      args <- list()
-      for(nm in names(args_code)) {
-        v <- tryCatch(.app_value(args_code[[nm]], env, allow_code, nm),
-                      error = function(e) e)
-        if(inherits(v, "error")) {
-          return(list(error = conditionMessage(v), code = args_code))
-        }
-        args[nm] <- list(v)
-      }
-      if(f == "heat_map_dot" && is.null(args$group_by)) {
-        return(list(error = paste("A dot plot needs groups: in Data, choose",
-                                  "a column to group the rows by."),
-                    code = args_code))
-      }
-      t0 <- proc.time()[["elapsed"]]
-      grDevices::pdf(NULL)
-      on.exit(grDevices::dev.off(), add = TRUE)
-      out <- tryCatch(.app_draw(f, x, args, previous),
-                      error = function(e) list(error = conditionMessage(e)))
-      out$code <- args_code
-      out$fun <- f
-      out$time <- proc.time()[["elapsed"]] - t0
+      p <- plot_d()
+      out <- .app_build(d, p$fun, c(data_code(), p$settings), rows_keep(),
+                        allow_code, previous, groups_keep())
       if(!is.null(out$hm)) previous <<- out$hm
       out
     })
@@ -632,18 +732,32 @@
       wh <- as.numeric(strsplit(s, "x", fixed = TRUE)[[1]])
       list(width = wh[1], height = wh[2])
     })
+    # (THE IMAGE OF THE HEATMAP: ITS TIME ADDS TO THE BUILD'S, AND AN ERROR
+    # DRAWING IT IS SHOWN AS THE BUILD'S ERRORS ARE)
+    drawn_time <- shiny::reactiveVal(NULL)
+    draw_error <- shiny::reactiveVal(NULL)
     shiny::observe({
       b <- last_good()
       shiny::req(b$hm)
       s <- size()
+      t0 <- proc.time()[["elapsed"]]
       p <- tryCatch(.app_preview(b$hm, s$width, s$height),
-                    error = function(e) NULL)
-      if(!is.null(p)) session$sendCustomMessage("hm-draw", p)
+                    error = function(e) e)
+      if(inherits(p, "error")) {
+        draw_error(conditionMessage(p))
+        return()
+      }
+      draw_error(NULL)
+      drawn_time(b$time + proc.time()[["elapsed"]] - t0)
+      session$sendCustomMessage("hm-draw", p)
     })
     output$issue <- shiny::renderUI({
       d <- current()
       if(is.null(d)) return(NULL)
       b <- built()
+      if(is.null(b$error) && !is.null(draw_error())) {
+        b$error <- draw_error()
+      }
       if(is.null(b$error)) return(NULL)
       s <- settings_d()
       ctls <- all_controls(fun())
@@ -651,6 +765,9 @@
         grepl(paste0("(^|[^A-Za-z0-9_.])", gsub(".", "\\.", nm, fixed = TRUE),
                      "([^A-Za-z0-9_.]|$)"), b$error)
       }, logical(1))]
+      # (GROUPS ARE CHOSEN WITH THE DATA, NOT IN THE SETTINGS)
+      grouped <- "group_by" %in% names(data_code()) &&
+        grepl("'group_by'", b$error, fixed = TRUE)
       shiny::div(
         class = "hm-issue", role = "alert",
         .app_icon("warn", 20),
@@ -659,12 +776,20 @@
           shiny::span(b$error),
           shiny::span(class = "hm-muted",
                       if(!is.null(last_good())) "Showing the last heatmap that worked."),
-          if(length(named) > 0) {
-            shiny::div(class = "hm-issue-actions", lapply(named, function(nm) {
-              shiny::tags$button(type = "button", class = "hm-btn hm-small",
-                                 `data-reset` = nm,
-                                 paste("Reset", tolower(ctls[[nm]]$label)))
-            }))
+          if(length(named) > 0 || grouped) {
+            shiny::div(
+              class = "hm-issue-actions",
+              lapply(named, function(nm) {
+                shiny::tags$button(type = "button", class = "hm-btn hm-small",
+                                   `data-reset` = nm,
+                                   paste("Reset", tolower(ctls[[nm]]$label)))
+              }),
+              if(grouped) {
+                shiny::tags$button(type = "button", class = "hm-btn hm-small",
+                                   `data-reset` = "__group",
+                                   "Stop grouping the rows")
+              }
+            )
           }
         )
       )
@@ -674,11 +799,13 @@
       if(is.null(b)) return(NULL)
       check <- .app_colour_text(b$hm)
       notes <- b$notes
+      time <- drawn_time()
+      if(is.null(time)) time <- b$time
       shiny::div(
         class = "hm-status",
         shiny::span(class = "hm-ok",
-                    if(b$time < 0.05) "Drawn in under 0.1 s" else
-                      paste0("Drawn in ", format(round(b$time, 1), nsmall = 1),
+                    if(time < 0.05) "Drawn in under 0.1 s" else
+                      paste0("Drawn in ", format(round(time, 1), nsmall = 1),
                              " s")),
         if(nzchar(check)) shiny::span(check),
         if(length(notes) > 0) {
@@ -736,27 +863,38 @@
       sel <- input$hm_selection
       d <- current()
       if(is.null(d) || is.null(sel)) return()
-      rows <- unlist(sel$rows)
-      cols <- unlist(sel$cols)
-      if(length(rows) > 0 && d$kind == "table" && fun() != "heat_map_dot" &&
-         !any(names(data_code()) == "group_by")) {
-        rows_keep(intersect(rows, rownames(d$x)))
-      }
-      if(length(cols) > 0) {
+      # (WHAT THE LABELS ARE - FEATURES, ROWS OF A TABLE OR GROUPS - WHICHEVER
+      # SIDE THEY ARE ON, E.G. WITH THE AXES SWAPPED)
+      keep <- .app_selection(d, c(unlist(sel$rows), unlist(sel$cols)),
+                             fun(), data_code())
+      if(length(keep$features) > 0) {
         if(.app_roles_mode(d)) {
           for(i in seq_along(d$features)) {
             r <- input[[rid("role", i)]]
             if(is.null(r)) r <- .app_default_roles(d)[i]
-            if(r == "show" && !d$features[i] %in% cols) {
+            if(r == "show" && !d$features[i] %in% keep$features) {
               shiny::updateSelectInput(session, rid("role", i),
                                        selected = "leave")
             }
           }
         } else {
           shiny::updateSelectizeInput(session, rid("features"),
-                                      choices = d$features, selected = cols,
-                                      server = TRUE)
+                                      choices = d$features,
+                                      selected = keep$features, server = TRUE)
         }
+      }
+      if(length(keep$rows) > 0) {
+        rows_keep(keep$rows)
+      }
+      if(length(keep$groups) > 0) {
+        groups_keep(keep$groups)
+      }
+      if(length(keep$features) + length(keep$rows) + length(keep$groups) == 0) {
+        shiny::showNotification(
+          paste("These rows can't be kept here: only the rows of tables,",
+                "the groups of dot plots and the features are."),
+          duration = 8
+        )
       }
       session$sendCustomMessage("hm-sel-clear", list())
     })
@@ -796,7 +934,7 @@
       d <- current()
       if(is.null(d)) return("")
       .app_code(d, fun(), c(data_code(), settings_code()), image(),
-                rows = rows_keep())
+                rows = rows_keep(), groups = groups_keep())
     })
     shiny::observe({
       session$sendCustomMessage("hm-code", list(code = code(),

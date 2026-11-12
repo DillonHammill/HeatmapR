@@ -955,6 +955,59 @@ cpp11::doubles dist_rows_cpp(cpp11::doubles_matrix<> x, int code, double q,
   return out;
 }
 
+// Kendall's tau-b between the columns of x (n x p), each pair over the rows
+// where both values are present (not NA or NaN), counted by Knight's
+// algorithm (tau_counts()) in O(n log n) instead of comparing every pair of
+// rows. NA where the columns share fewer than two rows, NaN where the values
+// of either are all tied there (R warns of those). The diagonal is left to R.
+[[cpp11::register]]
+cpp11::doubles_matrix<> kendall_cols_cpp(cpp11::doubles_matrix<> x, int threads) {
+  int n = x.nrow(), p = x.ncol();
+  const double* X = REAL(x.data());
+  cpp11::writable::doubles_matrix<> out(p, p);
+  double* ov = REAL(out.data());
+  for (size_t t = 0; t < static_cast<size_t>(p) * p; ++t) ov[t] = NA_REAL;
+  std::vector<std::pair<int, int>> pairs;
+  for (int j = 0; j < p; ++j) {
+    for (int i = j + 1; i < p; ++i) pairs.emplace_back(i, j);
+  }
+  // (0: TOO FEW ROWS, 1: TIED, 2: A VALUE)
+  std::vector<double> value(pairs.size(), 0);
+  std::vector<unsigned char> kind(pairs.size(), 0);
+  double work = static_cast<double>(pairs.size()) * n;
+  par::parallel_for(pairs.size(), work < 262144.0 ? 1 : threads, [&](size_t t) {
+    const double* a = X + static_cast<size_t>(pairs[t].first) * n;
+    const double* b = X + static_cast<size_t>(pairs[t].second) * n;
+    metric::Scratch w;
+    w.a.resize(n);
+    w.b.resize(n);
+    int m = 0;
+    for (int k = 0; k < n; ++k) {
+      if (!std::isnan(a[k]) && !std::isnan(b[k])) {
+        w.a[m] = a[k];
+        w.b[m] = b[k];
+        ++m;
+      }
+    }
+    if (m < 2) return;
+    // (tau_counts() USES THE OTHER SCRATCH VECTORS)
+    double r = metric::tau_b(metric::tau_counts(w.a.data(), w.b.data(), m, w));
+    if (std::isnan(r)) {
+      kind[t] = 1;
+    } else {
+      kind[t] = 2;
+      value[t] = r;
+    }
+  }, 4);
+  for (size_t t = 0; t < pairs.size(); ++t) {
+    double v = kind[t] == 2 ? value[t] : kind[t] == 1 ? R_NaN : NA_REAL;
+    size_t i = pairs[t].first, j = pairs[t].second;
+    ov[i + j * p] = v;
+    ov[j + i * p] = v;
+  }
+  return out;
+}
+
 // Distances from rows a (1-based) to rows b of x, as an |a| x |b| matrix
 [[cpp11::register]]
 cpp11::doubles_matrix<> dist_cross_cpp(cpp11::doubles_matrix<> x,

@@ -108,6 +108,10 @@ dist_rows_cpp <- function(x, code, q, threads) {
   .Call(`_HeatmapR_dist_rows_cpp`, x, code, q, threads)
 }
 
+kendall_cols_cpp <- function(x, threads) {
+  .Call(`_HeatmapR_kendall_cols_cpp`, x, threads)
+}
+
 dist_cross_cpp <- function(x, a, b, code, q, threads) {
   .Call(`_HeatmapR_dist_cross_cpp`, x, a, b, code, q, threads)
 }

@@ -62,7 +62,8 @@
     document.querySelectorAll(".hm-section").forEach(function(s) {
       var hits = 0;
       s.querySelectorAll(".hm-setting").forEach(function(d) {
-        var hit = !q || (d.dataset.search || "").indexOf(q) >= 0;
+        var hit = !d.classList.contains("hm-unused") && !d.closest(".hm-fun-block[hidden]") &&
+          (!q || (d.dataset.search || "").indexOf(q) >= 0);
         d.style.display = hit ? "" : "none";
         if (hit) hits++;
         // (SETTINGS NAMED BY THE WORDS FIRST, THEN THOSE WHOSE HELP HAS THEM)
@@ -148,6 +149,34 @@
     Shiny.addCustomMessageHandler("hm-history", function(m) {
       var u = el("undo"), r = el("redo");
       if (u) u.disabled = !m.undo; if (r) r.disabled = !m.redo;
+    });
+    // (SETTINGS OF heat_map() THAT THE DOT PLOT OR CORRELATIONS DON'T USE)
+    Shiny.addCustomMessageHandler("hm-unused", function(m) {
+      var names = m.names || [];
+      var what = m.fun === "heat_map_dot" ? "dot plots" : "correlations";
+      document.querySelectorAll(".hm-fun-block").forEach(function(b) { b.hidden = b.dataset.fun !== m.fun; });
+      document.querySelectorAll(".hm-setting[data-id]").forEach(function(d) {
+        d.classList.toggle("hm-unused", d.dataset.id === "hm_" + d.dataset.name &&
+          names.indexOf(d.dataset.name) >= 0);
+      });
+      document.querySelectorAll(".hm-pair").forEach(function(p) {
+        var all = p.querySelectorAll(".hm-setting").length > 0 &&
+          Array.prototype.every.call(p.querySelectorAll(".hm-setting"), function(d) { return d.classList.contains("hm-unused"); });
+        p.classList.toggle("hm-unused", all);
+      });
+      document.querySelectorAll(".hm-section").forEach(function(s) {
+        var n = s.querySelectorAll(".hm-setting.hm-unused").length;
+        var note = s.querySelector(".hm-unused-note");
+        if (!n) { if (note) note.remove(); return; }
+        if (!note) {
+          note = document.createElement("p"); note.className = "hm-hint hm-unused-note";
+          var head = s.querySelector(".hm-section-head");
+          if (head && head.nextSibling) s.insertBefore(note, head.nextSibling); else s.appendChild(note);
+        }
+        note.textContent = (n === 1 ? "One setting" : n + " settings") + " of heatmaps " +
+          (n === 1 ? "isn't" : "aren't") + " used by " + what + " and " + (n === 1 ? "is" : "are") + " hidden.";
+      });
+      var f = el("find"); if (f && f.value) filter(f.value);
     });
     Shiny.addCustomMessageHandler("hm-badges", function(m) {
       document.querySelectorAll(".hm-badge").forEach(function(b) {
