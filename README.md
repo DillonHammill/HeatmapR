@@ -109,9 +109,10 @@ text, legends and layouts, **HeatmapR** can:
   page of a heatmap: hover for values, click or drag over cells, labels
   and dendrograms to select rows and columns, copy or download the
   selection, search and zoom.
-- **Build in the browser** - `heat_map_app()` opens an app to upload a
+- **Build in the browser** - `heat_map_app()` opens an app to drop a
   table or single-cell file, set any argument of `heat_map()` while the
-  heatmap redraws, and download the image with the R code that draws it.
+  heatmap redraws (with values on hover, undo and the R code beside it),
+  and download the image.
 - **Work with ggplot2** - `heat_map_grob()` places heatmaps beside
   `ggplot2` plots in `patchwork` and `cowplot` layouts, and
   `heat_map_data()` returns the cells, rows, columns and dendrograms as

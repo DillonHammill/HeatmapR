@@ -114,29 +114,50 @@ test_that("what the data holds: columns, groups and annotations", {
   expect_identical(.app_object(mtcars, "mtcars[1:5, ]")$code, "x <- data")
 })
 
-test_that("every argument of heat_map() has a setting", {
+
+test_that("every argument of heat_map() has a setting, in a section", {
   ctl <- .app_controls("heat_map")
   skip <- c("x", "...", "popup", "popup_size", "style", "features", "group_by",
             "annotation_by", "assay")
   expect_setequal(names(ctl), setdiff(names(formals(heat_map)), skip))
+  # (THE APP'S OWN SETTINGS FIRST, IN THEIR ORDER)
+  own <- names(ctl)[vapply(ctl, function(k) k$own, logical(1))]
+  expect_identical(own, intersect(names(.APP_SETTINGS), names(ctl)))
+  expect_identical(names(ctl)[seq_along(own)], own)
   type <- function(nm) ctl[[nm]]$type
-  expect_identical(type("scale"), "choice")
+  expect_identical(type("scale"), "seg")
+  expect_identical(type("tree"), "tree")
+  expect_identical(type("tree_cut_y"), "count")
+  expect_identical(type("cell_col_scale"), "palette")
+  expect_identical(type("cell_col_scale_limits"), "limits")
+  expect_identical(type("cell_col_scale_center"), "centre")
+  expect_identical(type("mark_y"), "rows")
+  expect_identical(type("zoom_x"), "cols")
   expect_identical(type("cell_text"), "logical")
   expect_identical(type("axis_text_size_x"), "number")
   expect_identical(type("cell_border_line_col"), "colour")
   expect_identical(type("cell_grid_line_col"), "colour")
+  expect_identical(type("cell_border_line_type"), "choice")
   expect_identical(type("title"), "text")
-  expect_identical(type("cell_col_scale"), "palette")
-  expect_identical(type("tree_cut_y"), "code")
+  expect_identical(type("cell_border_mask"), "code")
+  expect_identical(ctl$scale$label, "Scale the values")
   expect_identical(ctl$scale$default, "FALSE")
   expect_identical(ctl$scale_method$default, '"range"')
   expect_identical(ctl$cell_col_scale$default, "")
   expect_identical(ctl$tree_cut_y$id, "hm_tree_cut_y")
-  expect_identical(ctl$scale$group, "Most used")
-  expect_identical(ctl$tree_size_x$group, "Dendrogram and clusters: columns")
-  expect_identical(ctl$axis_text_size_y$group, "Axis: rows")
+  expect_identical(ctl$scale$section, "scale")
+  expect_identical(ctl$tree_size_x$section, "scale")
+  expect_identical(ctl$axis_text_size_y$section, "labels")
+  expect_identical(ctl$cell_border_line_type$section, "cells")
+  expect_identical(ctl$bar_fill_x$section, "tracks")
+  sections <- vapply(.APP_SECTIONS, function(s) s$id, "")
+  expect_true(all(vapply(ctl, function(k) k$section, "") %in% sections))
+  # (LABELS FROM THE NAMES OF THE OTHERS)
+  expect_identical(.app_label("tree_label_text_col_x"),
+                   "Dendrogram label text colour (columns)")
+  expect_identical(.app_label("cell_col_alpha"), "Cell colour opacity")
   # (EVERY DEFAULT AMONG THE CHOICES)
-  for(k in Filter(function(k) k$type == "choice", ctl)) {
+  for(k in Filter(function(k) k$type %in% c("choice", "seg"), ctl)) {
     expect_true(k$default %in% k$choices, info = k$name)
   }
   # (THE DOCUMENTATION OF EACH ARGUMENT, WHEN THE PACKAGE IS INSTALLED)
@@ -150,9 +171,13 @@ test_that("every argument of heat_map() has a setting", {
                        skip = c("x", "...", "features", "group_by", "assay"))
   expect_identical(dot$scale$default, '"zscore"')
   expect_identical(dot$scale$id, "dot_scale")
+  expect_identical(dot$scale$section, "fun")
+  expect_identical(dot$split_by$type, "meta")
+  expect_identical(dot$split_by$label, "Split each dot by")
   cor <- .app_controls("heat_map_cor", "cor", skip = c("x", "..."))
   expect_identical(cor$method$default, '"pearson"')
   expect_identical(cor$tree$type, "logical")
+  expect_identical(cor$clust_method$choices, .APP_SETTINGS$clust_method$choices)
 })
 
 test_that("inputs become R code, and defaults are left out", {
@@ -160,6 +185,12 @@ test_that("inputs become R code, and defaults are left out", {
   code <- function(nm, v) .app_input_code(ctl[[nm]], v)
   expect_identical(code("scale", '"column"'), '"column"')
   expect_identical(code("scale", "FALSE"), "")
+  expect_identical(code("tree", c("y", "x")), '"both"')
+  expect_identical(code("tree", "x"), '"x"')
+  expect_identical(code("tree", character(0)), "")
+  expect_identical(code("tree_cut_y", 3), "3")
+  expect_identical(code("tree_cut_y", 1), "")
+  expect_identical(code("tree_cut_y", NA), "")
   expect_identical(code("cell_text", TRUE), "TRUE")
   expect_identical(code("cell_text", FALSE), "")
   expect_identical(code("axis_text_size_x", 1), "")
@@ -171,19 +202,62 @@ test_that("inputs become R code, and defaults are left out", {
   expect_identical(code("cell_border_line_col", "black"), "")
   expect_identical(code("cell_grid_line_col", "NA"), "")
   expect_identical(code("cell_grid_line_col", "grey"), '"grey"')
-  expect_identical(code("cell_col_scale", ""), "")
-  expect_identical(code("cell_col_scale", '"viridis"'), '"viridis"')
-  expect_identical(code("cell_col_scale", "blue, white, red"),
-                   'c("blue", "white", "red")')
-  expect_identical(code("cell_col_scale", "rainbow(5)"), "rainbow(5)")
-  expect_identical(code("tree_cut_y", " 3 "), "3")
-  expect_identical(code("tree_cut_y", ""), "")
-  expect_identical(code("tree_cut_y", NULL), "")
-  expect_identical(.app_first_sentence("One. Two."), "One.")
-  expect_identical(.app_first_sentence("e.g. \"x\" or y. Next"), "e.g. \"x\" or y.")
-  expect_lte(nchar(.app_first_sentence(strrep("word ", 100))), 160)
+  expect_identical(code("cell_border_line_type", "2"), "2")
+  expect_identical(code("mark_y", c("a", "b")), 'c("a", "b")')
+  expect_identical(code("mark_y", character(0)), "")
+  expect_identical(code("cell_border_mask", " x > 2 "), "x > 2")
+  expect_identical(code("cell_border_mask", NULL), "")
+  # Settings with several inputs
+  pal <- ctl$cell_col_scale
+  expect_identical(.app_ctl_code(pal, list(hm_cell_col_scale = "")), "")
+  expect_identical(.app_ctl_code(pal, list(hm_cell_col_scale = '"Blue-Red 3"')),
+                   '"Blue-Red 3"')
+  expect_identical(.app_ctl_code(pal, list(hm_cell_col_scale = "__more",
+                                           hm_cell_col_scale_more = '"Inferno"')),
+                   '"Inferno"')
+  expect_identical(.app_ctl_code(pal, list(hm_cell_col_scale = "__own",
+                                           hm_cell_col_scale_own = "navy, white, red")),
+                   'c("navy", "white", "red")')
+  cen <- ctl$cell_col_scale_center
+  expect_identical(.app_ctl_code(cen, list(hm_cell_col_scale_center_on = TRUE,
+                                           hm_cell_col_scale_center = 0)), "0")
+  expect_identical(.app_ctl_code(cen, list(hm_cell_col_scale_center_on = FALSE,
+                                           hm_cell_col_scale_center = 0)), "")
+  lim <- ctl$cell_col_scale_limits
+  expect_identical(.app_ctl_code(lim, list(hm_cell_col_scale_limits_mode = "robust")),
+                   '"robust"')
+  expect_identical(.app_ctl_code(lim, list(hm_cell_col_scale_limits_mode = "custom",
+                                           hm_cell_col_scale_limits_from = 0,
+                                           hm_cell_col_scale_limits_to = 0.8)),
+                   "c(0, 0.8)")
+  expect_identical(.app_ctl_code(lim, list(hm_cell_col_scale_limits_mode = "custom",
+                                           hm_cell_col_scale_limits_from = 1,
+                                           hm_cell_col_scale_limits_to = 0)), "")
+  expect_identical(.app_ctl_code(lim, list(hm_cell_col_scale_limits_mode = "full")), "")
+  # The inputs that each code sets give the code back
+  cases <- list(scale = '"row"', tree = '"both"', tree_cut_y = "3",
+                cell_text = "TRUE", axis_text_size_x = "0.8", title = '"Cars"',
+                cell_border_line_col = '"white"', cell_col_scale = '"Inferno"',
+                cell_col_scale_center = "0", cell_col_scale_limits = "c(0, 2)",
+                mark_y = 'c("a", "b")', cell_border_mask = "x > 2",
+                legend_side = '"bottom"')
+  for(nm in names(cases)) {
+    vals <- .app_input_values(ctl[[nm]], cases[[nm]])
+    expect_identical(.app_ctl_code(ctl[[nm]], vals), cases[[nm]], info = nm)
+    vals <- .app_input_values(ctl[[nm]], "")
+    expect_identical(.app_ctl_code(ctl[[nm]], vals), "", info = nm)
+  }
+  # Short texts for the chips
+  chip <- function(nm, v) .app_chip_value(ctl[[nm]], v)
+  expect_identical(chip("scale", '"column"'), "each column")
+  expect_identical(chip("tree", '"both"'), "both")
+  expect_identical(chip("cell_col_scale", '"Blue-Red 3"'), "Blue-Red 3")
+  expect_identical(chip("cell_col_scale_limits", "c(0, 0.8)"), "0 to 0.8")
+  expect_identical(chip("cell_col_scale_limits", '"robust"'), "robust")
+  expect_identical(chip("mark_y", 'c("a", "b")'), "2 rows")
+  expect_identical(chip("title", '"Cars"'), "Cars")
+  expect_identical(chip("cell_text", "TRUE"), "on")
 })
-
 test_that("settings are run as R code, or limited to values", {
   env <- new.env()
   env$x <- mtcars
@@ -204,43 +278,6 @@ test_that("settings are run as R code, or limited to values", {
   expect_identical(.app_fun("heat_map_dot"), "heat_map_dot")
   expect_identical(.app_fun("system"), "heat_map")
   expect_identical(.app_fun(NULL), "heat_map")
-})
-
-test_that("the code of a heatmap draws it again", {
-  d <- .app_example("mtcars")
-  image <- list(file = "mtcars.png", width = 6, height = 5, res = 150,
-                format = "png")
-  code <- .app_code(d, "heat_map", c(scale = '"column"', tree = '"both"'),
-                    image)
-  expect_identical(
-    strsplit(code, "\n")[[1]],
-    c("library(HeatmapR)", "", "x <- mtcars", "hm <- heat_map(", "  x,",
-      "  scale = \"column\",", "  tree = \"both\"", ")",
-      "heat_map_save(\"mtcars.png\", x = hm, width = 6, height = 5, res = 150)")
-  )
-  dir <- tempfile()
-  dir.create(dir)
-  old <- setwd(dir)
-  on.exit(setwd(old), add = TRUE)
-  env <- new.env()
-  suppressMessages(eval(parse(text = code), env))
-  expect_s3_class(env$hm, "heat_map")
-  expect_true(file.exists("mtcars.png"))
-  expect_identical(.app_code(d, "heat_map", character(0)),
-                   "library(HeatmapR)\n\nx <- mtcars\nhm <- heat_map(x)")
-  image$format <- "pdf"
-  expect_false(grepl("res =", .app_code(d, "heat_map", character(0), image)))
-  # Correlations of the columns chosen, without groups
-  code <- .app_code(d, "heat_map_cor",
-                    c(features = 'c("mpg", "cyl", "hp")', group_by = '"am"'))
-  expect_match(code, "hm <- heat_map_cor(x[, c(\"mpg\", \"cyl\", \"hp\")])",
-               fixed = TRUE)
-  # The data's arguments: only those of the data
-  dc <- .app_data_code(d, features = c("mpg", "bogus"), group = "cyl",
-                       annotate = c("am", "bogus"), assay = "X")
-  expect_identical(dc, c(features = '"mpg"', group_by = '"cyl"',
-                         annotation_by = '"am"'))
-  expect_length(.app_data_code(d, NULL, "", NULL, ""), 0)
 })
 
 test_that("heatmaps are drawn with their messages, and saved as images", {
@@ -284,65 +321,206 @@ test_that("heatmaps are drawn with their messages, and saved as images", {
                "couldn't be saved as SVG")
 })
 
-test_that("the page has a setting for every argument", {
-  skip_app()
-  ctl <- .app_controls("heat_map")
-  html <- as.character(.app_ui(ctl, c(scale = '"row"', title = '"Cars"')))
-  for(k in ctl) {
-    expect_true(grepl(paste0('id="', k$id, '"'), html, fixed = TRUE),
-                info = k$id)
-  }
-  # (STARTING SETTINGS SELECTED)
-  expect_match(html, '<option value="&quot;row&quot;" selected>', fixed = TRUE)
-  expect_match(html, 'id="hm_title"[^>]*value="Cars"')
+
+test_that("the code of a heatmap draws it again", {
+  d <- .app_example("mtcars")
+  image <- list(file = "mtcars.png", width = 6, height = 5, res = 150,
+                format = "png")
+  code <- .app_code(d, "heat_map", c(scale = '"column"', tree = '"both"'),
+                    image)
+  expect_identical(
+    strsplit(code, "\n")[[1]],
+    c("library(HeatmapR)", "", "x <- mtcars", "hm <- heat_map(", "  x,",
+      "  scale = \"column\",", "  tree = \"both\"", ")",
+      "heat_map_save(\"mtcars.png\", x = hm,",
+      "              width = 6, height = 5, res = 150)")
+  )
+  dir <- tempfile()
+  dir.create(dir)
+  old <- setwd(dir)
+  on.exit(setwd(old), add = TRUE)
+  env <- new.env()
+  suppressMessages(eval(parse(text = code), env))
+  expect_s3_class(env$hm, "heat_map")
+  expect_true(file.exists("mtcars.png"))
+  expect_identical(.app_code(d, "heat_map", character(0)),
+                   "library(HeatmapR)\n\nx <- mtcars\nhm <- heat_map(x)")
+  image$format <- "pdf"
+  expect_false(grepl("res =", .app_code(d, "heat_map", character(0), image)))
+  # Rows kept from a selection
+  code <- .app_code(d, "heat_map", character(0), rows = c("Fiat 128", "Valiant"))
+  expect_match(code, 'x <- x[c("Fiat 128", "Valiant"), , drop = FALSE]',
+               fixed = TRUE)
+  env <- new.env()
+  suppressMessages(eval(parse(text = code), env))
+  expect_identical(rownames(heat_map_info(env$hm)$data), c("Fiat 128", "Valiant"))
+  # Correlations of the columns chosen, without groups
+  code <- .app_code(d, "heat_map_cor",
+                    c(features = 'c("mpg", "cyl", "hp")', group_by = '"am"'))
+  expect_match(code, "hm <- heat_map_cor(x[, c(\"mpg\", \"cyl\", \"hp\")])",
+               fixed = TRUE)
+  # The data's arguments: only those of the data
+  dc <- .app_data_code(d, features = c("mpg", "bogus"), group = c("cyl", "am"),
+                       annotate = c("am", "bogus"), assay = "X")
+  expect_identical(dc, c(features = '"mpg"', group_by = 'c("cyl", "am")',
+                         annotation_by = '"am"'))
+  expect_length(.app_data_code(d, NULL, "", NULL, ""), 0)
 })
 
-test_that("the app draws heatmaps and writes their code", {
+test_that("what each column of a table does at first", {
+  d <- .app_example("iris")
+  expect_true(.app_roles_mode(d))
+  expect_identical(.app_default_roles(d),
+                   c("show", "show", "show", "show", "annotate"))
+  expect_identical(unname(.app_role_choices(d, 5)),
+                   c("show", "group", "annotate", "leave"))
+  expect_identical(names(.app_role_choices(d, 5))[1], "Show as categories")
+  expect_identical(.app_column_text(iris$Sepal.Length), "Numbers, 4.3 to 7.9")
+  expect_identical(.app_column_text(iris$Species), "Text, 3 values")
+  expect_identical(.app_column_text(mtcars$cyl), "Numbers, 3 values")
+  expect_false(.app_roles_mode(.app_example("rna")))
+  d <- .app_example("cytometry")
+  d$group <- "cluster"
+  expect_identical(.app_default_roles(d)[names(d$x) == "cluster"], "group")
+})
+
+test_that("the preview, histogram, colour check and dialogs", {
+  grDevices::pdf(NULL)
+  hm <- .app_draw("heat_map", mtcars, list(scale = "column"))$hm
+  grDevices::dev.off()
+  p <- .app_preview(hm, 5, 4)
+  expect_match(p$image, "^data:image/png;base64,")
+  expect_identical(p$width, 480)
+  expect_match(p$data, '"Mazda RX4"', fixed = TRUE)
+  expect_match(.app_colour_text(hm), "stay apart")
+  values <- as.numeric(as.matrix(heat_map_info(hm)$data))
+  h <- as.character(.app_histogram(values, c(0, 0.5)))
+  expect_identical(lengths(regmatches(h, gregexpr("<span", h)))[1] - 2L, 24L)
+  expect_match(h, 'class="out"', fixed = TRUE)
+  expect_null(.app_histogram(c(1, 1, 1)))
+  skip_app()
+  m <- as.character(.app_download_modal(
+    list(width = 7, height = 6, res = 300, format = "pdf", stem = "cars"),
+    "cars"
+  ))
+  expect_match(m, 'id="format"', fixed = TRUE)
+  expect_match(m, "2100 &times; 1800 pixels", fixed = TRUE)
+  expect_match(m, 'value="cars"', fixed = TRUE)
+})
+
+test_that("the page has the logo and a setting for every argument", {
+  skip_app()
+  ctl <- .app_controls("heat_map")
+  page <- .app_ui(ctl, c(scale = '"row"', title = '"Cars"'), start = FALSE)
+  html <- as.character(page)
+  for(k in ctl) {
+    id <- switch(k$type, limits = paste0(k$id, "_mode"), k$id)
+    expect_true(grepl(paste0('id="', id, '"'), html, fixed = TRUE), info = id)
+  }
+  expect_match(html, "heatmapr-app/logo.png", fixed = TRUE)
+  expect_true(any(grepl("heatmapr-app/app.css", unlist(page), fixed = TRUE)))
+  expect_true(any(grepl("heatmapr-app/app.js", unlist(page), fixed = TRUE)))
+  expect_match(html, 'class="hm-app hm-on-work"', fixed = TRUE)
+  expect_match(html, 'id="example_rna"', fixed = TRUE)
+  # (STARTING SETTINGS SELECTED)
+  expect_match(html, 'value="&quot;row&quot;" checked', fixed = TRUE)
+  expect_match(html, 'id="hm_title"[^>]*value="Cars"')
+  expect_match(as.character(.app_ui(ctl)), 'class="hm-app hm-on-start"',
+               fixed = TRUE)
+  # (THE FILES THE PAGE LOADS ARE INSTALLED)
+  dir <- system.file("www", "app", package = "HeatmapR")
+  expect_true(all(file.exists(file.path(dir, c("app.css", "app.js", "logo.png",
+                                               "ex-mtcars.png", "ex-iris.png",
+                                               "ex-rna.png", "ex-cyto.png")))))
+})
+
+test_that("the app draws heatmaps, undoes changes and writes their code", {
   skip_app()
   app <- heat_map_app(launch.browser = FALSE)
   shiny::testServer(app, {
+    # (THE START PAGE: NO DATA YET)
+    expect_null(current())
+    session$setInputs(example_mtcars = 1)
+    expect_identical(current()$name, "mtcars")
     session$setInputs(fun = "heat_map", hm_scale = '"column"',
-                      hm_tree = '"both"', hm_tree_cut_y = "3",
+                      hm_tree = c("y", "x"), hm_tree_cut_y = 3,
                       hm_title = "Cars")
     session$elapse(1000)
     b <- built()
     expect_null(b$error)
     expect_s3_class(b$hm, "heat_map")
     expect_identical(length(unique(heat_map_info(b$hm)$row_clusters)), 3L)
-    expect_match(code(), 'scale = "column"', fixed = TRUE)
-    expect_match(code(), 'title = "Cars"', fixed = TRUE)
-    expect_match(code(), "x <- mtcars", fixed = TRUE)
-    expect_match(code(), 'heat_map_save("mtcars.png"', fixed = TRUE)
     expect_identical(names(settings_code()),
                      c("scale", "tree", "tree_cut_y", "title"))
+    expect_match(code(), 'scale = "column"', fixed = TRUE)
+    expect_match(code(), 'tree = "both"', fixed = TRUE)
+    expect_match(code(), "tree_cut_y = 3,", fixed = TRUE)
+    expect_match(code(), 'title = "Cars"', fixed = TRUE)
+    expect_match(code(), "x <- mtcars", fixed = TRUE)
+    expect_match(code(), 'heat_map_save("mtcars-heatmap.png"', fixed = TRUE)
+    # Undo and redo step through the changes
+    session$setInputs(hm_title = "Cars 2")
+    session$elapse(1000)
+    n <- length(history$stack)
+    expect_equal(history$pos, n)
+    expect_identical(last_change(), "title")
+    session$setInputs(undo = 1)
+    expect_equal(history$pos, n - 1)
+    session$setInputs(redo = 1)
+    expect_equal(history$pos, n)
     # A setting that isn't valid R
     session$setInputs(hm_cell_size_scale_limits = "c(0,")
     session$elapse(1000)
     expect_match(built()$error, "isn't valid R code")
+    expect_false(is.null(last_good()$hm))
     session$setInputs(hm_cell_size_scale_limits = "")
-    # A dot plot needs groups
+    # A dot plot needs groups: from the roles of the columns
     session$setInputs(fun = "heat_map_dot")
     session$elapse(1000)
     expect_match(built()$error, "needs groups")
-    session$setInputs(group_by = "cyl", features = c("mpg", "hp", "wt"))
+    role <- function(i, value) {
+      do.call(session$setInputs,
+              stats::setNames(list(value), paste0("role_", token(), "_", i)))
+    }
+    role(2, "group")
     session$elapse(1000)
     expect_null(built()$error)
     expect_match(code(), "hm <- heat_map_dot(", fixed = TRUE)
     expect_match(code(), 'group_by = "cyl"', fixed = TRUE)
     # (THE DOT PLOT'S OWN SCALE REPLACES THAT OF heat_map())
     expect_false(grepl('scale = "column"', code(), fixed = TRUE))
-    # Correlations of tables only
-    session$setInputs(fun = "heat_map_cor", group_by = "", hm_tree_cut_y = "")
+    # Correlations of the columns shown
+    session$setInputs(fun = "heat_map_cor", hm_tree_cut_y = NA)
+    role(2, "leave")
+    role(3, "leave")
     session$elapse(1000)
     expect_null(built()$error)
-    expect_match(code(), "heat_map_cor(\n  x[, c(\"mpg\", \"hp\", \"wt\")],",
+    expect_match(code(), "heat_map_cor(\n  x[, c(\"mpg\", \"hp\", \"drat\"",
                  fixed = TRUE)
-    # An example of cells: its markers, grouped by cell type
-    session$setInputs(example = "rna", fun = "heat_map_dot")
+    # Rows selected on the heatmap, shown alone
+    session$setInputs(fun = "heat_map", hm_selection = list(
+      rows = list("Fiat 128", "Valiant"), cols = list()
+    ))
+    session$setInputs(sel_show = 1)
     session$elapse(1000)
+    expect_identical(rows_keep(), c("Fiat 128", "Valiant"))
+    expect_match(code(), 'x <- x[c("Fiat 128", "Valiant"), , drop = FALSE]',
+                 fixed = TRUE)
+    expect_identical(rownames(heat_map_info(built()$hm)$data),
+                     c("Fiat 128", "Valiant"))
+    session$setInputs(reset_one = "__rows")
+    expect_null(rows_keep())
+    # An example of cells: its markers, grouped by cell type
+    session$setInputs(example_rna = 1, fun = "heat_map_dot")
+    session$elapse(1000)
+    expect_identical(current()$name, "rna")
     expect_null(built()$error)
     expect_match(code(), 'x <- heat_map_example("rna")', fixed = TRUE)
     expect_match(code(), 'group_by = "cell_type"', fixed = TRUE)
+    # (THE DOWNLOADS' NAMES)
+    expect_identical(image()$file, "rna-heatmap.png")
+    session$setInputs(filename = "my plot", format = "pdf")
+    expect_identical(image()$file, "my-plot.pdf")
   })
 })
 
@@ -350,12 +528,16 @@ test_that("the app can be limited to values", {
   skip_app()
   app <- heat_map_app(mtcars, allow_code = FALSE, launch.browser = FALSE)
   shiny::testServer(app, {
+    expect_identical(current()$name, "mtcars")
     session$setInputs(fun = "heat_map", hm_bar_values_y = "x$mpg")
     session$elapse(1000)
     expect_match(built()$error, "can only be a value")
-    session$setInputs(hm_bar_values_y = "c(1, 2)", hm_tree_cut_y = "")
-    session$setInputs(hm_bar_values_y = "", hm_cell_col_scale_limits = "c(0, 500)")
+    session$setInputs(hm_bar_values_y = "",
+                      hm_cell_col_scale_limits_mode = "custom",
+                      hm_cell_col_scale_limits_from = 0,
+                      hm_cell_col_scale_limits_to = 500)
     session$elapse(1000)
     expect_null(built()$error)
+    expect_identical(heat_map_info(built()$hm)$col_limits, c(0, 500))
   })
 })

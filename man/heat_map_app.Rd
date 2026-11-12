@@ -15,8 +15,8 @@ heat_map_app(
 \arguments{
 \item{x}{data to start with: a matrix, data frame or single-cell object
 (anything \code{heat_map()} draws), or the name of a file to read (as
-above). Set to \code{NULL} by default to start with \code{mtcars}; the
-app also has examples of single-cell data.}
+above). Set to \code{NULL} by default to start on a page to drop a file
+or choose an example (tables and single-cell data).}
 
 \item{...}{settings to start with, named by the arguments of
 \code{\link{heat_map}}, e.g. \code{scale = "column"}.}
@@ -42,16 +42,18 @@ app needs the shiny and bslib packages.
 }
 \description{
 \code{heat_map_app()} opens an app in a web browser (or the RStudio or
-Positron viewer) to build a heatmap without writing code: upload a table or
-a single-cell file (or start from data in R), choose the columns or
-features to show and the variables that group and annotate the rows, set
-any of the arguments of \code{\link{heat_map}} - scaling, clustering and
-dendrograms, colours, cells and their text, axes, legends, bars, marks and
-zooms - and watch the heatmap change as they are set. The heatmap can also
-be explored as on the page of \code{\link{heat_map_html}} (values on
-hover, rows and columns selected by clicking and dragging), downloaded as a
-PNG, PDF, SVG, TIFF or JPEG image, and drawn again in R with the code that
-the app writes for it.
+Positron viewer) to build a heatmap without writing code: drop a table or
+a single-cell file on its start page (or start from data in R or an
+example), choose what each column does - cells of the heatmap, groups or
+annotations of the rows - and set any of the arguments of
+\code{\link{heat_map}} while the heatmap is drawn again: scaling,
+clustering and dendrograms, colours, cells and their text, labels,
+legends, tracks and bars, marks and zooms. Hovering over the heatmap shows
+the values of its cells, and rows and columns selected on it (by clicking
+or dragging) can be shown alone, labelled or copied. Each change can be
+undone, the R code that draws the heatmap again is written beside it, and
+the heatmap downloads as a PNG, PDF, SVG, TIFF or JPEG image of a chosen
+size.
 }
 \details{
 Files can be CSV, TSV or other delimited text (\code{.csv}, \code{.tsv},
@@ -66,12 +68,14 @@ show the chosen features, grouped and annotated by the cells' metadata.
 Heatmaps can also be dot plots of groups (\code{\link{heat_map_dot}}) or
 correlations between the columns (\code{\link{heat_map_cor}}).
 
-Every argument of \code{heat_map()} has a setting, listed by topic with its
-documentation and found by the search box above them. Settings left at
-their defaults are left out of the code. Settings that take R values (e.g.
-\code{c(0, 10)}) are R code, run in the R session with the data as
-\code{x}, so that e.g. \code{x$mpg} gives \code{bar_values_y} the column
-\code{mpg} of the data.
+Every argument of \code{heat_map()} has a setting, in sections down the
+side of the page (the most used with plain labels and inputs made for
+them, the rest under "More settings"), with the argument's name and its
+documentation, and a search box finds them. Settings left at their
+defaults are left out of the code. Settings that take R values that belong
+to the data (e.g. \code{bar_values_y}) are R code, run in the R session
+with the data as \code{x}, so that \code{x$mpg} gives each row a bar of
+its \code{mpg}.
 }
 \examples{
 if(interactive() && requireNamespace("shiny", quietly = TRUE) &&
