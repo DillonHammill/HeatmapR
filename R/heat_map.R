@@ -4324,7 +4324,12 @@ heat_map <- function(x,
         scales = stats::setNames(col_blocks$scales, col_blocks$levels)
       )
     },
-    size_limits = c(cell_size_min, cell_size_max)
+    size_limits = c(cell_size_min, cell_size_max),
+    # THE CATEGORICAL COLOURS AND COLOUR SCALES (heat_map_check_colours())
+    keys = .colour_keys(cell_levels, c(annot_x$legends, annot_y$legends),
+                        bar_legends, tree_col_x, tree_col_y),
+    scales = .colour_scales(if(length(num_cols) > 0) cell_col_scale,
+                            col_blocks, c(annot_x$legends, annot_y$legends))
   )
 
   # RECORD HEATMAP
@@ -4335,6 +4340,14 @@ heat_map <- function(x,
     custom = hm_custom,
     memo = memo$record
   )
+
+  # COLOURS HARD TO TELL APART WITH COLOUR-VISION DEFICIENCIES (ON REQUEST)
+  if(isTRUE(getOption("HeatmapR.check_colours"))) {
+    chk <- heat_map_check_colours(heat_map)
+    if(nrow(chk) > 0) {
+      message(.check_summary(chk), " See heat_map_check_colours().")
+    }
+  }
 
   # SAVE HEATMAP
   if(isTRUE(getOption("heat_map_save")) &&

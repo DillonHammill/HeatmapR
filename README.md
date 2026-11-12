@@ -102,8 +102,9 @@ text, legends and layouts, **HeatmapR** can:
   groups of cells, and robust, stepped or centred colour scales with the
   distribution of the values traced over the legend.
 - **Explain the figure** - `heat_map_info()` returns the order, clusters
-  and layout of a heatmap, and `heat_map_describe()` writes alternative
-  text for screen readers.
+  and layout of a heatmap, `heat_map_describe()` writes alternative text
+  for screen readers, and `heat_map_check_colours()` finds colours that
+  colour-blind readers can't tell apart.
 - **Work with ggplot2** - `heat_map_grob()` places heatmaps beside
   `ggplot2` plots in `patchwork` and `cowplot` layouts, and
   `heat_map_data()` returns the cells, rows, columns and dendrograms as
