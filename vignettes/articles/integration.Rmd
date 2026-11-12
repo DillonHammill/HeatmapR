@@ -176,6 +176,42 @@ page
 
 Any heatmap can be given, e.g. `heat_map_html(heat_map_dot(...))`, or data with the arguments of `heat_map()`, as above.
 
+## Building heatmaps in the browser
+
+`heat_map_app()` opens an app to build a heatmap without writing code (it needs the shiny and bslib packages). Its start page takes a table (CSV, TSV, text or Excel), an R data file or an AnnData file dropped on it, or one of four examples, and the app can also start from data in R:
+
+```{r app, eval = FALSE}
+heat_map_app()                             # the start page: drop a file or choose an example
+heat_map_app(mtcars, scale = "column")     # start from data in R, with settings
+heat_map_app("counts.csv")                 # or from a file
+```
+
+![The app with a clustered heatmap of mtcars. Down the left, the sections of the settings and the settings of one section with plain labels and the names of their arguments; in the middle, the changed settings and the heatmap with the values of a cell on hover; on the right, the R code that draws it again.](figures/heat-map-app.png)
+
+The top bar holds the data, the kind of heatmap (a heatmap, a dot plot of groups or the correlations of the columns), undo and redo, the R code and the download. In the *Data* section each column of a table is given a role - shown in the heatmap, grouping the rows or annotating them - and single-cell data choose their features, groups and annotations. The other sections hold the settings of `heat_map()` by topic: scaling and clustering, colours (palettes with swatches, a centre, limits drawn over the distribution of the values, and the colour-vision check of `heat_map_check_colours()`), cells, labels, legends, tracks and bars, marks and zooms. The most used settings have plain labels and inputs made for them, such as steppers for the number of clusters, and the rest are under *More settings*; each shows the name of its argument, with its documentation behind the info button, and the search box at the top finds any of them (e.g. `border`).
+
+The heatmap is drawn again as settings change, reusing the clustering when only its look has changed. Hovering over it shows the values of the cells, and rows and columns selected on it, by clicking or dragging, can be shown alone, labelled or copied. Each changed setting is listed above the heatmap with a button to undo it, and a setting that can't be drawn is flagged while the last heatmap that worked stays on screen. The *R code* panel has the code that draws the heatmap again, with only the settings that were changed, e.g. for the heatmap above:
+
+```r
+library(HeatmapR)
+
+x <- mtcars
+hm <- heat_map(
+  x,
+  scale = "column",
+  tree = "both",
+  tree_order_y = "olo",
+  tree_cut_y = 3,
+  title = "mtcars"
+)
+heat_map_save("mtcars-heatmap.png", x = hm,
+              width = 7, height = 7, res = 300)
+```
+
+*Download* saves the heatmap as a PNG, PDF, SVG, TIFF or JPEG file at the size chosen above the heatmap (e.g. a journal column or a 16:9 slide), with the R script beside it.
+
+Settings that take R values that belong to the data, such as `bar_values_y`, are R code run in the R session with the data as `x`, so that `bar_values_y = x$mpg` draws a bar for the `mpg` of each car. An app hosted for other people should be started with `allow_code = FALSE`, which limits these settings to plain values: numbers, text, `TRUE`, `FALSE`, `NA`, `NULL` and `c()` or `list()` of them.
+
 ## Alternative text
 
 Figures in reports and on the web need alternative text for readers using screen readers, and a heatmap is hard to describe by hand. `heat_map_describe()` writes the description from the heatmap itself: its size and scaling, what the colours show (naming the colours of the scale), the most extreme values, how the rows and columns are ordered, and where each cluster is highest and lowest, plus branch support, uncertainty, annotations, bars and zoom panels when the heatmap has them.
