@@ -201,6 +201,7 @@ heat_map(
   cofactor = 5,
   scale_q = 0.01,
   bimodal = FALSE,
+  style = NULL,
   ...
 )
 ```
@@ -1640,6 +1641,15 @@ heat_map(
   [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
   names them. The distributions behind each cell (`cell_values`) show
   what the dip has found.
+
+- style:
+
+  a style from
+  [`heat_map_style`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_style.md):
+  settings used for the arguments that aren't given, e.g. text sizes,
+  colours and legend options set once for every heatmap of a report. By
+  default the style set with `options(HeatmapR.style = )`, if any;
+  `FALSE` for none.
 
 - ...:
 

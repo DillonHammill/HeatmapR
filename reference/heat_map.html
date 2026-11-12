@@ -249,6 +249,7 @@
 <span>  cofactor <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  scale_q <span class="op">=</span> <span class="fl">0.01</span>,</span>
 <span>  bimodal <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  style <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -1722,6 +1723,14 @@ of each row (column) as bars. <code>heat_map_info()$bimodal</code> returns the
 dips, the numbers of values they were found from and the cells outlined,
 and <code><a href="heat_map_describe.html">heat_map_describe()</a></code> names them. The distributions behind each
 cell (<code>cell_values</code>) show what the dip has found.</p></dd>
+
+
+<dt id="arg-style">style<a class="anchor" aria-label="anchor" href="#arg-style"></a></dt>
+<dd><p>a style from <code><a href="heat_map_style.html">heat_map_style</a></code>: settings used for
+the arguments that aren't given, e.g. text sizes, colours and legend
+options set once for every heatmap of a report. By default the style
+set with <code>options(HeatmapR.style = )</code>, if any; <code>FALSE</code> for
+none.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

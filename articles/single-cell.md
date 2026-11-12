@@ -313,6 +313,30 @@ each of the six cell types, scaled within each gene, with the cell types
 and genes clustered by
 dendrograms.](single-cell_files/figure-html/summarise-1.png)
 
+## Composition of samples
+
+[`heat_map_composition()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_composition.md)
+counts the cells of each group in each sample and draws the share of
+each sample’s cells in each group, with the samples clustered by their
+make-up, annotated by their metadata and with their numbers of cells
+beside them. Only the metadata of the cells is read. Shares add up to
+one in each sample, so `values = "clr"` draws centred log-ratios instead
+(Aitchison 1982), which compare compositions without one group’s growth
+shrinking the others:
+
+``` r
+
+heat_map_composition(sce, group_by = "cell_type", sample_by = "sample",
+                     annotation_by = "condition",
+                     title = "Cell types in each donor")
+```
+
+![Heatmap of the share of each of six cell types in each of four donors,
+annotated by condition, with bars of the number of cells of each donor
+and the donors clustered. CD4 T cells are the largest share, about 0.3
+in every donor, and DC the smallest, about
+0.05.](single-cell_files/figure-html/composition-1.png)
+
 ## Markers
 
 [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
@@ -776,6 +800,53 @@ stimulated in the right. The halves match except for HLA-DR in clusters
 C5 and C6, whose right halves are larger and darker
 red.](single-cell_files/figure-html/cytometry-split-1.png)
 
+Differences between conditions within each cluster are tested by
+[`heat_map_contrast()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_contrast.md),
+with the samples as the replicates: the events of each cluster in each
+sample are summarised by their mean (here of the asinh-transformed
+intensities), and the four stimulated samples are compared with the four
+controls by moderated t-tests (Smyth 2004), feature by feature in each
+cluster. Tests of single events or cells find tiny differences
+significant once there are enough of them, while only differences that
+hold from one sample to the next are real (Squair et al. 2021). The
+heatmap shows the log fold change of each marker in each cluster, with
+stars for adjusted p-values below 0.05, 0.01 and 0.001; `draw = FALSE`
+returns the table of tests (for RNA, `values = "logcpm"` tests the
+summed counts of each sample as limma-voom and edgeR pseudobulk analyses
+do):
+
+``` r
+
+contrast <- heat_map_contrast(
+  events,
+  group_by = "cluster",
+  condition_by = "condition",
+  sample_by = "sample",
+  features = c("CD3", "CD4", "CD8", "CD19", "CD14", "HLA-DR", "CD45RA"),
+  transform = "asinh"
+)
+```
+
+![Heatmap of the log fold change, stimulated against control, of seven
+markers in eight clusters on a blue to red scale centred at zero. Every
+cell is near zero except HLA-DR in clusters C5 and C6, which are dark
+red with three stars.](single-cell_files/figure-html/contrast-1.png)
+
+``` r
+
+head(attr(contrast, "contrast")[order(attr(contrast, "contrast")$p_value), ], 3)
+#> Differences of stimulated from control in 8 groups (pseudobulk moderated t-tests across samples); 3 of 3 with an adjusted p-value below 0.05.
+#> 
+#>  group feature   logfc      t  p_value    p_adj mean_test mean_reference
+#>     C5  HLA-DR  1.4591 218.52 8.11e-66 5.68e-65      2.17          0.707
+#>     C6  HLA-DR  1.4996 271.96 1.92e-32 1.34e-31      2.84          1.340
+#>     C2    CD14 -0.0133  -3.35 6.30e-03 4.41e-02      8.15          8.160
+#>  samples_test samples_reference cells
+#>             4                 4 25813
+#>             4                 4 25973
+#>             4                 4 25807
+```
+
 ## Clusters that may be two populations
 
 A cluster can combine two populations that clustering didn’t separate,
@@ -1117,6 +1188,10 @@ page reads.
 
 ## References
 
+Aitchison, J. (1982). The statistical analysis of compositional data.
+*Journal of the Royal Statistical Society: Series B*, 44(2), 139-160.
+[doi:10.1111/j.2517-6161.1982.tb01195.x](https://doi.org/10.1111/j.2517-6161.1982.tb01195.x)
+
 Bendall, S. C. et al. (2011). Single-cell mass cytometry of differential
 immune and drug responses across a human hematopoietic continuum.
 *Science*, 332(6030), 687-696.
@@ -1149,6 +1224,16 @@ Marchenko, V. A. and Pastur, L. A. (1967). Distribution of eigenvalues
 for some sets of random matrices. *Mathematics of the USSR-Sbornik*,
 1(4), 457-483.
 [doi:10.1070/SM1967v001n04ABEH001994](https://doi.org/10.1070/SM1967v001n04ABEH001994)
+
+Smyth, G. K. (2004). Linear models and empirical Bayes methods for
+assessing differential expression in microarray experiments.
+*Statistical Applications in Genetics and Molecular Biology*, 3(1),
+Article 3.
+[doi:10.2202/1544-6115.1027](https://doi.org/10.2202/1544-6115.1027)
+
+Squair, J. W. et al. (2021). Confronting false discoveries in
+single-cell differential expression. *Nature Communications*, 12, 5692.
+[doi:10.1038/s41467-021-25960-2](https://doi.org/10.1038/s41467-021-25960-2)
 
 Street, K. et al. (2018). Slingshot: cell lineage and pseudotime
 inference for single-cell transcriptomics. *BMC Genomics*, 19, 477.

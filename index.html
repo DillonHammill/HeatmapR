@@ -119,7 +119,7 @@
 <li>
 <strong>Handle large data</strong> - raster images for heatmaps with millions of cells, <code><a href="reference/heat_map_summarise.html">heat_map_summarise()</a></code> for pseudobulk heatmaps and dot plots of groups of cells, and robust, stepped or centred colour scales with the distribution of the values traced over the legend.</li>
 <li>
-<strong>Explain the figure</strong> - <code><a href="reference/heat_map_info.html">heat_map_info()</a></code> returns the order, clusters and layout of a heatmap, and <code><a href="reference/heat_map_describe.html">heat_map_describe()</a></code> writes alternative text for screen readers.</li>
+<strong>Explain the figure</strong> - <code><a href="reference/heat_map_info.html">heat_map_info()</a></code> returns the order, clusters and layout of a heatmap, <code><a href="reference/heat_map_describe.html">heat_map_describe()</a></code> writes alternative text for screen readers, and <code><a href="reference/heat_map_check_colours.html">heat_map_check_colours()</a></code> finds colours that colour-blind readers can’t tell apart.</li>
 <li>
 <strong>Work with ggplot2</strong> - <code><a href="reference/heat_map_grob.html">heat_map_grob()</a></code> places heatmaps beside <code>ggplot2</code> plots in <code>patchwork</code> and <code>cowplot</code> layouts, and <code><a href="reference/heat_map_data.html">heat_map_data()</a></code> returns the cells, rows, columns and dendrograms as tidy data for rebuilding or restyling them.</li>
 </ul>
@@ -155,6 +155,8 @@
 <ul>
 <li>
 <strong>Dot plots, markers and gene-set scores</strong> - <code><a href="reference/heat_map_dot.html">heat_map_dot()</a></code> draws the mean of each group as colour and the proportion of its cells detected as size (or two conditions in the halves of each dot), <code><a href="reference/heat_map_markers.html">heat_map_markers()</a></code> ranks the markers of each group by their AUC, with Wilcoxon p-values, ready to pass to <code>features</code> or to draw as a dot plot, and <code><a href="reference/heat_map_score.html">heat_map_score()</a></code> scores each cell for sets of genes (z-scored means or module scores).</li>
+<li>
+<strong>Compositions and contrasts</strong> - <code><a href="reference/heat_map_composition.html">heat_map_composition()</a></code> draws the share of each cell type in each sample, and <code><a href="reference/heat_map_contrast.html">heat_map_contrast()</a></code> the log fold change between two conditions in each cluster, tested on pseudobulks with the samples as replicates.</li>
 <li>
 <strong>Aligned heatmaps</strong> - <code><a href="reference/heat_map_align.html">heat_map_align()</a></code> lines up data sets measured on the same cells or groups, such as genes and surface proteins, as blocks of one heatmap, each scaled and coloured on its own with its own legend, with the rows clustered on one of them.</li>
 <li>

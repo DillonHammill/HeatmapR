@@ -62,6 +62,45 @@ file.exists(file)
 #> [1] TRUE
 ```
 
+## Styles
+
+[`heat_map_style()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_style.md)
+keeps settings of
+[`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md) -
+colour scales, text sizes, borders, legend options - to reuse across
+heatmaps, so the figures of a report or paper look alike without
+repeating a dozen arguments. A style given to `style` fills in the
+arguments that aren’t given, and `options(HeatmapR.style = )` gives
+every heatmap of the session the style, including dot plots, correlation
+and aligned heatmaps. Styles build on styles, and redrawn heatmaps keep
+the style they were drawn with:
+
+``` r
+
+paper <- heat_map_style(
+  cell_col_scale = "Blue-Red 3",
+  cell_col_scale_center = 0,
+  cell_border_line_col = "white",
+  axis_text_size_x = 0.8,
+  axis_text_size_y = 0.8,
+  legend_side = "bottom"
+)
+paper
+#> A heat_map() style with 6 settings:
+#>   cell_col_scale = "Blue-Red 3"
+#>   cell_col_scale_center = 0
+#>   cell_border_line_col = "white"
+#>   axis_text_size_x = 0.8
+#>   axis_text_size_y = 0.8
+#>   legend_side = "bottom"
+heat_map(mtcars, scale = "zscore", tree = "both", style = paper,
+         title = "mtcars, styled")
+```
+
+![The z-scored mtcars heatmap drawn with a style: a blue to red colour
+scale, white cell borders, smaller axis text and the legend below the
+heatmap.](integration_files/figure-html/style-1.png)
+
 ## Orders, clusters and colours
 
 [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
@@ -80,7 +119,8 @@ names(info)
 #> [13] "axis_text_y"   "colours"       "split_colours" "split_sizes"  
 #> [17] "split_data"    "bimodal"       "sizes"         "shapes"       
 #> [21] "centers"       "annotations"   "layout"        "raster"       
-#> [25] "col_limits"    "col_blocks"    "size_limits"
+#> [25] "col_limits"    "col_blocks"    "size_limits"   "keys"         
+#> [29] "scales"
 # THE ROWS IN THE ORDER THEY ARE SHOWN, FROM THE TOP
 head(rownames(mtcars)[info$row_order])
 #> [1] "Hornet 4 Drive" "Valiant"        "Merc 280"       "Merc 280C"     
@@ -245,6 +285,31 @@ own title.](integration_files/figure-html/layout-1.png)
 heat_map_complete()
 ```
 
+Heatmaps drawn on their own each have their own colour scale, so one
+colour can stand for different values in each.
+[`heat_map_arrange()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_arrange.md)
+redraws heatmaps in one layout on shared colour limits (and cell size
+limits), from the lowest to the highest limit of them all, and keeps
+their dendrograms and other settings:
+
+``` r
+
+merc <- heat_map(mtcars[grepl("Merc", rownames(mtcars)), ], title = "Mercedes")
+others <- heat_map(mtcars[!grepl("Merc", rownames(mtcars)), ],
+                   title = "The other cars")
+```
+
+``` r
+
+heat_map_arrange(merc, others)
+```
+
+![Two heatmaps of the unscaled mtcars values side by side, the 7
+Mercedes cars and the 25 other cars, both on one colour scale from 0 to
+472, so the displacement of the Mercedes cars, at most 276, is teal to
+yellow while that of the largest American cars reaches dark
+red.](integration_files/figure-html/arrange-1.png)
+
 ## Alternative text
 
 Figures in reports and on the web need alternative text for readers
@@ -306,3 +371,33 @@ and cyl and lowest in gear and drat; group 3 (5 rows, e.g. Ferrari Dino
 and Mazda RX4) is highest in carb and gear and lowest in qsec and vs.
 Columns are ordered by hierarchical clustering (euclidean distance,
 complete linkage).](integration_files/figure-html/alt-show-1.png)
+
+## Colour-blind readers
+
+About one man in twelve of northern European descent has a red-green
+colour-vision deficiency.
+[`heat_map_check_colours()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_check_colours.md)
+simulates how a heatmap’s colours look with deuteranopia, protanopia and
+tritanopia (as Machado et al. 2009 model them) and lists the annotation
+levels, values of non-numeric cells, stacked bar parts and branch
+colours that become hard to tell apart, and colour scales whose distant
+values end up looking alike. Here matplotlib’s red and green, which most
+readers tell apart easily, are close for readers with deuteranopia:
+
+``` r
+
+cylinders <- data.frame(cylinders = factor(mtcars$cyl), row.names = rownames(mtcars))
+hm <- heat_map(mtcars, scale = "column", annotation_y = cylinders,
+               annotation_colours = list(cylinders = c("#D62728", "#2CA02C", "#1F77B4")))
+heat_map_check_colours(hm)
+#> 1 pair of colours is hard to tell apart (annotation cylinders), e.g. 4 and 6 of annotation cylinders with deuteranopia. The first eight colours of palette.colors(palette = "Okabe-Ito") stay apart for colour-blind readers.
+#> 
+#> annotation cylinders:
+#>   4 and 6 (deuteranopia, Delta E 7.3)
+```
+
+`options(HeatmapR.check_colours = TRUE)` checks every heatmap as it is
+drawn, with a message when colours are hard to tell apart. The first
+eight colours of `palette.colors(palette = "Okabe-Ito")` stay apart for
+each deficiency, and the default colour scale changes in lightness from
+end to end, so its values stay readable.

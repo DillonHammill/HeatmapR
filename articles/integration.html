@@ -125,6 +125,39 @@ drawn after the call until <code><a href="../reference/heat_map_complete.html">h
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="styles">Styles<a class="anchor" aria-label="anchor" href="#styles"></a>
+</h2>
+<p><code><a href="../reference/heat_map_style.html">heat_map_style()</a></code> keeps settings of
+<code><a href="../reference/heat_map.html">heat_map()</a></code> - colour scales, text sizes, borders, legend
+options - to reuse across heatmaps, so the figures of a report or paper
+look alike without repeating a dozen arguments. A style given to
+<code>style</code> fills in the arguments that aren’t given, and
+<code>options(HeatmapR.style = )</code> gives every heatmap of the
+session the style, including dot plots, correlation and aligned
+heatmaps. Styles build on styles, and redrawn heatmaps keep the style
+they were drawn with:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">paper</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_style.html">heat_map_style</a></span><span class="op">(</span></span>
+<span>  cell_col_scale <span class="op">=</span> <span class="st">"Blue-Red 3"</span>,</span>
+<span>  cell_col_scale_center <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  cell_border_line_col <span class="op">=</span> <span class="st">"white"</span>,</span>
+<span>  axis_text_size_x <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  axis_text_size_y <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  legend_side <span class="op">=</span> <span class="st">"bottom"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">paper</span></span>
+<span><span class="co">#&gt; A heat_map() style with 6 settings:</span></span>
+<span><span class="co">#&gt;   cell_col_scale = "Blue-Red 3"</span></span>
+<span><span class="co">#&gt;   cell_col_scale_center = 0</span></span>
+<span><span class="co">#&gt;   cell_border_line_col = "white"</span></span>
+<span><span class="co">#&gt;   axis_text_size_x = 0.8</span></span>
+<span><span class="co">#&gt;   axis_text_size_y = 0.8</span></span>
+<span><span class="co">#&gt;   legend_side = "bottom"</span></span>
+<span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span>, scale <span class="op">=</span> <span class="st">"zscore"</span>, tree <span class="op">=</span> <span class="st">"both"</span>, style <span class="op">=</span> <span class="va">paper</span>,</span>
+<span>         title <span class="op">=</span> <span class="st">"mtcars, styled"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="integration_files/figure-html/style-1.png" class="r-plt" alt="The z-scored mtcars heatmap drawn with a style: a blue to red colour scale, white cell borders, smaller axis text and the legend below the heatmap." width="100%" style="display: block; margin: auto;"></p>
+</div>
+<div class="section level2">
 <h2 id="orders-clusters-and-colours">Orders, clusters and colours<a class="anchor" aria-label="anchor" href="#orders-clusters-and-colours"></a>
 </h2>
 <p><code><a href="../reference/heat_map_info.html">heat_map_info()</a></code> returns what the heatmap is made of: the
@@ -132,7 +165,7 @@ data as displayed (after scaling), the order of the rows and columns,
 the cluster of each row and column, the dendrograms, the colour, size
 and shape of every cell, and the bounding box of every component in
 inches.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">info</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_info.html">heat_map_info</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">info</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  [1] "data"          "row_order"     "col_order"     "row_clusters" </span></span>
@@ -141,7 +174,8 @@ inches.</p>
 <span><span class="co">#&gt; [13] "axis_text_y"   "colours"       "split_colours" "split_sizes"  </span></span>
 <span><span class="co">#&gt; [17] "split_data"    "bimodal"       "sizes"         "shapes"       </span></span>
 <span><span class="co">#&gt; [21] "centers"       "annotations"   "layout"        "raster"       </span></span>
-<span><span class="co">#&gt; [25] "col_limits"    "col_blocks"    "size_limits"</span></span>
+<span><span class="co">#&gt; [25] "col_limits"    "col_blocks"    "size_limits"   "keys"         </span></span>
+<span><span class="co">#&gt; [29] "scales"</span></span>
 <span><span class="co"># THE ROWS IN THE ORDER THEY ARE SHOWN, FROM THE TOP</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">[</span><span class="va">info</span><span class="op">$</span><span class="va">row_order</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "Hornet 4 Drive" "Valiant"        "Merc 280"       "Merc 280C"     </span></span>
@@ -172,7 +206,7 @@ inches.</p>
 <p>The clusters are numbered from the top of the heatmap, as they are
 labelled, so they can be used straight away, e.g. to compare the cars of
 each cluster:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mpg"</span>, <span class="st">"hp"</span>, <span class="st">"wt"</span><span class="op">)</span><span class="op">]</span>, <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cluster <span class="op">=</span> <span class="va">info</span><span class="op">$</span><span class="va">row_clusters</span><span class="op">)</span>, <span class="va">mean</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   cluster      mpg        hp       wt</span></span>
 <span><span class="co">#&gt; 1       1 24.65333  91.33333 2.579867</span></span>
@@ -188,7 +222,7 @@ tables: one row per cell, row, column or dendrogram segment.
 heatmap’s own co-ordinates, including the gaps between clusters, so a
 heatmap can be rebuilt or restyled with <code>ggplot2</code>, exported,
 or drawn on with base graphics.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_data.html">heat_map_data</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">cells</span><span class="op">)</span></span>
 <span><span class="co">#&gt;              row column row_index col_index display_row display_col   x</span></span>
@@ -205,7 +239,7 @@ or drawn on with base graphics.</p>
 <span><span class="co">#&gt; 4 32.49656 -0.104987809 #25A783FF    1  rect           1</span></span>
 <span><span class="co">#&gt; 5 32.49656  0.220093694 #4AC16DFF    1  rect           1</span></span>
 <span><span class="co">#&gt; 6 32.49656  0.890487156 #CCDE29FF    1  rect           1</span></span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_data.html">heat_map_data</a></span><span class="op">(</span><span class="va">hm</span>, <span class="st">"rows"</span><span class="op">)</span></span>
 <span><span class="va">cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_data.html">heat_map_data</a></span><span class="op">(</span><span class="va">hm</span>, <span class="st">"columns"</span><span class="op">)</span></span>
@@ -226,7 +260,7 @@ or drawn on with base graphics.</p>
 <p>Drawn straight after <code><a href="../reference/heat_map.html">heat_map()</a></code>, base graphics land on
 the cells. Below, the largest value in each column is marked with a
 star:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span>, scale <span class="op">=</span> <span class="st">"zscore"</span>, tree <span class="op">=</span> <span class="st">"both"</span>, legend_title <span class="op">=</span> <span class="st">"z-score"</span><span class="op">)</span></span>
 <span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_data.html">heat_map_data</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span>
 <span><span class="va">top</span> <span class="op">&lt;-</span> <span class="va">cells</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/ave.html" class="external-link">ave</a></span><span class="op">(</span><span class="va">cells</span><span class="op">$</span><span class="va">value</span>, <span class="va">cells</span><span class="op">$</span><span class="va">column</span>, FUN <span class="op">=</span> <span class="va">max</span><span class="op">)</span> <span class="op">==</span> <span class="va">cells</span><span class="op">$</span><span class="va">value</span>, <span class="op">]</span></span>
@@ -242,7 +276,7 @@ graphical object, so it can sit beside <code>ggplot2</code> plots in
 layouts. The grob draws the heatmap again whenever its space changes, so
 dendrograms, legends and text are sized for the space it is given. It
 needs the <strong>gridGraphics</strong> package.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">mtcars</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">wt</span>, <span class="va">mpg</span>, colour <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">cyl</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span>size <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
@@ -254,7 +288,7 @@ needs the <strong>gridGraphics</strong> package.</p>
 <code><a href="../reference/heat_map_custom.html">heat_map_custom()</a></code>, which takes a layout (a number of rows
 and columns, or a matrix as in <code><a href="https://rdrr.io/r/graphics/layout.html" class="external-link">graphics::layout()</a></code>), and
 <code><a href="../reference/heat_map_complete.html">heat_map_complete()</a></code> to finish it.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_custom.html">heat_map_custom</a></span><span class="op">(</span>popup <span class="op">=</span> <span class="cn">FALSE</span>, layout <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Merc"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span>, scale <span class="op">=</span> <span class="st">"column"</span>,</span>
 <span>         legend <span class="op">=</span> <span class="cn">FALSE</span>, title <span class="op">=</span> <span class="st">"Mercedes"</span><span class="op">)</span></span>
@@ -263,8 +297,20 @@ and columns, or a matrix as in <code><a href="https://rdrr.io/r/graphics/layout.
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Hornet|Datsun|Volvo"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span>,</span>
 <span>         scale <span class="op">=</span> <span class="st">"column"</span>, legend <span class="op">=</span> <span class="cn">FALSE</span>, title <span class="op">=</span> <span class="st">"Hornet | Datsun | Volvo"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="integration_files/figure-html/layout-1.png" class="r-plt" alt="Three heatmaps side by side, one each for the Mercedes cars, the Mazda and Toyota cars, and the Hornet, Datsun and Volvo cars, each with its own title." width="100%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_complete.html">heat_map_complete</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>Heatmaps drawn on their own each have their own colour scale, so one
+colour can stand for different values in each.
+<code><a href="../reference/heat_map_arrange.html">heat_map_arrange()</a></code> redraws heatmaps in one layout on shared
+colour limits (and cell size limits), from the lowest to the highest
+limit of them all, and keeps their dendrograms and other settings:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">merc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Merc"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span>, title <span class="op">=</span> <span class="st">"Mercedes"</span><span class="op">)</span></span>
+<span><span class="va">others</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"Merc"</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span>, <span class="op">]</span>,</span>
+<span>                   title <span class="op">=</span> <span class="st">"The other cars"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_arrange.html">heat_map_arrange</a></span><span class="op">(</span><span class="va">merc</span>, <span class="va">others</span><span class="op">)</span></span></code></pre></div>
+<p><img src="integration_files/figure-html/arrange-1.png" class="r-plt" alt="Two heatmaps of the unscaled mtcars values side by side, the 7 Mercedes cars and the 25 other cars, both on one colour scale from 0 to 472, so the displacement of the Mercedes cars, at most 276, is teal to yellow while that of the largest American cars reaches dark red." width="100%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="alternative-text">Alternative text<a class="anchor" aria-label="anchor" href="#alternative-text"></a>
@@ -277,7 +323,7 @@ of the scale), the most extreme values, how the rows and columns are
 ordered, and where each cluster is highest and lowest, plus branch
 support, uncertainty, annotations, bars and zoom panels when the heatmap
 has them.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span>, scale <span class="op">=</span> <span class="st">"zscore"</span>, tree <span class="op">=</span> <span class="st">"both"</span>, tree_cut_y <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>               legend_title <span class="op">=</span> <span class="st">"z-score"</span>, title <span class="op">=</span> <span class="st">"mtcars"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map_describe.html">heat_map_describe</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span>
@@ -295,16 +341,43 @@ has them.</p>
 <p>In R Markdown and Quarto the description can be the figure’s
 alternative text: draw the heatmap in one chunk and pass the description
 to the <code>fig.alt</code> option of the chunk that shows it.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="in">```{r, include = FALSE}</span></span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="in">hm &lt;- heat_map(mtcars, scale = "zscore", tree = "both", tree_cut_y = 3)</span></span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a></span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="in">```{r, fig.alt = heat_map_describe(hm)}</span></span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="in">hm</span></span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="in">```{r, include = FALSE}</span></span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="in">hm &lt;- heat_map(mtcars, scale = "zscore", tree = "both", tree_cut_y = 3)</span></span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a></span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="in">```{r, fig.alt = heat_map_describe(hm)}</span></span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="in">hm</span></span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hm</span></span></code></pre></div>
 <p><img src="integration_files/figure-html/alt-show-1.png" class="r-plt" alt="Heatmap titled &quot;Described by heat_map_describe()&quot; of 32 rows by 11 columns, converted to z-scores within each column. Colours show z-score, from dark purple (-1.87) through yellow green to dark red (3.21). The highest value is 3.21 (Maserati Bora, carb) and the lowest is -1.87 (Ford Pantera L, qsec). Rows are ordered by hierarchical clustering (euclidean distance, complete linkage). Rows are split into 3 groups, numbered from the top: group 1 (15 rows, e.g. Hornet 4 Drive and Valiant) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows, e.g. Chrysler Imperial and Cadillac Fleetwood) is highest in disp and cyl and lowest in gear and drat; group 3 (5 rows, e.g. Ferrari Dino and Mazda RX4) is highest in carb and gear and lowest in qsec and vs. Columns are ordered by hierarchical clustering (euclidean distance, complete linkage)." width="100%" style="display: block; margin: auto;"></p>
+</div>
+<div class="section level2">
+<h2 id="colour-blind-readers">Colour-blind readers<a class="anchor" aria-label="anchor" href="#colour-blind-readers"></a>
+</h2>
+<p>About one man in twelve of northern European descent has a red-green
+colour-vision deficiency. <code><a href="../reference/heat_map_check_colours.html">heat_map_check_colours()</a></code>
+simulates how a heatmap’s colours look with deuteranopia, protanopia and
+tritanopia (as Machado et al. 2009 model them) and lists the annotation
+levels, values of non-numeric cells, stacked bar parts and branch
+colours that become hard to tell apart, and colour scales whose distant
+values end up looking alike. Here matplotlib’s red and green, which most
+readers tell apart easily, are close for readers with deuteranopia:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cylinders</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>cylinders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">$</span><span class="va">cyl</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span>, scale <span class="op">=</span> <span class="st">"column"</span>, annotation_y <span class="op">=</span> <span class="va">cylinders</span>,</span>
+<span>               annotation_colours <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cylinders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#D62728"</span>, <span class="st">"#2CA02C"</span>, <span class="st">"#1F77B4"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/heat_map_check_colours.html">heat_map_check_colours</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 1 pair of colours is hard to tell apart (annotation cylinders), e.g. 4 and 6 of annotation cylinders with deuteranopia. The first eight colours of palette.colors(palette = "Okabe-Ito") stay apart for colour-blind readers.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; annotation cylinders:</span></span>
+<span><span class="co">#&gt;   4 and 6 (deuteranopia, Delta E 7.3)</span></span></code></pre></div>
+<p><code>options(HeatmapR.check_colours = TRUE)</code> checks every
+heatmap as it is drawn, with a message when colours are hard to tell
+apart. The first eight colours of
+<code>palette.colors(palette = "Okabe-Ito")</code> stay apart for each
+deficiency, and the default colour scale changes in lightness from end
+to end, so its values stay readable.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

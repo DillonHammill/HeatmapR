@@ -11,9 +11,16 @@
 - [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
   : Heatmaps of the same rows side by side, each with its own colour
   scale
+- [`heat_map_composition()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_composition.md)
+  : Heatmaps of the make-up of samples: the share of each group of cells
+- [`heat_map_contrast()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_contrast.md)
+  : Heatmaps of the differences between two conditions in each group of
+  cells
 - [`plot(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   [`print(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   : Draw a heat_map object
+- [`heat_map_style()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_style.md)
+  : Styles: settings of heat_map() set once and reused
 
 ## Inspect and describe heatmaps
 
@@ -26,6 +33,9 @@ describe it in plain language as alternative text.
   : Describe a heatmap in plain language
 - [`print(`*`<heat_map_description>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/print.heat_map_description.md)
   : Print a heatmap description as wrapped text
+- [`heat_map_check_colours()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_check_colours.md)
+  : Check that the colours of a heatmap can be told apart with
+  colour-vision deficiencies
 
 ## Use heatmaps with other tools
 
@@ -73,6 +83,8 @@ functions.
 Arrange heatmaps with other plots in custom layouts and save high
 resolution images.
 
+- [`heat_map_arrange()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_arrange.md)
+  : Arrange heatmaps side by side on shared colour and size scales
 - [`heat_map_custom()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_custom.md)
   : Create a custom heatmap plot layout
 - [`heat_map_layout()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.md)

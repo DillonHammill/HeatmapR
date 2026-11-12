@@ -91,9 +91,11 @@ text, legends and layouts, **HeatmapR** can:
   traced over the legend.
 - **Explain the figure** -
   [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
-  returns the order, clusters and layout of a heatmap, and
+  returns the order, clusters and layout of a heatmap,
   [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
-  writes alternative text for screen readers.
+  writes alternative text for screen readers, and
+  [`heat_map_check_colours()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_check_colours.md)
+  finds colours that colour-blind readers can’t tell apart.
 - **Work with ggplot2** -
   [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
   places heatmaps beside `ggplot2` plots in `patchwork` and `cowplot`
@@ -124,6 +126,12 @@ every gene read on-disk data a block of genes at a time.
   ready to pass to `features` or to draw as a dot plot, and
   [`heat_map_score()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_score.md)
   scores each cell for sets of genes (z-scored means or module scores).
+- **Compositions and contrasts** -
+  [`heat_map_composition()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_composition.md)
+  draws the share of each cell type in each sample, and
+  [`heat_map_contrast()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_contrast.md)
+  the log fold change between two conditions in each cluster, tested on
+  pseudobulks with the samples as replicates.
 - **Aligned heatmaps** -
   [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
   lines up data sets measured on the same cells or groups, such as genes

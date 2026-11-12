@@ -346,6 +346,49 @@ conventions and defaults have changed; they are listed first.
   when neighbouring labels would overlap across their baselines, which
   leaves them larger than perpendicular labels need on crowded heatmaps,
   and the layout makes room for the text and its overhang.
+- Shared scales: new
+  [`heat_map_arrange()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_arrange.md)
+  redraws heatmaps (from
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md),
+  [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md)
+  or
+  [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md))
+  in one layout on shared colour limits and cell size limits - from the
+  lowest to the highest limit of them all, centred when they are all
+  centred on one value, and for aligned heatmaps block by block - so
+  that panels drawn separately, e.g. one per condition, can be compared
+  by eye. Dendrograms and clusters are reused.
+- Colour-blind checks: new
+  [`heat_map_check_colours()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_check_colours.md)
+  simulates the colours of a heatmap with deuteranopia, protanopia and
+  tritanopia (the model of Machado et al. 2009, as colorspace simulates
+  them) and reports the levels of annotations, of non-numeric cells, of
+  stacked bars and of branch colours that become hard to tell apart
+  (CIELAB Delta E below 10), and colour scales whose values half the
+  scale apart look alike. `options(HeatmapR.check_colours = TRUE)`
+  checks every heatmap as it is drawn and gives a message.
+  [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
+  returns the categorical colours (`keys`) and colour scales (`scales`)
+  it checks.
+- Styles: new
+  [`heat_map_style()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_style.md)
+  keeps settings of
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  (colour scales, text sizes, borders, legend options and the like) to
+  reuse: `heat_map(style = )` fills in the arguments that aren’t given,
+  and `options(HeatmapR.style = )` gives every heatmap of the session
+  the style, including those of
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md),
+  [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md),
+  [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
+  and
+  [`heat_map_composition()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_composition.md).
+  Arguments given win over the style, styles build on styles, names that
+  aren’t arguments of
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  are an error with the closest arguments suggested, and redrawn
+  heatmaps keep the style they were drawn with.
 - Working with `ggplot2`: new
   [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
   turns a heatmap into a grob that redraws itself at the size it is
@@ -588,6 +631,33 @@ conventions and defaults have changed; they are listed first.
   [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
   give one set per group; genes that aren’t in the data are left out
   with a message.
+- Composition heatmaps: new
+  [`heat_map_composition()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_composition.md)
+  counts the cells of each group (`group_by`, e.g. cell type) in each
+  sample (`sample_by`) and draws the share of each sample’s cells in
+  each group (or percentages, counts or centred log-ratios,
+  `values = "clr"`, the transform of Aitchison 1982 for comparing
+  compositions), one row per sample, with the samples clustered,
+  annotated by their metadata (`annotation_by`, e.g. condition) and
+  their numbers of cells as bars. Only the cells’ metadata is read, so
+  any single-cell data or a data.frame of metadata can be given.
+- Condition contrasts: new
+  [`heat_map_contrast()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_contrast.md)
+  compares two conditions (`condition_by`) in each group of cells
+  (`group_by`) with the samples (`sample_by`, e.g. donors) as
+  replicates, and draws the log fold change of each feature in each
+  group on a diverging scale with stars for adjusted p-values (or
+  returns the table, `draw = FALSE`). The cells of each group in each
+  sample are summarised - their mean (of log-normalised or, with
+  `transform = "asinh"`, cytometry values) or the log2 counts per
+  million of their summed counts (`values = "logcpm"`, leaving out
+  features with fewer than `min_counts` counts as edgeR’s
+  `filterByExpr()` does) - and the samples of the two conditions with at
+  least `min_cells` cells are compared by moderated t-tests (Smyth 2004;
+  the same statistics as limma’s `lmFit()` and `eBayes()`, compared as a
+  black box), so the thousands of cells of a sample don’t count as
+  independent replicates (Squair et al. 2021). P-values are adjusted
+  within each group (Benjamini and Hochberg 1995).
 - Aligned heatmaps: new
   [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
   draws several data sets measured on the same rows - e.g. the genes
