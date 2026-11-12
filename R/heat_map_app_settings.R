@@ -102,7 +102,7 @@
   cell_col_empty = list(section = "colours", label = "Missing values",
                         type = "colour"),
   cell_col_alpha = list(section = "colours", label = "Opacity",
-                        type = "number"),
+                        type = "number", min = 0, max = 1, step = 0.1),
   # CELLS
   cell_shape = list(section = "cells", label = "Shape", type = "seg",
                     choices = .app_q(c("rect", "circle", "diamond", "ellipse",
@@ -114,7 +114,7 @@
   cell_text = list(section = "cells", label = "Write the values in the cells",
                    type = "logical"),
   round = list(section = "cells", label = "Decimal places of the values",
-               type = "number"),
+               type = "number", min = 0, max = 10, step = 1),
   cell_text_col = list(section = "cells", label = "Colour of the values",
                        type = "colour"),
   cell_border_line_col = list(section = "cells", label = "Border colour",
@@ -209,7 +209,7 @@
                 type = "cols"),
   # DATA
   group_max = list(section = "data", label = "Most rows shown in each group",
-                   type = "number",
+                   type = "number", min = 1, step = 1,
                    help = "Draws a sample of each group's cells, so small groups stay visible."),
   swap_axes = list(section = "data", label = "Cells as columns",
                    type = "logical")
@@ -436,6 +436,9 @@
       default = default,
       choices = choices,
       help = if(is.null(spec$help)) "" else spec$help,
+      min = spec$min,
+      max = spec$max,
+      step = spec$step,
       doc = if(is.null(doc)) "" else doc,
       group = if(prefix == "hm") {
         if(!is.null(spec$section)) spec$section else .app_section(nm)
@@ -457,8 +460,15 @@
   code <- switch(
     ctl$type,
     logical = if(isTRUE(value)) "TRUE" else "FALSE",
-    number = if(length(value) == 0 || is.na(value)) "" else
-      .app_deparse(as.numeric(value)),
+    number = {
+      v <- suppressWarnings(as.numeric(value))
+      if(length(v) != 1 || is.na(v)) "" else {
+        # (KEPT IN THE SETTING'S RANGE, WHICH THE BROWSER DOESN'T ENFORCE)
+        if(!is.null(ctl$min)) v <- max(v, ctl$min)
+        if(!is.null(ctl$max)) v <- min(v, ctl$max)
+        .app_deparse(v)
+      }
+    },
     count = {
       v <- suppressWarnings(as.numeric(value))
       if(length(v) != 1 || is.na(v) || v < 2) "" else .app_deparse(round(v))

@@ -73,6 +73,57 @@ test_that("the triangles take any shape", {
   expect_true(all(heat_map_info(hm)$shapes[cbind(1:4, 1:4)] == "number"))
 })
 
+test_that("Kendall correlations agree with cor() and are quick for many rows", {
+  # Results, missing values, warnings and errors of cor(), for each 'use'
+  catch <- function(expr) {
+    w <- character(0)
+    v <- tryCatch(
+      withCallingHandlers(expr, warning = function(x) {
+        w <<- c(w, conditionMessage(x))
+        invokeRestart("muffleWarning")
+      }),
+      error = function(e) structure(conditionMessage(e), class = "failed")
+    )
+    list(value = v, warned = length(w) > 0)
+  }
+  set.seed(11)
+  uses <- c("everything", "pairwise.complete.obs", "complete.obs",
+            "na.or.complete", "all.obs", "pairwise")
+  for(it in 1:60) {
+    n <- sample(c(2, 3, 20, 49, 60, 150), 1)
+    p <- sample(2:5, 1)
+    x <- matrix(round(rnorm(n * p), sample(0:2, 1)), n, p,
+                dimnames = list(NULL, letters[seq_len(p)]))
+    if(it %% 3 > 0) x[sample(length(x), sample(0:(length(x) %/% 3), 1))] <- NA
+    if(it %% 5 == 0) x[, sample(p, 1)] <- 7
+    if(it %% 7 == 0) x[, sample(p, 1)] <- NA
+    for(u in uses) {
+      a <- catch(stats::cor(x, method = "kendall", use = u))
+      b <- catch(.cor_kendall(x, u))
+      # (cor()'S WARNINGS FOR "everything" WITH MISSING VALUES AREN'T
+      # MATCHED)
+      if(u != "everything" || !anyNA(x)) expect_identical(a$warned, b$warned)
+      if(inherits(a$value, "failed")) {
+        expect_identical(unclass(b$value), unclass(a$value))
+      } else {
+        expect_identical(is.na(b$value), is.na(a$value))
+        expect_equal(b$value, a$value, tolerance = 1e-14)
+      }
+    }
+  }
+  expect_error(.cor_kendall(x, "nope"), "invalid 'use' argument")
+  # One row: nothing to compare
+  for(u in uses) {
+    expect_true(all(is.na(.cor_kendall(matrix(c(1, 2, NA), 1), u))))
+  }
+  # Through heat_map_cor(), and thousands of rows in well under a second
+  hm <- draw_cor(mtcars[, 1:5], method = "kendall")
+  expect_equal(as.matrix(heat_map_info(hm)$data),
+               stats::cor(mtcars[, 1:5], method = "kendall"), tolerance = 1e-14)
+  big <- matrix(rnorm(2e5), ncol = 4)
+  expect_lt(system.time(.cor_kendall(big, "everything"))[["elapsed"]], 5)
+})
+
 test_that("correlation matrices are used as they are", {
   r <- stats::cor(mtcars[, 1:5], method = "kendall")
   hm <- draw_cor(r)

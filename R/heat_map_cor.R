@@ -252,5 +252,80 @@ heat_map_cor <- function(x,
   if(ncol(x) < 2) {
     stop("'x' needs at least two numeric columns to correlate.", call. = FALSE)
   }
+  if(method == "kendall") {
+    return(.cor_kendall(x, use))
+  }
   cor(x, method = method, use = use)
+}
+
+#' Kendall's tau-b between the columns of x, as cor(x, method = "kendall",
+#' use = use) gives it: each pair counted in O(n log n) by Knight's algorithm
+#' in compiled code instead of comparing every pair of rows (which takes
+#' minutes for thousands of cells). Written from ?cor and cor()'s results,
+#' compared as a black box: the rows used for each 'use', NA for pairs
+#' without two shared rows or with a column whose values are all tied (with
+#' cor()'s warning), and the diagonal. The values agree with cor()'s to a unit
+#' in the last place (tau-b rounded as tau_b() in src/metric.cpp rounds it).
+#' @noRd
+.cor_kendall <- function(x,
+                         use) {
+  uses <- c("all.obs", "complete.obs", "pairwise.complete.obs", "everything",
+            "na.or.complete")
+  u <- if(is.character(use) && length(use) == 1) uses[pmatch(use, uses)] else NA
+  if(is.na(u)) {
+    stop("invalid 'use' argument", call. = FALSE)
+  }
+  storage.mode(x) <- "double"
+  p <- ncol(x)
+  nms <- colnames(x)
+  # (FEWER THAN TWO ROWS: NOTHING TO COMPARE, THE DIAGONAL TOO - NAMED ONLY
+  # FOR PAIRS, AS cor() DOES)
+  none <- function() {
+    matrix(NA_real_, p, p, dimnames = if(u == "pairwise.complete.obs")
+      list(nms, nms))
+  }
+  if(nrow(x) < 2) {
+    return(none())
+  }
+  na <- is.na(x)
+  if(any(na) && u != "pairwise.complete.obs") {
+    if(u == "all.obs") {
+      stop("missing observations in cov/cor", call. = FALSE)
+    }
+    if(u != "everything") {
+      x <- x[rowSums(na) == 0, , drop = FALSE]
+      na <- is.na(x)
+      if(nrow(x) == 0) {
+        if(u == "complete.obs") {
+          stop("no complete element pairs", call. = FALSE)
+        }
+        return(matrix(NA_real_, p, p, dimnames = list(nms, nms)))
+      }
+    }
+  }
+  if(nrow(x) < 2) {
+    return(none())
+  }
+  r <- kendall_cols_cpp(x, .threads())
+  if(u == "pairwise.complete.obs") {
+    # (A COLUMN WITH ITSELF: 1 IF IT HAS TWO DIFFERENT VALUES)
+    d <- vapply(seq_len(p), function(j) {
+      v <- x[!na[, j], j]
+      if(length(v) < 2) NA_real_ else if(all(v == v[1])) NaN else 1
+    }, numeric(1))
+  } else {
+    # (COLUMNS WITH A MISSING VALUE ARE MISSING WITH EVERY OTHER)
+    bad <- colSums(na) > 0
+    r[bad, ] <- NA_real_
+    r[, bad] <- NA_real_
+    d <- rep(1, p)
+  }
+  diag(r) <- d
+  tied <- is.nan(r)
+  if(any(tied)) {
+    warning("the standard deviation is zero", call. = FALSE)
+    r[tied] <- NA_real_
+  }
+  dimnames(r) <- list(nms, nms)
+  r
 }

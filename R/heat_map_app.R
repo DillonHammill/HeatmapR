@@ -325,7 +325,7 @@ heat_map_app <- function(x = NULL,
     shown <- utils::head(src$features, 20)
     return(list(kind = "cells", features = src$features, meta = meta,
                 annotate = meta, assays = assays, shown = shown,
-                group = character(0), n = src$n))
+                group = .app_guess_group(meta), n = src$n))
   }
   cols <- colnames(x)
   if(is.null(cols)) {
@@ -362,6 +362,18 @@ heat_map_app <- function(x = NULL,
        n = nrow(x))
 }
 
+#' The column of single cells' metadata to group them by at first: their type
+#' or cluster, by the names packages give these columns (none if no column
+#' has one)
+#' @noRd
+.app_guess_group <- function(meta) {
+  known <- c("cell_type", "celltype", "cell_types", "cell.type", "cell_label",
+             "annotation", "cluster", "clusters", "seurat_clusters", "leiden",
+             "louvain", "label", "labels")
+  hit <- meta[match(known, tolower(meta), nomatch = 0)]
+  if(length(hit) == 0) character(0) else hit[1]
+}
+
 #' The assays of single-cell data (to choose from)
 #' @noRd
 .app_assays <- function(x) {
@@ -390,17 +402,25 @@ heat_map_app <- function(x = NULL,
 #' @param args named R code of its arguments (beside x).
 #' @param image the file, size and resolution of the image (a list).
 #' @param rows the rows of the data to keep (names), or NULL for every row.
+#' @param groups the groups to keep (a list of the column and its values), or
+#'   NULL for all of them.
 #' @noRd
 .app_code <- function(data,
                       fun,
                       args,
                       image = NULL,
-                      rows = NULL) {
+                      rows = NULL,
+                      groups = NULL) {
   fd <- .app_fun_data(fun, args)
   args <- fd$args
   lines <- c("library(HeatmapR)", "", data$code)
   if(length(rows) > 0) {
     lines <- c(lines, paste0("x <- x[", .app_deparse(rows), ", , drop = FALSE]"))
+  }
+  if(length(groups$values) > 0) {
+    lines <- c(lines, paste0("x <- x[x[[", .app_deparse(groups$column),
+                             "]] %in% ", .app_deparse(groups$values),
+                             ", , drop = FALSE]"))
   }
   call <- if(length(args) == 0) {
     paste0("hm <- ", fun, "(", fd$x_code, ")")
@@ -454,22 +474,98 @@ heat_map_app <- function(x = NULL,
   out
 }
 
+#' Settings of heat_map() that a dot plot or a correlation heatmap doesn't use:
+#' the dots and correlations are drawn by heat_map() from a summary of the
+#' groups or the correlation matrix, which these would rescale, transform or
+#' subsample (the cells' annotations and groups belong to the data, not the
+#' summary)
+#' @noRd
+.APP_NOT_FOR <- list(
+  heat_map_dot = c("annotation_by", "group_max", "scale_method"),
+  heat_map_cor = c("group_by", "annotation_by", "assay", "scale",
+                   "scale_method", "transform", "cofactor", "group_max",
+                   "swap_axes", "bimodal", "dist_method", "tree_kmeans_x",
+                   "tree_kmeans_y")
+)
+
 #' The data and its arguments for the function drawing the heatmap:
-#' correlations are of the columns chosen (x[, features]), without groups or
-#' annotations
+#' correlations are of the columns chosen (x[, features]); settings the
+#' function doesn't use are left out (.APP_NOT_FOR)
 #' @noRd
 .app_fun_data <- function(fun,
                           args_code) {
   x_code <- "x"
-  if(fun == "heat_map_cor") {
-    if("features" %in% names(args_code)) {
-      x_code <- paste0("x[, ", args_code[["features"]], "]")
-    }
-    args_code <- args_code[setdiff(names(args_code),
-                                   c("features", "group_by", "annotation_by",
-                                     "assay"))]
+  if(fun == "heat_map_cor" && "features" %in% names(args_code)) {
+    x_code <- paste0("x[, ", args_code[["features"]], ", drop = FALSE]")
   }
-  list(x_code = x_code, args = args_code)
+  drop <- c(if(fun == "heat_map_cor") "features", .APP_NOT_FOR[[fun]])
+  list(x_code = x_code, args = args_code[setdiff(names(args_code), drop)])
+}
+
+#' Build the heatmap of the app: the data with the rows kept, the values of
+#' the settings from their R code, then the heatmap (not drawn yet)
+#'
+#' @param d the data (from .app_data()).
+#' @param fun the function drawing the heatmap.
+#' @param args_code R code of its arguments: those choosing the data
+#'   (.app_data_code()) and the settings.
+#' @param keep the rows of a table to keep (names), or NULL for all of them.
+#' @param allow_code whether settings may be R code.
+#' @param previous the last heatmap built, whose slow steps are reused.
+#' @param groups the groups of a table to keep (a list of the column and its
+#'   values), or NULL for all of them.
+#' @return a list: the heatmap (hm), its messages (notes) and the time it took,
+#'   or an error message (error); with the R code of the arguments (code).
+#' @noRd
+.app_build <- function(d,
+                       fun,
+                       args_code,
+                       keep = NULL,
+                       allow_code = TRUE,
+                       previous = NULL,
+                       groups = NULL) {
+  if(fun == "heat_map_cor" && d$kind == "cells") {
+    return(list(error = paste("Correlations are drawn between the columns",
+                              "of tables; choose a heatmap or a dot plot",
+                              "for single-cell data.")))
+  }
+  fd <- .app_fun_data(fun, args_code)
+  env <- new.env(parent = globalenv())
+  env$x <- d$x
+  if(!is.null(keep) && d$kind == "table") {
+    keep <- intersect(keep, rownames(d$x))
+    if(length(keep) > 0) env$x <- d$x[keep, , drop = FALSE]
+  }
+  if(length(groups$values) > 0 && d$kind == "table" &&
+     groups$column %in% colnames(d$x)) {
+    hit <- as.character(env$x[[groups$column]]) %in% groups$values
+    if(any(hit)) env$x <- env$x[hit, , drop = FALSE]
+  }
+  x <- tryCatch(.app_value(fd$x_code, env, TRUE, "x"),
+                error = function(e) env$x)
+  args <- list()
+  for(nm in names(fd$args)) {
+    v <- tryCatch(.app_value(fd$args[[nm]], env, allow_code, nm),
+                  error = function(e) e)
+    if(inherits(v, "error")) {
+      return(list(error = conditionMessage(v), code = fd$args))
+    }
+    args[nm] <- list(v)
+  }
+  if(fun == "heat_map_dot" && is.null(args$group_by)) {
+    return(list(error = paste("A dot plot needs groups: in Data, choose",
+                              "a column to group the rows by."),
+                code = fd$args))
+  }
+  t0 <- proc.time()[["elapsed"]]
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  out <- tryCatch(.app_draw(fun, x, args, previous),
+                  error = function(e) list(error = conditionMessage(e)))
+  out$code <- fd$args
+  out$fun <- fun
+  out$time <- proc.time()[["elapsed"]] - t0
+  out
 }
 
 #' The function drawing the heatmap (one of the three of the app)

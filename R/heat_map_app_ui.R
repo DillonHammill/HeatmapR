@@ -123,6 +123,9 @@
     ),
     number = shiny::numericInput(id, label,
                                  value = if(is.numeric(v) && !is.na(v)) v else "",
+                                 min = if(is.null(ctl$min)) NA else ctl$min,
+                                 max = if(is.null(ctl$max)) NA else ctl$max,
+                                 step = if(is.null(ctl$step)) NA else ctl$step,
                                  width = "100%"),
     count = shiny::div(
       class = "hm-count-input",
@@ -237,6 +240,7 @@
   shiny::div(
     class = paste("hm-setting", paste0("hm-type-", ctl$type)),
     `data-name` = ctl$name,
+    `data-id` = ctl$id,
     `data-search` = tolower(paste(ctl$label, ctl$name, ctl$doc)),
     `data-label` = tolower(paste(ctl$label, ctl$name)),
     if(nzchar(ctl$doc)) {

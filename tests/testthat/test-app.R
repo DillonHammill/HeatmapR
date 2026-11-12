@@ -357,7 +357,7 @@ test_that("the code of a heatmap draws it again", {
   # Correlations of the columns chosen, without groups
   code <- .app_code(d, "heat_map_cor",
                     c(features = 'c("mpg", "cyl", "hp")', group_by = '"am"'))
-  expect_match(code, "hm <- heat_map_cor(x[, c(\"mpg\", \"cyl\", \"hp\")])",
+  expect_match(code, "hm <- heat_map_cor(x[, c(\"mpg\", \"cyl\", \"hp\"), drop = FALSE])",
                fixed = TRUE)
   # The data's arguments: only those of the data
   dc <- .app_data_code(d, features = c("mpg", "bogus"), group = c("cyl", "am"),
@@ -539,5 +539,147 @@ test_that("the app can be limited to values", {
     session$elapse(1000)
     expect_null(built()$error)
     expect_identical(heat_map_info(built()$hm)$col_limits, c(0, 500))
+  })
+})
+
+test_that("dot plots and correlations leave out the settings they don't use", {
+  args <- c(features = 'c("CD3", "CD4")', group_by = '"cluster"',
+            annotation_by = 'c("sample", "condition")', scale = '"column"',
+            transform = '"asinh"', group_max = "100", title = '"T"')
+  # The groups' summary has no cells to annotate or sample
+  dot <- .app_fun_data("heat_map_dot", args)
+  expect_identical(dot$x_code, "x")
+  expect_identical(names(dot$args), c("features", "group_by", "scale",
+                                      "transform", "title"))
+  # Correlations of the columns: nothing rescales or samples the matrix
+  cor <- .app_fun_data("heat_map_cor", args)
+  expect_identical(cor$x_code, 'x[, c("CD3", "CD4"), drop = FALSE]')
+  # (ONE COLUMN STAYS A TABLE, FOR heat_map_cor()'S OWN MESSAGE)
+  b <- .app_build(.app_example("mtcars"), "heat_map_cor",
+                  c(features = '"mpg"'))
+  expect_match(b$error, "at least two numeric columns")
+  expect_identical(names(cor$args), "title")
+  # The cytometry example as a dot plot (its annotations were an error; the
+  # dot plot's own scale replaces that of heat_map())
+  d <- .app_example("cytometry")
+  b <- .app_build(d, "heat_map_dot", args[names(args) != "scale"])
+  expect_null(b$error)
+  expect_s3_class(b$hm, "heat_map")
+  expect_identical(nrow(heat_map_info(b$hm)$data), 8L)
+  code <- .app_code(d, "heat_map_dot", args)
+  expect_false(grepl("annotation_by", code, fixed = TRUE))
+  expect_false(grepl("group_max", code, fixed = TRUE))
+  # Its correlations are of the markers' values, not rescaled
+  b <- .app_build(d, "heat_map_cor", args)
+  expect_null(b$error)
+  r <- stats::cor(d$x[, c("CD3", "CD4")])
+  expect_equal(as.matrix(heat_map_info(b$hm)$data)[rownames(r), colnames(r)],
+               r)
+})
+
+test_that("cells are grouped by their type at first, and dots split by two values", {
+  expect_identical(.app_guess_group(c("sample", "seurat_clusters", "Cell_Type")),
+                   "Cell_Type")
+  expect_identical(.app_guess_group(c("sample", "leiden")), "leiden")
+  expect_identical(.app_guess_group(c("sample", "batch")), character(0))
+  h <- .app_data(heat_map_read_h5ad(system.file("extdata", "example.h5ad",
+                                                package = "HeatmapR")),
+                 "x <- 1", "cells")
+  expect_identical(h$group, "cell_type")
+  rna <- .app_example("rna")
+  expect_identical(.app_two_values(rna), "condition")
+  expect_identical(.app_two_values(.app_example("mtcars")), c("vs", "am"))
+  expect_identical(.app_two_values(NULL), character(0))
+})
+
+test_that("a selection keeps features, rows of tables or groups of dot plots", {
+  d <- .app_example("mtcars")
+  s <- .app_selection(d, c("Fiat 128", "Valiant", "mpg"), "heat_map",
+                      character(0))
+  expect_identical(s$features, "mpg")
+  expect_identical(s$rows, c("Fiat 128", "Valiant"))
+  # (THE SAME WITH THE AXES SWAPPED: LABELS ARE FOUND IN THE DATA)
+  expect_identical(.app_selection(d, c("mpg", "Fiat 128"), "heat_map",
+                                  character(0))$rows, "Fiat 128")
+  # The rows of a dot plot are its groups
+  rna <- .app_example("rna")
+  s <- .app_selection(rna, c("B", "NK", "CD3E"), "heat_map_dot",
+                      c(group_by = '"cell_type"'))
+  expect_identical(s$features, "CD3E")
+  expect_identical(s$rows, character(0))
+  expect_identical(s$groups, list(column = "cell_type", values = c("B", "NK")))
+  # The code keeps those groups, and the heatmap shows them alone
+  args <- c(features = 'c("CD3E", "MS4A1")', group_by = '"cell_type"')
+  code <- .app_code(rna, "heat_map_dot", args, groups = s$groups)
+  expect_match(code, 'x <- x[x[["cell_type"]] %in% c("B", "NK"), , drop = FALSE]',
+               fixed = TRUE)
+  b <- .app_build(rna, "heat_map_dot", args, groups = s$groups)
+  expect_setequal(rownames(heat_map_info(b$hm)$data), c("B", "NK"))
+})
+
+test_that("numbers are kept in their settings' ranges", {
+  ctl <- .app_controls()
+  expect_identical(.app_input_code(ctl$cell_col_alpha, 2), "")
+  expect_identical(.app_input_code(ctl$cell_col_alpha, 0.5), "0.5")
+  expect_identical(.app_input_code(ctl$cell_col_alpha, -1), "0")
+  expect_identical(.app_input_code(ctl$round, 3), "3")
+})
+
+test_that("single-cell examples draw as heatmaps, dot plots and correlations", {
+  skip_app()
+  app <- heat_map_app(launch.browser = FALSE)
+  shiny::testServer(app, {
+    pick <- function(what, value) {
+      do.call(session$setInputs,
+              stats::setNames(list(value), paste0(what, "_", token())))
+    }
+    # Cytometry: grouped by cluster, annotated by sample and condition
+    session$setInputs(example_cytometry = 1, fun = "heat_map",
+                      hm_transform = '"asinh"', hm_scale = '"column"',
+                      hm_group_max = 100)
+    session$elapse(1000)
+    expect_null(built()$error)
+    expect_match(code(), 'annotation_by = c("sample", "condition")',
+                 fixed = TRUE)
+    session$setInputs(fun = "heat_map_dot")
+    session$elapse(1000)
+    expect_null(built()$error)
+    expect_false(grepl("annotation_by|group_max|scale = \"column\"", code()))
+    session$setInputs(fun = "heat_map_cor", cor_method = '"kendall"')
+    session$elapse(1000)
+    expect_null(built()$error)
+    expect_lt(built()$time, 10)
+    expect_false(grepl("transform|group_max", code()))
+    expect_match(code(), 'method = "kendall"', fixed = TRUE)
+    # Clusters with groups: the issue offers to stop grouping
+    session$setInputs(fun = "heat_map", cor_method = "", hm_tree_cut_y = 3)
+    session$elapse(1000)
+    expect_match(built()$error, "'group_by'", fixed = TRUE)
+    expect_match(paste(unlist(output$issue), collapse = " "), "__group",
+                 fixed = TRUE)
+    session$setInputs(hm_tree_cut_y = NA)
+    # RNA: a picker emptied stays empty
+    session$setInputs(example_rna = 1, fun = "heat_map")
+    session$elapse(1000)
+    expect_match(code(), 'group_by = "cell_type"', fixed = TRUE)
+    pick("features", c("CD3E", "MS4A1", "LYZ"))
+    pick("group", "cell_type")
+    session$elapse(1000)
+    pick("group", NULL)
+    session$elapse(1000)
+    expect_false(grepl("group_by", code(), fixed = TRUE))
+    expect_null(built()$error)
+    # A dot plot's groups selected and kept
+    pick("group", "cell_type")
+    session$setInputs(fun = "heat_map_dot", hm_selection = list(
+      rows = list("B", "NK"), cols = list()
+    ))
+    session$setInputs(sel_show = 1)
+    session$elapse(1000)
+    expect_identical(groups_keep()$values, c("B", "NK"))
+    expect_setequal(rownames(heat_map_info(built()$hm)$data), c("B", "NK"))
+    expect_match(code(), '%in% c("B", "NK")', fixed = TRUE)
+    session$setInputs(reset_one = "__groups")
+    expect_null(groups_keep())
   })
 })
