@@ -200,6 +200,7 @@ heat_map(
   cofactor = 5,
   scale_q = 0.01,
   bimodal = FALSE,
+  style = NULL,
   ...
 )
 }
@@ -1298,6 +1299,12 @@ of each row (column) as bars. \code{heat_map_info()$bimodal} returns the
 dips, the numbers of values they were found from and the cells outlined,
 and \code{heat_map_describe()} names them. The distributions behind each
 cell (\code{cell_values}) show what the dip has found.}
+
+\item{style}{a style from \code{\link{heat_map_style}}: settings used for
+the arguments that aren't given, e.g. text sizes, colours and legend
+options set once for every heatmap of a report. By default the style
+set with \code{options(HeatmapR.style = )}, if any; \code{FALSE} for
+none.}
 
 \item{...}{additional arguments passed to \code{\link{heat_map_clust}} (and
 on to \code{\link[stats]{dist}} or \code{\link[stats]{hclust}}). Any other

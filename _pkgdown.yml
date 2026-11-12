@@ -40,6 +40,7 @@ reference:
   - heat_map_align
   - heat_map_composition
   - heat_map-methods
+  - heat_map_style
 - title: Inspect and describe heatmaps
   desc: >
     Extract the order, clusters, colours and layout of a heatmap, or describe
