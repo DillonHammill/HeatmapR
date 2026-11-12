@@ -51,7 +51,7 @@ patterns.](large-data_files/figure-html/big-1.png)
 ``` r
 
 time[["elapsed"]]
-#> [1] 1.304
+#> [1] 1.365
 ```
 
 Two things make this fast: the cells are drawn as an image, and the rows
@@ -84,8 +84,8 @@ save_pdf <- function(raster) {
 }
 rbind(raster = save_pdf(TRUE), rectangles = save_pdf(FALSE))
 #>            megabytes seconds
-#> raster          0.67    0.08
-#> rectangles      1.94    0.84
+#> raster          0.67    0.09
+#> rectangles      1.94    0.88
 ```
 
 A dendrogram adds a line for every branch, so the PDF of the clustered
@@ -295,7 +295,7 @@ heat_map_threads(old)
 all <- system.time(heat_map_clust(cells[1:10000, ], max = Inf))[["elapsed"]]
 c(threads_1 = one, threads_all = all)
 #>   threads_1 threads_all 
-#>       1.202       0.916
+#>       1.546       1.010
 ```
 
 ## Memory and redraws
@@ -330,7 +330,7 @@ first <- system.time(
 again <- system.time(plot(hm, title = "Redrawn"))[["elapsed"]]
 c(first = first, redraw = again)
 #>  first redraw 
-#>  1.094  0.697
+#>  1.130  0.711
 ```
 
 ## Summaries of groups

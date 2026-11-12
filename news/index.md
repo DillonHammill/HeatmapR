@@ -418,12 +418,14 @@ conventions and defaults have changed; they are listed first.
   the settings of heatmaps they don’t use (such as scaling, sampling the
   groups and annotating the cells, which would apply to the summary of
   the groups or the correlation matrix), and their own settings are kept
-  while another plot is shown. Single-cell data from files or R start
-  grouped by their cell types or clusters, dots are split by columns
-  with two values, and a selection on a dot plot keeps its groups.
-  Settings that take R values are R code run with the data as `x`
-  (e.g. `bar_values_y = x$mpg`); `allow_code = FALSE` limits them to
-  plain values for apps hosted for others.
+  while another plot is shown. Splitting grouped rows of a heatmap into
+  clusters replaces the groups (whose columns then annotate the rows),
+  and grouping the rows again drops the clusters. Single-cell data from
+  files or R start grouped by their cell types or clusters, dots are
+  split by columns with two values, and a selection on a dot plot keeps
+  its groups. Settings that take R values are R code run with the data
+  as `x` (e.g. `bar_values_y = x$mpg`); `allow_code = FALSE` limits them
+  to plain values for apps hosted for others.
 - Interactive heatmaps: new
   [`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
   writes a heatmap (from
