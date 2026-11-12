@@ -21,6 +21,8 @@
   : Draw a heat_map object
 - [`heat_map_style()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_style.md)
   : Styles: settings of heat_map() set once and reused
+- [`heat_map_app()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_app.md)
+  : Build a heatmap in the browser
 
 ## Inspect and describe heatmaps
 

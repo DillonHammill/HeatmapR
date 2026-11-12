@@ -133,14 +133,14 @@ page <- heat_map_html(
 )
 #> Applying range scaling to each column...
 page
-#> Interactive heatmap: /tmp/RtmpbrSn7b/mtcars.html
+#> Interactive heatmap: /tmp/RtmpdYrJ0v/mtcars.html
 
 # A heatmap drawn before, with a new title
 grDevices::pdf(NULL)
 hm <- heat_map(iris[1:40, 1:4], scale = "column", popup = FALSE)
 #> Applying range scaling to each column...
 grDevices::dev.off()
-#> agg_record_18da5c90a41c 
+#> agg_record_19b7443abf7f 
 #>                       2 
 heat_map_html(hm, title = "iris", browse = FALSE)
 # }

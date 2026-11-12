@@ -389,6 +389,35 @@ conventions and defaults have changed; they are listed first.
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   are an error with the closest arguments suggested, and redrawn
   heatmaps keep the style they were drawn with.
+- Build heatmaps in the browser: new
+  [`heat_map_app()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_app.md)
+  opens an app (with the shiny and bslib packages) to make a heatmap
+  without writing code. Its start page takes a CSV, TSV or text table,
+  an Excel file (with readxl), an R data file or an AnnData file dropped
+  on it, or an example (tables and single-cell data), and the app also
+  starts from data in R. Each column of a table is given a role - shown,
+  grouping the rows or annotating them - and single-cell data choose
+  their features, groups and annotations; the heatmap can be a dot plot
+  of groups or the correlations of the columns. Every argument of
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  has a setting, in sections with the most used first (plain labels and
+  inputs made for them: segmented choices, steppers for cluster counts,
+  palettes with swatches, colour limits over the distribution of the
+  values, the colour-vision check), the argument’s name and
+  documentation beside each, and a search box. The heatmap is drawn
+  again as settings change, reusing the clustering when only its look
+  changes; hovering shows the values of its cells, and rows and columns
+  selected on it can be shown alone, labelled or copied. Changed
+  settings are listed with buttons to undo each, changes can be undone
+  and redone, a setting that can’t be drawn is flagged while the last
+  heatmap stays, and settings of the last data’s rows and clusters are
+  reset when the data changes. The R code that draws the heatmap again
+  (with only the changed settings) is written beside it, and the heatmap
+  downloads as a PNG, PDF, SVG, TIFF or JPEG image at a chosen size,
+  such as a journal column or a slide. Settings that take R values are R
+  code run with the data as `x` (e.g. `bar_values_y = x$mpg`);
+  `allow_code = FALSE` limits them to plain values for apps hosted for
+  others.
 - Interactive heatmaps: new
   [`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
   writes a heatmap (from
