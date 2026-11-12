@@ -177,6 +177,16 @@ heat_map(means, scale = "column", tree = "both",
          title = "Mean expression of each cell type")
 ```
 
+## Composition of samples
+
+`heat_map_composition()` counts the cells of each group in each sample and draws the share of each sample's cells in each group, with the samples clustered by their make-up, annotated by their metadata and with their numbers of cells beside them. Only the metadata of the cells is read. Shares add up to one in each sample, so `values = "clr"` draws centred log-ratios instead (Aitchison 1982), which compare compositions without one group's growth shrinking the others:
+
+```{r composition, fig.width = 7, fig.height = 3.5, fig.alt = "Heatmap of the share of each of six cell types in each of four donors, annotated by condition, with bars of the number of cells of each donor and the donors clustered. CD4 T cells are the largest share, about 0.3 in every donor, and DC the smallest, about 0.05."}
+heat_map_composition(sce, group_by = "cell_type", sample_by = "sample",
+                     annotation_by = "condition",
+                     title = "Cell types in each donor")
+```
+
 ## Markers
 
 `heat_map_markers()` scores every feature in every group by its AUC against all the other cells: the chance that a cell of the group has the larger value, ties counting half (the Wilcoxon rank-sum statistic, Wilcoxon 1945 and Mann and Whitney 1947, over the product of the numbers of cells, as presto's `wilcoxauc()` scores markers; Korsunsky et al. 2019). Features are kept for a group when they are detected in at least `min_detected` (0.1) of its cells and their mean is at least `min_logfc` (0.25) above the other cells'; each feature marks the group where its AUC is highest, and the top `n` of each group are flagged in the `top` column. Only features that pass the filters are ranked, and the zeros of sparse data share one rank, so only the non-zero values are sorted. Each AUC comes with the p-value of the Wilcoxon rank-sum test (`p_value`, as `wilcox.test(exact = FALSE)` finds it) and its false discovery rate within the group (`p_adj`, by the method of Benjamini and Hochberg 1995, adjusted over every gene scored). With thousands of cells nearly every marker has a tiny p-value, so the AUC and the difference of the means say more about how well a gene marks a group.
@@ -565,6 +575,8 @@ sc_table("heatmap", "memory")
 The scripts are in [`data-raw/benchmarks`](https://github.com/DillonHammill/HeatmapR/tree/master/data-raw/benchmarks): `single-cell-case.R` runs one case and `single-cell-run.R` runs them all and writes `vignettes/articles/single-cell-benchmarks.csv`, which this page reads.
 
 ## References
+
+Aitchison, J. (1982). The statistical analysis of compositional data. *Journal of the Royal Statistical Society: Series B*, 44(2), 139-160. [doi:10.1111/j.2517-6161.1982.tb01195.x](https://doi.org/10.1111/j.2517-6161.1982.tb01195.x)
 
 Bendall, S. C. et al. (2011). Single-cell mass cytometry of differential immune and drug responses across a human hematopoietic continuum. *Science*, 332(6030), 687-696. [doi:10.1126/science.1198704](https://doi.org/10.1126/science.1198704)
 

@@ -38,6 +38,7 @@ reference:
   - heat_map_cor
   - heat_map_dot
   - heat_map_align
+  - heat_map_composition
   - heat_map-methods
 - title: Inspect and describe heatmaps
   desc: >
