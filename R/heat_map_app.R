@@ -914,6 +914,8 @@ details.hm-group > summary { font-weight: 600; cursor: pointer; }
 .hm-changed code { margin-right: .4em; }
 #hm-notes { font-size: .85em; color: var(--bs-secondary-color, #6c757d); white-space: pre-wrap; }
 #hm-preview { overflow: auto; }
+#hm-preview #plot { max-width: 100%; height: auto !important; }
+#hm-preview #plot img { max-width: 100%; height: auto; }
 pre#code { white-space: pre; font-size: .85em; }
 "
   js <- "
@@ -1305,7 +1307,10 @@ pre#code { white-space: pre; font-size: .85em; }
       plot(b$hm)
       # (DRAWN AGAIN, NOT REPLAYED, WHEN THE SIZE OR PIXEL RATIO CHANGES - A
       # REPLAYED HEATMAP KEEPS THE LAYOUT OF ITS TEXT FOR THE FIRST SIZE)
-    }, res = 96, execOnResize = TRUE)
+      # (AT THE SIZE OF THE IMAGE, SHRUNK BY THE PAGE TO FIT NARROW SCREENS)
+    }, width = function() round(96 * size()$width),
+    height = function() round(96 * size()$height), res = 96,
+    execOnResize = TRUE)
     output$notes <- shiny::renderText({
       b <- built()
       paste(utils::head(b$notes, 6), collapse = "\n")
