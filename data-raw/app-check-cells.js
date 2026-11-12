@@ -4,8 +4,9 @@
 // then run (puppeteer-core, Chrome):
 //   node data-raw/app-check-cells.js http://127.0.0.1:7801/ /tmp/cells inst/extdata/example.h5ad
 // It walks the RNA and cytometry examples through the three plots, selects
-// groups of a dot plot, splits grouped cells into clusters (an error, then
-// "Stop grouping"), checks the settings hidden for dot plots and
+// groups of a dot plot, splits grouped cells into clusters (which replace the
+// groups) and groups them again (which drops the clusters), checks the
+// settings hidden for dot plots and
 // correlations, keeps a dot plot's settings through a change of plot and its
 // undo, and uploads an AnnData file. It prints what the app showed and any
 // errors of the page, and takes screenshots.
@@ -79,17 +80,22 @@ const puppeteer = require("puppeteer-core");
   await page.evaluate(() => { $("#cor_method").val('"kendall"').trigger("change"); });
   const t0 = Date.now(); await idle(page); R.cyto_kendall_ms = Date.now() - t0;
   R.cyto_cor = await state(page);
-  // Clusters of grouped cells: an error that offers to stop grouping
+  // Clusters of grouped cells: they replace the groups, which annotate the
+  // cells; grouping the cells again drops the clusters
   await setFun(page, "heat_map");
   await page.click('.hm-rail-item[data-section="scale"]'); await wait(300);
-  for (let k = 0; k < 3; k++) { await page.click('[data-for="hm_tree_cut_y"][data-delta="1"]'); await wait(150); }
-  await idle(page);
-  R.cyto_cut = await state(page);
-  await page.screenshot({ path: out + "-cyto-issue.png" });
-  await page.evaluate(() => { const b = document.querySelector('#issue [data-reset="__group"]'); if (b) b.click(); });
+  await page.click('[data-for="hm_tree_cut_y"][data-delta="1"]');
   await idle(page); await wait(500); await idle(page);
-  R.cyto_ungrouped = await state(page);
+  R.cyto_clusters = await state(page);
+  R.cyto_clusters_note = await page.evaluate(() => Array.from(document.querySelectorAll(".shiny-notification")).map(n => n.innerText.replace(/\s+/g, " ").trim()));
   await page.screenshot({ path: out + "-cyto-clusters.png" });
+  await page.click("#data_chip"); await wait(400);
+  await page.evaluate(() => {
+    const row = Array.from(document.querySelectorAll(".hm-role")).find(r => r.innerText.indexOf("cluster") === 0);
+    $(row.querySelector("select")).val("group").trigger("change");
+  });
+  await idle(page); await wait(500); await idle(page);
+  R.cyto_grouped = await state(page);
   await page.close();
 
   // An AnnData file: grouped by its cell types

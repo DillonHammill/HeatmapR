@@ -683,3 +683,51 @@ test_that("single-cell examples draw as heatmaps, dot plots and correlations", {
     expect_null(groups_keep())
   })
 })
+
+test_that("clusters of grouped rows replace the groups, and groups the clusters", {
+  expect_identical(.app_arg(c(a = "1"), "b"), NULL)
+  expect_identical(.app_arg(c(a = "1"), "a"), "1")
+  expect_identical(.app_code_value('c("cluster", "sample")'), c("cluster", "sample"))
+  expect_null(.app_code_value(NULL))
+  expect_identical(.app_cell_cuts(c(tree_cut_y = "2", tree_cut_x = "3")),
+                   "tree_cut_y")
+  expect_identical(.app_cell_cuts(c(tree_kmeans_x = "2", swap_axes = "TRUE")),
+                   "tree_kmeans_x")
+  expect_identical(.app_cell_cuts(character(0)), character(0))
+  skip_app()
+  app <- heat_map_app(launch.browser = FALSE)
+  shiny::testServer(app, {
+    # (THE PAGE'S UPDATES ARE COUNTED IN THE SERVER - THE TEST HAS NO PAGE)
+    ungrouped <- 0
+    reset <- character(0)
+    server <- environment(load)
+    server$ungroup <- function() ungrouped <<- ungrouped + 1
+    server$.app_set_input <- function(session, ctl, code) {
+      reset <<- c(reset, ctl$name)
+    }
+    role <- function(i, value) {
+      do.call(session$setInputs,
+              stats::setNames(list(value), paste0("role_", token(), "_", i)))
+    }
+    session$setInputs(example_cytometry = 1, fun = "heat_map")
+    session$elapse(1000)
+    expect_match(code(), 'group_by = "cluster"', fixed = TRUE)
+    # Split into clusters: the groups go
+    session$setInputs(hm_tree_cut_y = 2)
+    expect_identical(ungrouped, 1)
+    session$setInputs(hm_tree_cut_y = 3)
+    expect_identical(ungrouped, 2)
+    # (AS THE PAGE WOULD: THE CLUSTERS ANNOTATE THE ROWS)
+    role(13, "annotate")
+    session$elapse(1000)
+    expect_null(built()$error)
+    expect_identical(length(unique(heat_map_info(built()$hm)$row_clusters)), 3L)
+    # Grouped again: the clusters go
+    reset <- character(0)
+    role(13, "group")
+    expect_identical(reset, "tree_cut_y")
+    # Dot plots cluster their groups: both stay
+    session$setInputs(fun = "heat_map_dot", hm_tree_cut_y = 2)
+    expect_identical(ungrouped, 2)
+  })
+})
