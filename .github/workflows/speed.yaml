@@ -1,0 +1,71 @@
+# Speed checks: the cases of .github/speed/case.R timed with the base and
+# the head builds of HeatmapR on one runner, built from source with the same
+# compiler flags (a clean build each, so no stale object files). Run by hand
+# (Actions > speed > Run workflow, e.g. with a pull request's branch as the
+# head), every Monday on master against its last release tag, and on pull
+# requests labelled "speed". A case more than 1.5 times slower (and slower by
+# more than 0.25 seconds) fails the run; shared runners vary too much for a
+# tighter threshold.
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Base: a branch, tag or commit"
+        default: "master"
+      limit:
+        description: "Slowdown that fails the check"
+        default: "1.5"
+  schedule:
+    - cron: "17 3 * * 1"
+  pull_request:
+    types: [labeled, synchronize]
+
+name: speed
+
+jobs:
+  speed:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'speed')
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: head
+
+      - name: Base revision
+        id: base
+        run: |
+          cd head
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "ref=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "ref=$(git describe --tags --abbrev=0 2>/dev/null || git rev-parse HEAD~1)" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.event.inputs.base }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Base sources
+        run: |
+          git -C head worktree add ../base "${{ steps.base.outputs.ref }}"
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          working-directory: head
+          dependencies: '"hard"'
+          extra-packages: any::Matrix
+
+      - name: Build both
+        run: |
+          mkdir -p lib-base lib-head
+          R CMD INSTALL --preclean -l lib-base base
+          R CMD INSTALL --preclean -l lib-head head
+
+      - name: Compare
+        run: |
+          Rscript head/.github/speed/compare.R lib-base lib-head "${{ github.event.inputs.limit || '1.5' }}" 3
