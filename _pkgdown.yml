@@ -77,6 +77,7 @@ reference:
     Arrange heatmaps with other plots in custom layouts and save high
     resolution images.
   contents:
+  - heat_map_arrange
   - heat_map_custom
   - heat_map_layout
   - heat_map_new

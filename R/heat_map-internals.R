@@ -1885,14 +1885,22 @@ heat_map_info <- function(x) {
 #' @name heat_map-methods
 #' @export
 plot.heat_map <- function(x, ...) {
-  args <- attr(x, "heat_map_args")
   # RECORDED PLOT ONLY
-  if(is.null(args)) {
+  if(is.null(attr(x, "heat_map_args"))) {
     replayPlot(x)
     return(invisible(x))
   }
-  # OVERRIDE ARGUMENTS - DATA SUPPLIED AS 'data'
-  dots <- list(...)
+  .redraw(x, list(...))
+  invisible(x)
+}
+
+#' Redraw a heat_map object with some of its arguments replaced (data as
+#' 'data'), on the current device, reusing its slow steps - the new heat_map
+#' object
+#' @noRd
+.redraw <- function(x,
+                    dots) {
+  args <- attr(x, "heat_map_args")
   if("data" %in% names(dots)) {
     dots[["x"]] <- dots[["data"]]
     dots[["data"]] <- NULL
@@ -1917,7 +1925,6 @@ plot.heat_map <- function(x, ...) {
       args
     )
   )
-  invisible(x)
 }
 
 #' @rdname heat_map-methods

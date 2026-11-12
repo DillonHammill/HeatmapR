@@ -134,6 +134,18 @@ heat_map(mtcars[grepl("Hornet|Datsun|Volvo", rownames(mtcars)), ],
 heat_map_complete()
 ```
 
+Heatmaps drawn on their own each have their own colour scale, so one colour can stand for different values in each. `heat_map_arrange()` redraws heatmaps in one layout on shared colour limits (and cell size limits), from the lowest to the highest limit of them all, and keeps their dendrograms and other settings:
+
+```{r arrange-make, fig.show = "hide"}
+merc <- heat_map(mtcars[grepl("Merc", rownames(mtcars)), ], title = "Mercedes")
+others <- heat_map(mtcars[!grepl("Merc", rownames(mtcars)), ],
+                   title = "The other cars")
+```
+
+```{r arrange, fig.width = 11, fig.height = 5, fig.alt = "Two heatmaps of the unscaled mtcars values side by side, the 7 Mercedes cars and the 25 other cars, both on one colour scale from 0 to 472, so the displacement of the Mercedes cars, at most 276, is teal to yellow while that of the largest American cars reaches dark red."}
+heat_map_arrange(merc, others)
+```
+
 ## Alternative text
 
 Figures in reports and on the web need alternative text for readers using screen readers, and a heatmap is hard to describe by hand. `heat_map_describe()` writes the description from the heatmap itself: its size and scaling, what the colours show (naming the colours of the scale), the most extreme values, how the rows and columns are ordered, and where each cluster is highest and lowest, plus branch support, uncertainty, annotations, bars and zoom panels when the heatmap has them.
