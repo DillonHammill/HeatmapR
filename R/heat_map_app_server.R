@@ -492,7 +492,8 @@
       old <- shiny::isolate(picked())
       if(length(setdiff(have, old)) > 0) picked(union(old, have))
     })
-    # (THE ROWS NO LONGER GROUPED, E.G. TO SPLIT THEM INTO CLUSTERS)
+    # (THE ROWS NO LONGER GROUPED, E.G. TO SPLIT THEM INTO CLUSTERS: THE
+    # GROUPS' COLUMNS ANNOTATE THEM INSTEAD)
     ungroup <- function() {
       d <- shiny::isolate(current())
       if(is.null(d)) return()
@@ -507,8 +508,16 @@
           }
         }
       } else {
+        groups <- .app_code_value(.app_arg(shiny::isolate(data_code()),
+                                           "group_by"))
+        annotate <- shiny::isolate(input[[rid("annotate")]])
         shiny::updateSelectizeInput(session, rid("group"),
                                     selected = character(0))
+        shiny::updateSelectizeInput(session, rid("annotate"),
+                                    choices = d$annotate,
+                                    selected = union(annotate,
+                                                     intersect(groups, d$annotate)),
+                                    server = TRUE)
       }
     }
 
@@ -583,6 +592,58 @@
                                                    state = state())),
                               350)
     settings_d <- shiny::reactive(plot_d()$settings)
+
+    # ---- clusters or groups of the rows: the latest choice wins ----
+    # (heat_map() GROUPS CELLS BY group_by OR BY CLUSTERS, NOT BOTH: SPLITTING
+    # GROUPED ROWS INTO CLUSTERS STOPS GROUPING THEM - THE GROUPS ANNOTATE
+    # THEM INSTEAD - AND GROUPING THE ROWS STOPS SPLITTING THEM. DOT PLOTS
+    # CLUSTER THEIR GROUPS, SO KEEP BOTH)
+    and <- function(x) {
+      if(length(x) < 2) x else paste(paste(x[-length(x)], collapse = ", "),
+                                     "and", x[length(x)])
+    }
+    last_cuts <- character(0)
+    shiny::observe({
+      s <- settings_code()
+      cuts <- s[.app_cell_cuts(s)]
+      new <- length(cuts) > 0 && !identical(cuts, last_cuts)
+      last_cuts <<- cuts
+      if(!new || shiny::isolate(fun()) != "heat_map") return()
+      groups <- .app_code_value(.app_arg(shiny::isolate(data_code()),
+                                         "group_by"))
+      if(length(groups) == 0) return()
+      ungroup()
+      shiny::showNotification(
+        paste0("The rows are split into clusters instead of grouped by ",
+               and(groups), ", which ", if(length(groups) == 1) "annotates" else
+                 "annotate", " them now."),
+        duration = 8
+      )
+    })
+    last_group <- NULL
+    last_token <- NULL
+    shiny::observe({
+      g <- .app_arg(data_code(), "group_by")
+      tok <- token()
+      # (A NEW DATA SET STARTS WITH ITS OWN GROUPS, AND ITS CLUSTERS RESET)
+      if(!identical(tok, last_token)) {
+        last_token <<- tok
+        last_group <<- g
+        return()
+      }
+      changed <- !identical(g, last_group)
+      last_group <<- g
+      if(!changed || is.null(g) || shiny::isolate(fun()) != "heat_map") return()
+      s <- shiny::isolate(settings_code())
+      cuts <- .app_cell_cuts(s)
+      if(length(cuts) == 0) return()
+      for(nm in cuts) .app_set_input(session, controls[[nm]], "")
+      shiny::showNotification(
+        paste0("The rows are grouped by ", and(.app_code_value(g)),
+               ", so they're no longer split into clusters."),
+        duration = 8
+      )
+    })
 
     # (THE NUMBER OF CHANGED SETTINGS IN EACH SECTION, ON THE RAIL)
     shiny::observe({

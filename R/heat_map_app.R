@@ -568,6 +568,32 @@ heat_map_app <- function(x = NULL,
   out
 }
 
+#' The R code of one argument among named R code, or NULL without it
+#' @noRd
+.app_arg <- function(code,
+                     name) {
+  if(name %in% names(code)) code[[name]] else NULL
+}
+
+#' The value of R code made of values (e.g. of group_by), or NULL
+#' @noRd
+.app_code_value <- function(code) {
+  if(is.null(code) || !nzchar(code)) {
+    return(NULL)
+  }
+  tryCatch(eval(parse(text = code)[[1]], baseenv()), error = function(e) NULL)
+}
+
+#' The settings that split the cells of a heatmap into clusters (of a
+#' dendrogram or k-means), along the axis of the cells: heat_map() groups
+#' cells by these or by group_by, not both
+#' @noRd
+.app_cell_cuts <- function(settings) {
+  ax <- if(identical(.app_arg(settings, "swap_axes"), "TRUE")) "x" else "y"
+  intersect(paste0(c("tree_cut_", "tree_kmeans_"), ax),
+            c(character(0), names(settings)))
+}
+
 #' The function drawing the heatmap (one of the three of the app)
 #' @noRd
 .app_fun <- function(fun) {
