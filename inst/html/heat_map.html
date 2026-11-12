@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="HeatmapR heat_map_html()">
+<title>{{TITLE}}</title>
+<style>
+:root {
+  --ink: #1f2328; --muted: #59636e; --line: #d0d7de; --panel: #f6f8fa;
+  --accent: #0969da; --sel: rgba(9, 105, 218, 0.16); --hover: rgba(31, 35, 40, 0.07);
+  --found: #bf8700;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink); background: #fff; display: flex; flex-direction: column; }
+header { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 12px;
+  border-bottom: 1px solid var(--line); background: #fff; }
+header h1 { font-size: 14px; margin: 0 8px 0 0; font-weight: 600; }
+input[type=search] { font: inherit; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px;
+  width: 220px; }
+button { font: inherit; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--panel); color: var(--ink); cursor: pointer; }
+button:hover { background: #eaeef2; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.group { display: inline-flex; gap: 4px; }
+#found { color: var(--muted); min-width: 6em; }
+main { flex: 1 1 auto; display: flex; gap: 12px; padding: 12px; min-height: 0; }
+#viewport { flex: 1 1 auto; overflow: auto; border: 1px solid var(--line); border-radius: 6px;
+  background: #fff; min-height: 200px; }
+#canvas { position: relative; margin: 0 auto; cursor: crosshair; }
+#canvas img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+#overlay { position: absolute; inset: 0; pointer-events: none; }
+#overlay div { position: absolute; }
+.hover { background: var(--hover); }
+.sel { background: var(--sel); box-shadow: inset 0 0 0 2px var(--accent); }
+.sel-band { background: var(--sel); }
+.found { box-shadow: inset 0 0 0 2px var(--found); }
+#brush { border: 1px dashed var(--accent); background: rgba(9, 105, 218, 0.08); display: none; }
+aside { flex: 0 0 250px; display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: auto; }
+aside section { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; background: var(--panel); }
+aside h2 { font-size: 13px; margin: 0 0 4px; display: flex; justify-content: space-between; align-items: center; }
+aside h2 .n { color: var(--muted); font-weight: 400; }
+aside ol { margin: 4px 0 0; padding-left: 22px; max-height: 26vh; overflow: auto; }
+aside li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+aside li button { padding: 0 4px; border: 0; background: none; color: var(--muted); }
+.help { color: var(--muted); font-size: 12px; margin: 0; }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: #fff; padding: 6px 8px;
+  border-radius: 4px; font-size: 12px; max-width: 360px; display: none; z-index: 10; }
+#tip b { font-weight: 600; }
+#tip .k { color: #c9d1d9; }
+#live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (max-width: 700px) { main { flex-direction: column; } aside { flex-basis: auto; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>{{TITLE}}</h1>
+  <input id="search" type="search" placeholder="Find rows or columns" aria-label="Find rows or columns">
+  <span id="found" aria-live="polite"></span>
+  <span class="group" role="group" aria-label="Zoom">
+    <button id="zoom-out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+    <button id="zoom-fit" title="Fit to the window">Fit</button>
+    <button id="zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+  </span>
+  <button id="clear">Clear selection</button>
+</header>
+<main>
+  <div id="viewport">
+    <div id="canvas">
+      <img id="image" alt="{{ALT}}" src="{{IMAGE}}" draggable="false">
+      <div id="overlay"></div>
+    </div>
+  </div>
+  <aside>
+    <section>
+      <h2>Rows <span class="n" id="n-rows">none selected</span></h2>
+      <div class="group"><button data-copy="rows">Copy</button><button data-clear="rows">Clear</button></div>
+      <ol id="list-rows"></ol>
+    </section>
+    <section>
+      <h2>Columns <span class="n" id="n-cols">none selected</span></h2>
+      <div class="group"><button data-copy="cols">Copy</button><button data-clear="cols">Clear</button></div>
+      <ol id="list-cols"></ol>
+    </section>
+    <button id="download">Download values (CSV)</button>
+    <p class="help">Hover over a cell for its values. Click a cell or a row's label to select or
+      unselect the row, a column's label for the column. Drag across cells, labels or
+      dendrograms to select every row and column in the box; hold Alt to unselect them.
+      Search, then press Enter to select what was found. Ctrl or &#8984; with the wheel zooms.</p>
+  </aside>
+</main>
+<div id="tip" role="tooltip"></div>
+<div id="live" aria-live="polite"></div>
+<script id="heatmap-data" type="application/json">{{DATA}}</script>
+<script>
+(function() {
+  "use strict";
+  var D = JSON.parse(document.getElementById("heatmap-data").textContent);
+  var img = document.getElementById("image"), canvas = document.getElementById("canvas"),
+      overlay = document.getElementById("overlay"), viewport = document.getElementById("viewport"),
+      tip = document.getElementById("tip"), live = document.getElementById("live");
+  var R = D.rows, C = D.cols, box = D.box, nr = R.label.length, nc = C.label.length;
+  var selR = new Set(), selC = new Set(), found = { rows: [], cols: [] };
+  var zoom = 1, baseWidth = D.width;
+
+  // ---- geometry: fractions of the image, rows from the top ----
+  function find(starts, ends, v) {
+    var lo = 0, hi = starts.length - 1;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1;
+      if (v < starts[mid]) hi = mid - 1;
+      else if (v >= ends[mid]) lo = mid + 1;
+      else return mid;
+    }
+    return -1;
+  }
+  function rowAt(fy) { return find(R.top, R.bottom, fy); }
+  function colAt(fx) { return find(C.left, C.right, fx); }
+  function frac(e) {
+    var r = img.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+  }
+  function inCells(p) { return p.x >= box.left && p.x < box.right && p.y >= box.top && p.y < box.bottom; }
+  function inRowBand(p) { return p.y >= box.top && p.y < box.bottom; }
+  function inColBand(p) { return p.x >= box.left && p.x < box.right; }
+
+  // ---- text ----
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function num(v) {
+    if (v === null || v === undefined) return "NA";
+    if (typeof v !== "number") return String(v);
+    if (v === 0) return "0";
+    var a = Math.abs(v);
+    if (a >= 1e5 || a < 1e-3) return v.toExponential(3).replace(/\.?0+e/, "e");
+    return String(Number(v.toPrecision(4)));
+  }
+  function info(part, i) {
+    var out = [];
+    for (var k in part.info) {
+      if (Object.prototype.hasOwnProperty.call(part.info, k)) {
+        var v = part.info[k][i];
+        if (v !== null && v !== undefined && v !== "") out.push('<span class="k">' + esc(k) + ":</span> " + esc(num(v)));
+      }
+    }
+    return out.join(" &middot; ");
+  }
+  function tipHtml(i, j) {
+    var h = "<b>" + esc(R.label[i]) + "</b> &times; <b>" + esc(C.label[j]) + "</b>";
+    var v = D.value ? D.value[i][j] : null, raw = D.raw ? D.raw[i][j] : null;
+    if (D.raw && D.value && v !== null) {
+      h += "<br>" + esc(D.rawLabel) + ": " + esc(num(raw)) + ' <span class="k">(' + esc(D.valueLabel) + ": " + esc(num(v)) + ")</span>";
+    } else if (D.raw) {
+      h += "<br>" + esc(D.raw && D.value ? "value" : D.rawLabel) + ": " + esc(num(raw));
+    } else if (D.value) {
+      h += "<br>" + esc(D.valueLabel) + ": " + esc(num(v));
+    }
+    if (D.size) h += "<br>" + esc(D.sizeLabel) + ": " + esc(num(D.size[i][j]));
+    var ri = info(R, i), ci = info(C, j);
+    if (ri) h += "<br>" + ri;
+    if (ci) h += "<br>" + ci;
+    return h;
+  }
+  function showTip(html, e) {
+    tip.innerHTML = html; tip.style.display = "block";
+    var w = tip.offsetWidth, h = tip.offsetHeight, x = e.clientX + 14, y = e.clientY + 14;
+    if (x + w > window.innerWidth - 4) x = e.clientX - w - 14;
+    if (y + h > window.innerHeight - 4) y = e.clientY - h - 14;
+    tip.style.left = Math.max(4, x) + "px"; tip.style.top = Math.max(4, y) + "px";
+  }
+  function hideTip() { tip.style.display = "none"; }
+
+  // ---- drawing on the overlay (percentages, so they follow the zoom) ----
+  function rect(cls, l, t, r, b) {
+    var d = document.createElement("div"); d.className = cls;
+    d.style.left = (100 * l) + "%"; d.style.top = (100 * t) + "%";
+    d.style.width = (100 * (r - l)) + "%"; d.style.height = (100 * (b - t)) + "%";
+    return d;
+  }
+  function runs(set, n) { // contiguous runs of displayed indices, so long selections stay light
+    var out = [], start = -1;
+    for (var i = 0; i <= n; i++) {
+      var on = i < n && set.has(i);
+      if (on && start < 0) start = i;
+      if (!on && start >= 0) { out.push([start, i - 1]); start = -1; }
+    }
+    return out;
+  }
+  var layers = { sel: document.createElement("div"), found: document.createElement("div"),
+                 hover: document.createElement("div"), brush: document.createElement("div") };
+  ["sel", "found", "hover"].forEach(function(k) { layers[k].style.inset = "0"; overlay.appendChild(layers[k]); });
+  layers.brush.id = "brush"; overlay.appendChild(layers.brush);
+  function drawSelection() {
+    var L = layers.sel; L.innerHTML = "";
+    // (OUTLINED OVER THE CELLS, TINTED ACROSS THE LABELS AND DENDROGRAMS)
+    runs(selR, nr).forEach(function(r) {
+      L.appendChild(rect("sel-band", 0, R.top[r[0]], box.left, R.bottom[r[1]]));
+      L.appendChild(rect("sel-band", box.right, R.top[r[0]], 1, R.bottom[r[1]]));
+      L.appendChild(rect("sel", box.left, R.top[r[0]], box.right, R.bottom[r[1]]));
+    });
+    runs(selC, nc).forEach(function(r) {
+      L.appendChild(rect("sel-band", C.left[r[0]], 0, C.right[r[1]], box.top));
+      L.appendChild(rect("sel-band", C.left[r[0]], box.bottom, C.right[r[1]], 1));
+      L.appendChild(rect("sel", C.left[r[0]], box.top, C.right[r[1]], box.bottom));
+    });
+    list("rows", selR, R); list("cols", selC, C);
+  }
+  function drawFound() {
+    var L = layers.found; L.innerHTML = "";
+    found.rows.forEach(function(i) { L.appendChild(rect("found", box.left, R.top[i], box.right, R.bottom[i])); });
+    found.cols.forEach(function(j) { L.appendChild(rect("found", C.left[j], box.top, C.right[j], box.bottom)); });
+  }
+  function drawHover(i, j) {
+    var L = layers.hover; L.innerHTML = "";
+    if (i >= 0) L.appendChild(rect("hover", box.left, R.top[i], box.right, R.bottom[i]));
+    if (j >= 0) L.appendChild(rect("hover", C.left[j], box.top, C.right[j], box.bottom));
+  }
+
+  // ---- the lists of what is selected ----
+  function sorted(set) { return Array.from(set).sort(function(a, b) { return a - b; }); }
+  function list(kind, set, part) {
+    var ol = document.getElementById("list-" + kind), n = set.size;
+    document.getElementById("n-" + kind).textContent = n ? n + " selected" : "none selected";
+    var items = sorted(set), shown = items.slice(0, 500), html = "";
+    shown.forEach(function(i) {
+      html += '<li title="' + esc(part.label[i]) + '">' + esc(part.label[i]) +
+        ' <button aria-label="Unselect ' + esc(part.label[i]) + '" data-drop="' + kind + ":" + i + '">&times;</button></li>';
+    });
+    if (items.length > shown.length) html += "<li>&hellip; and " + (items.length - shown.length) + " more</li>";
+    ol.innerHTML = html;
+  }
+  function announce(msg) { live.textContent = msg; }
+  function toggle(set, i) { if (set.has(i)) set.delete(i); else set.add(i); }
+
+  // ---- mouse: hover, click and drag ----
+  var drag = null;
+  canvas.addEventListener("mousemove", function(e) {
+    var p = frac(e);
+    if (drag) {
+      drag.end = p; drag.moved = drag.moved || Math.abs(e.clientX - drag.cx) + Math.abs(e.clientY - drag.cy) > 4;
+      var b = layers.brush, l = Math.min(drag.start.x, p.x), t = Math.min(drag.start.y, p.y);
+      b.style.display = drag.moved ? "block" : "none";
+      b.style.left = 100 * l + "%"; b.style.top = 100 * t + "%";
+      b.style.width = 100 * Math.abs(p.x - drag.start.x) + "%"; b.style.height = 100 * Math.abs(p.y - drag.start.y) + "%";
+      hideTip(); return;
+    }
+    var i = inRowBand(p) ? rowAt(p.y) : -1, j = inColBand(p) ? colAt(p.x) : -1;
+    drawHover(i, j);
+    if (i >= 0 && j >= 0) showTip(tipHtml(i, j), e);
+    else if (i >= 0) { var ri = info(R, i); showTip("<b>" + esc(R.label[i]) + "</b>" + (ri ? "<br>" + ri : ""), e); }
+    else if (j >= 0) { var ci = info(C, j); showTip("<b>" + esc(C.label[j]) + "</b>" + (ci ? "<br>" + ci : ""), e); }
+    else hideTip();
+  });
+  canvas.addEventListener("mouseleave", function() { if (!drag) { hideTip(); drawHover(-1, -1); } });
+  canvas.addEventListener("mousedown", function(e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    drag = { start: frac(e), end: frac(e), cx: e.clientX, cy: e.clientY, moved: false, remove: e.altKey };
+  });
+  window.addEventListener("mouseup", function() {
+    if (!drag) return;
+    var d = drag; drag = null; layers.brush.style.display = "none";
+    var s = d.start;
+    if (!d.moved) { // a click: one row (cells, row labels) or one column (column labels)
+      var i = inRowBand(s) ? rowAt(s.y) : -1, j = inColBand(s) ? colAt(s.x) : -1;
+      if (i >= 0) { toggle(selR, i); announce((selR.has(i) ? "Selected " : "Unselected ") + R.label[i]); }
+      else if (j >= 0) { toggle(selC, j); announce((selC.has(j) ? "Selected " : "Unselected ") + C.label[j]); }
+      drawSelection(); return;
+    }
+    var l = Math.min(s.x, d.end.x), r = Math.max(s.x, d.end.x), t = Math.min(s.y, d.end.y), b = Math.max(s.y, d.end.y);
+    // rows whose band meets the box, if the box reaches the band of the cells' rows (a box
+    // beside the cells - over row labels or a dendrogram - selects rows only), and columns
+    // likewise
+    var rowsHit = [], colsHit = [];
+    var acrossCols = l < box.right && r > box.left, acrossRows = t < box.bottom && b > box.top;
+    if (acrossRows) for (var i2 = 0; i2 < nr; i2++) if (R.bottom[i2] > t && R.top[i2] < b) rowsHit.push(i2);
+    if (acrossCols) for (var j2 = 0; j2 < nc; j2++) if (C.right[j2] > l && C.left[j2] < r) colsHit.push(j2);
+    if (!acrossCols) colsHit = [];
+    if (!acrossRows) rowsHit = [];
+    rowsHit.forEach(function(i) { if (d.remove) selR.delete(i); else selR.add(i); });
+    colsHit.forEach(function(j) { if (d.remove) selC.delete(j); else selC.add(j); });
+    announce((d.remove ? "Unselected " : "Selected ") + rowsHit.length + " rows and " + colsHit.length + " columns");
+    drawSelection();
+  });
+
+  // ---- search ----
+  var search = document.getElementById("search"), foundEl = document.getElementById("found");
+  function runSearch() {
+    var q = search.value.trim().toLowerCase();
+    found = { rows: [], cols: [] };
+    if (q) {
+      R.label.forEach(function(s, i) { if (String(s).toLowerCase().indexOf(q) >= 0) found.rows.push(i); });
+      C.label.forEach(function(s, j) { if (String(s).toLowerCase().indexOf(q) >= 0) found.cols.push(j); });
+      foundEl.textContent = found.rows.length + " rows, " + found.cols.length + " columns";
+      var first = found.rows.length ? R.top[found.rows[0]] : null;
+      if (first !== null) viewport.scrollTop = first * canvas.offsetHeight - viewport.clientHeight / 3;
+    } else foundEl.textContent = "";
+    drawFound();
+  }
+  search.addEventListener("input", runSearch);
+  search.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+      found.rows.forEach(function(i) { selR.add(i); }); found.cols.forEach(function(j) { selC.add(j); });
+      announce("Selected " + found.rows.length + " rows and " + found.cols.length + " columns"); drawSelection();
+    } else if (e.key === "Escape") { search.value = ""; runSearch(); }
+  });
+
+  // ---- buttons: clear, copy, download, unselect one ----
+  document.getElementById("clear").addEventListener("click", function() { selR.clear(); selC.clear(); drawSelection(); announce("Selection cleared"); });
+  document.addEventListener("click", function(e) {
+    var t = e.target;
+    if (t.dataset.clear) { (t.dataset.clear === "rows" ? selR : selC).clear(); drawSelection(); }
+    if (t.dataset.drop) { var p = t.dataset.drop.split(":"); (p[0] === "rows" ? selR : selC).delete(+p[1]); drawSelection(); }
+    if (t.dataset.copy) {
+      var part = t.dataset.copy === "rows" ? R : C, set = t.dataset.copy === "rows" ? selR : selC;
+      copy(sorted(set).map(function(i) { return part.label[i]; }).join("\n"), t);
+    }
+  });
+  function copy(text, button) {
+    function done() { var old = button.textContent; button.textContent = "Copied"; setTimeout(function() { button.textContent = old; }, 1200); }
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(done, fallback); }
+    else fallback();
+    function fallback() {
+      var ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch (err) {} document.body.removeChild(ta);
+    }
+  }
+  function csvCell(v) {
+    if (v === null || v === undefined) return "";
+    var s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  document.getElementById("download").addEventListener("click", function() {
+    var rows = selR.size ? sorted(selR) : R.label.map(function(_, i) { return i; });
+    var cols = selC.size ? sorted(selC) : C.label.map(function(_, j) { return j; });
+    var M = D.raw || D.value, lines = [[""].concat(cols.map(function(j) { return C.label[j]; })).map(csvCell).join(",")];
+    rows.forEach(function(i) { lines.push([R.label[i]].concat(cols.map(function(j) { return M ? M[i][j] : ""; })).map(csvCell).join(",")); });
+    var blob = new Blob([lines.join("\n") + "\n"], { type: "text/csv" });
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = (D.file || "heatmap") + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  });
+
+  // ---- zoom ----
+  function fitZoom() { return Math.min(1, (viewport.clientWidth - 2) / baseWidth); }
+  function setZoom(z, cx, cy) {
+    var old = zoom; zoom = Math.max(0.1, Math.min(16, z));
+    var vx = cx === undefined ? viewport.clientWidth / 2 : cx, vy = cy === undefined ? viewport.clientHeight / 2 : cy;
+    var px = (viewport.scrollLeft + vx) / old, py = (viewport.scrollTop + vy) / old;
+    canvas.style.width = (baseWidth * zoom) + "px";
+    viewport.scrollLeft = px * zoom - vx; viewport.scrollTop = py * zoom - vy;
+  }
+  document.getElementById("zoom-in").addEventListener("click", function() { setZoom(zoom * 1.5); });
+  document.getElementById("zoom-out").addEventListener("click", function() { setZoom(zoom / 1.5); });
+  document.getElementById("zoom-fit").addEventListener("click", function() { setZoom(fitZoom()); });
+  viewport.addEventListener("wheel", function(e) {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    var r = viewport.getBoundingClientRect();
+    setZoom(zoom * Math.exp(-e.deltaY / 300), e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+  setZoom(fitZoom());
+  drawSelection();
+  window.HeatmapR = { data: D, selection: function() {
+    return { rows: sorted(selR).map(function(i) { return R.label[i]; }), cols: sorted(selC).map(function(j) { return C.label[j]; }) };
+  } };
+})();
+</script>
+</body>
+</html>

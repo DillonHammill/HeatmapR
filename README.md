@@ -105,6 +105,10 @@ text, legends and layouts, **HeatmapR** can:
   and layout of a heatmap, `heat_map_describe()` writes alternative text
   for screen readers, and `heat_map_check_colours()` finds colours that
   colour-blind readers can't tell apart.
+- **Explore and select** - `heat_map_html()` makes a self-contained web
+  page of a heatmap: hover for values, click or drag over cells, labels
+  and dendrograms to select rows and columns, copy or download the
+  selection, search and zoom.
 - **Work with ggplot2** - `heat_map_grob()` places heatmaps beside
   `ggplot2` plots in `patchwork` and `cowplot` layouts, and
   `heat_map_data()` returns the cells, rows, columns and dendrograms as

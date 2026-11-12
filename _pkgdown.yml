@@ -51,6 +51,7 @@ reference:
   - heat_map_describe
   - print.heat_map_description
   - heat_map_check_colours
+  - heat_map_html
 - title: Use heatmaps with other tools
   desc: >
     Combine heatmaps with ggplot2 plots, or export their contents as tidy data.
