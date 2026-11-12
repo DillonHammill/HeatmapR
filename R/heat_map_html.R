@@ -142,7 +142,7 @@ heat_map_html <- function(x,
 
   # THE PAGE
   template <- paste(
-    readLines(system.file("html", "heat_map.html", package = "HeatmapR"),
+    readLines(system.file("www", "heat_map.html", package = "HeatmapR"),
               warn = FALSE, encoding = "UTF-8"),
     collapse = "\n"
   )
