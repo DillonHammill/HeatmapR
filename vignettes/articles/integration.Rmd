@@ -164,6 +164,18 @@ others <- heat_map(mtcars[!grepl("Merc", rownames(mtcars)), ],
 heat_map_arrange(merc, others)
 ```
 
+## Interactive heatmaps
+
+`heat_map_html()` turns a heatmap into a web page to explore it: hovering over a cell shows its row, column and value (before and after scaling, with its clusters and annotations); clicking a cell or a label selects its row or column, and dragging a box across cells, labels or a dendrogram selects every row and column in it, e.g. the genes of a cluster; the selection can be copied, one name per line, or downloaded with its values as a CSV file; a search box finds rows and columns by name, and the heatmap zooms. The page is a single HTML file with the heatmap as an SVG image, nothing to install and nothing loaded from the web, so it works offline and can be shared by email. It opens in the RStudio or Positron viewer (or a browser) from the console, and in R Markdown and Quarto it is embedded where it is printed:
+
+```{r html}
+page <- heat_map_html(mtcars, scale = "column", tree = "both", tree_cut_y = 3,
+                      legend_title = "Scaled", title = "mtcars", height = 6)
+page
+```
+
+Any heatmap can be given, e.g. `heat_map_html(heat_map_dot(...))`, or data with the arguments of `heat_map()`, as above.
+
 ## Alternative text
 
 Figures in reports and on the web need alternative text for readers using screen readers, and a heatmap is hard to describe by hand. `heat_map_describe()` writes the description from the heatmap itself: its size and scaling, what the colours show (naming the colours of the scale), the most extreme values, how the rows and columns are ordered, and where each cluster is highest and lowest, plus branch support, uncertainty, annotations, bars and zoom panels when the heatmap has them.
