@@ -69,7 +69,9 @@ test_that("the rows and columns are found where they are drawn", {
                     c(g$row_top, g$row_bottom, g$col_left, g$col_right) <= 1))
   # The same places in SVG images
   skip_if_not(isTRUE(capabilities("cairo")))
-  svg <- .html_draw(hm, list(), 7, 6, "svg", 72)
+  # (A PNG, WITH A WARNING, WHERE CAIRO CAN'T BE LOADED, AS ON macOS WITHOUT
+  # XQUARTZ)
+  svg <- suppressWarnings(.html_draw(hm, list(), 7, 6, "svg", 72))
   if(svg$fmt == "svg") {
     expect_equal(svg$geom$row_top, g$row_top, tolerance = 0.02)
     expect_equal(svg$geom$col_left, g$col_left, tolerance = 0.02)
