@@ -254,8 +254,19 @@ test_that("heatmaps are drawn with their messages, and saved as images", {
   expect_true(any(grepl("scaling", r$notes)))
   expect_identical(heat_map_info(r2$hm)$row_order, heat_map_info(r$hm)$row_order)
   expect_null(.memo$pending)
+  # (SVG ONLY WHERE CAIRO CAN OPEN THE DEVICE - NOT ON macOS WITHOUT
+  # XQuartz)
+  can_svg <- tryCatch({
+    f <- tempfile(fileext = ".svg")
+    grDevices::svg(f)
+    grDevices::dev.off()
+    TRUE
+  }, error = function(e) FALSE, warning = function(w) {
+    if(grDevices::dev.cur() > 1) grDevices::dev.off()
+    FALSE
+  })
   formats <- c("png", "pdf")
-  if(isTRUE(capabilities("cairo"))) formats <- c(formats, "svg")
+  if(can_svg) formats <- c(formats, "svg")
   for(fmt in formats) {
     f <- tempfile()
     expect_true(.app_save(r$hm, f, list(format = fmt, width = 5, height = 4,
@@ -266,6 +277,11 @@ test_that("heatmaps are drawn with their messages, and saved as images", {
   f <- tempfile()
   .app_save(r$hm, f, list(format = "png", width = 5, height = 4, res = 72))
   expect_identical(head(f, 4), as.raw(c(0x89, 0x50, 0x4e, 0x47)))
+  # An image that isn't written: an error, not an empty download
+  local_mocked_bindings(heat_map_save = function(...) invisible(NULL))
+  expect_error(.app_save(r$hm, tempfile(), list(format = "svg", width = 5,
+                                                height = 4, res = 72)),
+               "couldn't be saved as SVG")
 })
 
 test_that("the page has a setting for every argument", {

@@ -785,6 +785,11 @@ heat_map_app <- function(x = NULL,
     args$res <- image$res
   }
   suppressMessages(do.call(heat_map_save, args))
+  # (E.G. SVG ON macOS WITHOUT XQuartz, WHERE CAIRO CAN'T OPEN A DEVICE)
+  if(!file.exists(tmp) || file.size(tmp) == 0) {
+    stop("The heatmap couldn't be saved as ", toupper(image$format),
+         " on this computer - choose another format.", call. = FALSE)
+  }
   file.copy(tmp, file, overwrite = TRUE)
 }
 
