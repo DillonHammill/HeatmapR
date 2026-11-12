@@ -160,6 +160,10 @@ on-disk data a block of genes at a time.
   with Wilcoxon p-values, ready to pass to `features` or to draw as a
   dot plot, and `heat_map_score()` scores each cell for sets of genes
   (z-scored means or module scores).
+- **Compositions and contrasts** - `heat_map_composition()` draws the
+  share of each cell type in each sample, and `heat_map_contrast()` the
+  log fold change between two conditions in each cluster, tested on
+  pseudobulks with the samples as replicates.
 - **Aligned heatmaps** - `heat_map_align()` lines up data sets
   measured on the same cells or groups, such as genes and surface
   proteins, as blocks of one heatmap, each scaled and coloured on its own
