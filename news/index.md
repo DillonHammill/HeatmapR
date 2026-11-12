@@ -414,10 +414,16 @@ conventions and defaults have changed; they are listed first.
   reset when the data changes. The R code that draws the heatmap again
   (with only the changed settings) is written beside it, and the heatmap
   downloads as a PNG, PDF, SVG, TIFF or JPEG image at a chosen size,
-  such as a journal column or a slide. Settings that take R values are R
-  code run with the data as `x` (e.g. `bar_values_y = x$mpg`);
-  `allow_code = FALSE` limits them to plain values for apps hosted for
-  others.
+  such as a journal column or a slide. Dot plots and correlations hide
+  the settings of heatmaps they don’t use (such as scaling, sampling the
+  groups and annotating the cells, which would apply to the summary of
+  the groups or the correlation matrix), and their own settings are kept
+  while another plot is shown. Single-cell data from files or R start
+  grouped by their cell types or clusters, dots are split by columns
+  with two values, and a selection on a dot plot keeps its groups.
+  Settings that take R values are R code run with the data as `x`
+  (e.g. `bar_values_y = x$mpg`); `allow_code = FALSE` limits them to
+  plain values for apps hosted for others.
 - Interactive heatmaps: new
   [`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
   writes a heatmap (from
@@ -507,7 +513,12 @@ conventions and defaults have changed; they are listed first.
   clustered on one minus their correlations, and by default the lower
   triangle shows ellipses, the upper triangle the coefficients and the
   diagonal the names of the variables, as in corrplot’s mixed layout;
-  `lower`, `upper` and `diag` take any cell shape.
+  `lower`, `upper` and `diag` take any cell shape. Kendall correlations
+  are counted in compiled code by Knight’s O(n log n) algorithm, as
+  Kendall distances are: 20,000 cells and 12 markers take 0.1 seconds
+  instead of six and a half minutes with
+  [`cor()`](https://rdrr.io/r/stats/cor.html), with
+  [`cor()`](https://rdrr.io/r/stats/cor.html)’s results for each `use`.
 - New cell shapes: `cell_shape = "ellipse"` shows values between -1 and
   1, such as correlations, by the shape of an ellipse (the outline of a
   bivariate normal distribution with that correlation, rising for
