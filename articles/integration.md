@@ -310,6 +310,34 @@ Mercedes cars and the 25 other cars, both on one colour scale from 0 to
 yellow while that of the largest American cars reaches dark
 red.](integration_files/figure-html/arrange-1.png)
 
+## Interactive heatmaps
+
+[`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
+turns a heatmap into a web page to explore it: hovering over a cell
+shows its row, column and value (before and after scaling, with its
+clusters and annotations); clicking a cell or a label selects its row or
+column, and dragging a box across cells, labels or a dendrogram selects
+every row and column in it, e.g. the genes of a cluster; the selection
+can be copied, one name per line, or downloaded with its values as a CSV
+file; a search box finds rows and columns by name, and the heatmap
+zooms. The page is a single HTML file with the heatmap as an SVG image,
+nothing to install and nothing loaded from the web, so it works offline
+and can be shared by email. It opens in the RStudio or Positron viewer
+(or a browser) from the console, and in R Markdown and Quarto it is
+embedded where it is printed:
+
+``` r
+
+page <- heat_map_html(mtcars, scale = "column", tree = "both", tree_cut_y = 3,
+                      legend_title = "Scaled", title = "mtcars", height = 6)
+page
+```
+
+Any heatmap can be given, e.g. `heat_map_html(heat_map_dot(...))`, or
+data with the arguments of
+[`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
+as above.
+
 ## Alternative text
 
 Figures in reports and on the web need alternative text for readers

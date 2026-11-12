@@ -36,6 +36,8 @@ describe it in plain language as alternative text.
 - [`heat_map_check_colours()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_check_colours.md)
   : Check that the colours of a heatmap can be told apart with
   colour-vision deficiencies
+- [`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
+  : Interactive heatmaps: a web page to explore and select from
 
 ## Use heatmaps with other tools
 

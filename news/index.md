@@ -389,6 +389,30 @@ conventions and defaults have changed; they are listed first.
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
   are an error with the closest arguments suggested, and redrawn
   heatmaps keep the style they were drawn with.
+- Interactive heatmaps: new
+  [`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
+  writes a heatmap (from
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
+  [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md),
+  [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md),
+  [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
+  or
+  [`heat_map_composition()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_composition.md),
+  or data with the arguments of
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md))
+  to a self-contained web page - one HTML file with the heatmap as an
+  SVG (or PNG) image and its values, without dependencies or anything
+  loaded from the web. Hovering over a cell shows its row, column and
+  value (before and after scaling, its size, clusters and annotations);
+  clicking a cell or a label selects its row or column, and dragging a
+  box across cells, labels or dendrograms selects every row and column
+  in it (Alt unselects), e.g. the genes of a cluster; the selection is
+  listed, to copy one name per line or download with its values as CSV;
+  a search box finds rows and columns by name; and the heatmap zooms. On
+  touch screens a tap shows a cell’s values and selects its row, and
+  pressing and holding, then dragging, selects a box. Pages open in the
+  RStudio or Positron viewer or a browser, and are embedded in HTML
+  documents from R Markdown and Quarto (`knit_print()`).
 - Working with `ggplot2`: new
   [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
   turns a heatmap into a grob that redraws itself at the size it is
