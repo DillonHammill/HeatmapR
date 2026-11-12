@@ -42,6 +42,7 @@ reference:
   - heat_map_contrast
   - heat_map-methods
   - heat_map_style
+  - heat_map_app
 - title: Inspect and describe heatmaps
   desc: >
     Extract the order, clusters, colours and layout of a heatmap, or describe

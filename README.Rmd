@@ -52,6 +52,7 @@ Beyond clustering, scaling and customisable colours, shapes, sizes, text, legend
 * **Handle large data** - raster images for heatmaps with millions of cells, `heat_map_summarise()` for pseudobulk heatmaps and dot plots of groups of cells, and robust, stepped or centred colour scales with the distribution of the values traced over the legend.
 * **Explain the figure** - `heat_map_info()` returns the order, clusters and layout of a heatmap, and `heat_map_describe()` writes alternative text for screen readers, and `heat_map_check_colours()` finds colours that colour-blind readers can't tell apart.
 * **Explore and select** - `heat_map_html()` makes a self-contained web page of a heatmap: hover for values, click or drag over cells, labels and dendrograms to select rows and columns, copy or download the selection, search and zoom.
+* **Build in the browser** - `heat_map_app()` opens an app to upload a table or single-cell file, set any argument of `heat_map()` while the heatmap redraws, and download the image with the R code that draws it.
 * **Work with ggplot2** - `heat_map_grob()` places heatmaps beside `ggplot2` plots in `patchwork` and `cowplot` layouts, and `heat_map_data()` returns the cells, rows, columns and dendrograms as tidy data for rebuilding or restyling them.
 
 <table>

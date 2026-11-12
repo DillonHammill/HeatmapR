@@ -176,6 +176,38 @@ page
 
 Any heatmap can be given, e.g. `heat_map_html(heat_map_dot(...))`, or data with the arguments of `heat_map()`, as above.
 
+## Building heatmaps in the browser
+
+`heat_map_app()` opens an app to build a heatmap without writing code (it needs the shiny and bslib packages). A table (CSV, TSV, text or Excel), an R data file or an AnnData file is uploaded, or data in R or an example is chosen, and the columns or features to show and the variables that group and annotate the rows are picked from the data. The heatmap can also be a dot plot of the groups or the correlations of the columns. Every argument of `heat_map()` has a setting, listed by topic with its documentation, and a search box finds them, e.g. `border` for the settings of cell borders. The heatmap is drawn again as settings change, reusing the clustering when only its look has changed.
+
+```{r app, eval = FALSE}
+heat_map_app()                             # start with mtcars, or upload a file
+heat_map_app(mtcars, scale = "column")     # start from data in R, with settings
+heat_map_app("counts.csv")                 # or from a file
+```
+
+![The app with a clustered heatmap of mtcars: the settings, by topic and with their documentation, on the left, and the heatmap on the right, beside tabs to explore it, see its R code and its data.](figures/heat-map-app.png)
+
+The *Explore* tab shows the heatmap as `heat_map_html()` does, to read its values and select rows and columns, and the *Image* panel downloads it as a PNG, PDF, SVG, TIFF or JPEG file of a chosen size and resolution. The *R code* tab has the code that draws the heatmap again, with only the settings that were changed, e.g. for the heatmap above:
+
+```r
+library(HeatmapR)
+
+x <- mtcars
+hm <- heat_map(
+  x,
+  scale = "column",
+  tree = "both",
+  tree_order_y = "olo",
+  tree_cut_y = 3,
+  cell_col_scale = "Blue-Red 3",
+  title = "mtcars"
+)
+heat_map_save("mtcars.png", x = hm, width = 6.5, height = 6.5, res = 300)
+```
+
+Settings that take R values, such as `cell_col_scale_limits = c(0, 1)`, are R code run in the R session with the data as `x`, so that `bar_values_y = x$mpg` draws a bar for the `mpg` of each car. An app hosted for other people should be started with `allow_code = FALSE`, which limits these settings to plain values: numbers, text, `TRUE`, `FALSE`, `NA`, `NULL` and `c()` or `list()` of them.
+
 ## Alternative text
 
 Figures in reports and on the web need alternative text for readers using screen readers, and a heatmap is hard to describe by hand. `heat_map_describe()` writes the description from the heatmap itself: its size and scaling, what the colours show (naming the colours of the scale), the most extreme values, how the rows and columns are ordered, and where each cluster is highest and lowest, plus branch support, uncertainty, annotations, bars and zoom panels when the heatmap has them.
