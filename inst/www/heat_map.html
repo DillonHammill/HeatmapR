@@ -27,9 +27,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
 .group { display: inline-flex; gap: 4px; }
 #found { color: var(--muted); min-width: 6em; }
 main { flex: 1 1 auto; display: flex; gap: 12px; padding: 12px; min-height: 0; }
-#viewport { flex: 1 1 auto; overflow: auto; border: 1px solid var(--line); border-radius: 6px;
-  background: #fff; min-height: 200px; }
-#canvas { position: relative; margin: 0 auto; cursor: crosshair; }
+#viewport { flex: 1 1 auto; align-self: flex-start; max-height: 100%; overflow: auto;
+  border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+#canvas { position: relative; margin: 0 auto; cursor: crosshair; user-select: none;
+  -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
 #canvas img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
 #overlay { position: absolute; inset: 0; pointer-events: none; }
 #overlay div { position: absolute; }
@@ -51,7 +52,11 @@ aside li button { padding: 0 4px; border: 0; background: none; color: var(--mute
 #tip b { font-weight: 600; }
 #tip .k { color: #c9d1d9; }
 #live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-@media (max-width: 700px) { main { flex-direction: column; } aside { flex-basis: auto; } }
+@media (max-width: 700px) {
+  main { flex-direction: column; }
+  #viewport { align-self: stretch; flex: 0 0 auto; max-height: 75vh; }
+  aside { flex-basis: auto; }
+}
 </style>
 </head>
 <body>
@@ -88,7 +93,8 @@ aside li button { padding: 0 4px; border: 0; background: none; color: var(--mute
     <p class="help">Hover over a cell for its values. Click a cell or a row's label to select or
       unselect the row, a column's label for the column. Drag across cells, labels or
       dendrograms to select every row and column in the box; hold Alt to unselect them.
-      Search, then press Enter to select what was found. Ctrl or &#8984; with the wheel zooms.</p>
+      Search, then press Enter to select what was found. Ctrl or &#8984; with the wheel zooms.
+      On a touch screen, tap for values and to select; press and hold, then drag, to select a box.</p>
   </aside>
 </main>
 <div id="tip" role="tooltip"></div>
@@ -237,32 +243,72 @@ aside li button { padding: 0 4px; border: 0; background: none; color: var(--mute
   function announce(msg) { live.textContent = msg; }
   function toggle(set, i) { if (set.has(i)) set.delete(i); else set.add(i); }
 
-  // ---- mouse: hover, click and drag ----
-  var drag = null;
-  canvas.addEventListener("mousemove", function(e) {
+  // ---- pointer (mouse, pen or touch): hover, click and drag ----
+  // A mouse or pen drags a box straight away. On a touch screen a drag scrolls the page, so a
+  // box starts after pressing and holding; a tap shows the values and selects, like a click.
+  var drag = null, press = null, HOLD_MS = 400, SLOP = 8;
+  function hoverAt(e) {
     var p = frac(e);
-    if (drag) {
-      drag.end = p; drag.moved = drag.moved || Math.abs(e.clientX - drag.cx) + Math.abs(e.clientY - drag.cy) > 4;
-      var b = layers.brush, l = Math.min(drag.start.x, p.x), t = Math.min(drag.start.y, p.y);
-      b.style.display = drag.moved ? "block" : "none";
-      b.style.left = 100 * l + "%"; b.style.top = 100 * t + "%";
-      b.style.width = 100 * Math.abs(p.x - drag.start.x) + "%"; b.style.height = 100 * Math.abs(p.y - drag.start.y) + "%";
-      hideTip(); return;
-    }
     var i = inRowBand(p) ? rowAt(p.y) : -1, j = inColBand(p) ? colAt(p.x) : -1;
     drawHover(i, j);
     if (i >= 0 && j >= 0) showTip(tipHtml(i, j), e);
     else if (i >= 0) { var ri = info(R, i); showTip("<b>" + esc(R.label[i]) + "</b>" + (ri ? "<br>" + ri : ""), e); }
     else if (j >= 0) { var ci = info(C, j); showTip("<b>" + esc(C.label[j]) + "</b>" + (ci ? "<br>" + ci : ""), e); }
     else hideTip();
+  }
+  function startDrag(e, remove) {
+    drag = { start: frac(e), end: frac(e), cx: e.clientX, cy: e.clientY, moved: false, remove: remove };
+  }
+  function moveDrag(e) {
+    var p = frac(e);
+    drag.end = p; drag.moved = drag.moved || Math.abs(e.clientX - drag.cx) + Math.abs(e.clientY - drag.cy) > 4;
+    var b = layers.brush, l = Math.min(drag.start.x, p.x), t = Math.min(drag.start.y, p.y);
+    b.style.display = drag.moved ? "block" : "none";
+    b.style.left = 100 * l + "%"; b.style.top = 100 * t + "%";
+    b.style.width = 100 * Math.abs(p.x - drag.start.x) + "%"; b.style.height = 100 * Math.abs(p.y - drag.start.y) + "%";
+    hideTip();
+  }
+  function cancelPress() { if (press) { clearTimeout(press.timer); press = null; } }
+  canvas.addEventListener("pointermove", function(e) {
+    if (press && !drag) {
+      if (Math.abs(e.clientX - press.x) + Math.abs(e.clientY - press.y) > SLOP) cancelPress();
+      return;
+    }
+    if (drag) { moveDrag(e); return; }
+    if (e.pointerType !== "touch") hoverAt(e);
   });
-  canvas.addEventListener("mouseleave", function() { if (!drag) { hideTip(); drawHover(-1, -1); } });
-  canvas.addEventListener("mousedown", function(e) {
+  canvas.addEventListener("pointerleave", function(e) {
+    if (!drag && e.pointerType !== "touch") { hideTip(); drawHover(-1, -1); }
+  });
+  canvas.addEventListener("pointerdown", function(e) {
+    if (!e.isPrimary) { cancelPress(); return; } // a second finger: pinch zoom
+    if (e.pointerType === "touch") {
+      var start = { clientX: e.clientX, clientY: e.clientY };
+      press = { x: e.clientX, y: e.clientY, timer: setTimeout(function() {
+        press = null; startDrag(start, false); drag.held = true;
+        if (navigator.vibrate) navigator.vibrate(10);
+      }, HOLD_MS) };
+      return;
+    }
     if (e.button !== 0) return;
     e.preventDefault();
-    drag = { start: frac(e), end: frac(e), cx: e.clientX, cy: e.clientY, moved: false, remove: e.altKey };
+    startDrag(e, e.altKey);
+    if (canvas.setPointerCapture) { try { canvas.setPointerCapture(e.pointerId); } catch (err) {} }
   });
-  window.addEventListener("mouseup", function() {
+  // (WHILE A HELD TOUCH DRAGS A BOX THE PAGE MUST NOT SCROLL)
+  canvas.addEventListener("touchmove", function(e) { if (drag) e.preventDefault(); }, { passive: false });
+  canvas.addEventListener("contextmenu", function(e) { if (drag || press) e.preventDefault(); });
+  canvas.addEventListener("pointercancel", function() {
+    cancelPress(); if (drag) { drag = null; layers.brush.style.display = "none"; }
+  });
+  viewport.addEventListener("scroll", function() { if (!drag) hideTip(); });
+  document.addEventListener("pointerdown", function(e) { // a tap away from the heatmap hides its values
+    if (e.pointerType === "touch" && !canvas.contains(e.target)) { hideTip(); drawHover(-1, -1); }
+  });
+  window.addEventListener("pointerup", function(e) {
+    if (press) { // a tap: values and a click
+      cancelPress(); hoverAt(e); startDrag(e, false);
+    }
     if (!drag) return;
     var d = drag; drag = null; layers.brush.style.display = "none";
     var s = d.start;

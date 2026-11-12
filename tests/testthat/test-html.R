@@ -116,6 +116,13 @@ test_that("the values of the page follow the heatmap", {
   expect_false(is.null(p$size))
   expect_identical(dim(p$size), c(6L, 3L))
   expect_identical(p$sizeLabel, attr(dot, "heat_map_args")$legend_title[2])
+  # (written as the size legend writes them: percentages of cells detected)
+  expect_true(is.character(p$size))
+  expect_true(all(grepl("%$", p$size[!is.na(p$size)])))
+  cells_drawn <- heat_map_data(dot)
+  one <- cells_drawn[1, ]
+  expect_identical(p$size[one$display_row, one$display_col],
+                   paste0(signif(100 * one$size, 3), "%"))
   # Non-numeric cells: their values as text
   df <- data.frame(a = c("x", "y", "z"), b = c(1.5, 2, 3),
                    row.names = c("r1", "r2", "r3"))

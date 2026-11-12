@@ -392,7 +392,21 @@ knit_print.heat_map_html <- function(x, ...) {
   }
   if(!is.null(cells$size) && any(is.finite(cells$size)) &&
      length(unique(cells$size[is.finite(cells$size)])) > 1) {
-    payload$size <- grid(cells$size)
+    size <- grid(cells$size)
+    # (WRITTEN AS THE SIZE LEGEND WRITES THEM, E.G. PERCENTAGES OF CELLS
+    # DETECTED IN DOT PLOTS)
+    fmt <- attr(drawn$hm, "heat_map_args")$legend_size_format
+    if(!is.null(fmt)) {
+      ok <- is.finite(size)
+      text <- tryCatch(.legend_size_text(size[ok], fmt),
+                       error = function(e) NULL)
+      if(is.character(text) && length(text) == sum(ok)) {
+        size_text <- matrix(NA_character_, nrow(size), ncol(size))
+        size_text[ok] <- text
+        size <- size_text
+      }
+    }
+    payload$size <- size
   }
   payload
 }
