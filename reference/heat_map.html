@@ -262,7 +262,8 @@
 or single-cell data: a <code>SingleCellExperiment</code> or
 <code>SummarizedExperiment</code>, a <code>Seurat</code> object, a <code>flowFrame</code>
 or <code>flowSet</code>, or a sparse matrix (e.g. a <code>dgCMatrix</code>, one cell
-per row). Assays can be held on disk: <code>DelayedArray</code> objects (e.g.
+per row), or an AnnData file read by <code><a href="heat_map_read_h5ad.html">heat_map_read_h5ad</a></code>
+(or the name of an <code>.h5ad</code> file). Assays can be held on disk: <code>DelayedArray</code> objects (e.g.
 the <code>HDF5Matrix</code> and <code>TENxMatrix</code> of HDF5Array) and BPCells
 matrices (e.g. in <code>Seurat</code> layers) are read a block of features
 at a time. Single-cell data are drawn with one row per cell and one

@@ -212,7 +212,9 @@ heat_map(
   matrix or data.frame containing the data to display in the heatmap, or
   single-cell data: a `SingleCellExperiment` or `SummarizedExperiment`,
   a `Seurat` object, a `flowFrame` or `flowSet`, or a sparse matrix
-  (e.g. a `dgCMatrix`, one cell per row). Assays can be held on disk:
+  (e.g. a `dgCMatrix`, one cell per row), or an AnnData file read by
+  [`heat_map_read_h5ad`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_read_h5ad.md)
+  (or the name of an `.h5ad` file). Assays can be held on disk:
   `DelayedArray` objects (e.g. the `HDF5Matrix` and `TENxMatrix` of
   HDF5Array) and BPCells matrices (e.g. in `Seurat` layers) are read a
   block of features at a time. Single-cell data are drawn with one row

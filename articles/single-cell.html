@@ -85,13 +85,14 @@
 <p><strong>HeatmapR</strong> reads single-cell data where it lives:
 <code>SingleCellExperiment</code> and <code>SummarizedExperiment</code>
 objects, <code>Seurat</code> objects, <code>flowFrame</code> and
-<code>flowSet</code> objects, and sparse matrices, in memory or on disk
-(DelayedArray, HDF5Array and BPCells), as well as matrices and data
-frames. Features are chosen by name, groups and annotations come from
-the cells’ metadata, and only the chosen features of the cells shown are
-ever made dense, so a few markers of a million cells need little memory.
-Five arguments do most of the work, in <code><a href="../reference/heat_map.html">heat_map()</a></code>,
-<code><a href="../reference/heat_map_summarise.html">heat_map_summarise()</a></code> and <code><a href="../reference/heat_map_dot.html">heat_map_dot()</a></code>:</p>
+<code>flowSet</code> objects, AnnData (<code>.h5ad</code>) files, and
+sparse matrices, in memory or on disk (DelayedArray, HDF5Array and
+BPCells), as well as matrices and data frames. Features are chosen by
+name, groups and annotations come from the cells’ metadata, and only the
+chosen features of the cells shown are ever made dense, so a few markers
+of a million cells need little memory. Five arguments do most of the
+work, in <code><a href="../reference/heat_map.html">heat_map()</a></code>, <code><a href="../reference/heat_map_summarise.html">heat_map_summarise()</a></code> and
+<code><a href="../reference/heat_map_dot.html">heat_map_dot()</a></code>:</p>
 <table class="table">
 <colgroup>
 <col width="50%">
@@ -285,6 +286,30 @@ and annotations from <code>meta.data</code>.</p>
 <p><img src="single-cell_files/figure-html/seurat-1.png" class="r-plt" alt="The same genes-as-rows heatmap drawn from a Seurat object holding the simulated data, grouped by cell type." width="100%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
+<h3 id="anndata-files">AnnData files<a class="anchor" aria-label="anchor" href="#anndata-files"></a>
+</h3>
+<p>AnnData (<code>.h5ad</code>) files written by scanpy and anndata, or
+downloaded from CELLxGENE, are read by <code><a href="../reference/heat_map_read_h5ad.html">heat_map_read_h5ad()</a></code>
+without Python, through the hdf5r package. The metadata of the cells
+(<code>obs</code>) is read at once, so <code>group_by</code> and
+<code>annotation_by</code> name its columns; <code>X</code>, a layer
+(<code>assay = "counts"</code>) or <code>raw</code> is read as a sparse
+matrix the first time it is used and kept for the next heatmap. Features
+are named by the index of <code>var</code> or by a column of symbols or
+IDs, such as CELLxGENE’s <code>feature_name</code>. A small file of 60
+cells of three types comes with the package:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"example.h5ad"</span>, package <span class="op">=</span> <span class="st">"HeatmapR"</span><span class="op">)</span></span>
+<span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_read_h5ad.html">heat_map_read_h5ad</a></span><span class="op">(</span><span class="va">file</span><span class="op">)</span></span>
+<span><span class="va">cells</span></span>
+<span><span class="co">#&gt; AnnData file example.h5ad: 60 cells x 30 features</span></span>
+<span><span class="co">#&gt;   assays: X, counts, raw</span></span>
+<span><span class="co">#&gt;   obs: cell_type, sample, n_counts, is_doublet, barcode, n_genes</span></span>
+<span><span class="fu"><a href="../reference/heat_map_dot.html">heat_map_dot</a></span><span class="op">(</span><span class="va">cells</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"GENE"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">8</span><span class="op">)</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>,</span>
+<span>             title <span class="op">=</span> <span class="st">"From an AnnData file"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="single-cell_files/figure-html/h5ad-1.png" class="r-plt" alt="Dot plot of eight genes in three cell types read from an AnnData file. The first four genes are large dark red dots in T cells and small elsewhere." width="100%" style="display: block; margin: auto;"></p>
+</div>
+<div class="section level3">
 <h3 id="on-disk-data">On-disk data<a class="anchor" aria-label="anchor" href="#on-disk-data"></a>
 </h3>
 <p>Assays too large for memory can stay on disk. A
@@ -301,7 +326,7 @@ results are the same as those of the data in memory. (A
 <code>DelayedArray</code> that only wraps a matrix in memory is read as
 that matrix.) Here the logs of the counts are left as a delayed
 operation, which is read in blocks like data on disk:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">disk</span> <span class="op">&lt;-</span> <span class="va">sce</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">disk</span>, <span class="st">"log1p"</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="fu">DelayedArray</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/DelayedArray/man/DelayedArray-class.html" class="external-link">DelayedArray</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/dge.html" class="external-link">counts</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">assay</a></span><span class="op">(</span><span class="va">disk</span>, <span class="st">"log1p"</span><span class="op">)</span><span class="op">)</span></span>
@@ -315,7 +340,7 @@ operation, which is read in blocks like data on disk:</p>
 <span>  <span class="fu"><a href="../reference/heat_map_markers.html">heat_map_markers</a></span><span class="op">(</span><span class="va">memory</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>, assay <span class="op">=</span> <span class="st">"log1p"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># AN HDF5-BACKED OBJECT, SAVED ONCE AND LOADED WITHOUT READING THE COUNTS</span></span>
 <span><span class="fu">HDF5Array</span><span class="fu">::</span><span class="fu">saveHDF5SummarizedExperiment</span><span class="op">(</span><span class="va">sce</span>, <span class="st">"pbmc_h5"</span><span class="op">)</span></span>
 <span><span class="va">disk</span> <span class="op">&lt;-</span> <span class="fu">HDF5Array</span><span class="fu">::</span><span class="fu">loadHDF5SummarizedExperiment</span><span class="op">(</span><span class="st">"pbmc_h5"</span><span class="op">)</span></span>
@@ -334,7 +359,7 @@ function, of each feature. For sparse data the mean, sum, number,
 proportion detected and median are found from the non-zero values in
 compiled code, without a dense copy of the data, and equal those of the
 dense data exactly.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">means</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span><span class="va">sce</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">markers</span><span class="op">)</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span><span class="op">)</span></span>
 <span><span class="va">dense</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="fu">Matrix</span><span class="fu">::</span><span class="fu">t</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SingleCellExperiment/man/assays.html" class="external-link">logcounts</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">markers</span><span class="op">)</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -370,7 +395,7 @@ by the method of Benjamini and Hochberg 1995, adjusted over every gene
 scored). With thousands of cells nearly every marker has a tiny p-value,
 so the AUC and the difference of the means say more about how well a
 gene marks a group.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_markers.html">heat_map_markers</a></span><span class="op">(</span><span class="va">sce</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>, n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">m</span><span class="op">[</span><span class="va">m</span><span class="op">$</span><span class="va">top</span>, <span class="op">]</span>, <span class="fl">8</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    group feature       auc    logfc       p_value         p_adj  mean_in</span></span>
@@ -413,7 +438,7 @@ gene marks a group.</p>
 <code>top = TRUE</code> are shown, the columns grouped and labelled by
 the group they mark (as scanpy’s <code>var_group_positions</code>
 brackets do). Edit <code>top</code> to choose other markers.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">sce</span>,</span>
 <span>  features <span class="op">=</span> <span class="va">m</span>,</span>
@@ -434,12 +459,12 @@ the feature (z-scores clipped at ±2.5, as Seurat’s
 <code>scale = "range"</code> for scanpy’s 0 to 1 (Wolf, Angerer and
 Theis 2018)), and its area the proportion of the group’s cells in which
 the feature is detected, with a size legend in percent.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_dot.html">heat_map_dot</a></span><span class="op">(</span><span class="va">sce</span>, features <span class="op">=</span> <span class="va">m</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>, title <span class="op">=</span> <span class="st">"Top markers"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="single-cell_files/figure-html/dot-1.png" class="r-plt" alt="Dot plot of the three top markers of each of six cell types: one row per cell type and one column per gene, grouped and labelled by the cell type each gene marks. Large dark red dots on the diagonal show each type's markers expressed in most of its cells; elsewhere the dots are small and blue." width="100%" style="display: block; margin: auto;"></p>
 <p>Every <code><a href="../reference/heat_map.html">heat_map()</a></code> setting can be added, e.g. a dendrogram
 of the groups and scanpy’s scaling:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_dot.html">heat_map_dot</a></span><span class="op">(</span><span class="va">sce</span>, features <span class="op">=</span> <span class="va">m</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>, scale <span class="op">=</span> <span class="st">"range"</span>,</span>
 <span>             tree_y <span class="op">=</span> <span class="cn">TRUE</span>, dot_min <span class="op">=</span> <span class="fl">0.05</span>, title <span class="op">=</span> <span class="st">"Scaled 0 to 1"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="single-cell_files/figure-html/dot-range-1.png" class="r-plt" alt="Dot plot of the same markers with the means scaled from 0 to 1 within each gene and a dendrogram of the cell types on the left, which places related types such as CD4 and CD8 T cells next to each other." width="100%" style="display: block; margin: auto;"></p>
@@ -454,7 +479,7 @@ has a dot in each group where it passed the filters of
 <code>min_logfc = -Inf</code> every gene passes in every group, so the
 dot plot also shows where each marker is lower than in the other
 cells:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">all_pairs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_markers.html">heat_map_markers</a></span><span class="op">(</span><span class="va">sce</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span>, n <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>                              min_detected <span class="op">=</span> <span class="fl">0</span>, min_logfc <span class="op">=</span> <span class="op">-</span><span class="cn">Inf</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map_dot.html">heat_map_dot</a></span><span class="op">(</span><span class="va">all_pairs</span>, title <span class="op">=</span> <span class="st">"Markers by fold change and p-value"</span><span class="op">)</span></span></code></pre></div>
@@ -467,7 +492,7 @@ combinations, ordered by the first column and then the next within it. A
 dot plot then has one row per combination, grouped by the first column
 in labelled strips and labelled by the others, so conditions can be
 compared within each cell type:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_dot.html">heat_map_dot</a></span><span class="op">(</span><span class="va">sce</span>, features <span class="op">=</span> <span class="va">m</span>, group_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cell_type"</span>, <span class="st">"condition"</span><span class="op">)</span>,</span>
 <span>             title <span class="op">=</span> <span class="st">"Markers in each condition"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="single-cell_files/figure-html/dot-condition-1.png" class="r-plt" alt="Dot plot of the three top markers of each cell type with two rows per cell type, control and treated, grouped in labelled strips by cell type. The markers of each type are large dark red dots in both of its rows." width="100%" style="display: block; margin: auto;"></p>
@@ -478,7 +503,7 @@ combination (<code>group_max</code> then takes that many cells from
 each), and <code><a href="../reference/heat_map_summarise.html">heat_map_summarise()</a></code> gives one row per
 combination, e.g. a pseudobulk of the counts of each cell type in each
 donor:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pseudobulk</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span><span class="va">sce</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">markers</span><span class="op">)</span>, assay <span class="op">=</span> <span class="st">"counts"</span>,</span>
 <span>                                 group_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"cell_type"</span>, <span class="st">"sample"</span><span class="op">)</span>, fun <span class="op">=</span> <span class="st">"sum"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">pseudobulk</span><span class="op">)</span></span>
@@ -506,7 +531,7 @@ zero means more expression than genes of that level usually have. The
 scores are computed from the non-zero values of sparse data, and come
 back as one column per set with the metadata of the cells, so they are
 drawn and summarised like genes:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">programs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  T <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3E"</span>, <span class="st">"IL7R"</span>, <span class="st">"CD8A"</span>, <span class="st">"CD8B"</span><span class="op">)</span>,</span>
 <span>  B <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"MS4A1"</span>, <span class="st">"CD79A"</span>, <span class="st">"CD79B"</span>, <span class="st">"BANK1"</span><span class="op">)</span>,</span>
@@ -542,7 +567,7 @@ block is scaled on its own and has its own colour scale and legend, so
 values in different units never share a scale. The mean marker genes of
 each cell type beside their module scores, the genes z-scored within
 each gene and the scores on a diverging scale centred at zero:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">program_means</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span><span class="va">scores</span>, group_by <span class="op">=</span> <span class="st">"cell_type"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map_align.html">heat_map_align</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>Genes <span class="op">=</span> <span class="va">means</span>, Programs <span class="op">=</span> <span class="va">program_means</span><span class="op">)</span>,</span>
@@ -569,7 +594,7 @@ of the features); <code>flowFrame</code> and <code>flowSet</code>
 objects are read directly, without flowCore, with markers named by their
 description (e.g. <code>"CD3"</code>) or channel (<code>"FL1-A"</code>),
 and a flowSet’s samples and phenotype data as metadata:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span><span class="va">fs</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3"</span>, <span class="st">"CD4"</span>, <span class="st">"CD8"</span><span class="op">)</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span>
 <span>                   fun <span class="op">=</span> <span class="st">"median"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">fs</span>, features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD3"</span>, <span class="st">"CD4"</span>, <span class="st">"CD8"</span><span class="op">)</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span>
@@ -588,7 +613,7 @@ events with 12 markers in eight clusters, from eight samples in two
 conditions, as raw intensities. Cluster C3 is twice as common in the
 stimulated samples, and HLA-DR rises in clusters C5 and C6 under
 stimulation.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">events</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_example.html">heat_map_example</a></span><span class="op">(</span><span class="st">"cytometry"</span><span class="op">)</span></span>
 <span><span class="va">markers</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">events</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">]</span></span>
 <span><span class="va">markers</span></span>
@@ -610,7 +635,7 @@ and <code>"stack"</code> attributes), which
 <code>bar_values_y = "n"</code> draws as bars beside the clusters,
 stacked by condition with <code>bar_type_y = "stack"</code>
 (<code>"fill"</code> draws the proportions instead):</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">medians</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span></span>
 <span>  <span class="va">events</span>,</span>
 <span>  features <span class="op">=</span> <span class="va">markers</span>,</span>
@@ -647,7 +672,7 @@ stacked by condition with <code>bar_type_y = "stack"</code>
 <p><img src="single-cell_files/figure-html/cytometry-1.png" class="r-plt" alt="Heatmap of the median of 12 markers in eight clusters of 200,000 simulated cytometry events, asinh-transformed and scaled from 0 to 1 within each marker, with dendrograms of the clusters and markers and, beside the clusters, bars of their numbers of events split into control and stimulated." width="100%" style="display: block; margin: auto;"></p>
 <p>The distribution behind each median can be drawn inside its cell,
 here from 2,000 events of each cluster:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sub</span> <span class="op">&lt;-</span> <span class="va">events</span><span class="op">[</span><span class="fu"><a href="../reference/heat_map_downsample.html">heat_map_downsample</a></span><span class="op">(</span><span class="va">events</span><span class="op">$</span><span class="va">cluster</span>, <span class="fl">2000</span><span class="op">)</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span><span class="va">sub</span>, features <span class="op">=</span> <span class="va">markers</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span>
@@ -666,7 +691,7 @@ summary keeps the metadata that is the same for every event of each row,
 here the sample and its condition (its <code>"groups"</code> attribute),
 so that <code><a href="../reference/heat_map.html">heat_map()</a></code> can group and annotate its rows by
 them:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">states</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span></span>
 <span>  <span class="va">events</span>,</span>
 <span>  features <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"HLA-DR"</span>, <span class="st">"CD45RA"</span>, <span class="st">"CCR7"</span><span class="op">)</span>,</span>
@@ -702,7 +727,7 @@ intensities (<code>transform = "asinh"</code>, z-scored within each
 marker across the clusters and both conditions) and sized by the
 proportion of its events above <code>threshold</code>, here asinh 2 as
 positive:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_dot.html">heat_map_dot</a></span><span class="op">(</span><span class="va">events</span>, features <span class="op">=</span> <span class="va">markers</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span>
 <span>             split_by <span class="op">=</span> <span class="st">"condition"</span>, transform <span class="op">=</span> <span class="st">"asinh"</span>, threshold <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>             title <span class="op">=</span> <span class="st">"Control (left) and stimulated (right)"</span><span class="op">)</span></span></code></pre></div>
@@ -737,7 +762,7 @@ standard deviations apart were in groups of 5,000 cells.</p>
 clustering at lower resolution might join them. The markers that
 separate them are outlined in the joined cluster, and the bars show the
 largest dip of each cluster:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">joined</span> <span class="op">&lt;-</span> <span class="va">events</span></span>
 <span><span class="va">joined</span><span class="op">$</span><span class="va">cluster</span><span class="op">[</span><span class="va">joined</span><span class="op">$</span><span class="va">cluster</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"C1"</span>, <span class="st">"C2"</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"C1+C2"</span></span>
 <span><span class="va">medians</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_summarise.html">heat_map_summarise</a></span><span class="op">(</span><span class="va">joined</span>, features <span class="op">=</span> <span class="va">markers</span>, group_by <span class="op">=</span> <span class="st">"cluster"</span>,</span>
@@ -755,7 +780,7 @@ largest dip of each cluster:</p>
 <span>  title <span class="op">=</span> <span class="st">"C1 and C2 joined"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="single-cell_files/figure-html/bimodal-cytometry-1.png" class="r-plt" alt="Heatmap of the scaled median of 12 markers in seven clusters, one of them joining clusters C1 and C2, with a density of each cluster's values inside every cell. The cells of the joined cluster in the markers that separate C1 from C2 are outlined with thick borders, their densities showing two peaks, and bars beside the rows show the largest dip of each cluster, by far the largest for the joined cluster." width="100%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">medians</span>, <span class="st">"dip"</span><span class="op">)</span><span class="op">[</span><span class="st">"C1+C2"</span>, <span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;    CD3    CD4    CD8   CD19   CD20   CD56   CD16   CD14  CD11c HLA-DR CD45RA </span></span>
 <span><span class="co">#&gt;  0.034  0.085  0.136  0.002  0.001  0.003  0.007  0.087  0.145  0.068  0.001 </span></span>
@@ -773,7 +798,7 @@ Marchenko-Pastur law for independent features; Marchenko and Pastur
 1967), so that features with two peaks of their own don’t add up to a
 split, and the features that drive it are outlined. Here the CD4 and CD8
 T cells of the blood cells are one cluster:</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/SummarizedExperiment/man/SummarizedExperiment-class.html" class="external-link">colData</a></span><span class="op">(</span><span class="va">sce</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">cells</span><span class="op">$</span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">cells</span><span class="op">$</span><span class="va">cell_type</span><span class="op">)</span></span>
 <span><span class="va">cells</span><span class="op">$</span><span class="va">group</span><span class="op">[</span><span class="va">cells</span><span class="op">$</span><span class="va">group</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CD4 T"</span>, <span class="st">"CD8 T"</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"T cells"</span></span>
@@ -782,7 +807,7 @@ T cells of the blood cells are one cluster:</p>
 <p><img src="single-cell_files/figure-html/bimodal-dot-1.png" class="r-plt" alt="Dot plot of four marker genes of each of six cell types in five groups of cells, one of them joining the CD4 and CD8 T cells. The dots of the joined T cells in the CD4 and CD8 T cell markers have thick outlines." width="100%" style="display: block; margin: auto;"></p>
 <p><code><a href="../reference/heat_map_describe.html">heat_map_describe()</a></code> names what is outlined, and
 <code>heat_map_info(hm)$bimodal</code> returns the dips:</p>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_describe.html">heat_map_describe</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Heatmap titled "CD4 and CD8 T cells joined" of 5 rows by 24 columns. Colours</span></span>
 <span><span class="co">#&gt; show Mean (z-score), from dark blue (-1.79) through white to dark red (1.79).</span></span>
@@ -823,7 +848,7 @@ lineages as slingshot (Street et al. 2018) gives them (missing for cells
 outside the lineage). Both lineages share their start and branch at a
 pseudotime of 0.4, and 30 genes, in a random order, each peak at their
 own point, some in one lineage only.</p>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">traj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_example.html">heat_map_example</a></span><span class="op">(</span><span class="st">"trajectory"</span>, class <span class="op">=</span> <span class="st">"SingleCellExperiment"</span><span class="op">)</span></span>
 <span><span class="va">traj</span></span>
 <span><span class="co">#&gt; class: SingleCellExperiment </span></span>
@@ -849,7 +874,7 @@ own point, some in one lineage only.</p>
 <span><span class="co">#&gt; cell6  0.2604278 0.2604278 0.2604278</span></span></code></pre></div>
 <p>The genes along the pseudotime of all the cells, ordered by when they
 peak:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">smooth</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_smooth.html">heat_map_smooth</a></span><span class="op">(</span><span class="va">traj</span>, along <span class="op">=</span> <span class="st">"pseudotime"</span>, bins <span class="op">=</span> <span class="fl">60</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">smooth</span>,</span>
@@ -867,7 +892,7 @@ column), and <code>group_by = "lineage"</code> draws the lineages side
 by side. The peak order reads the position of each bin along the
 trajectory, so the genes of both lineages are ordered by when they
 peak:</p>
-<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">lineages</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map_smooth.html">heat_map_smooth</a></span><span class="op">(</span><span class="va">traj</span>, along <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"lineage1"</span>, <span class="st">"lineage2"</span><span class="op">)</span>, bins <span class="op">=</span> <span class="fl">40</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">lineages</span>, <span class="st">"groups"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;               lineage       along</span></span>

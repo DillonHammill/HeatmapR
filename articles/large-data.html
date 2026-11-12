@@ -117,7 +117,7 @@ populations of different sizes.</p>
 <p><img src="large-data_files/figure-html/big-1.png" class="r-plt" alt="Heatmap of 100,000 simulated cells by 30 markers with dendrograms on both axes, drawn as a raster image; the cells fall into five blocks of different heights with distinct marker patterns." width="100%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">time</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
-<span><span class="co">#&gt; [1] 0.979</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 1.289</span></span></code></pre></div>
 <p>Two things make this fast: the cells are drawn as an image, and the
 rows are clustered in two stages.</p>
 <div class="section level3">
@@ -145,8 +145,8 @@ cells (300,000 cells of the heatmap) to a PDF each way:</p>
 <span><span class="op">}</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>raster <span class="op">=</span> <span class="fu">save_pdf</span><span class="op">(</span><span class="cn">TRUE</span><span class="op">)</span>, rectangles <span class="op">=</span> <span class="fu">save_pdf</span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;            megabytes seconds</span></span>
-<span><span class="co">#&gt; raster          0.67    0.06</span></span>
-<span><span class="co">#&gt; rectangles      1.94    0.61</span></span></code></pre></div>
+<span><span class="co">#&gt; raster          0.67    0.08</span></span>
+<span><span class="co">#&gt; rectangles      1.94    0.81</span></span></code></pre></div>
 <p>A dendrogram adds a line for every branch, so the PDF of the
 clustered 100,000-row heatmap above is larger than the image of its
 cells.</p>
@@ -330,7 +330,7 @@ when heatmaps are drawn in parallel processes.</p>
 <span><span class="va">all</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="../reference/heat_map_clust.html">heat_map_clust</a></span><span class="op">(</span><span class="va">cells</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">10000</span>, <span class="op">]</span>, max <span class="op">=</span> <span class="cn">Inf</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>threads_1 <span class="op">=</span> <span class="va">one</span>, threads_all <span class="op">=</span> <span class="va">all</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   threads_1 threads_all </span></span>
-<span><span class="co">#&gt;       0.833       0.631</span></span></code></pre></div>
+<span><span class="co">#&gt;       1.192       0.833</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="memory-and-redraws">Memory and redraws<a class="anchor" aria-label="anchor" href="#memory-and-redraws"></a>
@@ -357,7 +357,7 @@ draws:</p>
 <span><span class="va">again</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">hm</span>, title <span class="op">=</span> <span class="st">"Redrawn"</span><span class="op">)</span><span class="op">)</span><span class="op">[[</span><span class="st">"elapsed"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>first <span class="op">=</span> <span class="va">first</span>, redraw <span class="op">=</span> <span class="va">again</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  first redraw </span></span>
-<span><span class="co">#&gt;  0.757  0.485</span></span></code></pre></div>
+<span><span class="co">#&gt;  1.091  0.689</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="summaries-of-groups">Summaries of groups<a class="anchor" aria-label="anchor" href="#summaries-of-groups"></a>

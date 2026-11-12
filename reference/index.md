@@ -41,6 +41,8 @@ data.
 
 Scale, summarise and cluster data before (or while) drawing a heatmap.
 
+- [`heat_map_read_h5ad()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_read_h5ad.md)
+  : Read an AnnData (.h5ad) file
 - [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)
   : Scale numeric data prior to constructing heat_map
 - [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)

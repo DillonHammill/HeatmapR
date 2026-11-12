@@ -627,6 +627,20 @@ conventions and defaults have changed; they are listed first.
   its own is read like a sparse matrix, one cell per row. A
   `DelayedArray` that only wraps a matrix or sparse matrix in memory,
   without delayed operations, is read as that matrix.
+- AnnData files: new
+  [`heat_map_read_h5ad()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_read_h5ad.md)
+  reads `.h5ad` files written by scanpy and anndata (or downloaded from
+  CELLxGENE) without Python, reticulate or a conversion, using hdf5r.
+  The metadata of the cells (`obs`) and features (`var`) are read at
+  once - categoricals as factors, nullable columns with their missing
+  values, from anndata 0.7 to 0.13 - and `X`, a layer
+  (`assay = "counts"`) or `raw` is read the first time it is used, as a
+  `dgCMatrix` (CSR and CSC matrices without a copy) or a dense matrix,
+  and kept for the next heatmap. Every single-cell function reads the
+  object, or an `.h5ad` file name, with `group_by` naming columns of
+  `obs` and features named by the index of `var` or a column of symbols
+  or IDs (e.g. CELLxGENE’s `feature_name`). AnnData objects of the
+  anndata R package are read too.
 - Marker dot plots: `heat_map_dot(markers)` draws the markers returned
   by
   [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
