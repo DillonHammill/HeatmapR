@@ -707,10 +707,6 @@ void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out,
   }
 }
 
-void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out) {
-  Scratch w;
-  to_rows(d, j, idx, lo, m, out, w);
-}
 
 void between4(const Data& a, int i, const Data& b, const int* js, double* out,
               Scratch& w) {

@@ -103,10 +103,8 @@
   id <- ctl$id
   v <- vals[[id]]
   label <- .app_label_tag(ctl)
+  # (THE VALUE OF A CHOICE IS ONE OF ITS CHOICES: .app_input_values())
   choices <- ctl$choices
-  if(ctl$type %in% c("choice", "seg") && !is.null(v) && !v %in% choices) {
-    choices <- c(choices, stats::setNames(v, v))
-  }
   input <- switch(
     ctl$type,
     choice = ,

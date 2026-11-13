@@ -936,11 +936,9 @@
     }
     cell
   }
-  # PANEL LIMITS ALONG THE HEATMAP (CELL UNITS) FOR THE BANDS OF ONE SIDE
+  # PANEL LIMITS ALONG THE HEATMAP (CELL UNITS) FOR THE BANDS OF ONE SIDE (ONE
+  # OR MORE: EACH CALL HAS BANDS)
   zoom_along <- function(bands, hlim, upi_along, cell_in) {
-    if(length(bands) == 0) {
-      return(list())
-    }
     heat_in <- diff(range(hlim)) / upi_along
     ext <- vapply(bands, zoom_extent, numeric(2))
     .zoom_arrange(

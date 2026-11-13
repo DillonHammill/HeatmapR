@@ -201,35 +201,17 @@
 }
 
 #' Rows scaled so that one minus their cross-products is the distance:
-#' centred and scaled (pearson; ranks for spearman) or unit length (cosine).
-#' Rows without variation (or of length zero) are uncorrelated with every row.
+#' centred and scaled (pearson; ranks for spearman) or unit length (cosine),
+#' in compiled code. Rows without variation (or of length zero) are
+#' uncorrelated with every row. For complete numeric rows (used by tests of
+#' unit_rows_cpp()).
 #' @noRd
 .unit_rows <- function(x,
                        method) {
-  if(is.numeric(x) && !anyNA(x) && length(x) > 0) {
-    if(!is.double(x)) {
-      storage.mode(x) <- "double"
-    }
-    u <- unit_rows_cpp(x, .METRIC[[method]], .threads())
-    dimnames(u) <- dimnames(x)
-    return(u)
-  }
-  if(method == "spearman") {
-    p <- ncol(x)
-    x <- t(apply(x, 1, rank))
-    # (ONE COLUMN - apply() GIVES A VECTOR)
-    if(p == 1) {
-      x <- t(x)
-    }
-  }
-  if(method %in% c("pearson", "spearman")) {
-    x <- x - rowMeans(x)
-  }
-  s <- sqrt(rowSums(x^2))
-  zero <- s == 0
-  x <- x / s
-  x[zero, ] <- 0
-  x
+  storage.mode(x) <- "double"
+  u <- unit_rows_cpp(x, .METRIC[[method]], .threads())
+  dimnames(u) <- dimnames(x)
+  u
 }
 
 #' One minus the cross-products of the rows of a matrix (e.g. from

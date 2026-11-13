@@ -2921,9 +2921,6 @@ heat_map <- function(x,
   zoom_near <- function(ax) {
     .zoom_on(get(paste0("zoom_", ax)), get(paste0("axis_text_side_", ax)))
   }
-  zoom_far <- function(ax) {
-    .zoom_on(get(paste0("zoom_", ax)), c(3, 4, 1, 2)[get(paste0("axis_text_side_", ax))])
-  }
 
   # LEGEND TYPES
   legend_types <- .legend_types(legend)

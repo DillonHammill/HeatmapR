@@ -151,7 +151,15 @@
       if (u) u.disabled = !m.undo; if (r) r.disabled = !m.redo;
     });
     // (SETTINGS OF heat_map() THAT THE DOT PLOT OR CORRELATIONS DON'T USE)
-    Shiny.addCustomMessageHandler("hm-unused", function(m) {
+    var lastUnused = null;
+    Shiny.addCustomMessageHandler("hm-unused", function(m) { lastUnused = m; applyUnused(); });
+    // (AGAIN WHEN THE DATA'S PICKERS ARE DRAWN AGAIN, FOR NEW DATA)
+    $(document).on("shiny:value", function(e) {
+      if (e.name === "data_roles" || e.name === "fun_settings") setTimeout(applyUnused, 0);
+    });
+    function applyUnused() {
+      var m = lastUnused;
+      if (!m) return;
       var names = m.names || [];
       var what = m.fun === "heat_map_dot" ? "dot plots" : "correlations";
       document.querySelectorAll(".hm-fun-block").forEach(function(b) { b.hidden = b.dataset.fun !== m.fun; });
@@ -177,7 +185,7 @@
           (n === 1 ? "isn't" : "aren't") + " used by " + what + " and " + (n === 1 ? "is" : "are") + " hidden.";
       });
       var f = el("find"); if (f && f.value) filter(f.value);
-    });
+    }
     Shiny.addCustomMessageHandler("hm-badges", function(m) {
       document.querySelectorAll(".hm-badge").forEach(function(b) {
         var n = m[b.dataset.section] || 0; b.textContent = n ? String(n) : "";

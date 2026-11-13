@@ -867,13 +867,9 @@ bool use_list(int method) {
   return env != nullptr && std::string(env) == "list";
 }
 
+// (TWO OR MORE LEAVES: THE CALLERS RETURN FEWER THEMSELVES)
 Tree cluster_tri(Tri& t, int method, const double* members, int threads, bool& ordered) {
   ordered = true;
-  if (t.N < 2) {
-    Tree tree;
-    tree.n = t.N;
-    return tree;
-  }
   if (method == 2 && members == nullptr && !use_list(method)) return single_tri(t, threads);
   if (use_list(method)) return generic_impl(t, t.N, method, members, threads);
   ordered = false;
