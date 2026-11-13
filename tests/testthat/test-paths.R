@@ -655,7 +655,10 @@ test_that("web pages fall back from SVG and report images that can't be drawn", 
   expect_warning(d <- .html_draw(hm, list(), 4, 4, "svg", 50),
                  "SVG images can't be written here")
   expect_identical(d$fmt, "png")
-  local_mocked_bindings(.redraw = function(hm, dots) hm)
+  # (A device that writes no file: png() on Windows writes a blank image even
+  # when nothing is drawn)
+  local_mocked_bindings(png = function(filename, ...) grDevices::pdf(NULL),
+                        .package = "grDevices")
   expect_error(.html_draw(hm, list(), 4, 4, "png", 50), "couldn't be drawn")
   local_mocked_bindings(.redraw = function(hm, dots) stop("drawing failed"))
   n <- length(grDevices::dev.list())
