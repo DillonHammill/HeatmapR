@@ -323,7 +323,10 @@
     shiny::observeEvent(input$file, read_upload(input$file))
     shiny::observeEvent(input$file2, read_upload(input$file2))
     pick_example <- function(id) {
-      card <- Filter(function(e) e$id == id, .APP_EXAMPLE_CARDS)[[1]]
+      # (ONLY THE APP'S EXAMPLES: THE PAGE SENDS THE NAME)
+      card <- Filter(function(e) identical(e$id, id), .APP_EXAMPLE_CARDS)
+      if(length(card) == 0) return()
+      card <- card[[1]]
       d <- tryCatch(.app_example(id), error = function(e) {
         shiny::showNotification(conditionMessage(e), type = "error")
         NULL
@@ -372,10 +375,11 @@
         }
       )
     })
-    output$has_assays <- shiny::reactive({
+    has_assays <- shiny::reactive({
       d <- current()
       !is.null(d) && length(d$assays) > 0
     })
+    output$has_assays <- has_assays
     shiny::outputOptions(output, "has_assays", suspendWhenHidden = FALSE)
     shiny::observeEvent(current(), {
       d <- current()
@@ -426,20 +430,29 @@
           options = list(placeholder = "All of them",
                          plugins = list("remove_button"))
         ),
-        shiny::selectizeInput(
-          id("group"), shiny::tagList(
-            shiny::span(class = "hm-lab", "Group the rows by"),
-            shiny::tags$code(class = "hm-arg", "group_by")),
-          choices = d$meta, selected = d$group, multiple = TRUE,
-          width = "100%", options = list(placeholder = "Nothing")
+        # (HIDDEN WITH THE SETTINGS A PLOT DOESN'T USE: .APP_NOT_FOR)
+        shiny::div(
+          class = "hm-setting", `data-name` = "group_by",
+          `data-id` = "hm_group_by",
+          shiny::selectizeInput(
+            id("group"), shiny::tagList(
+              shiny::span(class = "hm-lab", "Group the rows by"),
+              shiny::tags$code(class = "hm-arg", "group_by")),
+            choices = d$meta, selected = d$group, multiple = TRUE,
+            width = "100%", options = list(placeholder = "Nothing")
+          )
         ),
-        shiny::selectizeInput(
-          id("annotate"), shiny::tagList(
-            shiny::span(class = "hm-lab", "Annotate the rows by"),
-            shiny::tags$code(class = "hm-arg", "annotation_by")),
-          choices = utils::head(d$annotate, 50), selected = character(0),
-          multiple = TRUE,
-          width = "100%", options = list(placeholder = "Nothing")
+        shiny::div(
+          class = "hm-setting", `data-name` = "annotation_by",
+          `data-id` = "hm_annotation_by",
+          shiny::selectizeInput(
+            id("annotate"), shiny::tagList(
+              shiny::span(class = "hm-lab", "Annotate the rows by"),
+              shiny::tags$code(class = "hm-arg", "annotation_by")),
+            choices = utils::head(d$annotate, 50), selected = character(0),
+            multiple = TRUE,
+            width = "100%", options = list(placeholder = "Nothing")
+          )
         )
       )
     })
@@ -581,7 +594,8 @@
       fc <- fun_controls[[fun()]]
       session$sendCustomMessage("hm-unused", list(
         names = as.list(intersect(c(names(fc), .APP_NOT_FOR[[fun()]]),
-                                  names(controls))),
+                                  c(names(controls), "group_by",
+                                    "annotation_by"))),
         fun = fun()
       ))
     })

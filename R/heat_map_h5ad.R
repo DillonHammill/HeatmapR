@@ -137,6 +137,10 @@ print.heat_map_h5ad <- function(x, ...) {
   a[[name]]
 }
 
+#' The most non-zero values a dgCMatrix holds (its indices are integers)
+#' @noRd
+.H5AD_MAX_VALUES <- .Machine$integer.max
+
 #' Whether an HDF5 object is a group
 #' @noRd
 .h5_is_group <- function(node) {
@@ -259,7 +263,7 @@ print.heat_map_h5ad <- function(x, ...) {
   x <- as.double(node[["data"]]$read())
   i <- node[["indices"]]$read()
   p <- node[["indptr"]]$read()
-  if(length(x) > .Machine$integer.max) {
+  if(length(x) > .H5AD_MAX_VALUES) {
     stop("The matrix has more than 2^31 non-zero values, too many for a ",
          "dgCMatrix.", call. = FALSE)
   }

@@ -184,7 +184,6 @@ void triangle(const Data& d, double* out, int threads);
 // when idx is null), into out
 void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out,
              Scratch& w);
-void to_rows(const Data& d, int j, const int* idx, int lo, int m, double* out);
 
 // Average ranks (as rank() gives them) of v[0..m) into r
 void average_ranks(const double* v, int m, double* r, std::vector<int>& order);

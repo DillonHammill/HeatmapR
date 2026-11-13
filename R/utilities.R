@@ -13,48 +13,6 @@
   return(pars)
 }
 
-## ARGUMENT LIST ---------------------------------------------------------------
-
-#' Pull down arguments from environment into list
-#' 
-#' Replace empty elements with empty characters "".
-#' 
-#' @return alist object containing arguments of parent function environment.
-#' 
-#' @author Dillon Hammill (dillon.hammill21@gmail.com)
-#' 
-#' @noRd
-.args_list <- function(...){
-  
-  # Pull down ... arguments
-  dot_args <- list(...)
-  
-  # Get arguments from parental environment
-  args <- as.list(parent.frame())
-  
-  # Combine ... args with args
-  if(length(dot_args) != 0){
-    args <- c(args, dot_args)
-  }
-  
-  # Remove duplicate args
-  args <- args[which(!duplicated(names(args)))]
-  
-  # Replace any elements with class "name" with ""
-  lapply(names(args), function(x){
-    if(all(class(args[[x]]) == "name")){
-      args[[x]] <<- ""
-    }
-  })
-  
-  # Convert to alist
-  class(args) <- "alist"
-  
-  # Return argument list
-  return(args)
-  
-}
-
 ## ALL_NA ----------------------------------------------------------------------
 
 #' Check all elements of vector are NA

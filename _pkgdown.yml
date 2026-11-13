@@ -4,8 +4,11 @@ template:
 
 navbar:
   structure:
-    left: [intro, reference, articles, benchmarks, news]
+    left: [intro, reference, articles, app, benchmarks, news]
   components:
+    app:
+      text: App
+      href: articles/app.html
     benchmarks:
       text: Speed
       href: articles/benchmarks.html
@@ -21,6 +24,7 @@ articles:
     Deeper looks at what HeatmapR can do, with every figure drawn as the
     site is built.
   contents:
+  - articles/app
   - articles/ordering
   - articles/large-data
   - articles/single-cell

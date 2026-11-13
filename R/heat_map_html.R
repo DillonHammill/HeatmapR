@@ -168,10 +168,16 @@ heat_map_html <- function(x,
   invisible(out)
 }
 
+#' Whether R is interactive (one place, which tests replace)
+#' @noRd
+.interactive <- function() {
+  interactive()
+}
+
 #' @export
 print.heat_map_html <- function(x, ...) {
   viewer <- getOption("viewer")
-  if(!interactive()) {
+  if(!.interactive()) {
     cat("Interactive heatmap: ", x$file, "\n", sep = "")
   } else if(is.function(viewer) &&
             startsWith(normalizePath(x$file), normalizePath(tempdir()))) {

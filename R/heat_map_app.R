@@ -132,11 +132,16 @@ heat_map_app <- function(x = NULL,
   invisible(dir)
 }
 
+#' Whether a package is installed (one place, which tests replace)
+#' @noRd
+.app_has <- function(pkg) {
+  requireNamespace(pkg, quietly = TRUE)
+}
+
 #' Stop unless the packages of the app are installed
 #' @noRd
-.app_need <- function() {
-  pkgs <- c("shiny", "bslib")
-  have <- vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)
+.app_need <- function(pkgs = c("shiny", "bslib")) {
+  have <- vapply(pkgs, .app_has, logical(1))
   if(!all(have)) {
     miss <- pkgs[!have]
     stop(
@@ -266,7 +271,7 @@ heat_map_app <- function(x = NULL,
              ", quote = \"\\\"\", comment.char = \"\", check.names = FALSE)")
     }
   } else if(ext %in% c("xlsx", "xls")) {
-    if(!requireNamespace("readxl", quietly = TRUE)) {
+    if(!.app_has("readxl")) {
       stop("Excel files are read with the readxl package: ",
            "install.packages(\"readxl\")", call. = FALSE)
     }

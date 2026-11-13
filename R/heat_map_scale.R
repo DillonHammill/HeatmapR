@@ -150,13 +150,10 @@ heat_map_scale <- function(x,
   num_data <- scaled
 
   # REPLACE ORIGINAL DATA - DATA.FRAME COLUMNS ARE REPLACED ONE AT A TIME SO
-  # THAT A SINGLE COLUMN IS NOT STORED AS A MATRIX
-  if(is.data.frame(x)) {
-    for(j in seq_along(num_cols)) {
-      x[[num_cols[j]]] <- unname(num_data[, j])
-    }
-  } else {
-    x[, num_cols] <- num_data
+  # THAT A SINGLE COLUMN IS NOT STORED AS A MATRIX (A MATRIX IS SCALED ABOVE:
+  # ITS COLUMNS ARE ALL NUMERIC OR NONE ARE)
+  for(j in seq_along(num_cols)) {
+    x[[num_cols[j]]] <- unname(num_data[, j])
   }
 
   # RETURN SCALED DATA
@@ -271,72 +268,4 @@ heat_map_scale <- function(x,
     )
   }
   unname(cofactor)
-}
-
-#' Scale a vector based on its range
-#'
-#' The scaling statistics use the finite values only, so that an infinite
-#' value doesn't turn every value of its row or column into NaN (infinite
-#' values stay infinite, missing values stay missing).
-#'
-#' @author Dillon Hammill (dillon.hammill21@gmail.com)
-#' @noRd
-.scale_range <- function(x) {
-  fin <- x[is.finite(x)]
-  # NO FINITE VALUES
-  if(length(fin) == 0) {
-    return(x)
-  }
-  # LIMITS
-  x_min <- min(fin)
-  x_max <- max(fin)
-  # NO VARIATION - MIDDLE OF RANGE
-  if(x_max == x_min) {
-    x[is.finite(x)] <- 0.5
-    return(x)
-  }
-  # RANGE SCALING - VECTORIZED
-  (x - x_min) / (x_max - x_min)
-}
-
-#' Subtract mean from each value in a vector and divide by range
-#' @author Dillon Hammill (dillon.hammill21@gmail.com)
-#' @noRd
-.scale_mean <- function(x) {
-  fin <- x[is.finite(x)]
-  # NO FINITE VALUES
-  if(length(fin) == 0) {
-    return(x)
-  }
-  # LIMITS
-  x_min <- min(fin)
-  x_max <- max(fin)
-  # NO VARIATION - CENTRED
-  if(x_max == x_min) {
-    x[is.finite(x)] <- 0
-    return(x)
-  }
-  # MEAN SCALING - VECTORIZED
-  (x - mean(fin)) / (x_max - x_min)
-}
-
-#' Apply z-score scaling to a vector
-#' @importFrom stats sd
-#' @author Dillon Hammill (dillon.hammill21@gmail.com)
-#' @noRd
-.scale_zscore <- function(x) {
-  fin <- x[is.finite(x)]
-  # NO FINITE VALUES
-  if(length(fin) == 0) {
-    return(x)
-  }
-  # SD
-  x_sd <- if(length(fin) > 1) sd(fin) else NA_real_
-  # NO VARIATION (OR SINGLE VALUE) - CENTRED
-  if(is.na(x_sd) || x_sd == 0) {
-    x[is.finite(x)] <- 0
-    return(x)
-  }
-  # Z-SCORE SCALING - VECTORIZED
-  (x - mean(fin)) / x_sd
 }
