@@ -425,7 +425,10 @@ conventions and defaults have changed; they are listed first.
   split by columns with two values, and a selection on a dot plot keeps
   its groups. Settings that take R values are R code run with the data
   as `x` (e.g. `bar_values_y = x$mpg`); `allow_code = FALSE` limits them
-  to plain values for apps hosted for others.
+  to plain values for apps hosted for others. The article [Building
+  heatmaps in the
+  browser](https://dillonhammill.github.io/HeatmapR/articles/app.html)
+  shows how the app works.
 - Interactive heatmaps: new
   [`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
   writes a heatmap (from

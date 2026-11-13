@@ -9,6 +9,13 @@
 Deeper looks at what HeatmapR can do, with every figure drawn as the
 site is built.
 
+- [Building heatmaps in the
+  browser](https://dillonhammill.github.io/HeatmapR/articles/app.md):
+
+  heat_map_app() builds heatmaps, dot plots and correlation heatmaps
+  from a file or from data in R without writing code, and writes the R
+  code that draws them again.
+
 - [Ordering rows and
   columns](https://dillonhammill.github.io/HeatmapR/articles/ordering.md):
 

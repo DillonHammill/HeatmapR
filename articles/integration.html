@@ -14,7 +14,8 @@
 <link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Working with heatmaps">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
+<meta property="og:title" content="Working with heatmaps">
 <meta name="description" content="Redrawing and saving heatmaps, extracting their orders and clusters, tidy data for ggplot2, heatmaps beside ggplot2 plots and alternative text for screen readers.">
 <meta property="og:description" content="Redrawing and saving heatmaps, extracting their orders and clusters, tidy data for ggplot2, heatmaps beside ggplot2 plots and alternative text for screen readers.">
 <meta property="og:image" content="https://dillonhammill.github.io/HeatmapR/logo.png">
@@ -43,6 +44,7 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/app.html">Building heatmaps in the browser</a></li>
     <li><a class="dropdown-item" href="../articles/ordering.html">Ordering rows and columns</a></li>
     <li><a class="dropdown-item" href="../articles/large-data.html">Large heatmaps</a></li>
     <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
@@ -53,6 +55,7 @@
     <li><a class="dropdown-item" href="../articles/benchmarks.html">Speed comparison</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../articles/app.html">App</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/benchmarks.html">Speed</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
@@ -432,7 +435,7 @@ aside li button { padding: 0 4px; border: 0; background: none; color: var(--mute
 &lt;/main&gt;
 &lt;div id=&quot;tip&quot; role=&quot;tooltip&quot;&gt;&lt;/div&gt;
 &lt;div id=&quot;live&quot; aria-live=&quot;polite&quot;&gt;&lt;/div&gt;
-&lt;script id=&quot;heatmap-data&quot; type=&quot;application/json&quot;&gt;{&quot;width&quot;:672,&quot;height&quot;:576,&quot;rows&quot;:{&quot;label&quot;:[&quot;Ford Pantera L&quot;,&quot;Maserati Bora&quot;,&quot;Chrysler Imperial&quot;,&quot;Cadillac Fleetwood&quot;,&quot;Lincoln Continental&quot;,&quot;Duster 360&quot;,&quot;Camaro Z28&quot;,&quot;Hornet Sportabout&quot;,&quot;Pontiac Firebird&quot;,&quot;Merc 450SLC&quot;,&quot;Merc 450SE&quot;,&quot;Merc 450SL&quot;,&quot;Dodge Challenger&quot;,&quot;AMC Javelin&quot;,&quot;Toyota Corona&quot;,&quot;Merc 240D&quot;,&quot;Merc 230&quot;,&quot;Merc 280&quot;,&quot;Merc 280C&quot;,&quot;Hornet 4 Drive&quot;,&quot;Valiant&quot;,&quot;Lotus Europa&quot;,&quot;Datsun 710&quot;,&quot;Volvo 142E&quot;,&quot;Honda Civic&quot;,&quot;Fiat X1-9&quot;,&quot;Fiat 128&quot;,&quot;Toyota Corolla&quot;,&quot;Porsche 914-2&quot;,&quot;Ferrari Dino&quot;,&quot;Mazda RX4&quot;,&quot;Mazda RX4 Wag&quot;],&quot;top&quot;:[0.1166667,0.1399423,0.1632178,0.1864934,0.209769,0.2330446,0.2563202,0.2795958,0.3028713,0.3261469,0.3494225,0.3726981,0.3959737,0.4192493,0.4558562,0.4791318,0.5024074,0.525683,0.5489586,0.5722342,0.5955097,0.6321167,0.6553923,0.6786679,0.7019435,0.7252191,0.7484946,0.7717702,0.7950458,0.8183214,0.841597,0.8648726],&quot;bottom&quot;:[0.1399423,0.1632178,0.1864934,0.209769,0.2330446,0.2563202,0.2795958,0.3028713,0.3261469,0.3494225,0.3726981,0.3959737,0.4192493,0.4425249,0.4791318,0.5024074,0.525683,0.5489586,0.5722342,0.5955097,0.6187853,0.6553923,0.6786679,0.7019435,0.7252191,0.7484946,0.7717702,0.7950458,0.8183214,0.841597,0.8648726,0.8881481],&quot;info&quot;:{&quot;cluster&quot;:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3]}},&quot;cols&quot;:{&quot;label&quot;:[&quot;hp&quot;,&quot;carb&quot;,&quot;cyl&quot;,&quot;disp&quot;,&quot;wt&quot;,&quot;am&quot;,&quot;gear&quot;,&quot;vs&quot;,&quot;qsec&quot;,&quot;mpg&quot;,&quot;drat&quot;],&quot;left&quot;:[0.2546032,0.3042929,0.3539827,0.4036724,0.4533622,0.5030519,0.5527417,0.6024315,0.6521212,0.701811,0.7515007],&quot;right&quot;:[0.3042929,0.3539827,0.4036724,0.4533622,0.5030519,0.5527417,0.6024315,0.6521212,0.701811,0.7515007,0.8011905],&quot;info&quot;:{}},&quot;box&quot;:{&quot;left&quot;:0.2546032,&quot;right&quot;:0.8011905,&quot;top&quot;:0.1166667,&quot;bottom&quot;:0.8881481},&quot;valueLabel&quot;:&quot;scaled&quot;,&quot;rawLabel&quot;:&quot;value&quot;,&quot;sizeLabel&quot;:&quot;size&quot;,&quot;value&quot;:[[0.7491166,0.4285714,1,0.6981791,0.4236768,1,1,0,0,0.2297872,0.6728111],[1,1,1,0.5734597,0.5259524,1,1,0,0.01190476,0.1957447,0.359447],[0.6289753,0.4285714,1,0.9201796,0.9798006,0,0,0,0.347619,0.1829787,0.2165899],[0.540636,0.4285714,1,1,0.9555101,0,0,0,0.4142857,0,0.07834101],[0.5759717,0.4285714,1,0.9700673,1,0,0,0,0.3952381,0,0.1105991],[0.6819788,0.4285714,1,0.7206286,0.5259524,0,0,0,0.1595238,0.1659574,0.2073733],[0.6819788,0.4285714,1,0.6956847,0.5949885,0,0,0,0.1083333,0.1234043,0.4470046],[0.434629,0.1428571,1,0.7206286,0.4927129,0,0,0,0.3,0.3531915,0.1797235],[0.434629,0.1428571,1,0.8204041,0.5962669,0,0,0,0.3035714,0.3744681,0.1474654],[0.4522968,0.2857143,1,0.5106011,0.5796471,0,0,0,0.4166667,0.2042553,0.1428571],[0.4522968,0.2857143,1,0.5106011,0.653797,0,0,0,0.3452381,0.2553191,0.1428571],[0.4522968,0.2857143,1,0.5106011,0.5668627,0,0,0,0.3690476,0.293617,0.1428571],[0.3462898,0.1428571,1,0.6158643,0.513168,0,0,0,0.2821429,0.2170213,0],[0.3462898,0.1428571,1,0.5809429,0.4914344,0,0,0,0.3333333,0.2042553,0.1797235],[0.1590106,0,0,0.122225,0.243416,0,0,1,0.6559524,0.4723404,0.4331797],[0.03533569,0.1428571,0,0.1885757,0.4287906,0,0.5,1,0.6547619,0.5957447,0.4285714],[0.1519435,0.1428571,0,0.1738588,0.418563,0,0.5,1,1,0.5276596,0.5345622],[0.2508834,0.4285714,0.5,0.2407084,0.4927129,0,0.5,1,0.452381,0.3744681,0.5345622],[0.2508834,0.4285714,0.5,0.2407084,0.4927129,0,0.5,1,0.5238095,0.3148936,0.5345622],[0.204947,0,0.5,0.466201,0.4351828,0,0,1,0.5880952,0.4680851,0.1474654],[0.1872792,0,0.5,0.3838863,0.4978266,0,0,1,0.6809524,0.3276596,0],[0.2155477,0.1428571,0,0.0598653,0,1,1,1,0.2857143,0.8510638,0.4654378],[0.1448763,0,0,0.0920429,0.2063411,1,0.5,1,0.4892857,0.5276596,0.5023041],[0.2014134,0.1428571,0,0.1244699,0.3239581,1,0.5,1,0.4880952,0.4680851,0.6221198],[0,0.1428571,0,0.01147418,0.02608029,1,0.5,1,0.4785714,0.8510638,1],[0.04946996,0,0,0.01970566,0.1079008,1,0.5,1,0.5238095,0.7191489,0.6082949],[0.04946996,0,0,0.01895735,0.1756584,1,0.5,1,0.5916667,0.9361702,0.6082949],[0.0459364,0,0,0,0.08233188,1,0.5,1,0.6428571,1,0.6728111],[0.1378092,0.1428571,0,0.1227239,0.1603171,1,1,0,0.2619048,0.6638298,0.7695853],[0.434629,0.7142857,0.5,0.1843352,0.3214012,1,1,0,0.1190476,0.3957447,0.3963134],[0.204947,0.4285714,0.5,0.2217511,0.2830478,1,0.5,0,0.2333333,0.4510638,0.5253456],[0.204947,0.4285714,0.5,0.2217511,0.3482485,1,0.5,0,0.3,0.4510638,0.5253456]],&quot;raw&quot;:[[264,4,8,351,3.17,1,5,0,14.5,15.8,4.22],[335,8,8,301,3.57,1,5,0,14.6,15,3.54],[230,4,8,440,5.345,0,3,0,17.42,14.7,3.23],[205,4,8,472,5.25,0,3,0,17.98,10.4,2.93],[215,4,8,460,5.424,0,3,0,17.82,10.4,3],[245,4,8,360,3.57,0,3,0,15.84,14.3,3.21],[245,4,8,350,3.84,0,3,0,15.41,13.3,3.73],[175,2,8,360,3.44,0,3,0,17.02,18.7,3.15],[175,2,8,400,3.845,0,3,0,17.05,19.2,3.08],[180,3,8,275.8,3.78,0,3,0,18,15.2,3.07],[180,3,8,275.8,4.07,0,3,0,17.4,16.4,3.07],[180,3,8,275.8,3.73,0,3,0,17.6,17.3,3.07],[150,2,8,318,3.52,0,3,0,16.87,15.5,2.76],[150,2,8,304,3.435,0,3,0,17.3,15.2,3.15],[97,1,4,120.1,2.465,0,3,1,20.01,21.5,3.7],[62,2,4,146.7,3.19,0,4,1,20,24.4,3.69],[95,2,4,140.8,3.15,0,4,1,22.9,22.8,3.92],[123,4,6,167.6,3.44,0,4,1,18.3,19.2,3.92],[123,4,6,167.6,3.44,0,4,1,18.9,17.8,3.92],[110,1,6,258,3.215,0,3,1,19.44,21.4,3.08],[105,1,6,225,3.46,0,3,1,20.22,18.1,2.76],[113,2,4,95.1,1.513,1,5,1,16.9,30.4,3.77],[93,1,4,108,2.32,1,4,1,18.61,22.8,3.85],[109,2,4,121,2.78,1,4,1,18.6,21.4,4.11],[52,2,4,75.7,1.615,1,4,1,18.52,30.4,4.93],[66,1,4,79,1.935,1,4,1,18.9,27.3,4.08],[66,1,4,78.7,2.2,1,4,1,19.47,32.4,4.08],[65,1,4,71.1,1.835,1,4,1,19.9,33.9,4.22],[91,2,4,120.3,2.14,1,5,0,16.7,26,4.43],[175,6,6,145,2.77,1,5,0,15.5,19.7,3.62],[110,4,6,160,2.62,1,4,0,16.46,21,3.9],[110,4,6,160,2.875,1,4,0,17.02,21,3.9]],&quot;size&quot;:null,&quot;file&quot;:&quot;heatmap-2338303f2549&quot;}&lt;/script&gt;
+&lt;script id=&quot;heatmap-data&quot; type=&quot;application/json&quot;&gt;{&quot;width&quot;:672,&quot;height&quot;:576,&quot;rows&quot;:{&quot;label&quot;:[&quot;Ford Pantera L&quot;,&quot;Maserati Bora&quot;,&quot;Chrysler Imperial&quot;,&quot;Cadillac Fleetwood&quot;,&quot;Lincoln Continental&quot;,&quot;Duster 360&quot;,&quot;Camaro Z28&quot;,&quot;Hornet Sportabout&quot;,&quot;Pontiac Firebird&quot;,&quot;Merc 450SLC&quot;,&quot;Merc 450SE&quot;,&quot;Merc 450SL&quot;,&quot;Dodge Challenger&quot;,&quot;AMC Javelin&quot;,&quot;Toyota Corona&quot;,&quot;Merc 240D&quot;,&quot;Merc 230&quot;,&quot;Merc 280&quot;,&quot;Merc 280C&quot;,&quot;Hornet 4 Drive&quot;,&quot;Valiant&quot;,&quot;Lotus Europa&quot;,&quot;Datsun 710&quot;,&quot;Volvo 142E&quot;,&quot;Honda Civic&quot;,&quot;Fiat X1-9&quot;,&quot;Fiat 128&quot;,&quot;Toyota Corolla&quot;,&quot;Porsche 914-2&quot;,&quot;Ferrari Dino&quot;,&quot;Mazda RX4&quot;,&quot;Mazda RX4 Wag&quot;],&quot;top&quot;:[0.1166667,0.1399423,0.1632178,0.1864934,0.209769,0.2330446,0.2563202,0.2795958,0.3028713,0.3261469,0.3494225,0.3726981,0.3959737,0.4192493,0.4558562,0.4791318,0.5024074,0.525683,0.5489586,0.5722342,0.5955097,0.6321167,0.6553923,0.6786679,0.7019435,0.7252191,0.7484946,0.7717702,0.7950458,0.8183214,0.841597,0.8648726],&quot;bottom&quot;:[0.1399423,0.1632178,0.1864934,0.209769,0.2330446,0.2563202,0.2795958,0.3028713,0.3261469,0.3494225,0.3726981,0.3959737,0.4192493,0.4425249,0.4791318,0.5024074,0.525683,0.5489586,0.5722342,0.5955097,0.6187853,0.6553923,0.6786679,0.7019435,0.7252191,0.7484946,0.7717702,0.7950458,0.8183214,0.841597,0.8648726,0.8881481],&quot;info&quot;:{&quot;cluster&quot;:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3]}},&quot;cols&quot;:{&quot;label&quot;:[&quot;hp&quot;,&quot;carb&quot;,&quot;cyl&quot;,&quot;disp&quot;,&quot;wt&quot;,&quot;am&quot;,&quot;gear&quot;,&quot;vs&quot;,&quot;qsec&quot;,&quot;mpg&quot;,&quot;drat&quot;],&quot;left&quot;:[0.2546032,0.3042929,0.3539827,0.4036724,0.4533622,0.5030519,0.5527417,0.6024315,0.6521212,0.701811,0.7515007],&quot;right&quot;:[0.3042929,0.3539827,0.4036724,0.4533622,0.5030519,0.5527417,0.6024315,0.6521212,0.701811,0.7515007,0.8011905],&quot;info&quot;:{}},&quot;box&quot;:{&quot;left&quot;:0.2546032,&quot;right&quot;:0.8011905,&quot;top&quot;:0.1166667,&quot;bottom&quot;:0.8881481},&quot;valueLabel&quot;:&quot;scaled&quot;,&quot;rawLabel&quot;:&quot;value&quot;,&quot;sizeLabel&quot;:&quot;size&quot;,&quot;value&quot;:[[0.7491166,0.4285714,1,0.6981791,0.4236768,1,1,0,0,0.2297872,0.6728111],[1,1,1,0.5734597,0.5259524,1,1,0,0.01190476,0.1957447,0.359447],[0.6289753,0.4285714,1,0.9201796,0.9798006,0,0,0,0.347619,0.1829787,0.2165899],[0.540636,0.4285714,1,1,0.9555101,0,0,0,0.4142857,0,0.07834101],[0.5759717,0.4285714,1,0.9700673,1,0,0,0,0.3952381,0,0.1105991],[0.6819788,0.4285714,1,0.7206286,0.5259524,0,0,0,0.1595238,0.1659574,0.2073733],[0.6819788,0.4285714,1,0.6956847,0.5949885,0,0,0,0.1083333,0.1234043,0.4470046],[0.434629,0.1428571,1,0.7206286,0.4927129,0,0,0,0.3,0.3531915,0.1797235],[0.434629,0.1428571,1,0.8204041,0.5962669,0,0,0,0.3035714,0.3744681,0.1474654],[0.4522968,0.2857143,1,0.5106011,0.5796471,0,0,0,0.4166667,0.2042553,0.1428571],[0.4522968,0.2857143,1,0.5106011,0.653797,0,0,0,0.3452381,0.2553191,0.1428571],[0.4522968,0.2857143,1,0.5106011,0.5668627,0,0,0,0.3690476,0.293617,0.1428571],[0.3462898,0.1428571,1,0.6158643,0.513168,0,0,0,0.2821429,0.2170213,0],[0.3462898,0.1428571,1,0.5809429,0.4914344,0,0,0,0.3333333,0.2042553,0.1797235],[0.1590106,0,0,0.122225,0.243416,0,0,1,0.6559524,0.4723404,0.4331797],[0.03533569,0.1428571,0,0.1885757,0.4287906,0,0.5,1,0.6547619,0.5957447,0.4285714],[0.1519435,0.1428571,0,0.1738588,0.418563,0,0.5,1,1,0.5276596,0.5345622],[0.2508834,0.4285714,0.5,0.2407084,0.4927129,0,0.5,1,0.452381,0.3744681,0.5345622],[0.2508834,0.4285714,0.5,0.2407084,0.4927129,0,0.5,1,0.5238095,0.3148936,0.5345622],[0.204947,0,0.5,0.466201,0.4351828,0,0,1,0.5880952,0.4680851,0.1474654],[0.1872792,0,0.5,0.3838863,0.4978266,0,0,1,0.6809524,0.3276596,0],[0.2155477,0.1428571,0,0.0598653,0,1,1,1,0.2857143,0.8510638,0.4654378],[0.1448763,0,0,0.0920429,0.2063411,1,0.5,1,0.4892857,0.5276596,0.5023041],[0.2014134,0.1428571,0,0.1244699,0.3239581,1,0.5,1,0.4880952,0.4680851,0.6221198],[0,0.1428571,0,0.01147418,0.02608029,1,0.5,1,0.4785714,0.8510638,1],[0.04946996,0,0,0.01970566,0.1079008,1,0.5,1,0.5238095,0.7191489,0.6082949],[0.04946996,0,0,0.01895735,0.1756584,1,0.5,1,0.5916667,0.9361702,0.6082949],[0.0459364,0,0,0,0.08233188,1,0.5,1,0.6428571,1,0.6728111],[0.1378092,0.1428571,0,0.1227239,0.1603171,1,1,0,0.2619048,0.6638298,0.7695853],[0.434629,0.7142857,0.5,0.1843352,0.3214012,1,1,0,0.1190476,0.3957447,0.3963134],[0.204947,0.4285714,0.5,0.2217511,0.2830478,1,0.5,0,0.2333333,0.4510638,0.5253456],[0.204947,0.4285714,0.5,0.2217511,0.3482485,1,0.5,0,0.3,0.4510638,0.5253456]],&quot;raw&quot;:[[264,4,8,351,3.17,1,5,0,14.5,15.8,4.22],[335,8,8,301,3.57,1,5,0,14.6,15,3.54],[230,4,8,440,5.345,0,3,0,17.42,14.7,3.23],[205,4,8,472,5.25,0,3,0,17.98,10.4,2.93],[215,4,8,460,5.424,0,3,0,17.82,10.4,3],[245,4,8,360,3.57,0,3,0,15.84,14.3,3.21],[245,4,8,350,3.84,0,3,0,15.41,13.3,3.73],[175,2,8,360,3.44,0,3,0,17.02,18.7,3.15],[175,2,8,400,3.845,0,3,0,17.05,19.2,3.08],[180,3,8,275.8,3.78,0,3,0,18,15.2,3.07],[180,3,8,275.8,4.07,0,3,0,17.4,16.4,3.07],[180,3,8,275.8,3.73,0,3,0,17.6,17.3,3.07],[150,2,8,318,3.52,0,3,0,16.87,15.5,2.76],[150,2,8,304,3.435,0,3,0,17.3,15.2,3.15],[97,1,4,120.1,2.465,0,3,1,20.01,21.5,3.7],[62,2,4,146.7,3.19,0,4,1,20,24.4,3.69],[95,2,4,140.8,3.15,0,4,1,22.9,22.8,3.92],[123,4,6,167.6,3.44,0,4,1,18.3,19.2,3.92],[123,4,6,167.6,3.44,0,4,1,18.9,17.8,3.92],[110,1,6,258,3.215,0,3,1,19.44,21.4,3.08],[105,1,6,225,3.46,0,3,1,20.22,18.1,2.76],[113,2,4,95.1,1.513,1,5,1,16.9,30.4,3.77],[93,1,4,108,2.32,1,4,1,18.61,22.8,3.85],[109,2,4,121,2.78,1,4,1,18.6,21.4,4.11],[52,2,4,75.7,1.615,1,4,1,18.52,30.4,4.93],[66,1,4,79,1.935,1,4,1,18.9,27.3,4.08],[66,1,4,78.7,2.2,1,4,1,19.47,32.4,4.08],[65,1,4,71.1,1.835,1,4,1,19.9,33.9,4.22],[91,2,4,120.3,2.14,1,5,0,16.7,26,4.43],[175,6,6,145,2.77,1,5,0,15.5,19.7,3.62],[110,4,6,160,2.62,1,4,0,16.46,21,3.9],[110,4,6,160,2.875,1,4,0,17.02,21,3.9]],&quot;size&quot;:null,&quot;file&quot;:&quot;heatmap-25ae1870ab5f&quot;}&lt;/script&gt;
 &lt;script&gt;
 (function() {
   &quot;use strict&quot;;
@@ -760,70 +763,25 @@ arguments of <code><a href="../reference/heat_map.html">heat_map()</a></code>, a
 <div class="section level2">
 <h2 id="building-heatmaps-in-the-browser">Building heatmaps in the browser<a class="anchor" aria-label="anchor" href="#building-heatmaps-in-the-browser"></a>
 </h2>
-<p><code><a href="../reference/heat_map_app.html">heat_map_app()</a></code> opens an app to build a heatmap without
-writing code (it needs the shiny and bslib packages). Its start page
-takes a table (CSV, TSV, text or Excel), an R data file or an AnnData
-file dropped on it, or one of four examples, and the app can also start
-from data in R:</p>
+<p><code><a href="../reference/heat_map_app.html">heat_map_app()</a></code> opens an app to build heatmaps, dot plots
+and correlation heatmaps without writing code. You can drop a table or a
+single-cell file on it, or start it from data in R. It redraws the
+heatmap as settings change, shows values on hover and selects rows and
+columns on the heatmap, and writes the R code that draws the figure
+again:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map_app.html">heat_map_app</a></span><span class="op">(</span><span class="op">)</span>                             <span class="co"># the start page: drop a file or choose an example</span></span>
-<span><span class="fu"><a href="../reference/heat_map_app.html">heat_map_app</a></span><span class="op">(</span><span class="va">mtcars</span>, scale <span class="op">=</span> <span class="st">"column"</span><span class="op">)</span>     <span class="co"># start from data in R, with settings</span></span>
-<span><span class="fu"><a href="../reference/heat_map_app.html">heat_map_app</a></span><span class="op">(</span><span class="st">"counts.csv"</span><span class="op">)</span>                 <span class="co"># or from a file</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/heat_map_app.html">heat_map_app</a></span><span class="op">(</span><span class="va">mtcars</span>, scale <span class="op">=</span> <span class="st">"column"</span><span class="op">)</span>     <span class="co"># start from data in R, with settings</span></span></code></pre></div>
 <div class="float">
-<img src="figures/heat-map-app.png" alt="The app with a clustered heatmap of mtcars. Down the left, the sections of the settings and the settings of one section with plain labels and the names of their arguments; in the middle, the changed settings and the heatmap with the values of a cell on hover; on the right, the R code that draws it again."><div class="figcaption">The app with a clustered heatmap of mtcars. Down
-the left, the sections of the settings and the settings of one section
-with plain labels and the names of their arguments; in the middle, the
-changed settings and the heatmap with the values of a cell on hover; on
-the right, the R code that draws it again.</div>
+<img src="figures/app-hover.png" alt="The app with a clustered heatmap of mtcars. On the left, the sections of the settings, and the settings of one section with plain labels and the names of their arguments. In the middle, the changed settings above the heatmap, and the values of a cell on hover."><div class="figcaption">The app with a clustered heatmap of mtcars. On
+the left, the sections of the settings, and the settings of one section
+with plain labels and the names of their arguments. In the middle, the
+changed settings above the heatmap, and the values of a cell on
+hover.</div>
 </div>
-<p>The top bar holds the data, the kind of heatmap (a heatmap, a dot
-plot of groups or the correlations of the columns), undo and redo, the R
-code and the download. In the <em>Data</em> section each column of a
-table is given a role - shown in the heatmap, grouping the rows or
-annotating them - and single-cell data choose their features, groups and
-annotations. The other sections hold the settings of
-<code><a href="../reference/heat_map.html">heat_map()</a></code> by topic: scaling and clustering, colours
-(palettes with swatches, a centre, limits drawn over the distribution of
-the values, and the colour-vision check of
-<code><a href="../reference/heat_map_check_colours.html">heat_map_check_colours()</a></code>), cells, labels, legends, tracks
-and bars, marks and zooms. The most used settings have plain labels and
-inputs made for them, such as steppers for the number of clusters, and
-the rest are under <em>More settings</em>; each shows the name of its
-argument, with its documentation behind the info button, and the search
-box at the top finds any of them (e.g. <code>border</code>).</p>
-<p>The heatmap is drawn again as settings change, reusing the clustering
-when only its look has changed. Hovering over it shows the values of the
-cells, and rows and columns selected on it, by clicking or dragging, can
-be shown alone, labelled or copied. Each changed setting is listed above
-the heatmap with a button to undo it, and a setting that can’t be drawn
-is flagged while the last heatmap that worked stays on screen. The <em>R
-code</em> panel has the code that draws the heatmap again, with only the
-settings that were changed, e.g. for the heatmap above:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dillonhammill.github.io/HeatmapR/">HeatmapR</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">mtcars</span></span>
-<span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
-<span>  <span class="va">x</span>,</span>
-<span>  scale <span class="op">=</span> <span class="st">"column"</span>,</span>
-<span>  tree <span class="op">=</span> <span class="st">"both"</span>,</span>
-<span>  tree_order_y <span class="op">=</span> <span class="st">"olo"</span>,</span>
-<span>  tree_cut_y <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  title <span class="op">=</span> <span class="st">"mtcars"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/heat_map_save.html">heat_map_save</a></span><span class="op">(</span><span class="st">"mtcars-heatmap.png"</span>, x <span class="op">=</span> <span class="va">hm</span>,</span>
-<span>              width <span class="op">=</span> <span class="fl">7</span>, height <span class="op">=</span> <span class="fl">7</span>, res <span class="op">=</span> <span class="fl">300</span><span class="op">)</span></span></code></pre></div>
-<p><em>Download</em> saves the heatmap as a PNG, PDF, SVG, TIFF or JPEG
-file at the size chosen above the heatmap (e.g. a journal column or a
-16:9 slide), with the R script beside it.</p>
-<p>Settings that take R values that belong to the data, such as
-<code>bar_values_y</code>, are R code run in the R session with the data
-as <code>x</code>, so that <code>bar_values_y = x$mpg</code> draws a bar
-for the <code>mpg</code> of each car. An app hosted for other people
-should be started with <code>allow_code = FALSE</code>, which limits
-these settings to plain values: numbers, text, <code>TRUE</code>,
-<code>FALSE</code>, <code>NA</code>, <code>NULL</code> and
-<code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code> or <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code> of them.</p>
+<p><a href="app.html">Building heatmaps in the browser</a> walks through
+the app: its data, plots, settings, selections, code and downloads, and
+hosting it for others.</p>
 </div>
 <div class="section level2">
 <h2 id="alternative-text">Alternative text<a class="anchor" aria-label="anchor" href="#alternative-text"></a>
@@ -836,7 +794,7 @@ of the scale), the most extreme values, how the rows and columns are
 ordered, and where each cluster is highest and lowest, plus branch
 support, uncertainty, annotations, bars and zoom panels when the heatmap
 has them.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span>, scale <span class="op">=</span> <span class="st">"zscore"</span>, tree <span class="op">=</span> <span class="st">"both"</span>, tree_cut_y <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>               legend_title <span class="op">=</span> <span class="st">"z-score"</span>, title <span class="op">=</span> <span class="st">"mtcars"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/heat_map_describe.html">heat_map_describe</a></span><span class="op">(</span><span class="va">hm</span><span class="op">)</span></span>
@@ -854,14 +812,14 @@ has them.</p>
 <p>In R Markdown and Quarto the description can be the figure’s
 alternative text: draw the heatmap in one chunk and pass the description
 to the <code>fig.alt</code> option of the chunk that shows it.</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="in">```{r, include = FALSE}</span></span>
-<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="in">hm &lt;- heat_map(mtcars, scale = "zscore", tree = "both", tree_cut_y = 3)</span></span>
-<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a></span>
-<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a><span class="in">```{r, fig.alt = heat_map_describe(hm)}</span></span>
-<span id="cb19-6"><a href="#cb19-6" tabindex="-1"></a><span class="in">hm</span></span>
-<span id="cb19-7"><a href="#cb19-7" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="in">```{r, include = FALSE}</span></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="in">hm &lt;- heat_map(mtcars, scale = "zscore", tree = "both", tree_cut_y = 3)</span></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a></span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a><span class="in">```{r, fig.alt = heat_map_describe(hm)}</span></span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a><span class="in">hm</span></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hm</span></span></code></pre></div>
 <p><img src="integration_files/figure-html/alt-show-1.png" class="r-plt" alt="Heatmap titled &quot;Described by heat_map_describe()&quot; of 32 rows by 11 columns, converted to z-scores within each column. Colours show z-score, from dark purple (-1.87) through yellow green to dark red (3.21). The highest value is 3.21 (Maserati Bora, carb) and the lowest is -1.87 (Ford Pantera L, qsec). Rows are ordered by hierarchical clustering (euclidean distance, complete linkage). Rows are split into 3 groups, numbered from the top: group 1 (15 rows, e.g. Hornet 4 Drive and Valiant) is highest in vs and mpg and lowest in cyl and hp; group 2 (12 rows, e.g. Chrysler Imperial and Cadillac Fleetwood) is highest in disp and cyl and lowest in gear and drat; group 3 (5 rows, e.g. Ferrari Dino and Mazda RX4) is highest in carb and gear and lowest in qsec and vs. Columns are ordered by hierarchical clustering (euclidean distance, complete linkage)." width="100%" style="display: block; margin: auto;"></p>
 </div>
@@ -876,7 +834,7 @@ levels, values of non-numeric cells, stacked bar parts and branch
 colours that become hard to tell apart, and colour scales whose distant
 values end up looking alike. Here matplotlib’s red and green, which most
 readers tell apart easily, are close for readers with deuteranopia:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cylinders</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>cylinders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">$</span><span class="va">cyl</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">hm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span><span class="va">mtcars</span>, scale <span class="op">=</span> <span class="st">"column"</span>, annotation_y <span class="op">=</span> <span class="va">cylinders</span>,</span>
 <span>               annotation_colours <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>cylinders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#D62728"</span>, <span class="st">"#2CA02C"</span>, <span class="st">"#1F77B4"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>

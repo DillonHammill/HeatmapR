@@ -1,121 +1,162 @@
 # HeatmapR
 
-**HeatmapR** is a lightweight R package that makes it easy to generate
-high quality, complex heatmaps with minimal data preprocessing or manual
-customisation. Visit the **HeatmapR** website to get started
-<https://dillonhammill.github.io/HeatmapR/>.
+**HeatmapR** draws complex, publication-ready heatmaps in R. It handles
+everything from a quick look at a table to clustered heatmaps of
+hundreds of thousands of cells. Dendrograms, annotations and legends are
+laid out for you, and there are dot plots and other plots for
+single-cell data. It is fast enough for single-cell data, needs nothing
+beyond R to install, and comes with an app to build heatmaps in the
+browser. Visit the [website](https://dillonhammill.github.io/HeatmapR/)
+to get started.
 
-## Overview
+## Why HeatmapR?
 
-As the dimensionality of datasets continues to increase there is a need
-for visualisation tools such as heatmaps to present data in an easily
-interpretable way. The construction of complex heatmaps poses a number
-of challenges as they are composed of multiple graphical elements, such
-as a coloured matrix, dendrograms, cluster sub-divisions, axes, titles
-and legends. The first base graphics implementation of heatmaps included
-[`heatmap()`](https://rdrr.io/r/stats/heatmap.html) in the `stats`
-package and `heatmap.2()` in the
-[gplots](https://CRAN.R-project.org/package=gplots) package. The
-packages attempt to solve these graphical challenges by treating each
-graphical component as a separate plot element and arranging them using
-[`layout()`](https://rdrr.io/r/graphics/layout.html). This approach can
-generate complex heatmaps but it rendered users unable to arrange the
-heatmap with additional plot elements. **HeatmapR** aims to address
-these layout issues using solely a base graphics approach.
+- **Much faster, with a fraction of the memory.** Clustering and drawing
+  a heatmap of 20,000 rows takes **0.6 seconds and 114 MB**. pheatmap,
+  `heatmap.2()`,
+  [`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) and
+  ComplexHeatmap take 32 seconds to 2 minutes and 3.3 to 4.7 GB.
+  HeatmapR clusters large data in two stages by default; clustering
+  exactly, as the others do, it takes 7.1 seconds and 1.5 GB. A 3,000 ×
+  3,000 matrix takes 4 seconds instead of over 4 minutes. 100,000 rows
+  take 1.2 seconds, where every other package ran out of memory.
+- **Built for single-cell data.**
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  takes `SingleCellExperiment`, `Seurat`, `flowSet` and AnnData data as
+  they are, as well as sparse and on-disk matrices. Features are chosen
+  by name, and cells are grouped and annotated by their metadata. There
+  are also dot plots, markers, gene-set scores, compositions, contrasts
+  and trajectories. A heatmap of 40 genes in 100,000 cells takes 1.3
+  seconds, against 40 seconds and 2.8 GB with Seurat’s `DoHeatmap()`.
+- **Complete figures from one call.** Dendrograms, cluster splits,
+  annotation tracks, bar plots, labels and legends are sized in inches
+  from their contents. They’re laid out so that nothing overlaps,
+  whatever the shape of the data or the size of the image, and
+  [`heat_map_save()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md)
+  writes the figure at print resolution.
+- **Point, click and keep the code.**
+  [`heat_map_app()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_app.md)
+  builds heatmaps in the browser and writes the R code that draws them
+  again.
+  [`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
+  turns any heatmap into a web page to explore: hover for values, select
+  rows and columns, search and zoom.
+- **Ready for publication and analysis.**
+  - [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
+    writes alternative text for screen readers.
+  - [`heat_map_check_colours()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_check_colours.md)
+    finds colours that colour-blind readers can’t tell apart.
+  - [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
+    returns the order and clusters of the rows and columns for the rest
+    of your analysis.
+- **Nothing else to install.** HeatmapR uses base graphics and compiled
+  C++, with no dependencies beyond R. pheatmap installs 13 other
+  packages, ComplexHeatmap 18 and Seurat 129. HeatmapR is MIT licensed.
 
-## HeatmapR
+### HeatmapR and the alternatives
 
-**HeatmapR** has a number of benefits over other heatmap packages:
+Time to draw a heatmap, in seconds, and the peak memory for 20,000 rows:
 
-- **HeatmapR** is built using base graphics to remove the need for
-  familiarity with `ggplot2` or `plotly`.
-- **HeatmapR** is extremely lightweight and therefore there are no
-  external dependencies that need to be installed.
-- **HeatmapR** is designed under rOpenSci naming guidelines for a
-  consistent and intuitive user experience.
-- Unlike other heatmap packages that use base graphics, **HeatmapR**
-  actually returns the plot object instead of an image. This makes it
-  easy to arrange multiple plots in complex layouts without sacrificing
-  resolution, and
-  [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
-  returns the row/column order and cluster assignments for use in
-  downstream analyses.
-- **HeatmapR** is fully customisable and comes with a saving API
-  ([`heat_map_save()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md))
-  to export high resolution images.
-- **HeatmapR** handles datasets that contain non-numeric or missing
-  data, which means you don’t have to spend ages formatting and
-  pre-processing the data beforehand.
-- **HeatmapR** clusters large datasets quickly: distances, linkage,
-  cuts, k-means and optimal leaf ordering run in compiled C++ code
-  shared between threads
-  ([`heat_map_threads()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.md)),
-  and rows or columns beyond `clust_max` are clustered in two stages, so
-  100,000 rows are clustered in under a second on two cores. A clustered
-  heatmap of 20,000 rows takes under a second (7 seconds clustered
-  exactly), against half a minute to two minutes and several times the
-  memory with pheatmap, `heatmap.2()` or ComplexHeatmap: see the [speed
-  comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html).
-- **HeatmapR** shows sample or feature metadata as annotation tracks
-  (`annotation_x`, `annotation_y`), alongside dendrograms, cluster
-  labels and bar plots, and adapts the layout so that labels and legends
-  don’t overlap. Dendrograms, bar plots, legends and margins are sized
-  in inches from their contents, so they look the same whatever the
-  shape of the data.
-- **HeatmapR** generates publication ready images with minimal manual
-  customisation, making it ideal for users that have limited coding
-  experience.
+|  | HeatmapR | pheatmap | ComplexHeatmap | `heatmap.2()` | [`stats::heatmap()`](https://rdrr.io/r/stats/heatmap.html) |
+|:---|---:|---:|---:|---:|---:|
+| Clustered, 20,000 × 30 | **0.6** (exact: 7.1) | 32 | 130 | 48 | 45 |
+| Peak memory, 20,000 × 30 | **114 MB** (exact: 1.5 GB) | 4.7 GB | 3.7 GB | 4.7 GB | 3.3 GB |
+| Clustered, 3,000 × 3,000 | **3.7** | 254 | 275 | 253 | 249 |
+| Clustered, 100,000 × 30 | **1.2** | out of memory | out of memory | out of memory | out of memory |
+| Not clustered, 3,000 × 3,000 | **0.6** | 8.8 | 26 | 250 | 4.5 |
+| Other packages installed | **0** | 13 | 18 | 3 | 0 |
+
+For single-cell data, against Seurat and scran:
+
+|  | HeatmapR | Seurat or scran |
+|:---|---:|---:|
+| Heatmap of 40 genes in 100,000 cells | **1.3 s** | 40 s, 2.8 GB (`DoHeatmap()`) |
+| Dot plot of 40 genes in 100,000 cells | **0.17 s** | 1.9 s (`DotPlot()`) |
+| Markers of 12 groups, 20,000 cells and 20,000 genes | **0.4 s** | 19 s (scran’s `scoreMarkers()`) |
+
+All times were measured on two cores with 7.8 GB of memory. For small
+heatmaps, every package takes about a tenth of a second, except
+ComplexHeatmap at about two seconds. The methods, and every size
+measured, are in the [speed
+comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html)
+and the [single-cell
+guide](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#speed).
+The numbers of packages are for the versions compared there.
 
 ## Features
 
 Beyond clustering, scaling and customisable colours, shapes, sizes,
 text, legends and layouts, **HeatmapR** can:
 
-- **Show more than one value in each cell** - split cells to compare two
-  conditions (`cell_split`), the distribution of the values behind each
-  cell (`cell_values`), cell size as a second variable, and colours that
-  fade towards grey where values are uncertain (`cell_uncertainty`).
-- **Annotate rows and columns** - metadata tracks (`annotation_x`,
-  `annotation_y`), bar graphs, box plots and violins beside the heatmap,
-  labels for chosen rows of a large heatmap (`mark_y`) and a zoom lens
-  that enlarges a band of rows beside the whole (`zoom_y`).
-- **Cluster with confidence** - correlation and cosine distances,
-  optimal leaf ordering, clustering within your own groups, k-means
-  splits, and bootstrap support drawn on the dendrogram branches
-  (`tree_support_y`).
-- **Handle large data** - raster images for heatmaps with millions of
-  cells,
-  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
-  for pseudobulk heatmaps and dot plots of groups of cells, and robust,
-  stepped or centred colour scales with the distribution of the values
-  traced over the legend.
-- **Explain the figure** -
-  [`heat_map_info()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_info.md)
-  returns the order, clusters and layout of a heatmap,
-  [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
-  writes alternative text for screen readers, and
-  [`heat_map_check_colours()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_check_colours.md)
-  finds colours that colour-blind readers can’t tell apart.
-- **Explore and select** -
-  [`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
-  makes a self-contained web page of a heatmap: hover for values, click
-  or drag over cells, labels and dendrograms to select rows and columns,
-  copy or download the selection, search and zoom.
-- **Build in the browser** -
-  [`heat_map_app()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_app.md)
-  opens an app to drop a table or single-cell file, set any argument of
-  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-  while the heatmap redraws (with values on hover, undo and the R code
-  beside it), and download the image.
-- **Work with ggplot2** -
-  [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
-  places heatmaps beside `ggplot2` plots in `patchwork` and `cowplot`
-  layouts, and
-  [`heat_map_data()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.md)
-  returns the cells, rows, columns and dendrograms as tidy data for
-  rebuilding or restyling them.
+- **Show more than one value in each cell:**
+  - split cells to compare two conditions (`cell_split`);
+  - show the distribution of the values behind each cell
+    (`cell_values`);
+  - use cell size as a second variable;
+  - fade colours towards grey where values are uncertain
+    (`cell_uncertainty`).
+- **Annotate rows and columns:**
+  - metadata tracks (`annotation_x`, `annotation_y`);
+  - bar graphs, box plots and violins beside the heatmap;
+  - labels for chosen rows of a large heatmap (`mark_y`);
+  - a zoom lens that enlarges a band of rows beside the whole
+    (`zoom_y`).
+- **Cluster with confidence:**
+  - correlation and cosine distances;
+  - optimal leaf ordering;
+  - clustering within your own groups;
+  - k-means splits;
+  - bootstrap support drawn on the dendrogram branches
+    (`tree_support_y`).
+- **Handle large data:**
+  - raster images for heatmaps with millions of cells;
+  - two-stage clustering for a million rows;
+  - [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+    for pseudobulk heatmaps and dot plots of groups of cells;
+  - robust, stepped or centred colour scales, with the distribution of
+    the values traced over the legend.
+- **Work with ggplot2:**
+  - [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
+    places heatmaps beside `ggplot2` plots in `patchwork` and `cowplot`
+    layouts;
+  - [`heat_map_data()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.md)
+    returns the cells, rows, columns and dendrograms as tidy data, for
+    rebuilding or restyling them.
 
 [TABLE]
+
+## Build heatmaps in the browser
+
+[`heat_map_app()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_app.md)
+opens an app to build a heatmap without writing code. You can drop a
+table or a single-cell file on it, or start it from data in R. Then:
+
+- choose a heatmap, a dot plot or a correlation heatmap;
+- set any argument of
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  while the heatmap redraws, with values on hover and selections on the
+  heatmap;
+- download the figure, with the R code that draws it again.
+
+It needs the shiny and bslib packages. [Building heatmaps in the
+browser](https://dillonhammill.github.io/HeatmapR/articles/app.html)
+shows how it works.
+
+``` r
+
+heat_map_app()                                         # drop a file, or choose an example
+heat_map_app(mtcars, scale = "column", tree = "both")  # start from data in R
+```
+
+![The HeatmapR app with a clustered heatmap of mtcars: the sections of
+the settings on the left with plain labels and argument names, the
+changed settings above the heatmap, and the values of a cell on
+hover.](reference/figures/README-app.png)
+
+[`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
+writes any heatmap as a single web page that works without R. Hover for
+values; click or drag over cells, labels and dendrograms to select rows
+and columns; then copy or download the selection, search and zoom.
 
 ## Single-cell data
 

@@ -85,7 +85,7 @@ merc <- heat_map(mtcars[grepl("Merc", rownames(mtcars)), ], popup = FALSE,
 other <- heat_map(mtcars[!grepl("Merc", rownames(mtcars)), ], popup = FALSE,
                   title = "Others")
 grDevices::dev.off()
-#> agg_record_18cf27399cc3 
+#> agg_record_19c0592fda68 
 #>                       2 
 heat_map_arrange(merc, other, popup = FALSE)
 
