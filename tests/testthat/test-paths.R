@@ -626,13 +626,14 @@ test_that("web pages check their file and heatmap, and title themselves", {
   # Shown in the viewer, or else in the browser
   local_mocked_bindings(.interactive = function() TRUE)
   shown <- NULL
-  withr::local_options(viewer = function(f) shown <<- f,
-                       browser = function(url) shown <<- url)
+  old <- options(viewer = function(f) shown <<- f,
+                 browser = function(url) shown <<- url)
+  on.exit(options(old), add = TRUE)
   print(page)
   expect_identical(shown, page$file)
   out <- file.path(getwd(), "paths-page.html")
   page2 <- heat_map_html(hm, file = out)
-  on.exit(unlink(out))
+  on.exit(unlink(out), add = TRUE)
   shown <- NULL
   print(page2)
   expect_match(shown, "paths-page.html", fixed = TRUE)
