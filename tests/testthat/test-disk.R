@@ -75,6 +75,8 @@ test_that("summaries of on-disk data equal those of data in memory", {
   same(group_by = "cell_type")
   same(group_by = "cell_type", fun = "detected")
   same(group_by = "cell_type", fun = "median")
+  same(group_by = "cell_type", fun = c("mean", "detected", "n"))
+  same(group_by = "cell_type", fun = c("detected", "median", "mean"))
   same(features = f, group_by = c("cell_type", "sample"), assay = "counts",
        fun = "sum")
   same(features = f, group_by = "cell_type", fun = function(v) max(v))
