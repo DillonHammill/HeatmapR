@@ -1,0 +1,142 @@
+---
+title: "Trajectories"
+description: >
+  Genes along pseudotime: cells in order, genes smoothed over bins and
+  ordered by when they peak, modules of genes, lineages side by side, and
+  cells ordered without a pseudotime.
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE,
+  fig.width = 7,
+  fig.height = 6,
+  out.width = "100%",
+  fig.align = "center"
+)
+```
+
+Cells that differentiate, respond or cycle change gradually, and trajectory methods place each cell along the change with a pseudotime. The heatmap of a trajectory has the genes as rows and the cells, or bins of them, as columns in pseudotime order. The genes are ordered by when they peak, so that a cascade of genes runs diagonally from the top left. This guide draws such heatmaps with `heat_map_smooth()` and peak orders, for one lineage and for several. It also shows how to order cells when there is no pseudotime.
+
+## Example data
+
+`heat_map_example("trajectory")` simulates 4,000 cells of a branching trajectory, with a pseudotime for each of two lineages as slingshot (Street et al. 2018) gives them (missing for cells outside the lineage). Both lineages share their start and branch at a pseudotime of 0.4. 30 genes, in a random order, each peak at their own point, some in one lineage only.
+
+```{r data}
+library(HeatmapR)
+library(SingleCellExperiment)
+traj <- heat_map_example("trajectory", class = "SingleCellExperiment")
+traj
+head(colData(traj))
+```
+
+## Cells in pseudotime order
+
+The cells sorted by their pseudotime, as columns (`swap_axes = TRUE`), with the pseudotime as an annotation track. Each gene is scaled from 0 to 1 (`scale = "row"`), and `tree_order_y = "peak"` orders the genes by where they are highest:
+
+```{r cells, fig.width = 9, fig.height = 6, fig.alt = "Heatmap of 30 genes, one per row, in 4,000 cells, one per column, sorted by pseudotime with a pseudotime track above, each gene scaled from 0 to 1. The genes are ordered by when they peak, so their noisy high values run diagonally from the top left to the bottom right."}
+cells <- traj[, order(traj$pseudotime)]
+heat_map(
+  cells,
+  swap_axes = TRUE,
+  scale = "row",
+  tree_order_y = "peak",
+  annotation_by = "pseudotime",
+  axis_text_x = NA,
+  title = "Cells in pseudotime order"
+)
+```
+
+Single cells are noisy, and their order says nothing about how far apart they are along the trajectory.
+
+## Genes smoothed along pseudotime
+
+`heat_map_smooth()` bins the cells along `along` (a pseudotime column, or a vector) and finds each gene's mean in each bin, smoothed over its neighbours:
+
+- `bins` sets the number of bins, 100 by default.
+- `binning = "cells"` (default) gives bins of equal numbers of cells, which follow the density of the cells along the trajectory, and `"width"` bins of equal width along `along`.
+- `span` sets the number of bins each mean is taken over: the bin itself and `(span - 1) / 2` bins either side, 5 by default. `span = 1` takes each bin on its own.
+
+The means are found in compiled code, without a dense copy of sparse data. The result has one row per bin and keeps the position of each bin, which `annotation_by` draws as a track, and the number of cells in each bin (`bar_values_x = "n"` with `swap_axes = TRUE`). The peak order reads the position of each bin.
+
+```{r smooth, fig.width = 8, fig.height = 6, fig.alt = "Heatmap of 30 genes, one per row, smoothed along pseudotime in 60 bins, one per column, each gene scaled from 0 to 1, with a pseudotime track above. The genes are ordered by when they peak, so their highest values run diagonally from the top left to the bottom right."}
+smooth <- heat_map_smooth(traj, along = "pseudotime", bins = 60)
+dim(smooth)
+heat_map(
+  smooth,
+  swap_axes = TRUE,
+  scale = "row",
+  tree_order_y = "peak",
+  annotation_by = "pseudotime",
+  axis_text_x = NA,
+  title = "Genes along pseudotime"
+)
+```
+
+### Modules of genes
+
+Genes that rise and fall together form modules. `tree_kmeans_y` splits the genes into k-means clusters of the smoothed values, and the peak order then orders the genes within each module. The modules are ordered so that similar ones are neighbours, here from early to late:
+
+```{r modules, fig.width = 8, fig.height = 6.5, fig.alt = "Heatmap of 30 genes smoothed along pseudotime in 60 bins, split into four k-means modules separated by gaps. The modules run from genes peaking at the start of the trajectory, through two in the middle, to genes peaking at the end, and within each module the genes are ordered by when they peak."}
+modules <- heat_map(
+  smooth,
+  swap_axes = TRUE,
+  scale = "row",
+  tree_kmeans_y = 4,
+  tree_order_y = "peak",
+  annotation_by = "pseudotime",
+  axis_text_x = NA,
+  title = "Four modules of genes"
+)
+split(names(heat_map_info(modules)$row_clusters),
+      heat_map_info(modules)$row_clusters)
+```
+
+## Lineages side by side
+
+Several `along` columns smooth each lineage on its own, from the cells with a pseudotime in that lineage (`group_by` does the same for one pseudotime and a lineage column). The lineages are stacked in the result, and `group_by = "lineage"` draws them side by side. The peak order reads the position of each bin along the trajectory, so the genes of both lineages are ordered by when they peak:
+
+```{r lineages, fig.width = 9, fig.height = 6, fig.alt = "Heatmap of 30 genes smoothed along the pseudotime of two lineages, drawn side by side with labelled strips and a pseudotime track. The genes are ordered by when they peak: genes peaking early are high in both lineages, later genes in lineage 1, lineage 2 or both."}
+lineages <- heat_map_smooth(traj, along = c("lineage1", "lineage2"), bins = 40)
+head(attr(lineages, "groups"))
+heat_map(
+  lineages,
+  swap_axes = TRUE,
+  group_by = "lineage",
+  scale = "row",
+  tree_order_y = "peak",
+  annotation_by = "along",
+  axis_text_x = NA,
+  title = "Two lineages"
+)
+```
+
+Genes scaled within each row are compared across both lineages, so a gene that peaks in one lineage only is dark in the other.
+
+## Cells without a pseudotime
+
+Without a pseudotime, `tree_order_y = "spectral"` orders the cells themselves along the trajectory. The order comes from recursive spectral bisection of the graph joining each cell to its nearest neighbours, with no dendrogram (see the [ordering guide](ordering.html)). A spectral order is one path, so a branching trajectory is ordered one lineage at a time. For expression, correlation distances (`dist_method = "pearson"`) follow the change of the cells' profiles better than Euclidean distances, which a few highly expressed genes dominate. Here the genes are ordered spectrally too, so genes high at the same stage sit together:
+
+```{r spectral, fig.width = 8, fig.height = 6, fig.alt = "Heatmap of the 2,820 cells of lineage 1, one per row, by 30 genes, the cells in a spectral order found from the genes alone, with a pseudotime track on the right that runs from early at the top to late at the bottom. The genes, ordered spectrally too, are grouped by the stage at which they are high, from early genes on the right to late genes on the left; five genes of lineage 2 alone are empty."}
+lineage1 <- traj[, !is.na(traj$lineage1)]
+ordered <- heat_map(
+  lineage1,
+  tree_order_y = "spectral",
+  dist_method = "pearson",
+  tree_order_x = "spectral",
+  annotation_by = "pseudotime",
+  axis_text_y = NA,
+  title = "Cells in a spectral order"
+)
+# HOW WELL THE ORDER FOLLOWS THE PSEUDOTIME (1 OR -1 FOR THE SAME ORDER)
+order_y <- heat_map_info(ordered)$row_order
+cor(seq_along(order_y), lineage1$pseudotime[order_y], method = "spearman")
+```
+
+A spectral order can run either way along the trajectory, so its rank correlation with the pseudotime, printed above, is near 1 or -1 when it follows it.
+
+## References
+
+Street, K. et al. (2018). Slingshot: cell lineage and pseudotime inference for single-cell transcriptomics. *BMC Genomics*, 19, 477. [doi:10.1186/s12864-018-4772-0](https://doi.org/10.1186/s12864-018-4772-0)
