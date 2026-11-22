@@ -127,8 +127,7 @@ fun <- switch(
     ))
   },
   "summarise HeatmapR" = function(x) {
-    list(heat_map_summarise(x, group_by = "group"),
-         heat_map_summarise(x, group_by = "group", fun = "detected"))
+    heat_map_summarise(x, group_by = "group", fun = c("mean", "detected"))
   },
   "summarise scuttle" = function(x) {
     summarizeAssayByGroup(x, ids = x$group, assay.type = "logcounts",

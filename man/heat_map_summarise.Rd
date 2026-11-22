@@ -55,7 +55,12 @@ summarising.
 \code{"values"} keeps the values themselves: the result is then a matrix
 of lists holding the numeric vector of values in each group, for
 \code{cell_values} in \code{heat_map()} to draw their distributions
-inside the cells.}
+inside the cells. Several summaries, e.g. \code{c("mean",
+  "detected")}, give a named list with one element per summary, each as
+\code{heat_map_summarise()} returns it with that \code{fun} alone; the
+mean, sum, number and proportion detected are found together in one
+pass over the data, which for large single-cell data takes about as long
+as one of them.}
 
 \item{threshold}{values above \code{threshold} are counted by
 \code{fun = "detected"}, and the dips of \code{fun = "dip"} and
@@ -165,7 +170,8 @@ every cell of the group (e.g. the condition of each sample), which
 \code{heat_map(group_by = , annotation_by = )} can use as the metadata
 of the rows. With \code{bimodal = TRUE} the result also keeps the
 \code{"dip"}, \code{"dip_n"}, \code{"dip_pc"} and \code{"dip_pc_n"}
-attributes (see \code{bimodal}).
+attributes (see \code{bimodal}). Several summaries in \code{fun} give a
+list of these, named by summary.
 }
 \description{
 \code{heat_map_summarise()} reduces the columns (and/or rows) of a matrix
@@ -191,11 +197,13 @@ heat_map(
   popup = FALSE
 )
 
-# Dot plot - mean as colour, proportion above the overall mean as size
+# Dot plot - mean as colour, proportion above the overall mean as size,
+# both found in one pass
 z <- scale(mtcars)
+s <- heat_map_summarise(z, group_y = mtcars$gear, fun = c("mean", "detected"))
 heat_map(
-  heat_map_summarise(z, group_y = mtcars$gear),
-  cell_size = heat_map_summarise(z, group_y = mtcars$gear, fun = "detected"),
+  s$mean,
+  cell_size = s$detected,
   cell_shape = "circle",
   popup = FALSE
 )

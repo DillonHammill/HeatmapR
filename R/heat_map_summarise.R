@@ -40,7 +40,12 @@
 #'   \code{"values"} keeps the values themselves: the result is then a matrix
 #'   of lists holding the numeric vector of values in each group, for
 #'   \code{cell_values} in \code{heat_map()} to draw their distributions
-#'   inside the cells.
+#'   inside the cells. Several summaries, e.g. \code{c("mean",
+#'   "detected")}, give a named list with one element per summary, each as
+#'   \code{heat_map_summarise()} returns it with that \code{fun} alone; the
+#'   mean, sum, number and proportion detected are found together in one
+#'   pass over the data, which for large single-cell data takes about as long
+#'   as one of them.
 #' @param threshold values above \code{threshold} are counted by
 #'   \code{fun = "detected"}, and the dips of \code{fun = "dip"} and
 #'   \code{bimodal} are found from them, set to 0 by default.
@@ -138,7 +143,8 @@
 #'   \code{heat_map(group_by = , annotation_by = )} can use as the metadata
 #'   of the rows. With \code{bimodal = TRUE} the result also keeps the
 #'   \code{"dip"}, \code{"dip_n"}, \code{"dip_pc"} and \code{"dip_pc_n"}
-#'   attributes (see \code{bimodal}).
+#'   attributes (see \code{bimodal}). Several summaries in \code{fun} give a
+#'   list of these, named by summary.
 #'
 #' @references Hartigan, J. A. and Hartigan, P. M. (1985). The dip test of
 #'   unimodality. \emph{The Annals of Statistics}, 13(1), 70-84.
@@ -166,11 +172,13 @@
 #'   popup = FALSE
 #' )
 #'
-#' # Dot plot - mean as colour, proportion above the overall mean as size
+#' # Dot plot - mean as colour, proportion above the overall mean as size,
+#' # both found in one pass
 #' z <- scale(mtcars)
+#' s <- heat_map_summarise(z, group_y = mtcars$gear, fun = c("mean", "detected"))
 #' heat_map(
-#'   heat_map_summarise(z, group_y = mtcars$gear),
-#'   cell_size = heat_map_summarise(z, group_y = mtcars$gear, fun = "detected"),
+#'   s$mean,
+#'   cell_size = s$detected,
 #'   cell_shape = "circle",
 #'   popup = FALSE
 #' )
@@ -221,6 +229,10 @@ heat_map_summarise <- function(x,
                                stack_by = NULL,
                                bimodal = FALSE) {
 
+  # SEVERAL SUMMARIES AT ONCE - A NAMED LIST, ONE ELEMENT PER SUMMARY
+  fun <- .summary_funs(fun)
+  multi <- is.character(fun) && length(fun) > 1
+
   # TRANSFORM AND SCALING OF THE CELLS (FIRST) OR THE SUMMARIES (LAST)
   transform <- .summary_transform(transform)
   scale <- .summary_scale(scale)
@@ -244,7 +256,8 @@ heat_map_summarise <- function(x,
     )
   }
   dips <- NULL
-  if(!is.null(scale) && !scale_first && identical(fun, "values")) {
+  if(!is.null(scale) && !scale_first && is.character(fun) &&
+     "values" %in% fun) {
     stop(
       "The values of fun = \"values\" can't be scaled after summarising - ",
       "use scale_when = \"first\" to scale the cells.",
@@ -426,37 +439,112 @@ heat_map_summarise <- function(x,
     )
   }
 
-  # SCALING OF THE SUMMARIES - EACH FEATURE (COLUMN)
-  if(!is.null(scale) && !scale_first && !is.list(out)) {
-    out <- heat_map_scale(out, scale = "column", method = scale, q = q)
-  }
-
-  # THE DIP OF EACH FEATURE IN EACH GROUP, FOR BIMODAL FLAGS IN heat_map()
-  if(!is.null(dips) && !is.list(out)) {
-    rows <- rownames(out)
-    cols <- colnames(out)
-    attr(out, "dip") <- dips$dip[rows, cols, drop = FALSE]
-    attr(out, "dip_n") <- dips$n[rows, cols, drop = FALSE]
-    attr(out, "dip_pc") <- dips$pc_dip[rows, cols, drop = FALSE]
-    attr(out, "dip_pc_n") <- dips$pc_n[rows, cols, drop = FALSE]
-  }
-
-  # THE SIZE AND MAKE-UP OF EACH GROUP, FOR BARS AND ANNOTATIONS IN
-  # heat_map()
-  if(!is.null(info) && !is.null(rownames(out))) {
-    rows <- rownames(out)
-    attr(out, "n") <- info$n[rows]
-    if(!is.null(info$stack)) {
-      stack <- info$stack[rows, , drop = FALSE]
-      attr(stack, "title") <- attr(info$stack, "title")
-      attr(out, "stack") <- stack
+  # EACH SUMMARY AS heat_map_summarise() WITH THAT fun ALONE RETURNS IT
+  finish <- function(out) {
+    # SCALING OF THE SUMMARIES - EACH FEATURE (COLUMN)
+    if(!is.null(scale) && !scale_first && !is.list(out)) {
+      out <- heat_map_scale(out, scale = "column", method = scale, q = q)
     }
-    if(!is.null(info$groups)) {
-      g <- info$groups[rows, , drop = FALSE]
-      attr(out, "groups") <- g
+
+    # THE DIP OF EACH FEATURE IN EACH GROUP, FOR BIMODAL FLAGS IN heat_map()
+    if(!is.null(dips) && !is.list(out)) {
+      rows <- rownames(out)
+      cols <- colnames(out)
+      attr(out, "dip") <- dips$dip[rows, cols, drop = FALSE]
+      attr(out, "dip_n") <- dips$n[rows, cols, drop = FALSE]
+      attr(out, "dip_pc") <- dips$pc_dip[rows, cols, drop = FALSE]
+      attr(out, "dip_pc_n") <- dips$pc_n[rows, cols, drop = FALSE]
     }
+
+    # THE SIZE AND MAKE-UP OF EACH GROUP, FOR BARS AND ANNOTATIONS IN
+    # heat_map()
+    if(!is.null(info) && !is.null(rownames(out))) {
+      rows <- rownames(out)
+      attr(out, "n") <- info$n[rows]
+      if(!is.null(info$stack)) {
+        stack <- info$stack[rows, , drop = FALSE]
+        attr(stack, "title") <- attr(info$stack, "title")
+        attr(out, "stack") <- stack
+      }
+      if(!is.null(info$groups)) {
+        g <- info$groups[rows, , drop = FALSE]
+        attr(out, "groups") <- g
+      }
+    }
+    out
   }
-  out
+  if(multi) {
+    return(stats::setNames(lapply(out[fun], finish), fun))
+  }
+  finish(out)
+}
+
+#' The summaries asked of heat_map_summarise(): a function, or the names of
+#' one or more (distinct) summaries
+#' @noRd
+.summary_funs <- function(fun) {
+  if(is.function(fun) || (is.character(fun) && length(fun) == 1)) {
+    return(fun)
+  }
+  known <- c("mean", "median", "sum", "min", "max", "sd", "n", "detected",
+             "dip", "values")
+  if(!is.character(fun) || length(fun) == 0 || anyNA(fun) ||
+     !all(fun %in% known) || anyDuplicated(fun)) {
+    stop(
+      "'fun' must be a function, or one or more different summaries of ",
+      paste0("\"", known, "\"", collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  fun
+}
+
+# THE SUMMARIES FOUND TOGETHER FROM THE SUMS AND COUNTS OF EACH GROUP - IN ONE
+# PASS OVER THE DATA
+.SUM_STATS <- c("mean", "sum", "n", "detected")
+
+#' Several summaries, some found together from sums and counts (one call of
+#' summarise() with all of them) and the others one at a time
+#'
+#' @param fun the summaries, more than one.
+#' @param summarise a function of one or more summaries: a summary for one,
+#'   a named list for several.
+#'
+#' @return a named list in the order of fun.
+#'
+#' @noRd
+.summary_split <- function(fun,
+                           summarise) {
+  shared <- fun[fun %in% .SUM_STATS]
+  out <- list()
+  if(length(shared) > 0) {
+    s <- summarise(shared)
+    if(length(shared) == 1) {
+      s <- stats::setNames(list(s), shared)
+    }
+    out[shared] <- s[shared]
+  }
+  for(f in setdiff(fun, shared)) {
+    out[[f]] <- summarise(f)
+  }
+  out[fun]
+}
+
+#' One summary (one(fun)) or a named list of several (one(f) for each)
+#' @noRd
+.summary_pick <- function(fun,
+                          one) {
+  if(length(fun) == 1) {
+    return(one(fun))
+  }
+  stats::setNames(lapply(fun, one), fun)
+}
+
+#' Several summaries that aren't all found from sums and counts
+#' @noRd
+.summary_mixed <- function(fun) {
+  is.character(fun) && length(fun) > 1 && !all(fun %in% .SUM_STATS)
 }
 
 #' Summaries of the cells of single-cell data
@@ -467,6 +555,13 @@ heat_map_summarise <- function(x,
                              group_x,
                              fun,
                              threshold) {
+  # SEVERAL SUMMARIES - THOSE FROM SUMS AND COUNTS TOGETHER, THE OTHERS EACH ON
+  # THEIR OWN
+  if(.summary_mixed(fun)) {
+    return(.summary_split(fun, function(f) {
+      .summarise_cells(src, feat, groups, group_x, f, threshold)
+    }))
+  }
   # ON-DISK DATA - EACH FEATURE SUMMARISED ON ITS OWN, A BLOCK AT A TIME, OR
   # THE FEATURES IN MEMORY FOR GROUPS OF FEATURES
   if(.source_blocked(src)) {
@@ -474,7 +569,9 @@ heat_map_summarise <- function(x,
       parts <- .by_blocks(src, feat, function(bs, bf) {
         .summarise_cells(bs, bf, groups, NULL, fun, threshold)
       })
-      return(do.call(cbind, parts))
+      return(.summary_pick(fun, function(f) {
+        do.call(cbind, if(length(fun) == 1) parts else lapply(parts, `[[`, f))
+      }))
     }
     mem <- .source_memory(src, feat)
     src <- mem$src
@@ -486,19 +583,19 @@ heat_map_summarise <- function(x,
   }
   # SUMS, COUNTS AND MEDIANS FROM THE NON-ZERO VALUES OF SPARSE DATA
   if(inherits(src$values, "dgCMatrix") && is.character(fun) &&
-     length(fun) == 1 &&
-     (fun %in% c("mean", "sum", "n", "detected") ||
-      (fun == "median" && is.null(group_x)))) {
+     (all(fun %in% .SUM_STATS) ||
+      (identical(fun, "median") && is.null(group_x)))) {
     return(.sparse_summarise(src, feat, groups, group_x, fun, threshold))
   }
   # SUMS AND COUNTS OF DENSE CELLS IN COMPILED CODE
-  if(is.character(fun) && length(fun) == 1 &&
-     fun %in% c("mean", "sum", "n", "detected") &&
+  if(is.character(fun) && all(fun %in% .SUM_STATS) &&
      is.null(group_x) && !is.null(groups)) {
     s <- .cell_summaries(src, feat, groups, threshold)
-    out <- s[[fun]]
-    out[s$n == 0] <- NA
-    return(out)
+    return(.summary_pick(fun, function(f) {
+      out <- s[[f]]
+      out[s$n == 0] <- NA
+      out
+    }))
   }
   # MEDIANS OF DENSE CELLS IN COMPILED CODE, AS median() FINDS THEM
   if(identical(fun, "median") && is.null(group_x) && !is.null(groups)) {
@@ -571,6 +668,35 @@ heat_map_summarise <- function(x,
     rows <- as.list(seq_len(nrow(x)))
     names(rows) <- rownames(x)
   }
+  # SEVERAL SUMMARIES - THOSE FROM SUMS AND COUNTS TOGETHER, THE OTHERS EACH ON
+  # THEIR OWN
+  if(is.character(fun) && length(fun) > 1) {
+    return(.summary_split(fun, function(f) {
+      .matrix_summary(m, rows, cols, group_x, group_y, f, threshold)
+    }))
+  }
+  .matrix_summary(m, rows, cols, group_x, group_y, fun, threshold)
+}
+
+#' Summaries of the blocks of rows and columns of a numeric matrix
+#'
+#' @param m a numeric matrix (non-numeric columns of the data set to NA).
+#' @param rows,cols the indices of the rows and columns of each group,
+#'   named by group.
+#' @param fun one summary, or several of \code{.SUM_STATS}.
+#'
+#' @noRd
+.matrix_summary <- function(m,
+                            rows,
+                            cols,
+                            group_x,
+                            group_y,
+                            fun,
+                            threshold) {
+  # SUMS & COUNTS ADD UP OVER BLOCKS - PRODUCTS WITH GROUP INDICATOR MATRICES
+  if(is.character(fun) && all(fun %in% .SUM_STATS)) {
+    return(.matrix_sums(m, rows, cols, fun, threshold))
+  }
   # THE VALUES THEMSELVES - A LIST-MATRIX FOR cell_values IN heat_map()
   if(identical(fun, "values")) {
     out <- matrix(
@@ -618,36 +744,6 @@ heat_map_summarise <- function(x,
     ncol = length(cols),
     dimnames = list(names(rows), names(cols))
   )
-  # SUMS & COUNTS ADD UP OVER BLOCKS - PRODUCTS WITH GROUP INDICATOR MATRICES
-  if(is.character(fun) && fun %in% c("mean", "sum", "n", "detected")) {
-    ri <- unlist(rows, use.names = FALSE)
-    ci <- unlist(cols, use.names = FALSE)
-    if(length(ci) == 0) {
-      return(out)
-    }
-    add <- function(a) {
-      t(.group_sum(t(.group_sum(a, rows)), cols))
-    }
-    v <- m[ri, ci, drop = FALSE]
-    ok <- !is.na(v)
-    miss <- !all(ok)
-    if(miss) {
-      v[!ok] <- 0
-      n <- add(ok * 1)
-    } else {
-      n <- outer(lengths(rows), lengths(cols))
-    }
-    val <- switch(
-      fun,
-      n = n,
-      sum = add(v),
-      mean = add(v) / n,
-      detected = add((if(miss) ok & v > threshold else v > threshold) * 1) / n
-    )
-    val[n == 0] <- NA
-    out[] <- val
-    return(out)
-  }
   for(j in seq_along(cols)) {
     if(length(cols[[j]]) == 0) {
       next
@@ -662,6 +758,64 @@ heat_map_summarise <- function(x,
     }
   }
   out
+}
+
+#' The mean, sum, number and proportion detected of the blocks of rows and
+#' columns of a numeric matrix, from one pass over its values
+#'
+#' Sums and counts add up over blocks: products with group indicator
+#' matrices (as \code{rowsum()}).
+#'
+#' @param fun one or more of \code{.SUM_STATS}.
+#'
+#' @return a matrix for one summary, a named list of matrices for several.
+#'
+#' @noRd
+.matrix_sums <- function(m,
+                         rows,
+                         cols,
+                         fun,
+                         threshold) {
+  template <- matrix(
+    NA_real_,
+    nrow = length(rows),
+    ncol = length(cols),
+    dimnames = list(names(rows), names(cols))
+  )
+  ri <- unlist(rows, use.names = FALSE)
+  ci <- unlist(cols, use.names = FALSE)
+  if(length(ci) == 0) {
+    return(.summary_pick(fun, function(f) template))
+  }
+  add <- function(a) {
+    t(.group_sum(t(.group_sum(a, rows)), cols))
+  }
+  v <- m[ri, ci, drop = FALSE]
+  ok <- !is.na(v)
+  miss <- !all(ok)
+  if(miss) {
+    v[!ok] <- 0
+    n <- add(ok * 1)
+  } else {
+    n <- outer(lengths(rows), lengths(cols))
+  }
+  sums <- if(any(fun %in% c("sum", "mean"))) add(v)
+  detected <- if("detected" %in% fun) {
+    add((if(miss) ok & v > threshold else v > threshold) * 1)
+  }
+  .summary_pick(fun, function(f) {
+    val <- switch(
+      f,
+      n = n,
+      sum = sums,
+      mean = sums / n,
+      detected = detected / n
+    )
+    val[n == 0] <- NA
+    out <- template
+    out[] <- val
+    out
+  })
 }
 
 #' The transform of heat_map_summarise()
@@ -884,11 +1038,12 @@ heat_map_summarise <- function(x,
     as.integer(codes),
     as.integer(n_groups)
   )
-  if(fun == "median") {
+  if(identical(fun, "median")) {
     out <- do.call(sparse_group_medians_cpp, c(args, list(.threads())))
     dimnames(out) <- list(labels, feat$names)
     return(out)
   }
+  # THE SUMS, COUNTS AND NUMBERS DETECTED TOGETHER, IN ONE PASS
   r <- do.call(
     sparse_group_sums_cpp,
     c(args, list(as.numeric(threshold), .threads()))
@@ -900,19 +1055,21 @@ heat_map_summarise <- function(x,
     if(is.null(cols)) a else t(.group_sum(t(a[, ci, drop = FALSE]), cols))
   }
   n <- add(r$n)
-  out <- switch(
-    fun,
-    n = n,
-    sum = add(r$sum),
-    mean = add(r$sum) / n,
-    detected = add(r$detected) / n
-  )
-  out[n == 0] <- NA
-  dimnames(out) <- list(
-    labels,
-    if(is.null(cols)) feat$names else names(cols)
-  )
-  out
+  .summary_pick(fun, function(f) {
+    out <- switch(
+      f,
+      n = n,
+      sum = add(r$sum),
+      mean = add(r$sum) / n,
+      detected = add(r$detected) / n
+    )
+    out[n == 0] <- NA
+    dimnames(out) <- list(
+      labels,
+      if(is.null(cols)) feat$names else names(cols)
+    )
+    out
+  })
 }
 
 #' Indices of the rows or columns in each group, named by group
