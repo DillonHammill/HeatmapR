@@ -643,7 +643,11 @@ conventions and defaults have changed; they are listed first.
   feature in each group from the non-zero values, in compiled code (all
   20,000 genes of 50,000 cells in 20 groups: 0.2-0.6 seconds for means,
   0.6-1.7 seconds for medians), giving the same numbers as for the dense
-  data. A message warns when dense values would take more than 1 GB.
+  data. Several summaries in one call (`fun = c("mean", "detected")`,
+  for a dot plot) are returned as a named list, and the mean, sum,
+  number and proportion detected among them are found together in one
+  pass over the data. A message warns when dense values would take more
+  than 1 GB.
 - Redraws with new data (`plot(hm, data = sce2)`) read it with the same
   single-cell arguments.
 - [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)

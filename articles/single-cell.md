@@ -538,14 +538,13 @@ In short:
   filters, one group against the rest; scran’s functions compute
   statistics for every gene between every pair of groups, which takes
   longer and tells you more.
-- **Summaries.** scuttle’s `summarizeAssayByGroup()` was the fastest at
-  the mean and proportion detected of every gene, 2.4 to 2.6 times as
-  fast as
-  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
-  (which makes one pass for each), and Seurat’s `AverageExpression()`
-  took 2.8 to 9.6 times as long as HeatmapR, with up to 0.9 GB of
-  memory. For a heatmap or dot plot only the chosen features are
-  summarised.
+- **Summaries.** scuttle’s `summarizeAssayByGroup()` and
+  [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md),
+  each finding the mean and proportion detected of every gene in one
+  pass over the data, were the fastest, scuttle 1.0 to 1.5 times as fast
+  as HeatmapR, and Seurat’s `AverageExpression()` took 4.5 to 14.0 times
+  as long as HeatmapR, with up to 0.9 GB of memory. For a heatmap or dot
+  plot only the chosen features are summarised.
 - **Plots.** A dot plot of 40 genes in 100,000 cells took 0.17 seconds
   against 1.9 for Seurat’s `DotPlot()`, and a heatmap of the 40 genes in
   every one of the 100,000 cells 1.3 seconds against 40 seconds and 2.8
@@ -577,17 +576,16 @@ Peak memory in MB:
 | 20,000 cells x 20,000 genes |       47 |                  559 |   558 |  4,000 |
 
 **Mean and proportion detected of every gene in every group**
-(pseudobulk):
-[`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
-(twice, once for each), scuttle’s
+(pseudobulk): `heat_map_summarise(fun = c("mean", "detected"))`,
+scuttle’s
 `summarizeAssayByGroup(statistics = c("mean", "prop.detected"))` and
 Seurat’s `AverageExpression()`. Times in seconds:
 
 |                             | HeatmapR | scuttle | Seurat |
 |:----------------------------|---------:|--------:|-------:|
-| 20,000 cells x 2,000 genes  |     0.09 |    0.03 |   0.23 |
-| 100,000 cells x 2,000 genes |     0.23 |    0.09 |   2.20 |
-| 20,000 cells x 20,000 genes |     0.54 |    0.23 |   2.77 |
+| 20,000 cells x 2,000 genes  |     0.05 |    0.05 |   0.22 |
+| 100,000 cells x 2,000 genes |     0.14 |    0.11 |   1.98 |
+| 20,000 cells x 20,000 genes |     0.31 |    0.21 |   2.60 |
 
 **A dot plot of 40 genes**
 ([`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)

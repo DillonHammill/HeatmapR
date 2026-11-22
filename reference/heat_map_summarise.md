@@ -72,7 +72,12 @@ heat_map_summarise(
   is then a matrix of lists holding the numeric vector of values in each
   group, for `cell_values` in
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
-  to draw their distributions inside the cells.
+  to draw their distributions inside the cells. Several summaries, e.g.
+  `c("mean", "detected")`, give a named list with one element per
+  summary, each as `heat_map_summarise()` returns it with that `fun`
+  alone; the mean, sum, number and proportion detected are found
+  together in one pass over the data, which for large single-cell data
+  takes about as long as one of them.
 
 - threshold:
 
@@ -206,6 +211,7 @@ group (e.g. the condition of each sample), which
 `heat_map(group_by = , annotation_by = )` can use as the metadata of the
 rows. With `bimodal = TRUE` the result also keeps the `"dip"`,
 `"dip_n"`, `"dip_pc"` and `"dip_pc_n"` attributes (see `bimodal`).
+Several summaries in `fun` give a list of these, named by summary.
 
 ## References
 
@@ -246,11 +252,13 @@ heat_map(
 #> Applying range scaling to each column...
 
 
-# Dot plot - mean as colour, proportion above the overall mean as size
+# Dot plot - mean as colour, proportion above the overall mean as size,
+# both found in one pass
 z <- scale(mtcars)
+s <- heat_map_summarise(z, group_y = mtcars$gear, fun = c("mean", "detected"))
 heat_map(
-  heat_map_summarise(z, group_y = mtcars$gear),
-  cell_size = heat_map_summarise(z, group_y = mtcars$gear, fun = "detected"),
+  s$mean,
+  cell_size = s$detected,
   cell_shape = "circle",
   popup = FALSE
 )
