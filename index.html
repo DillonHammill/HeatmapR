@@ -47,12 +47,28 @@
     <li><a class="dropdown-item" href="articles/app.html">Building heatmaps in the browser</a></li>
     <li><a class="dropdown-item" href="articles/ordering.html">Ordering rows and columns</a></li>
     <li><a class="dropdown-item" href="articles/large-data.html">Large heatmaps</a></li>
-    <li><a class="dropdown-item" href="articles/single-cell.html">Single-cell data</a></li>
     <li><a class="dropdown-item" href="articles/cells.html">More than colour</a></li>
     <li><a class="dropdown-item" href="articles/integration.html">Working with heatmaps</a></li>
     <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell data</h6></li>
+    <li><a class="dropdown-item" href="articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="articles/trajectories.html">Trajectories</a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
     <li><a class="dropdown-item" href="articles/benchmarks.html">Speed comparison</a></li>
+  </ul>
+</li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-single-cell" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Single-cell</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-single-cell">
+<li><a class="dropdown-item" href="articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="articles/trajectories.html">Trajectories</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="articles/app.html">App</a></li>
@@ -332,22 +348,22 @@
 <table class="table">
 <tr>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#dot-plots"><img src="reference/figures/README-single-cell-dot.png" height="220" alt="Dot plot of the top three markers of six cell types"></a><br><a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#dot-plots">Dot plots</a>
+<a href="https://dillonhammill.github.io/HeatmapR/articles/markers.html#dot-plots"><img src="reference/figures/README-single-cell-dot.png" height="220" alt="Dot plot of the top three markers of six cell types"></a><br><a href="https://dillonhammill.github.io/HeatmapR/articles/markers.html#dot-plots">Dot plots</a>
 </td>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#markers"><img src="reference/figures/README-single-cell-cells.png" height="220" alt="Heatmap of cells grouped by cell type and their top markers grouped by the type they mark"></a><br><a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#markers">Markers of each group</a>
+<a href="https://dillonhammill.github.io/HeatmapR/articles/markers.html#heatmaps-of-markers"><img src="reference/figures/README-single-cell-cells.png" height="220" alt="Heatmap of cells grouped by cell type and their top markers grouped by the type they mark"></a><br><a href="https://dillonhammill.github.io/HeatmapR/articles/markers.html#heatmaps-of-markers">Markers of each group</a>
 </td>
 </tr>
 <tr>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#cytometry"><img src="reference/figures/README-single-cell-cytometry.png" height="220" alt="Heatmap of the scaled median of 12 markers in eight cytometry clusters with stacked bars of the events of each condition"></a><br><a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#cytometry">Cytometry clusters</a>
+<a href="https://dillonhammill.github.io/HeatmapR/articles/cytometry.html#cluster-medians-and-abundances"><img src="reference/figures/README-single-cell-cytometry.png" height="220" alt="Heatmap of the scaled median of 12 markers in eight cytometry clusters with stacked bars of the events of each condition"></a><br><a href="https://dillonhammill.github.io/HeatmapR/articles/cytometry.html#cluster-medians-and-abundances">Cytometry clusters</a>
 </td>
 <td align="center">
-<a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#trajectories"><img src="reference/figures/README-single-cell-trajectory.png" height="220" alt="Heatmap of 30 genes smoothed along the pseudotime of two lineages, ordered by when they peak"></a><br><a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html#trajectories">Trajectories</a>
+<a href="https://dillonhammill.github.io/HeatmapR/articles/trajectories.html#lineages-side-by-side"><img src="reference/figures/README-single-cell-trajectory.png" height="220" alt="Heatmap of 30 genes smoothed along the pseudotime of two lineages, ordered by when they peak"></a><br><a href="https://dillonhammill.github.io/HeatmapR/articles/trajectories.html#lineages-side-by-side">Trajectories</a>
 </td>
 </tr>
 </table>
-<p>The <a href="https://dillonhammill.github.io/HeatmapR/articles/index.html">guides</a> on the website cover ordering, large heatmaps, <a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html">single-cell data</a>, cells, and working with other packages, and the <a href="https://dillonhammill.github.io/HeatmapR/news/index.html">changelog</a> lists everything new in <strong>HeatmapR</strong> 2.0.0.</p>
+<p>The <a href="https://dillonhammill.github.io/HeatmapR/articles/index.html">guides</a> on the website cover ordering, large heatmaps, cells, working with other packages and the app. Five guides cover single-cell data: <a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html">getting started</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/markers.html">markers, dot plots and gene sets</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/conditions.html">samples and conditions</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/cytometry.html">cytometry</a> and <a href="https://dillonhammill.github.io/HeatmapR/articles/trajectories.html">trajectories</a>. The <a href="https://dillonhammill.github.io/HeatmapR/news/index.html">changelog</a> lists everything new in <strong>HeatmapR</strong> 2.0.0.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>

@@ -24,12 +24,26 @@
     <li><a class="dropdown-item" href="../articles/app.html">Building heatmaps in the browser</a></li>
     <li><a class="dropdown-item" href="../articles/ordering.html">Ordering rows and columns</a></li>
     <li><a class="dropdown-item" href="../articles/large-data.html">Large heatmaps</a></li>
-    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
     <li><a class="dropdown-item" href="../articles/cells.html">More than colour</a></li>
     <li><a class="dropdown-item" href="../articles/integration.html">Working with heatmaps</a></li>
     <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell data</h6></li>
+    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="../articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="../articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectories.html">Trajectories</a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
     <li><a class="dropdown-item" href="../articles/benchmarks.html">Speed comparison</a></li>
+  </ul></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-single-cell" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Single-cell</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-single-cell"><li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="../articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="../articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectories.html">Trajectories</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/app.html">App</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/benchmarks.html">Speed</a></li>
@@ -64,12 +78,25 @@
         <dd><p>Dendrogram, optimal leaf and spectral orders, how they work and when to use each, measured on clusters, a trajectory and a cycle.</p>
         </dd><dt><a href="large-data.html">Large heatmaps</a></dt>
         <dd><p>Hundreds of thousands of rows: raster drawing, two-stage clustering, k-means splits, automatic cuts, labels and zoom panels, threads and memory.</p>
-        </dd><dt><a href="single-cell.html">Single-cell data</a></dt>
-        <dd><p>Heatmaps, dot plots and markers straight from SingleCellExperiment, Seurat, flowFrame and sparse matrices: features by name, groups and annotations from metadata, downsampling, sparse summaries, marker ranking, cytometry and trajectories.</p>
         </dd><dt><a href="cells.html">More than colour</a></dt>
         <dd><p>Uncertainty, two values in a cell, distributions inside cells and beside the heatmap, metadata annotations, honest colour scales and correlations.</p>
         </dd><dt><a href="integration.html">Working with heatmaps</a></dt>
         <dd><p>Redrawing and saving heatmaps, extracting their orders and clusters, tidy data for ggplot2, heatmaps beside ggplot2 plots and alternative text for screen readers.</p>
+      </dd></dl></div>
+    <div class="section ">
+      <h3>Single-cell data</h3>
+      <div class="section-desc"><p>Heatmaps, dot plots, markers, conditions, cytometry and trajectories of single-cell data, read from SingleCellExperiment and Seurat objects, AnnData files and cytometry files.</p></div>
+
+      <dl><dt><a href="single-cell.html">Single-cell data</a></dt>
+        <dd><p>Start here: the single-cell objects and files HeatmapR reads, heatmaps of cells, summaries of groups, the Seurat and scanpy functions each function stands in for, and how fast they are.</p>
+        </dd><dt><a href="markers.html">Markers, dot plots and gene sets</a></dt>
+        <dd><p>Rank the markers of each cluster or cell type, draw them as heatmaps and dot plots, score cells for sets of genes, put genes beside scores or proteins, and find clusters that may be two populations.</p>
+        </dd><dt><a href="conditions.html">Samples and conditions</a></dt>
+        <dd><p>Compare conditions in single-cell data with the samples as replicates: the make-up of each sample, pseudobulk tests of each cell type, and dot plots, split cells and panels on shared scales that show the changes.</p>
+        </dd><dt><a href="cytometry.html">Cytometry</a></dt>
+        <dd><p>Flow and mass cytometry events: reading flowFrame and flowSet objects, the asinh transform and quantile scaling, heatmaps of events and of cluster medians, abundances, differential states, and clusters that may be two populations.</p>
+        </dd><dt><a href="trajectories.html">Trajectories</a></dt>
+        <dd><p>Genes along pseudotime: cells in order, genes smoothed over bins and ordered by when they peak, modules of genes, lineages side by side, and cells ordered without a pseudotime.</p>
       </dd></dl></div>
     <div class="section ">
       <h3>Performance</h3>

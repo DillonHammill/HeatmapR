@@ -14,10 +14,18 @@ functions in `HeatmapR` as summarised below:
 - [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md)
   draws correlation matrices, with one order for the rows and columns
   and different shapes in each triangle.
+- [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
+  draws several data sets measured on the same rows (e.g. genes and
+  proteins) side by side, each block on its own colour scale.
 - [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
   draws dot plots of groups of cells: the colour of each dot shows a
   group’s mean and its size the proportion of cells in which the feature
   is detected.
+- [`heat_map_composition()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_composition.md)
+  draws the share of each group of cells in each sample, and
+  [`heat_map_contrast()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_contrast.md)
+  the differences between two conditions in each group, tested across
+  samples.
 - [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
   is used inside
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
@@ -37,12 +45,16 @@ functions in `HeatmapR` as summarised below:
   the cells.
 - [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
   ranks the marker features of groups of cells by their AUC, with
-  Wilcoxon p-values, and
+  Wilcoxon p-values,
+  [`heat_map_score()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_score.md)
+  scores cells for sets of genes, and
   [`heat_map_downsample()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_downsample.md)
   keeps at most a number of cells of each group.
 - [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
   smooths features along a trajectory (e.g. pseudotime) for heatmaps of
   genes ordered by when they peak.
+- [`heat_map_read_h5ad()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_read_h5ad.md)
+  reads AnnData (`.h5ad`) files without Python.
 - [`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md)
   simulates the single-cell RNA, cytometry and trajectory data used in
   the examples and guides.
@@ -53,14 +65,32 @@ functions in `HeatmapR` as summarised below:
   of a heatmap for downstream analyses.
 - [`heat_map_describe()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_describe.md)
   writes a plain-language description of a heatmap to use as alternative
-  text for screen readers.
+  text for screen readers, and
+  [`heat_map_check_colours()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_check_colours.md)
+  finds colours that readers with colour vision deficiencies can’t tell
+  apart.
 - [`heat_map_data()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.md)
   returns the cells, rows, columns and dendrograms of a heatmap as tidy
   tables, and
   [`heat_map_grob()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_grob.md)
   places heatmaps beside `ggplot2` plots.
-- [`heat_map_layout()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.md)
-  allows you to create custom plot layouts to arrange multiple heatmaps.
+- [`heat_map_html()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_html.md)
+  writes a heatmap to an interactive web page, and
+  [`heat_map_app()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_app.md)
+  builds heatmaps in the browser and writes their R code.
+- [`heat_map_style()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_style.md)
+  keeps settings of
+  [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
+  to reuse, and
+  [`heat_map_arrange()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_arrange.md)
+  redraws heatmaps side by side on shared colour scales.
+- [`heat_map_custom()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_custom.md)
+  and
+  [`heat_map_layout()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_layout.md)
+  allow you to create custom plot layouts to arrange multiple heatmaps,
+  and
+  [`heat_map_new()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_new.md)
+  opens a new graphics device for a heatmap in interactive sessions.
 - [`heat_map_save()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_save.md)
   can be called prior to any
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md)
@@ -85,12 +115,22 @@ columns](https://dillonhammill.github.io/HeatmapR/articles/ordering.html),
 heatmaps](https://dillonhammill.github.io/HeatmapR/articles/large-data.html),
 [single-cell
 data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html)
-(SingleCellExperiment, Seurat and cytometry data, markers, dot plots and
-trajectories), [more than
+(SingleCellExperiment and Seurat objects and AnnData files), with guides
+to [markers and dot
+plots](https://dillonhammill.github.io/HeatmapR/articles/markers.html),
+[samples and
+conditions](https://dillonhammill.github.io/HeatmapR/articles/conditions.html),
+[cytometry](https://dillonhammill.github.io/HeatmapR/articles/cytometry.html)
+and
+[trajectories](https://dillonhammill.github.io/HeatmapR/articles/trajectories.html),
+[more than
 colour](https://dillonhammill.github.io/HeatmapR/articles/cells.html)
 (uncertainty, split cells, distributions and annotations), [working with
 heatmaps](https://dillonhammill.github.io/HeatmapR/articles/integration.html)
-(redraws, tidy data, `ggplot2` and alternative text), and a [speed
+(redraws, tidy data, `ggplot2` and alternative text), [building heatmaps
+in the
+browser](https://dillonhammill.github.io/HeatmapR/articles/app.html),
+and a [speed
 comparison](https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html)
 with other heatmap packages.
 
@@ -177,6 +217,14 @@ Setting `cell_size = TRUE` will scale the size of each cell based on its
 value in the input matrix. Alternatively, users can supply a separate
 matrix of the same dimensionality and orientation as the input matrix to
 control the size of the cells independently of their colour.
+
+By default the width of each cell grows with its value;
+`cell_size_scale_method = "area"` scales its area instead, which the eye
+reads more faithfully for circles, and `cell_size_scale_range` sets the
+smallest and largest relative cell sizes. `legend_size_format` labels
+the size legend: `"percent"` for proportions (as dot plots of
+single-cell data show the share of cells detected), or a function that
+formats the values.
 
 ``` r
 

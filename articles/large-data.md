@@ -51,7 +51,7 @@ patterns.](large-data_files/figure-html/big-1.png)
 ``` r
 
 time[["elapsed"]]
-#> [1] 1.576
+#> [1] 1.579
 ```
 
 Two things make this fast: the cells are drawn as an image, and the rows
@@ -295,7 +295,7 @@ heat_map_threads(old)
 all <- system.time(heat_map_clust(cells[1:10000, ], max = Inf))[["elapsed"]]
 c(threads_1 = one, threads_all = all)
 #>   threads_1 threads_all 
-#>       1.396       0.977
+#>       1.415       1.039
 ```
 
 ## Memory and redraws
@@ -330,7 +330,7 @@ first <- system.time(
 again <- system.time(plot(hm, title = "Redrawn"))[["elapsed"]]
 c(first = first, redraw = again)
 #>  first redraw 
-#>  1.325  0.858
+#>  1.334  0.841
 ```
 
 ## Summaries of groups

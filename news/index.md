@@ -1261,6 +1261,19 @@ conventions and defaults have changed; they are listed first.
   and covers over 99% of the code.
 - Documentation now matches the function defaults and the README
   describes CRAN installation.
+- The website has five guides to single-cell data, in a Single-cell
+  menu: [Single-cell
+  data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html)
+  (what HeatmapR reads, heatmaps of cells, summaries and pseudobulk, and
+  the Seurat and scanpy functions each function stands in for),
+  [Markers, dot plots and gene
+  sets](https://dillonhammill.github.io/HeatmapR/articles/markers.html),
+  [Samples and
+  conditions](https://dillonhammill.github.io/HeatmapR/articles/conditions.html),
+  [Cytometry](https://dillonhammill.github.io/HeatmapR/articles/cytometry.html)
+  and
+  [Trajectories](https://dillonhammill.github.io/HeatmapR/articles/trajectories.html).
+  The reference index has a section for the single-cell functions.
 - Methods are referenced where they are used: the help pages of
   [`heat_map()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map.md),
   [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md),

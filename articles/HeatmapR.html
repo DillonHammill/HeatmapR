@@ -44,12 +44,28 @@
     <li><a class="dropdown-item" href="../articles/app.html">Building heatmaps in the browser</a></li>
     <li><a class="dropdown-item" href="../articles/ordering.html">Ordering rows and columns</a></li>
     <li><a class="dropdown-item" href="../articles/large-data.html">Large heatmaps</a></li>
-    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
     <li><a class="dropdown-item" href="../articles/cells.html">More than colour</a></li>
     <li><a class="dropdown-item" href="../articles/integration.html">Working with heatmaps</a></li>
     <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell data</h6></li>
+    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="../articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="../articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectories.html">Trajectories</a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
     <li><a class="dropdown-item" href="../articles/benchmarks.html">Speed comparison</a></li>
+  </ul>
+</li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-single-cell" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Single-cell</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-single-cell">
+<li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="../articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="../articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectories.html">Trajectories</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../articles/app.html">App</a></li>
@@ -101,9 +117,18 @@ complex heatmaps using base graphics.</li>
 order for the rows and columns and different shapes in each
 triangle.</li>
 <li>
+<code><a href="../reference/heat_map_align.html">heat_map_align()</a></code> draws several data sets measured on
+the same rows (e.g. genes and proteins) side by side, each block on its
+own colour scale.</li>
+<li>
 <code><a href="../reference/heat_map_dot.html">heat_map_dot()</a></code> draws dot plots of groups of cells: the
 colour of each dot shows a group’s mean and its size the proportion of
 cells in which the feature is detected.</li>
+<li>
+<code><a href="../reference/heat_map_composition.html">heat_map_composition()</a></code> draws the share of each group of
+cells in each sample, and <code><a href="../reference/heat_map_contrast.html">heat_map_contrast()</a></code> the
+differences between two conditions in each group, tested across
+samples.</li>
 <li>
 <code><a href="../reference/heat_map_clust.html">heat_map_clust()</a></code> is used inside <code><a href="../reference/heat_map.html">heat_map()</a></code>
 to perform hierarchical clustering on the dataset, in compiled code that
@@ -120,12 +145,16 @@ median of each marker in each cluster), or keeps the values of each
 group for distributions inside the cells.</li>
 <li>
 <code><a href="../reference/heat_map_markers.html">heat_map_markers()</a></code> ranks the marker features of groups
-of cells by their AUC, with Wilcoxon p-values, and
+of cells by their AUC, with Wilcoxon p-values,
+<code><a href="../reference/heat_map_score.html">heat_map_score()</a></code> scores cells for sets of genes, and
 <code><a href="../reference/heat_map_downsample.html">heat_map_downsample()</a></code> keeps at most a number of cells of
 each group.</li>
 <li>
 <code><a href="../reference/heat_map_smooth.html">heat_map_smooth()</a></code> smooths features along a trajectory
 (e.g. pseudotime) for heatmaps of genes ordered by when they peak.</li>
+<li>
+<code><a href="../reference/heat_map_read_h5ad.html">heat_map_read_h5ad()</a></code> reads AnnData (<code>.h5ad</code>)
+files without Python.</li>
 <li>
 <code><a href="../reference/heat_map_example.html">heat_map_example()</a></code> simulates the single-cell RNA,
 cytometry and trajectory data used in the examples and guides.</li>
@@ -137,15 +166,27 @@ the compiled code.</li>
 clusters, colours and layout of a heatmap for downstream analyses.</li>
 <li>
 <code><a href="../reference/heat_map_describe.html">heat_map_describe()</a></code> writes a plain-language description
-of a heatmap to use as alternative text for screen readers.</li>
+of a heatmap to use as alternative text for screen readers, and
+<code><a href="../reference/heat_map_check_colours.html">heat_map_check_colours()</a></code> finds colours that readers with
+colour vision deficiencies can’t tell apart.</li>
 <li>
 <code><a href="../reference/heat_map_data.html">heat_map_data()</a></code> returns the cells, rows, columns and
 dendrograms of a heatmap as tidy tables, and
 <code><a href="../reference/heat_map_grob.html">heat_map_grob()</a></code> places heatmaps beside <code>ggplot2</code>
 plots.</li>
 <li>
-<code><a href="../reference/heat_map_layout.html">heat_map_layout()</a></code> allows you to create custom plot
-layouts to arrange multiple heatmaps.</li>
+<code><a href="../reference/heat_map_html.html">heat_map_html()</a></code> writes a heatmap to an interactive web
+page, and <code><a href="../reference/heat_map_app.html">heat_map_app()</a></code> builds heatmaps in the browser and
+writes their R code.</li>
+<li>
+<code><a href="../reference/heat_map_style.html">heat_map_style()</a></code> keeps settings of
+<code><a href="../reference/heat_map.html">heat_map()</a></code> to reuse, and <code><a href="../reference/heat_map_arrange.html">heat_map_arrange()</a></code>
+redraws heatmaps side by side on shared colour scales.</li>
+<li>
+<code><a href="../reference/heat_map_custom.html">heat_map_custom()</a></code> and <code><a href="../reference/heat_map_layout.html">heat_map_layout()</a></code>
+allow you to create custom plot layouts to arrange multiple heatmaps,
+and <code><a href="../reference/heat_map_new.html">heat_map_new()</a></code> opens a new graphics device for a
+heatmap in interactive sessions.</li>
 <li>
 <code><a href="../reference/heat_map_save.html">heat_map_save()</a></code> can be called prior to any
 <code><a href="../reference/heat_map.html">heat_map()</a></code> call to save a high resolution image.</li>
@@ -166,12 +207,17 @@ website</a> has guides that go further, with every figure drawn as the
 site is built: <a href="https://dillonhammill.github.io/HeatmapR/articles/ordering.html">ordering
 rows and columns</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/large-data.html">large
 heatmaps</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html">single-cell
-data</a> (SingleCellExperiment, Seurat and cytometry data, markers, dot
-plots and trajectories), <a href="https://dillonhammill.github.io/HeatmapR/articles/cells.html">more
+data</a> (SingleCellExperiment and Seurat objects and AnnData files),
+with guides to <a href="https://dillonhammill.github.io/HeatmapR/articles/markers.html">markers
+and dot plots</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/conditions.html">samples
+and conditions</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/cytometry.html">cytometry</a>
+and <a href="https://dillonhammill.github.io/HeatmapR/articles/trajectories.html">trajectories</a>,
+<a href="https://dillonhammill.github.io/HeatmapR/articles/cells.html">more
 than colour</a> (uncertainty, split cells, distributions and
 annotations), <a href="https://dillonhammill.github.io/HeatmapR/articles/integration.html">working
 with heatmaps</a> (redraws, tidy data, <code>ggplot2</code> and
-alternative text), and a <a href="https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html">speed
+alternative text), <a href="https://dillonhammill.github.io/HeatmapR/articles/app.html">building
+heatmaps in the browser</a>, and a <a href="https://dillonhammill.github.io/HeatmapR/articles/benchmarks.html">speed
 comparison</a> with other heatmap packages.</p>
 </div>
 <div class="section level2">
@@ -238,6 +284,14 @@ will scale the size of each cell based on its value in the input matrix.
 Alternatively, users can supply a separate matrix of the same
 dimensionality and orientation as the input matrix to control the size
 of the cells independently of their colour.</p>
+<p>By default the width of each cell grows with its value;
+<code>cell_size_scale_method = "area"</code> scales its area instead,
+which the eye reads more faithfully for circles, and
+<code>cell_size_scale_range</code> sets the smallest and largest
+relative cell sizes. <code>legend_size_format</code> labels the size
+legend: <code>"percent"</code> for proportions (as dot plots of
+single-cell data show the share of cells detected), or a function that
+formats the values.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/heat_map.html">heat_map</a></span><span class="op">(</span></span>
 <span>  <span class="va">mtcars</span>,</span>

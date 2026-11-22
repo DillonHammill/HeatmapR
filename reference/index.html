@@ -24,12 +24,26 @@
     <li><a class="dropdown-item" href="../articles/app.html">Building heatmaps in the browser</a></li>
     <li><a class="dropdown-item" href="../articles/ordering.html">Ordering rows and columns</a></li>
     <li><a class="dropdown-item" href="../articles/large-data.html">Large heatmaps</a></li>
-    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
     <li><a class="dropdown-item" href="../articles/cells.html">More than colour</a></li>
     <li><a class="dropdown-item" href="../articles/integration.html">Working with heatmaps</a></li>
     <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell data</h6></li>
+    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="../articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="../articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectories.html">Trajectories</a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
     <li><a class="dropdown-item" href="../articles/benchmarks.html">Speed comparison</a></li>
+  </ul></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-single-cell" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Single-cell</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-single-cell"><li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="../articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="../articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectories.html">Trajectories</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/app.html">App</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/benchmarks.html">Speed</a></li>
@@ -73,31 +87,10 @@
 
         <dt>
 
-          <code><a href="heat_map_dot.html">heat_map_dot()</a></code>
-
-        </dt>
-        <dd>Dot plots of the features of groups of cells</dd>
-
-        <dt>
-
           <code><a href="heat_map_align.html">heat_map_align()</a></code>
 
         </dt>
         <dd>Heatmaps of the same rows side by side, each with its own colour scale</dd>
-
-        <dt>
-
-          <code><a href="heat_map_composition.html">heat_map_composition()</a></code>
-
-        </dt>
-        <dd>Heatmaps of the make-up of samples: the share of each group of cells</dd>
-
-        <dt>
-
-          <code><a href="heat_map_contrast.html">heat_map_contrast()</a></code>
-
-        </dt>
-        <dd>Heatmaps of the differences between two conditions in each group of cells</dd>
 
         <dt>
 
@@ -187,9 +180,9 @@
         </dt>
         <dd>Extract the contents of a heatmap as tidy data</dd>
       </dl></div><div class="section level2">
-      <h2 id="prepare-data">Prepare data<a class="anchor" aria-label="anchor" href="#prepare-data"></a></h2>
+      <h2 id="single-cell-data">Single-cell data<a class="anchor" aria-label="anchor" href="#single-cell-data"></a></h2>
 
-      <div class="section-desc"><p>Scale, summarise and cluster data before (or while) drawing a heatmap.</p></div>
+      <div class="section-desc"><p>Read AnnData files, rank markers, score gene sets, smooth along trajectories, and draw dot plots, compositions and contrasts of groups of cells. heat_map() and heat_map_summarise() read single-cell data too.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -198,24 +191,10 @@
 
       <dl><dt>
 
-          <code><a href="heat_map_read_h5ad.html">heat_map_read_h5ad()</a></code>
+          <code><a href="heat_map_dot.html">heat_map_dot()</a></code>
 
         </dt>
-        <dd>Read an AnnData (.h5ad) file</dd>
-
-        <dt>
-
-          <code><a href="heat_map_scale.html">heat_map_scale()</a></code>
-
-        </dt>
-        <dd>Scale numeric data prior to constructing heat_map</dd>
-
-        <dt>
-
-          <code><a href="heat_map_summarise.html">heat_map_summarise()</a></code>
-
-        </dt>
-        <dd>Summarise groups of rows or columns for a heatmap</dd>
+        <dd>Dot plots of the features of groups of cells</dd>
 
         <dt>
 
@@ -233,6 +212,20 @@
 
         <dt>
 
+          <code><a href="heat_map_composition.html">heat_map_composition()</a></code>
+
+        </dt>
+        <dd>Heatmaps of the make-up of samples: the share of each group of cells</dd>
+
+        <dt>
+
+          <code><a href="heat_map_contrast.html">heat_map_contrast()</a></code>
+
+        </dt>
+        <dd>Heatmaps of the differences between two conditions in each group of cells</dd>
+
+        <dt>
+
           <code><a href="heat_map_smooth.html">heat_map_smooth()</a></code>
 
         </dt>
@@ -247,6 +240,43 @@
 
         <dt>
 
+          <code><a href="heat_map_read_h5ad.html">heat_map_read_h5ad()</a></code>
+
+        </dt>
+        <dd>Read an AnnData (.h5ad) file</dd>
+
+        <dt>
+
+          <code><a href="heat_map_example.html">heat_map_example()</a></code>
+
+        </dt>
+        <dd>Simulated single-cell data for examples</dd>
+      </dl></div><div class="section level2">
+      <h2 id="prepare-data">Prepare data<a class="anchor" aria-label="anchor" href="#prepare-data"></a></h2>
+
+      <div class="section-desc"><p>Scale, summarise and cluster data before (or while) drawing a heatmap.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="heat_map_scale.html">heat_map_scale()</a></code>
+
+        </dt>
+        <dd>Scale numeric data prior to constructing heat_map</dd>
+
+        <dt>
+
+          <code><a href="heat_map_summarise.html">heat_map_summarise()</a></code>
+
+        </dt>
+        <dd>Summarise groups of rows or columns for a heatmap</dd>
+
+        <dt>
+
           <code><a href="heat_map_clust.html">heat_map_clust()</a></code>
 
         </dt>
@@ -258,22 +288,6 @@
 
         </dt>
         <dd>Number of threads used by HeatmapR</dd>
-      </dl></div><div class="section level2">
-      <h2 id="example-data">Example data<a class="anchor" aria-label="anchor" href="#example-data"></a></h2>
-
-      <div class="section-desc"><p>Simulated single-cell RNA, cytometry and trajectory data for trying the functions.</p></div>
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="heat_map_example.html">heat_map_example()</a></code>
-
-        </dt>
-        <dd>Simulated single-cell data for examples</dd>
       </dl></div><div class="section level2">
       <h2 id="arrange-and-save-heatmaps">Arrange and save heatmaps<a class="anchor" aria-label="anchor" href="#arrange-and-save-heatmaps"></a></h2>
 

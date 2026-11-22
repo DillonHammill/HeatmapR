@@ -29,14 +29,6 @@ site is built.
   k-means splits, automatic cuts, labels and zoom panels, threads and
   memory.
 
-- [Single-cell
-  data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.md):
-
-  Heatmaps, dot plots and markers straight from SingleCellExperiment,
-  Seurat, flowFrame and sparse matrices: features by name, groups and
-  annotations from metadata, downsampling, sparse summaries, marker
-  ranking, cytometry and trajectories.
-
 - [More than
   colour](https://dillonhammill.github.io/HeatmapR/articles/cells.md):
 
@@ -50,6 +42,47 @@ site is built.
   Redrawing and saving heatmaps, extracting their orders and clusters,
   tidy data for ggplot2, heatmaps beside ggplot2 plots and alternative
   text for screen readers.
+
+### Single-cell data
+
+Heatmaps, dot plots, markers, conditions, cytometry and trajectories of
+single-cell data, read from SingleCellExperiment and Seurat objects,
+AnnData files and cytometry files.
+
+- [Single-cell
+  data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.md):
+
+  Start here: the single-cell objects and files HeatmapR reads, heatmaps
+  of cells, summaries of groups, the Seurat and scanpy functions each
+  function stands in for, and how fast they are.
+
+- [Markers, dot plots and gene
+  sets](https://dillonhammill.github.io/HeatmapR/articles/markers.md):
+
+  Rank the markers of each cluster or cell type, draw them as heatmaps
+  and dot plots, score cells for sets of genes, put genes beside scores
+  or proteins, and find clusters that may be two populations.
+
+- [Samples and
+  conditions](https://dillonhammill.github.io/HeatmapR/articles/conditions.md):
+
+  Compare conditions in single-cell data with the samples as replicates:
+  the make-up of each sample, pseudobulk tests of each cell type, and
+  dot plots, split cells and panels on shared scales that show the
+  changes.
+
+- [Cytometry](https://dillonhammill.github.io/HeatmapR/articles/cytometry.md):
+
+  Flow and mass cytometry events: reading flowFrame and flowSet objects,
+  the asinh transform and quantile scaling, heatmaps of events and of
+  cluster medians, abundances, differential states, and clusters that
+  may be two populations.
+
+- [Trajectories](https://dillonhammill.github.io/HeatmapR/articles/trajectories.md):
+
+  Genes along pseudotime: cells in order, genes smoothed over bins and
+  ordered by when they peak, modules of genes, lineages side by side,
+  and cells ordered without a pseudotime.
 
 ### Performance
 

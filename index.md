@@ -218,9 +218,17 @@ heat_map_dot(cells, features = markers, group_by = "cell_type")
 
 The
 [guides](https://dillonhammill.github.io/HeatmapR/articles/index.html)
-on the website cover ordering, large heatmaps, [single-cell
-data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html),
-cells, and working with other packages, and the
+on the website cover ordering, large heatmaps, cells, working with other
+packages and the app. Five guides cover single-cell data: [getting
+started](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html),
+[markers, dot plots and gene
+sets](https://dillonhammill.github.io/HeatmapR/articles/markers.html),
+[samples and
+conditions](https://dillonhammill.github.io/HeatmapR/articles/conditions.html),
+[cytometry](https://dillonhammill.github.io/HeatmapR/articles/cytometry.html)
+and
+[trajectories](https://dillonhammill.github.io/HeatmapR/articles/trajectories.html).
+The
 [changelog](https://dillonhammill.github.io/HeatmapR/news/index.html)
 lists everything new in **HeatmapR** 2.0.0.
 

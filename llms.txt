@@ -218,9 +218,17 @@ heat_map_dot(cells, features = markers, group_by = "cell_type")
 
 The
 [guides](https://dillonhammill.github.io/HeatmapR/articles/index.html)
-on the website cover ordering, large heatmaps, [single-cell
-data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html),
-cells, and working with other packages, and the
+on the website cover ordering, large heatmaps, cells, working with other
+packages and the app. Five guides cover single-cell data: [getting
+started](https://dillonhammill.github.io/HeatmapR/articles/single-cell.html),
+[markers, dot plots and gene
+sets](https://dillonhammill.github.io/HeatmapR/articles/markers.html),
+[samples and
+conditions](https://dillonhammill.github.io/HeatmapR/articles/conditions.html),
+[cytometry](https://dillonhammill.github.io/HeatmapR/articles/cytometry.html)
+and
+[trajectories](https://dillonhammill.github.io/HeatmapR/articles/trajectories.html).
+The
 [changelog](https://dillonhammill.github.io/HeatmapR/news/index.html)
 lists everything new in **HeatmapR** 2.0.0.
 
@@ -326,16 +334,9 @@ citation("HeatmapR")
   : Create a complex heatmap using base graphics
 - [`heat_map_cor()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_cor.md)
   : Correlation heatmaps with ellipses, numbers and dendrograms
-- [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
-  : Dot plots of the features of groups of cells
 - [`heat_map_align()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_align.md)
   : Heatmaps of the same rows side by side, each with its own colour
   scale
-- [`heat_map_composition()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_composition.md)
-  : Heatmaps of the make-up of samples: the share of each group of cells
-- [`heat_map_contrast()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_contrast.md)
-  : Heatmaps of the differences between two conditions in each group of
-  cells
 - [`plot(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   [`print(`*`<heat_map>`*`)`](https://dillonhammill.github.io/HeatmapR/reference/heat_map-methods.md)
   : Draw a heat_map object
@@ -371,36 +372,44 @@ data.
 - [`heat_map_data()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_data.md)
   : Extract the contents of a heatmap as tidy data
 
-## Prepare data
+## Single-cell data
 
-Scale, summarise and cluster data before (or while) drawing a heatmap.
+Read AnnData files, rank markers, score gene sets, smooth along
+trajectories, and draw dot plots, compositions and contrasts of groups
+of cells. heat_map() and heat_map_summarise() read single-cell data too.
 
-- [`heat_map_read_h5ad()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_read_h5ad.md)
-  : Read an AnnData (.h5ad) file
-- [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)
-  : Scale numeric data prior to constructing heat_map
-- [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
-  : Summarise groups of rows or columns for a heatmap
+- [`heat_map_dot()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_dot.md)
+  : Dot plots of the features of groups of cells
 - [`heat_map_markers()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_markers.md)
   : Find the marker features of groups of cells
 - [`heat_map_score()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_score.md)
   : Scores of gene sets in each cell
+- [`heat_map_composition()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_composition.md)
+  : Heatmaps of the make-up of samples: the share of each group of cells
+- [`heat_map_contrast()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_contrast.md)
+  : Heatmaps of the differences between two conditions in each group of
+  cells
 - [`heat_map_smooth()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_smooth.md)
   : Smooth features along pseudotime for a heatmap
 - [`heat_map_downsample()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_downsample.md)
   : Downsample cells within groups
+- [`heat_map_read_h5ad()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_read_h5ad.md)
+  : Read an AnnData (.h5ad) file
+- [`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md)
+  : Simulated single-cell data for examples
+
+## Prepare data
+
+Scale, summarise and cluster data before (or while) drawing a heatmap.
+
+- [`heat_map_scale()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_scale.md)
+  : Scale numeric data prior to constructing heat_map
+- [`heat_map_summarise()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_summarise.md)
+  : Summarise groups of rows or columns for a heatmap
 - [`heat_map_clust()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_clust.md)
   : Perform hierarchical clustering for heatmap
 - [`heat_map_threads()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_threads.md)
   : Number of threads used by HeatmapR
-
-## Example data
-
-Simulated single-cell RNA, cytometry and trajectory data for trying the
-functions.
-
-- [`heat_map_example()`](https://dillonhammill.github.io/HeatmapR/reference/heat_map_example.md)
-  : Simulated single-cell data for examples
 
 ## Arrange and save heatmaps
 
@@ -455,14 +464,6 @@ site is built.
   k-means splits, automatic cuts, labels and zoom panels, threads and
   memory.
 
-- [Single-cell
-  data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.md):
-
-  Heatmaps, dot plots and markers straight from SingleCellExperiment,
-  Seurat, flowFrame and sparse matrices: features by name, groups and
-  annotations from metadata, downsampling, sparse summaries, marker
-  ranking, cytometry and trajectories.
-
 - [More than
   colour](https://dillonhammill.github.io/HeatmapR/articles/cells.md):
 
@@ -476,6 +477,47 @@ site is built.
   Redrawing and saving heatmaps, extracting their orders and clusters,
   tidy data for ggplot2, heatmaps beside ggplot2 plots and alternative
   text for screen readers.
+
+### Single-cell data
+
+Heatmaps, dot plots, markers, conditions, cytometry and trajectories of
+single-cell data, read from SingleCellExperiment and Seurat objects,
+AnnData files and cytometry files.
+
+- [Single-cell
+  data](https://dillonhammill.github.io/HeatmapR/articles/single-cell.md):
+
+  Start here: the single-cell objects and files HeatmapR reads, heatmaps
+  of cells, summaries of groups, the Seurat and scanpy functions each
+  function stands in for, and how fast they are.
+
+- [Markers, dot plots and gene
+  sets](https://dillonhammill.github.io/HeatmapR/articles/markers.md):
+
+  Rank the markers of each cluster or cell type, draw them as heatmaps
+  and dot plots, score cells for sets of genes, put genes beside scores
+  or proteins, and find clusters that may be two populations.
+
+- [Samples and
+  conditions](https://dillonhammill.github.io/HeatmapR/articles/conditions.md):
+
+  Compare conditions in single-cell data with the samples as replicates:
+  the make-up of each sample, pseudobulk tests of each cell type, and
+  dot plots, split cells and panels on shared scales that show the
+  changes.
+
+- [Cytometry](https://dillonhammill.github.io/HeatmapR/articles/cytometry.md):
+
+  Flow and mass cytometry events: reading flowFrame and flowSet objects,
+  the asinh transform and quantile scaling, heatmaps of events and of
+  cluster medians, abundances, differential states, and clusters that
+  may be two populations.
+
+- [Trajectories](https://dillonhammill.github.io/HeatmapR/articles/trajectories.md):
+
+  Genes along pseudotime: cells in order, genes smoothed over bins and
+  ordered by when they peak, modules of genes, lineages side by side,
+  and cells ordered without a pseudotime.
 
 ### Performance
 

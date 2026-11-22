@@ -24,12 +24,26 @@
     <li><a class="dropdown-item" href="../articles/app.html">Building heatmaps in the browser</a></li>
     <li><a class="dropdown-item" href="../articles/ordering.html">Ordering rows and columns</a></li>
     <li><a class="dropdown-item" href="../articles/large-data.html">Large heatmaps</a></li>
-    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
     <li><a class="dropdown-item" href="../articles/cells.html">More than colour</a></li>
     <li><a class="dropdown-item" href="../articles/integration.html">Working with heatmaps</a></li>
     <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Single-cell data</h6></li>
+    <li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="../articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="../articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectories.html">Trajectories</a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Performance</h6></li>
     <li><a class="dropdown-item" href="../articles/benchmarks.html">Speed comparison</a></li>
+  </ul></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-single-cell" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Single-cell</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-single-cell"><li><a class="dropdown-item" href="../articles/single-cell.html">Single-cell data</a></li>
+    <li><a class="dropdown-item" href="../articles/markers.html">Markers, dot plots and gene sets</a></li>
+    <li><a class="dropdown-item" href="../articles/conditions.html">Samples and conditions</a></li>
+    <li><a class="dropdown-item" href="../articles/cytometry.html">Cytometry</a></li>
+    <li><a class="dropdown-item" href="../articles/trajectories.html">Trajectories</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="../articles/app.html">App</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/benchmarks.html">Speed</a></li>
@@ -254,6 +268,7 @@
 <li>Removed unused and commented-out code, including the modified <code>ggdendro</code> functions of 1.1.0 (dendrograms are drawn by HeatmapR’s own code) and unused internal helpers.</li>
 <li>The test suite now checks the output of each feature (through <code><a href="../reference/heat_map_info.html">heat_map_info()</a></code> and the recorded drawing calls) rather than only that no error occurs, and covers over 99% of the code.</li>
 <li>Documentation now matches the function defaults and the README describes CRAN installation.</li>
+<li>The website has five guides to single-cell data, in a Single-cell menu: <a href="https://dillonhammill.github.io/HeatmapR/articles/single-cell.html">Single-cell data</a> (what HeatmapR reads, heatmaps of cells, summaries and pseudobulk, and the Seurat and scanpy functions each function stands in for), <a href="https://dillonhammill.github.io/HeatmapR/articles/markers.html">Markers, dot plots and gene sets</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/conditions.html">Samples and conditions</a>, <a href="https://dillonhammill.github.io/HeatmapR/articles/cytometry.html">Cytometry</a> and <a href="https://dillonhammill.github.io/HeatmapR/articles/trajectories.html">Trajectories</a>. The reference index has a section for the single-cell functions.</li>
 <li>Methods are referenced where they are used: the help pages of <code><a href="../reference/heat_map.html">heat_map()</a></code>, <code><a href="../reference/heat_map_clust.html">heat_map_clust()</a></code>, <code><a href="../reference/heat_map_scale.html">heat_map_scale()</a></code>, <code><a href="../reference/heat_map_summarise.html">heat_map_summarise()</a></code>, <code><a href="../reference/heat_map_markers.html">heat_map_markers()</a></code>, <code><a href="../reference/heat_map_dot.html">heat_map_dot()</a></code>, <code><a href="../reference/heat_map_cor.html">heat_map_cor()</a></code>, <code><a href="../reference/heat_map_smooth.html">heat_map_smooth()</a></code> and <code><a href="../reference/heat_map_example.html">heat_map_example()</a></code>, the vignette and the articles cite the papers behind them. The DOI of Murtagh and Contreras (2012) in the Description is corrected.</li>
 </ul></div>
 </div>
