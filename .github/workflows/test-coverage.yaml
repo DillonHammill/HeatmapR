@@ -38,6 +38,20 @@ jobs:
             install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
           )
           print(cov)
+          # The lines that no test runs, as runs of lines in each file, so the
+          # log says what to test without a Codecov upload
+          missed <- covr::zero_coverage(cov)
+          if(nrow(missed) > 0) {
+            cat("\nLines not covered:\n")
+            for(file in unique(missed$filename)) {
+              lines <- sort(unique(missed$line[missed$filename == file]))
+              runs <- split(lines, cumsum(c(1, diff(lines) != 1)))
+              runs <- vapply(runs, function(run) {
+                if(length(run) == 1) as.character(run) else paste0(run[1], "-", run[length(run)])
+              }, character(1))
+              cat(file, ": ", paste(runs, collapse = ", "), "\n", sep = "")
+            }
+          }
           # Codecov needs a token for uploads from branches of this repository
           # (the CODECOV_TOKEN secret), and covr >= 4.0.0 fails when an upload
           # fails - without the secret the upload is skipped with a warning
