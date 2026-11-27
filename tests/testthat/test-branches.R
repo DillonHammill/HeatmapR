@@ -215,17 +215,10 @@ test_that("tables are read from TSV and TXT files with any separator", {
 
 test_that("single cells without metadata and wide tables are described", {
   skip_if_not_installed("Matrix")
-  # An AnnData object of the anndata package without metadata (a stand-in
-  # for its R6 class, read through its fields)
-  x <- new.env()
-  x$X <- matrix(1:12, 4, 3)
-  x$layers <- list()
-  x$obs <- NULL
-  x$var <- NULL
-  x$obs_names <- paste0("c", 1:4)
-  x$var_names <- paste0("g", 1:3)
-  x$raw <- NULL
-  class(x) <- c("AnnDataR6", "R6")
+  # A sparse matrix of cells by features has no metadata
+  x <- Matrix::sparseMatrix(i = 1:3, j = 1:3, x = c(1, 2, 3), dims = c(4, 3),
+                            dimnames = list(paste0("c", 1:4), paste0("g", 1:3)))
+  expect_null(.cell_source(x)$meta)
   d <- .app_describe(x)
   expect_identical(d$kind, "cells")
   expect_identical(d$meta, character(0))
@@ -395,7 +388,18 @@ test_that("blocks of one leaf are ordered with the others", {
   set.seed(2)
   x <- rbind(matrix(stats::rnorm(20), 10), c(50, 50))
   tree <- stats::hclust(stats::dist(x), "complete")
+  # The number of leaves of each block (used for blocks of merges, so a leaf
+  # doesn't need it): one for a leaf
+  node_leaves <- .node_leaves
+  sizes <- list()
+  local_mocked_bindings(.node_leaves = function(merge, node, n_leaves) {
+    sizes[[length(sizes) + 1]] <<- c(node, n_leaves)
+    node_leaves(merge, node, n_leaves)
+  })
   o <- .olo_large(tree$merge, x, max = 3)
+  sizes <- do.call(rbind, sizes)
+  expect_true(-11 %in% sizes[, 1])
+  expect_true(all(sizes[sizes[, 1] < 0, 2] == 1))
   expect_setequal(o, 1:11)
   # (THE OUTLIER, A BLOCK OF ITS OWN, AT ONE END)
   expect_true(11 %in% o[c(1, 11)])
@@ -417,10 +421,12 @@ test_that("asinh scaling and automatic cuts of every strength are described", {
   }
 })
 
-test_that("columns in peak order are described", {
+test_that("rows and columns in peak order are described", {
   m <- test_matrix(6, 8)
   text <- heat_map_describe(draw(m, tree_x = TRUE, tree_order_x = "peak"))
   expect_match(text, "columns are highest along the rows")
+  text <- heat_map_describe(draw(m, tree_y = TRUE, tree_order_y = "peak"))
+  expect_match(text, "rows are highest along the columns")
 })
 
 test_that("bars, labels and glyphs of either axis are described", {
@@ -437,9 +443,12 @@ test_that("bars, labels and glyphs of either axis are described", {
   text <- .describe_extras(info, args_of(bar_values_x = TRUE, bar_type_x = "box",
                                          bar_axis_label_x = "Expression"))
   expect_match(text, "the distribution of Expression for each column")
-  # Labelled columns and rows
+  # Labelled columns and rows, by name or by their position as shown
   text <- .describe_extras(info, args_of(mark_x = "c2", mark_y = "r3"))
   expect_identical(text, "Labelled columns: c2. Labelled rows: r3.")
+  info$row_order <- 5:1
+  text <- .describe_extras(info, args_of(mark_x = 2, mark_y = 1))
+  expect_identical(text, "Labelled columns: c2. Labelled rows: r5.")
   # A glyph without a name of its own
   text <- .describe_extras(info, args_of(cell_values = list(), cell_glyph = "spike"))
   expect_match(text, "Inside each cell, a spike shows")
@@ -728,7 +737,7 @@ test_that("rows in peak order follow clusters of the columns, or all of them", {
   m <- test_matrix(8, 6)
   a <- heat_map_info(draw(m, tree_y = TRUE, tree_order_y = "peak"))
   b <- heat_map_info(draw(m, tree_y = TRUE, tree_order_y = "peak",
-                          tree_cut_x = c(1, 1, 1, 2, 2, 2)))
+                          tree_cut_x = c("a", "a", "a", "b", "b", "b")))
   expect_setequal(a$row_order, 1:8)
   expect_setequal(b$row_order, 1:8)
 })
@@ -737,6 +746,10 @@ test_that("branch colours of the columns need a dendrogram cut into clusters", {
   m <- test_matrix(8, 6)
   hm <- draw(m, tree_col_x = "red")
   expect_s3_class(hm, "heat_map")
+  hm <- draw(m, tree_col_x = TRUE)
+  expect_s3_class(hm, "heat_map")
+  expect_error(draw(m, tree_col_x = c("red", "blue")),
+               "'tree_col_x' must be TRUE, one colour\\.")
   hm <- draw(m, tree_x = TRUE, tree_cut_x = 2, tree_col_x = c("red", "blue"))
   expect_s3_class(hm, "heat_map")
 })
